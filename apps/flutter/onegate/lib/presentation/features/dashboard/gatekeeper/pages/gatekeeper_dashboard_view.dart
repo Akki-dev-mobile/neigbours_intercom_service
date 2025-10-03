@@ -18,6 +18,7 @@ import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
+import 'package:common_widgets/dashboard_loader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -208,11 +209,11 @@ class _GateDashboardViewState extends State<GateDashboardView>
               PageTransition(
                 type: PageTransitionType.leftToRight,
                 child: VisitorLogView(
-                  id: AppLocalizations.of(context)!.inOutBook,
+                  id: AppLocalizations.of(context).inOutBook,
                   logList: [
-                    AppLocalizations.of(context)!.inOutBook,
-                    AppLocalizations.of(context)!.visitorIn,
-                    AppLocalizations.of(context)!.visitorOut,
+                    AppLocalizations.of(context).inOutBook,
+                    AppLocalizations.of(context).visitorIn,
+                    AppLocalizations.of(context).visitorOut,
                   ],
                 ),
               ),
@@ -224,11 +225,11 @@ class _GateDashboardViewState extends State<GateDashboardView>
               PageTransition(
                 type: PageTransitionType.topToBottom,
                 child: VisitorLogView(
-                  id: AppLocalizations.of(context)!.visitorIn,
+                  id: AppLocalizations.of(context).visitorIn,
                   logList: [
-                    AppLocalizations.of(context)!.inOutBook,
-                    AppLocalizations.of(context)!.visitorIn,
-                    AppLocalizations.of(context)!.visitorOut,
+                    AppLocalizations.of(context).inOutBook,
+                    AppLocalizations.of(context).visitorIn,
+                    AppLocalizations.of(context).visitorOut,
                   ],
                 ),
               ),
@@ -240,11 +241,11 @@ class _GateDashboardViewState extends State<GateDashboardView>
               PageTransition(
                 type: PageTransitionType.rightToLeft,
                 child: VisitorLogView(
-                  id: AppLocalizations.of(context)!.visitorOut,
+                  id: AppLocalizations.of(context).visitorOut,
                   logList: [
-                    AppLocalizations.of(context)!.inOutBook,
-                    AppLocalizations.of(context)!.visitorIn,
-                    AppLocalizations.of(context)!.visitorOut,
+                    AppLocalizations.of(context).inOutBook,
+                    AppLocalizations.of(context).visitorIn,
+                    AppLocalizations.of(context).visitorOut,
                   ],
                 ),
               ),
@@ -255,7 +256,25 @@ class _GateDashboardViewState extends State<GateDashboardView>
       builder: (context, state) {
         switch (state.runtimeType) {
           case GatekeeperDashboardLoadingState:
-            return _buildEnhancedLoader(context);
+            return DashboardLoader(
+              title: 'Loading Dashboard',
+              subtitle: 'Please wait while we prepare your dashboard...',
+            );
+          case GDInAndOutLoadingState:
+            return DashboardLoader(
+              title: 'Loading In-Out Book',
+              subtitle: 'Preparing visitor logs...',
+            );
+          case GDVisitorsInLoadingState:
+            return DashboardLoader(
+              title: 'Loading Visitor-In',
+              subtitle: 'Preparing visitor check-in logs...',
+            );
+          case GDVisitorsOutLoadingState:
+            return DashboardLoader(
+              title: 'Loading Visitor-Out',
+              subtitle: 'Preparing visitor check-out logs...',
+            );
           case GatekeeperDashboardSuccessState:
             final successState = state as GatekeeperDashboardSuccessState;
             return WillPopScope(
@@ -649,7 +668,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
     bool hasNotification = false,
     bool isClickable = true, // New parameter to control clickability
   }) {
-    return Container(
+    return SizedBox(
       width: isTablet ? 100 : 80,
       child: Column(
         children: [
@@ -965,325 +984,6 @@ class _GateDashboardViewState extends State<GateDashboardView>
           ),
         ),
       ),
-    );
-  }
-
-  // Enhanced Loading State with Gate Animation
-  Widget _buildEnhancedLoader(BuildContext context) {
-    final isTablet = MediaQuery.of(context).size.width > 600;
-
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        automaticallyImplyLeading: false,
-        toolbarHeight: isTablet ? 80 : 70,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Enhanced gate icon matching dashboard
-            Container(
-              padding: EdgeInsets.all(isTablet ? 8 : 6),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    const Color(0xffF44336),
-                    const Color(0xffD32F2F),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xffF44336).withOpacity(0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.sensor_door_rounded,
-                color: Colors.white,
-                size: isTablet ? 20 : 16,
-              ),
-            ),
-            SizedBox(width: isTablet ? 12 : 10),
-            // Gate name with animation
-            Hero(
-              tag: 'gate_dashboard_loading',
-              child: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 300),
-                style: TextStyle(
-                  color: const Color(0xff212427),
-                  fontSize: isTablet ? 24 : 20,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.3,
-                ),
-                child: Text(
-                  selectedGateName
-                          ?.split(' ')
-                          .map((word) => word.isNotEmpty
-                              ? word[0].toUpperCase() +
-                                  word.substring(1).toLowerCase()
-                              : '')
-                          .join(' ') ??
-                      'Loading...',
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: Center(
-        child: Padding(
-          padding: EdgeInsets.all(isTablet ? 40 : 32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Enhanced loading container with gate animation
-              Container(
-                padding: EdgeInsets.all(isTablet ? 40 : 32),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Custom Gate Animation
-                    SizedBox(
-                      width: isTablet ? 120 : 100,
-                      height: isTablet ? 120 : 100,
-                      child: _GateLoadingAnimation(isTablet: isTablet),
-                    ),
-
-                    SizedBox(height: isTablet ? 32 : 24),
-
-                    // Enhanced loading text
-                    Text(
-                      context.l10n.loadingDashboard,
-                      style: TextStyle(
-                        color: const Color(0xff212427),
-                        fontSize: isTablet ? 24 : 20,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-
-                    SizedBox(height: isTablet ? 12 : 8),
-
-                    Text(
-                      context.l10n.pleaseWaitPreparingDashboard,
-                      style: TextStyle(
-                        color: const Color(0xff57636C),
-                        fontSize: isTablet ? 16 : 14,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.2,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Custom Gate Loading Animation Widget
-class _GateLoadingAnimation extends StatefulWidget {
-  final bool isTablet;
-
-  const _GateLoadingAnimation({required this.isTablet});
-
-  @override
-  _GateLoadingAnimationState createState() => _GateLoadingAnimationState();
-}
-
-class _GateLoadingAnimationState extends State<_GateLoadingAnimation>
-    with TickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _gateAnimation;
-  late Animation<double> _rotationAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 2000),
-      vsync: this,
-    );
-
-    // Gate opening/closing animation
-    _gateAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
-
-    // Icon rotation animation
-    _rotationAnimation = Tween<double>(
-      begin: 0.0,
-      end: 0.5,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
-
-    // Start repeating animation
-    _controller.repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-          width: widget.isTablet ? 120 : 100,
-          height: widget.isTablet ? 120 : 100,
-          decoration: BoxDecoration(
-            color: const Color(0xffF44336).withOpacity(0.05),
-            borderRadius: BorderRadius.circular(widget.isTablet ? 20 : 16),
-          ),
-          child: Stack(
-            children: [
-              // Left gate door
-              Positioned(
-                left: 0,
-                top: widget.isTablet ? 20 : 16,
-                bottom: widget.isTablet ? 20 : 16,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 100),
-                  width: (widget.isTablet ? 40 : 32) -
-                      (_gateAnimation.value * (widget.isTablet ? 15 : 12)),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xffF44336),
-                        const Color(0xffD32F2F),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(widget.isTablet ? 8 : 6),
-                      bottomLeft: Radius.circular(widget.isTablet ? 8 : 6),
-                      topRight: Radius.circular(widget.isTablet ? 4 : 3),
-                      bottomRight: Radius.circular(widget.isTablet ? 4 : 3),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Right gate door
-              Positioned(
-                right: 0,
-                top: widget.isTablet ? 20 : 16,
-                bottom: widget.isTablet ? 20 : 16,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 100),
-                  width: (widget.isTablet ? 40 : 32) -
-                      (_gateAnimation.value * (widget.isTablet ? 15 : 12)),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xffF44336),
-                        const Color(0xffD32F2F),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.only(
-                      topRight: Radius.circular(widget.isTablet ? 8 : 6),
-                      bottomRight: Radius.circular(widget.isTablet ? 8 : 6),
-                      topLeft: Radius.circular(widget.isTablet ? 4 : 3),
-                      bottomLeft: Radius.circular(widget.isTablet ? 4 : 3),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Center gate icon
-              Center(
-                child: Transform.rotate(
-                  angle: _rotationAnimation.value * 2 * 3.14159,
-                  child: Container(
-                    padding: EdgeInsets.all(widget.isTablet ? 12 : 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius:
-                          BorderRadius.circular(widget.isTablet ? 12 : 10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: widget.isTablet ? 8 : 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.sensor_door_rounded,
-                      color: const Color(0xffF44336),
-                      size: widget.isTablet ? 32 : 24,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Loading dots indicator
-              Positioned(
-                bottom: widget.isTablet ? 8 : 6,
-                left: 0,
-                right: 0,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(3, (index) {
-                    return AnimatedContainer(
-                      duration: Duration(milliseconds: 300 + (index * 100)),
-                      margin: EdgeInsets.symmetric(
-                          horizontal: widget.isTablet ? 3 : 2),
-                      width: widget.isTablet ? 8 : 6,
-                      height: widget.isTablet ? 8 : 6,
-                      decoration: BoxDecoration(
-                        color: const Color(0xffF44336).withOpacity(
-                          0.3 +
-                              ((_controller.value + (index * 0.3)) % 1.0) * 0.7,
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                    );
-                  }),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

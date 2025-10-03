@@ -284,6 +284,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
               searchedVisitor: visitor,
               selectedValue: defaultPurpose,
               mobile: _mobileController.text,
+              isGatekeeperQRPasscodeEntry: false, // This is self-entry flow
             ),
           ),
         );
@@ -459,6 +460,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
           searchedVisitor: visitor,
           selectedValue: purpose,
           mobile: _mobileController.text,
+          isGatekeeperQRPasscodeEntry: false, // This is self-entry flow
         ),
       ),
     );

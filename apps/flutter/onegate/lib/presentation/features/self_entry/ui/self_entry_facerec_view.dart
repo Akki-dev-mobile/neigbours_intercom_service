@@ -152,6 +152,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
               searchedVisitor: visitor,
               selectedValue: defaultPurpose,
               mobile: visitorData['mobile'],
+              isGatekeeperQRPasscodeEntry: false, // This is self-entry flow
             ),
           ),
         );
@@ -173,7 +174,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(AppLocalizations.of(context)!.enterName),
+          title: Text(AppLocalizations.of(context).enterName),
           content: TextField(
             autofocus: true,
             onChanged: (value) {
@@ -186,7 +187,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
               onPressed: () {
                 Navigator.of(context).pop(); // Close dialog
               },
-              child: Text(AppLocalizations.of(context)!.cancel),
+              child: Text(AppLocalizations.of(context).cancel),
             ),
             TextButton(
               onPressed: () {
@@ -195,7 +196,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
                   _regImage(name); // Call registration function
                 }
               },
-              child: Text(AppLocalizations.of(context)!.submit),
+              child: Text(AppLocalizations.of(context).submit),
             ),
           ],
         );

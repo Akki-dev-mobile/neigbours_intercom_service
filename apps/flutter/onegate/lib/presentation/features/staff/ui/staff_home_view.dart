@@ -251,7 +251,7 @@ class _StaffScreenState extends State<StaffScreen> {
       child: TextField(
         controller: _searchController,
         onChanged: (query) => _filterStaffList(query),
-        cursorColor: Colors.black,
+        cursorColor: const Color(0xffF44336),
         decoration: InputDecoration(
           hintText: 'Search staff by name, category, or phone...',
           hintStyle: TextStyle(
@@ -415,7 +415,7 @@ class _StaffScreenState extends State<StaffScreen> {
             // Enhanced retry button
             Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
+                gradient: const LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [
@@ -535,7 +535,7 @@ class _StaffScreenState extends State<StaffScreen> {
             // Enhanced action button (optional)
             Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
+                gradient: const LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [
@@ -649,12 +649,12 @@ class _GateLoadingAnimationState extends State<_GateLoadingAnimation>
                   width: (widget.isTablet ? 40 : 32) -
                       (_gateAnimation.value * (widget.isTablet ? 15 : 12)),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        const Color(0xffF44336),
-                        const Color(0xffD32F2F),
+                        Color(0xffF44336),
+                        Color(0xffD32F2F),
                       ],
                     ),
                     borderRadius: BorderRadius.only(
@@ -676,12 +676,12 @@ class _GateLoadingAnimationState extends State<_GateLoadingAnimation>
                   width: (widget.isTablet ? 40 : 32) -
                       (_gateAnimation.value * (widget.isTablet ? 15 : 12)),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        const Color(0xffF44336),
-                        const Color(0xffD32F2F),
+                        Color(0xffF44336),
+                        Color(0xffD32F2F),
                       ],
                     ),
                     borderRadius: BorderRadius.only(

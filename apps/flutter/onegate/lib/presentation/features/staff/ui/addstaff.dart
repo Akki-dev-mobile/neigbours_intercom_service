@@ -259,13 +259,13 @@ class _AddStaffState extends State<AddStaff> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(AppLocalizations.of(context)!.selectImageSource),
+          title: Text(AppLocalizations.of(context).selectImageSource),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
                 leading: const Icon(Icons.camera_alt),
-                title: Text(AppLocalizations.of(context)!.camera),
+                title: Text(AppLocalizations.of(context).camera),
                 onTap: () {
                   Navigator.pop(context);
                   _openCamera(isIdProof: isIdProof);
@@ -273,7 +273,7 @@ class _AddStaffState extends State<AddStaff> {
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library),
-                title: Text(AppLocalizations.of(context)!.gallery),
+                title: Text(AppLocalizations.of(context).gallery),
                 onTap: () {
                   Navigator.pop(context);
                   _openGallery(isIdProof: isIdProof);
@@ -370,12 +370,12 @@ class _AddStaffState extends State<AddStaff> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(AppLocalizations.of(context)!.confirmUpload),
-          content: Text(AppLocalizations.of(context)!.doYouWantToUpload),
+          title: Text(AppLocalizations.of(context).confirmUpload),
+          content: Text(AppLocalizations.of(context).doYouWantToUpload),
           actions: <Widget>[
             TextButton(
               child: Text(
-                AppLocalizations.of(context)!.cancel,
+                AppLocalizations.of(context).cancel,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               onPressed: () {
@@ -384,7 +384,7 @@ class _AddStaffState extends State<AddStaff> {
             ),
             TextButton(
               child: Text(
-                AppLocalizations.of(context)!.confirm,
+                AppLocalizations.of(context).confirm,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               onPressed: () async {
@@ -1015,7 +1015,7 @@ class _AddStaffState extends State<AddStaff> {
                                       : null,
                                 ),
                                 onChanged: filterMembers,
-                                cursorColor: Colors.black,
+                                cursorColor: const Color(0xffF44336),
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -1201,7 +1201,7 @@ class _AddStaffState extends State<AddStaff> {
                                       foregroundColor: Colors.grey.shade700,
                                     ),
                                     child: Text(
-                                        AppLocalizations.of(context)!.cancel),
+                                        AppLocalizations.of(context).cancel),
                                     onPressed: () {
                                       Navigator.of(context).pop();
                                     },
@@ -1272,7 +1272,7 @@ class _AddStaffState extends State<AddStaff> {
                   }
                 },
               ),
-              Text(AppLocalizations.of(context)!.male),
+              Text(AppLocalizations.of(context).male),
               const SizedBox(width: 20),
               Radio<String>(
                 value: 'F',
@@ -1286,7 +1286,7 @@ class _AddStaffState extends State<AddStaff> {
                   }
                 },
               ),
-              Text(AppLocalizations.of(context)!.female),
+              Text(AppLocalizations.of(context).female),
               const SizedBox(width: 20),
               Radio<String>(
                 fillColor: WidgetStateProperty.all(Colors.red),
@@ -1300,7 +1300,7 @@ class _AddStaffState extends State<AddStaff> {
                   }
                 },
               ),
-              Text(AppLocalizations.of(context)!.other),
+              Text(AppLocalizations.of(context).other),
             ],
           ),
         ],
@@ -1327,7 +1327,7 @@ class _AddStaffState extends State<AddStaff> {
             children: [
               Switch(
                 value: _isStaff,
-                activeColor: Colors.red,
+                activeThumbColor: Colors.red,
                 onChanged: (bool value) {
                   setState(() {
                     _isStaff = value;

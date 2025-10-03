@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:common_widgets/common_widgets.dart';
 
 class SelectedMembersBottomSheet extends StatelessWidget {
   final Set<String> selectedMembers;
@@ -171,18 +170,52 @@ class SelectedMembersBottomSheet extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: CustomLargeBtn(
-                      text: 'Confirm',
-                      onPressed: isLoading
-                          ? null
-                          : () {
-                              Navigator.pop(context);
-                              onConfirm();
-                            },
-                      disabled: isLoading,
-                      isLoading: isLoading,
-                      useBlackToGreyGradient: true,
+                    child: Container(
                       width: MediaQuery.of(context).size.width * 0.35,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xff212427), Color(0xff57636C)],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: isLoading
+                              ? null
+                              : () {
+                                  Navigator.pop(context);
+                                  onConfirm();
+                                },
+                          child: Center(
+                            child: Text(
+                              isLoading ? 'Processing...' : 'Confirm',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),

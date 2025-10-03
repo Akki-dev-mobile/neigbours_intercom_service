@@ -57,7 +57,7 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.enterPasscode),
+        title: Text(AppLocalizations.of(context).enterPasscode),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: const Color(0xff212427),
@@ -115,7 +115,7 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                                 text: TextSpan(
                                   children: [
                                     TextSpan(
-                                      text: AppLocalizations.of(context)!
+                                      text: AppLocalizations.of(context)
                                           .visitorPasscode,
                                       style: const TextStyle(
                                         fontSize: 16,
@@ -136,7 +136,7 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                AppLocalizations.of(context)!
+                                AppLocalizations.of(context)
                                     .enterSixDigitPasscode,
                                 style: const TextStyle(
                                   fontSize: 14,
@@ -162,7 +162,7 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                         maxLength: 6,
                         keyboardType: TextInputType.number,
                         textCapitalization: TextCapitalization.characters,
-                        cursorColor: Colors.black,
+                        cursorColor: const Color(0xffF44336),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -170,10 +170,10 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!
+                            return AppLocalizations.of(context)
                                 .passcodeRequired;
                           } else if (value.length != 6) {
-                            return AppLocalizations.of(context)!
+                            return AppLocalizations.of(context)
                                 .enterSixDigitValidation;
                           }
                           return null;
@@ -368,13 +368,15 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                                     guestname: visitor.name ?? "",
                                     isFromQRScan:
                                         true, // Set to true so it uses visitorLog data like QR flow
+                                    isGatekeeperQRPasscodeEntry:
+                                        false, // This is self-entry flow
                                     visitorLog: visitorLog,
                                   ),
                                 ),
                               );
                             } else {
                               myFluttertoast(
-                                msg: AppLocalizations.of(context)!
+                                msg: AppLocalizations.of(context)
                                     .invalidPasscodeTryAgain,
                                 backgroundColor: Colors.red,
                               );
@@ -384,7 +386,7 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                             showEnhancedToast(
                               context,
                               title: "Invalid Passcode",
-                              message: AppLocalizations.of(context)!
+                              message: AppLocalizations.of(context)
                                   .errorVerifyingPasscode,
                               backgroundColor: const Color(0xFFD32F2F),
                               icon: Icons.lock_outline,
@@ -408,7 +410,7 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                                 AlwaysStoppedAnimation<Color>(Colors.white),
                           )
                         : Text(
-                            AppLocalizations.of(context)!.next,
+                            AppLocalizations.of(context).next,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 22,

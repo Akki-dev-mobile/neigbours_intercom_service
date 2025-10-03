@@ -171,6 +171,7 @@ flutter:
     - assets/media/images/
     - assets/media/videos/
     - assets/onegate/
+    - assets/animations/
     - assets/json/gates_mock.json
     - assets/json/media.json
     - assets/json/idcard.json
@@ -180,7 +181,6 @@ flutter:
     - assets/json/no_internet.json
     - assets/media/images/person-icon-1670.png
     - shorebird.yaml
-    - assets/animations/
 
 flutter_native_splash:
   color: "#FFACAC"

@@ -4,7 +4,6 @@ import 'dart:developer';
 import 'dart:async';
 
 import 'package:common_widgets/common_widgets.dart';
-import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -76,19 +75,23 @@ class _VisitorLogViewState extends State<VisitorLogView>
   int current_page = 1;
   final int per_page = 10;
 
+  // Visitor card entry setting
+  bool _visitorCardEntryEnabled = false;
+
   @override
   void initState() {
     super.initState();
     _visitorLogBloc = BlocProvider.of<VisitorLogBloc>(context);
     getSelectedGate();
     _initializeSocietyId();
+    _loadVisitorCardSetting();
     _initializeLogs();
 
     // Initialize selectedBuilding after context is available
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         setState(() {
-          selectedBuilding = context.l10n?.allBuildings ?? "All Buildings";
+          selectedBuilding = context.l10n.allBuildings ?? "All Buildings";
         });
       }
     });
@@ -120,7 +123,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
             filterType: filterType,
           ));
         } else {
-          debugPrint("${context.l10n?.noMoreData ?? 'No more data'}");
+          debugPrint(context.l10n.noMoreData ?? 'No more data');
         }
       } else {
         final currentState = _visitorLogBloc.state;
@@ -128,6 +131,34 @@ class _VisitorLogViewState extends State<VisitorLogView>
             "State is not VisitorLogSuccessState: ${currentState.runtimeType}");
       }
     });
+  }
+
+  void _refreshVisitorLogList() {
+    // Refresh visitor log list after card assignment
+    switch (widget.id) {
+      case "In Out Book":
+        _visitorLogBloc.add(FetchVisitorLogEvent(
+          DateTime.now(),
+          currentPage: 1,
+          perPage: per_page,
+        ));
+        break;
+      case "Visitor In":
+        _visitorLogBloc.add(FetchCheckInLogEvent(
+          DateTime.now(),
+          currentPage: 1,
+          perPage: per_page,
+        ));
+        break;
+      case "Cards":
+      case "Visitor Out":
+        _visitorLogBloc.add(FetchCheckOutLogEvent(
+          DateTime.now(),
+          currentPage: 1,
+          perPage: per_page,
+        ));
+        break;
+    }
   }
 
   void _initializeLogs() {
@@ -188,7 +219,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
     // Set a new timer for debounced search
     _searchTimer = Timer(Duration(milliseconds: 500), () {
       debugPrint(
-          "${context.l10n?.triggeringSearchFor ?? 'Triggering search for'}: '$query'"); // Localized
+          "${context.l10n.triggeringSearchFor ?? 'Triggering search for'}: '$query'"); // Localized
 
       // Trigger the appropriate BLoC event based on current section
       if (_currentSection == 'CHECK_IN') {
@@ -267,6 +298,13 @@ class _VisitorLogViewState extends State<VisitorLogView>
     log('Society ID: $societyId');
   }
 
+  Future<void> _loadVisitorCardSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _visitorCardEntryEnabled = prefs.getBool('visitorCardNumber') ?? false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final today = DateTime.now();
@@ -306,8 +344,8 @@ class _VisitorLogViewState extends State<VisitorLogView>
             if (successState.isCheckOut!) {
               _showEnhancedSuccessToast(
                 title:
-                    context.l10n?.checkOutSuccessful ?? "Check-Out Successful",
-                message: context.l10n?.visitorCheckedOut ??
+                    context.l10n.checkOutSuccessful ?? "Check-Out Successful",
+                message: context.l10n.visitorCheckedOut ??
                     "Visitor has been checked out successfully",
                 icon: Icons.logout_rounded,
               );
@@ -327,7 +365,10 @@ class _VisitorLogViewState extends State<VisitorLogView>
       builder: (context, state) {
         switch (state.runtimeType) {
           case VisitorLogLoadingState:
-            return LoaderView();
+            return DashboardLoader(
+              title: 'Loading Visitor Logs',
+              subtitle: 'Please wait while we fetch visitor data...',
+            );
 
           case VisitorLogSuccessState:
             final successState = state as VisitorLogSuccessState;
@@ -758,12 +799,25 @@ class _VisitorLogViewState extends State<VisitorLogView>
                           padding: EdgeInsets.only(bottom: 100),
                           physics: BouncingScrollPhysics(),
                           shrinkWrap: true,
-                          itemCount:
-                              groupedLogsList.length + (_isLoadingMore ? 1 : 0),
+                          itemCount: groupedLogsList.length +
+                              ((_isLoadingMore &&
+                                          successState.hasMoreData == true) ||
+                                      (successState.hasMoreData == false &&
+                                          groupedLogsList.isNotEmpty)
+                                  ? 1
+                                  : 0),
                           itemBuilder: (context, index) {
-                            // Show loading indicator at the bottom when loading more
+                            // Show "no more visitor to load" message when pagination is complete
                             if (index == groupedLogsList.length &&
-                                _isLoadingMore) {
+                                successState.hasMoreData == false &&
+                                groupedLogsList.isNotEmpty) {
+                              return _buildNoMoreVisitorsMessage();
+                            }
+
+                            // Show loading indicator at the bottom when loading more (only if there are more visitors to load)
+                            if (index == groupedLogsList.length &&
+                                _isLoadingMore &&
+                                successState.hasMoreData == true) {
                               return _buildPaginationLoadingIndicator();
                             }
                             final dateKey = groupedLogsList[index].key;
@@ -804,6 +858,9 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                     itemBuilder: (context, logIndex) {
                                       return VisitorLogItem(
                                         visitorLog: logsForDate[logIndex],
+                                        visitorCardEntryEnabled:
+                                            _visitorCardEntryEnabled,
+                                        onCardAssigned: _refreshVisitorLogList,
                                         onCheckOut: () {
                                           setState(() {
                                             logsForDate[logIndex]
@@ -1090,7 +1147,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                   child: TextFormField(
                                     controller: emailController,
                                     keyboardType: TextInputType.emailAddress,
-                                    cursorColor: Colors.black,
+                                    cursorColor: const Color(0xffF44336),
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
@@ -1795,10 +1852,10 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                                 isLoading = false;
                                               });
                                               Navigator.pop(context);
-                                              _showEnhancedSuccessToast(
-                                                title: 'Export Successful',
+                                              _showExportSuccessDialog(
+                                                title: '🎉 Export Successful!',
                                                 message:
-                                                    'Visitor logs have been exported and sent to your email',
+                                                    'Your visitor logs have been exported and sent to your registered email address. Please check your inbox.',
                                                 icon:
                                                     Icons.download_done_rounded,
                                               );
@@ -1872,7 +1929,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context), // Close dialog
-              child: Text(AppLocalizations.of(context)!.ok),
+              child: Text(AppLocalizations.of(context).ok),
             ),
           ],
         );
@@ -2283,7 +2340,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                               selectedId = filterOption;
                                             });
                                           },
-                                          activeColor: Colors.white,
+                                          activeThumbColor: Colors.white,
                                           activeTrackColor:
                                               Colors.green.shade600,
                                           inactiveThumbColor: Colors.grey[300],
@@ -2425,7 +2482,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
     await prefs.setInt('todayCheckoutLogsCount', currentCheckoutCount + 1);
   }
 
-  /// Enhanced success toast
+  /// Enhanced success toast with premium styling
   void _showEnhancedSuccessToast({
     required String title,
     required String message,
@@ -2433,34 +2490,254 @@ class _VisitorLogViewState extends State<VisitorLogView>
   }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(
-          children: [
-            Icon(icon, color: Colors.white),
-            SizedBox(width: 8),
-            Expanded(
+        content: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          child: Row(
+            children: [
+              // Enhanced icon container with gradient background
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF4CAF50), // Green
+                      Color(0xFF2E7D32), // Darker green
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4CAF50).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Enhanced text content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Title with enhanced typography
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Message with better readability
+                    Text(
+                      message,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Success indicator
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: const Color(0xFF1B5E20), // Dark green background
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+        elevation: 12,
+        action: SnackBarAction(
+          label: 'Dismiss',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Enhanced export success dialog with premium styling
+  void _showExportSuccessDialog({
+    required String title,
+    required String message,
+    required IconData icon,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible:
+          false, // Dialog cannot be dismissed by tapping outside
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                  // Success Icon with gradient background
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF4CAF50), // Green
+                          Color(0xFF2E7D32), // Darker green
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF4CAF50).withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      icon,
                       color: Colors.white,
+                      size: 50,
                     ),
                   ),
+                  const SizedBox(height: 24),
+
+                  // Title with enhanced typography
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF212427), // OneGate primary text color
+                      letterSpacing: 0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Message with better readability
                   Text(
                     message,
-                    style: TextStyle(color: Colors.white),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF57636C), // OneGate muted text color
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+
+                  // OK Button with OneGate theme
+                  Container(
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Color(0xFF4CAF50), // Green
+                          Color(0xFF2E7D32), // Darker green
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF4CAF50).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                        BoxShadow(
+                          color: const Color(0xFF4CAF50).withOpacity(0.1),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close dialog
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'OK',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 3),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -2524,6 +2801,49 @@ class _VisitorLogViewState extends State<VisitorLogView>
         margin: const EdgeInsets.all(16),
         duration: const Duration(milliseconds: 3000),
         elevation: 8,
+      ),
+    );
+  }
+
+  // Build "no more visitors to load" message widget
+  Widget _buildNoMoreVisitorsMessage() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.grey.shade200,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.grey.shade600,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'No more visitors to load',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2666,10 +2986,19 @@ class _VisitorLogViewState extends State<VisitorLogView>
 
   /// Enhanced empty state for no visitors today
   Widget _buildEnhancedEmptyVisitorsState() {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final availableHeight = screenHeight - keyboardHeight;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      height: availableHeight,
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 32 : 24,
+        vertical: isTablet ? 60 : 40,
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           // Enhanced animated icon
           TweenAnimationBuilder<double>(
@@ -2679,8 +3008,8 @@ class _VisitorLogViewState extends State<VisitorLogView>
               return Transform.translate(
                 offset: Offset(0, -10 + (10 * value)),
                 child: Container(
-                  width: 140,
-                  height: 140,
+                  width: isTablet ? 160 : 140,
+                  height: isTablet ? 160 : 140,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -2690,11 +3019,11 @@ class _VisitorLogViewState extends State<VisitorLogView>
                         const Color(0xffff5722).withOpacity(0.03),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(70),
+                    borderRadius: BorderRadius.circular(isTablet ? 80 : 70),
                   ),
                   child: Icon(
                     Icons.groups_outlined,
-                    size: 56,
+                    size: isTablet ? 64 : 56,
                     color: const Color(0xffF44336).withOpacity(0.6),
                   ),
                 ),
@@ -2702,7 +3031,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
             },
           ),
 
-          const SizedBox(height: 32),
+          SizedBox(height: isTablet ? 40 : 32),
 
           // Enhanced title with animation
           TweenAnimationBuilder<double>(
@@ -2716,7 +3045,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: const Color(0xff212427),
-                        fontSize: 26,
+                        fontSize: isTablet ? 30 : 26,
                         letterSpacing: -0.5,
                       ),
                 ),
@@ -2724,96 +3053,20 @@ class _VisitorLogViewState extends State<VisitorLogView>
             },
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: isTablet ? 20 : 16),
 
           // Enhanced description
-          Text(
-            'It\'s quiet today! When visitors check in through the gate, they will appear here.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: const Color(0xff57636C),
-                  fontSize: 16,
-                  height: 1.6,
-                  fontWeight: FontWeight.w400,
-                ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Enhanced information card
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xffF44336).withOpacity(0.05),
-                  const Color(0xffff5722).withOpacity(0.02),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xffF44336).withOpacity(0.1),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xffF44336).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.info_outline_rounded,
-                        color: Color(0xffF44336),
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Visitor Management',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey[800],
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Track all visitor entries and exits',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    _buildFeatureItem(Icons.login_rounded, 'Check-ins'),
-                    const SizedBox(width: 24),
-                    _buildFeatureItem(Icons.logout_rounded, 'Check-outs'),
-                    const SizedBox(width: 24),
-                    _buildFeatureItem(Icons.schedule_rounded, 'Real-time'),
-                  ],
-                ),
-              ],
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: isTablet ? 40 : 20),
+            child: Text(
+              'No visitors found today.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: const Color(0xff57636C),
+                    fontSize: isTablet ? 18 : 16,
+                    height: 1.6,
+                    fontWeight: FontWeight.w400,
+                  ),
             ),
           ),
         ],
@@ -2849,27 +3102,27 @@ class _VisitorLogViewState extends State<VisitorLogView>
   }
 
   /// Helper widget for feature items
-  Widget _buildFeatureItem(IconData icon, String label) {
+  Widget _buildFeatureItem(IconData icon, String label, bool isTablet) {
     return Expanded(
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(isTablet ? 10 : 8),
             decoration: BoxDecoration(
               color: const Color(0xffF44336).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
             ),
             child: Icon(
               icon,
               color: const Color(0xffF44336),
-              size: 20,
+              size: isTablet ? 24 : 20,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: isTablet ? 10 : 8),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: isTablet ? 14 : 12,
               fontWeight: FontWeight.w500,
               color: Colors.grey[700],
             ),
@@ -2898,11 +3151,15 @@ class _VisitorLogViewState extends State<VisitorLogView>
 class VisitorLogItem extends StatefulWidget {
   final VisitorLog visitorLog;
   final Function onCheckOut;
+  final bool visitorCardEntryEnabled;
+  final VoidCallback? onCardAssigned;
 
   const VisitorLogItem({
     Key? key,
     required this.visitorLog,
     required this.onCheckOut,
+    required this.visitorCardEntryEnabled,
+    this.onCardAssigned,
   }) : super(key: key);
 
   @override
@@ -2972,6 +3229,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                           image: widget.visitorLog.visitor!.visitor_image,
                           unitList: unitList,
                           visitorLog: widget.visitorLog,
+                          onCardAssigned: widget.onCardAssigned,
                         ),
                       ),
                     );
@@ -3174,9 +3432,11 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             ],
                           ),
                         ),
-                      // Show visitor ID card icon + number whenever a card number exists
+                      // Show visitor ID card icon + number only when card number exists AND visitor card entry is enabled
                       (widget.visitorLog.visitor_card_number != null &&
-                              widget.visitorLog.visitor_card_number!.isNotEmpty)
+                              widget
+                                  .visitorLog.visitor_card_number!.isNotEmpty &&
+                              widget.visitorCardEntryEnabled)
                           ? Container(
                               margin: const EdgeInsets.only(left: 8),
                               padding: const EdgeInsets.symmetric(
@@ -3230,72 +3490,86 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                               ),
                             )
                           : Spacer(),
-                      // Show Assign Card when entry is not from gatekeeper and no card is set
+                      // Show Assign Card when entry is not from gatekeeper, no card is set, and visitor card entry is enabled
                       (widget.visitorLog.initiated_from != "gatekeeper") &&
                               (widget.visitorLog.visitor_card_number == null ||
-                                  widget
-                                      .visitorLog.visitor_card_number!.isEmpty)
-                          ? Container(
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Color(0xff212121),
-                                    Color(0xff424242),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                ),
-                                onPressed: () {
-                                  if (widget.visitorLog.visitor_id == null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content:
-                                            Text('Error: Visitor ID not found'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => AssignCardPopup(
-                                      visitorId: widget.visitorLog.visitor_id!,
-                                      visitorName:
-                                          widget.visitorLog.visitor?.name ??
-                                              'Visitor',
-                                      onCardAssigned: (cardNumber) {
-                                        // Refresh the list to show updated card
-                                        setState(() {});
-                                      },
+                                  widget.visitorLog.visitor_card_number!
+                                      .isEmpty) &&
+                              widget.visitorCardEntryEnabled
+                          ? GestureDetector(
+                              onTap: () {
+                                if (widget.visitorLog.visitor_id == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content:
+                                          Text('Error: Visitor ID not found'),
+                                      backgroundColor: Colors.red,
                                     ),
                                   );
-                                },
+                                  return;
+                                }
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AssignCardPopup(
+                                    visitorId: widget.visitorLog.visitor_id!,
+                                    visitorName:
+                                        widget.visitorLog.visitor?.name ??
+                                            'Visitor',
+                                    onCardAssigned: (cardNumber) {
+                                      // Refresh the list to show updated card
+                                      setState(() {});
+                                      // Trigger visitor log list refresh
+                                      if (widget.onCardAssigned != null) {
+                                        widget.onCardAssigned!();
+                                      }
+                                    },
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xff212427),
+                                      Color(0xff57636C)
+                                    ],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.credit_card, size: 16),
-                                    const SizedBox(width: 4),
+                                  children: const [
+                                    Icon(
+                                      Icons.credit_card,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                    SizedBox(width: 6),
                                     Text(
                                       'Assign Card',
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                        letterSpacing: 0.3,
                                       ),
                                     ),
                                   ],
@@ -3691,15 +3965,15 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xff2196F3),
-                      const Color(0xff1976D2),
+                    colors: const [
+                      Color(0xff4CAF50),
+                      Color(0xff388E3C),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xff2196F3).withOpacity(0.3),
+                      color: const Color(0xff4CAF50).withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -3707,13 +3981,13 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
+                  children: const [
                     Icon(
                       Icons.how_to_reg,
                       color: Colors.white,
                       size: 12,
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4),
                     Text(
                       "Pre-approved",
                       style: TextStyle(

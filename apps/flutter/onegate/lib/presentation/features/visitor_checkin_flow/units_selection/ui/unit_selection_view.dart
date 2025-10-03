@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:common_widgets/common_widgets.dart';
-import 'package:common_widgets/loading_view.dart';
 import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -882,7 +881,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         ),
         collapsedIconColor: Theme.of(context).colorScheme.onSurface,
         children: memberDetails.isEmpty
-            ? [Text(AppLocalizations.of(context)!.noMembersAvailable)]
+            ? [Text(AppLocalizations.of(context).noMembersAvailable)]
             : _buildMemberDetailsList(memberDetails, member),
       ),
     );
@@ -1235,7 +1234,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         ),
       ),
       title: Text(
-        AppLocalizations.of(context)!.select,
+        AppLocalizations.of(context).select,
         style: TextStyle(
           color: const Color(0xff212427),
           fontSize: isTablet ? 24 : 20,
@@ -1351,7 +1350,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16),
                 child: Text(
-                  AppLocalizations.of(context)!.selectUnit,
+                  AppLocalizations.of(context).selectUnit,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -1360,7 +1359,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16),
                 child: Text(
-                  AppLocalizations.of(context)!.societyOffice,
+                  AppLocalizations.of(context).societyOffice,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -1458,7 +1457,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               ),
               SizedBox(height: isTablet ? 24 : 20),
               Text(
-                AppLocalizations.of(context)!.societyOffice,
+                AppLocalizations.of(context).societyOffice,
                 style: TextStyle(
                   fontSize: isTablet ? 24 : 20,
                   fontWeight: FontWeight.w700,
@@ -1546,7 +1545,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                             ),
                             SizedBox(width: isTablet ? 16 : 12),
                             Text(
-                              AppLocalizations.of(context)!.tapToViewDetails,
+                              AppLocalizations.of(context).tapToViewDetails,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: isTablet ? 18 : 16,
@@ -2136,7 +2135,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     _filteredMembersNotifier.value = _allMembers;
                   }
                 },
-                cursorColor: Colors.black,
+                cursorColor: const Color(0xffF44336),
               ),
             ),
           ),
@@ -2296,11 +2295,17 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           valueListenable: _filteredMembersNotifier,
           builder: (context, filteredMembers, child) {
             if (_isLoading) {
-              return const LoaderView();
+              return const DashboardLoader(
+                title: 'Loading Units',
+                subtitle: 'Please wait while we fetch available units...',
+              );
             }
 
             if (_isSearching) {
-              return const LoaderView();
+              return const DashboardLoader(
+                title: 'Loading Units',
+                subtitle: 'Please wait while we fetch available units...',
+              );
             }
 
             if (filteredMembers.isEmpty) {
@@ -2447,7 +2452,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 });
               },
               icon: const Icon(Icons.clear_all),
-              label: Text(AppLocalizations.of(context)!.clearSearch),
+              label: Text(AppLocalizations.of(context).clearSearch),
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xffF44336),
                 padding: EdgeInsets.symmetric(
@@ -2815,18 +2820,56 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   ),
                                 ],
                               ),
-                              child: CustomLargeBtn(
-                                text: 'Confirm',
-                                onPressed: selectedMembers.isEmpty ||
+                              child: Container(
+                                width: double.infinity,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xff212427),
+                                      Color(0xff57636C)
+                                    ],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(16),
+                                    onTap:
+                                        selectedMembers.isEmpty || _isConfirming
+                                            ? null
+                                            : () => _handleSelectionSubmit(
+                                                selectedMembers),
+                                    child: Center(
+                                      child: Text(
                                         _isConfirming
-                                    ? null
-                                    : () =>
-                                        _handleSelectionSubmit(selectedMembers),
-                                disabled:
-                                    selectedMembers.isEmpty || _isConfirming,
-                                isLoading: _isConfirming,
-                                useBlackToGreyGradient: true,
-                                width: MediaQuery.of(context).size.width * 0.75,
+                                            ? 'Processing...'
+                                            : 'Confirm',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),

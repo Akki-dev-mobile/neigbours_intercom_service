@@ -118,6 +118,12 @@ class GatekeeperDashboardBloc
     if (_hasNavigated) return;
     _hasNavigated = true;
 
+    // Emit loading state first
+    emit(GDInAndOutLoadingState());
+
+    // Wait for a short duration to show the loader
+    await Future.delayed(const Duration(milliseconds: 1500));
+
     // Emit navigation state
     emit(GDInAndOutButtonPressedState());
 
@@ -134,6 +140,12 @@ class GatekeeperDashboardBloc
     if (_hasNavigated) return;
     _hasNavigated = true;
 
+    // Emit loading state first
+    emit(GDVisitorsInLoadingState());
+
+    // Wait for a short duration to show the loader
+    await Future.delayed(const Duration(milliseconds: 1500));
+
     // Emit navigation state
     emit(GDVisitorsInButtonPressedState());
 
@@ -149,6 +161,12 @@ class GatekeeperDashboardBloc
       Emitter<GatekeeperDashboardState> emit) async {
     if (_hasNavigated) return;
     _hasNavigated = true;
+
+    // Emit loading state first
+    emit(GDVisitorsOutLoadingState());
+
+    // Wait for a short duration to show the loader
+    await Future.delayed(const Duration(milliseconds: 1500));
 
     emit(GDVisitorsOutButtonPressedState());
 

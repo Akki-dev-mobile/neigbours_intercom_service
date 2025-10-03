@@ -305,6 +305,9 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                 mobile: mobile ?? visitor.mobile!,
                 guestname: name ?? visitor.name ?? "",
                 isFromQRScan: true, // Flag to indicate this is from QR scan
+                isGatekeeperQRPasscodeEntry:
+                    widget.isGatekeeperQRPasscodeEntry ??
+                        false, // Pass the gatekeeper QR flag
                 visitorLog: visitorLog,
               ),
             ),
@@ -491,14 +494,14 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                 size: 80, color: Colors.grey.shade300),
             const SizedBox(height: 24),
             Text(
-              AppLocalizations.of(context)!.cameraPermissionRequired,
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              AppLocalizations.of(context).cameraPermissionRequired,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Text(
-                AppLocalizations.of(context)!.needCameraAccessForQR,
+                AppLocalizations.of(context).needCameraAccessForQR,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
               ),
@@ -515,8 +518,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                 elevation: 0,
               ),
               onPressed: _checkCameraPermission,
-              child: Text(AppLocalizations.of(context)!.grantAccess,
-                  style: TextStyle(fontSize: 16)),
+              child: Text(AppLocalizations.of(context).grantAccess,
+                  style: const TextStyle(fontSize: 16)),
             ),
           ],
         ),
@@ -790,12 +793,12 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
+                        gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            const Color(0xFFF44336), // OneGate primary red
-                            const Color(0xFFff5722), // OneGate accent color
+                            Color(0xFFF44336), // OneGate primary red
+                            Color(0xFFff5722), // OneGate accent color
                           ],
                         ),
                         shape: BoxShape.circle,
@@ -820,7 +823,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                                 scale: 0.8 + (0.2 * value),
                                 child: Opacity(
                                   opacity: 0.7 + (0.3 * value),
-                                  child: Icon(
+                                  child: const Icon(
                                     Icons.qr_code_scanner_rounded,
                                     color: Colors.white,
                                     size: 40,
@@ -848,12 +851,12 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
                     // Enhanced Title with Typography
                     ShaderMask(
-                      shaderCallback: (bounds) => LinearGradient(
+                      shaderCallback: (bounds) => const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          const Color(0xFFF44336), // OneGate primary red
-                          const Color(0xFFff5722), // OneGate accent color
+                          Color(0xFFF44336), // OneGate primary red
+                          Color(0xFFff5722), // OneGate accent color
                         ],
                       ).createShader(bounds),
                       child: const Text(
@@ -882,12 +885,12 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                           width: 1,
                         ),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Please wait while we process the information',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: const Color(
-                              0xFF57636C), // OneGate secondary text color
+                          color:
+                              Color(0xFF57636C), // OneGate secondary text color
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           height: 1.4,

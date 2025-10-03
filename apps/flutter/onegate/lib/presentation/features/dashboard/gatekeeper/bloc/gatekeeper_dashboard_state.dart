@@ -51,6 +51,13 @@ class GDVisitorsInButtonPressedState extends GatekeeperDashboardActionState {}
 
 class GDVisitorsOutButtonPressedState extends GatekeeperDashboardActionState {}
 
+// Loading states for navigation
+class GDInAndOutLoadingState extends GatekeeperDashboardState {}
+
+class GDVisitorsInLoadingState extends GatekeeperDashboardState {}
+
+class GDVisitorsOutLoadingState extends GatekeeperDashboardState {}
+
 class GDInputFieldPressedState extends GatekeeperDashboardActionState {}
 
 class GatekeeperSearchVisitorState extends GatekeeperDashboardState {}

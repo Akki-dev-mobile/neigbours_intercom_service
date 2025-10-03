@@ -61,15 +61,15 @@ class DashboardBlocks extends StatelessWidget {
       width: isTablet ? 160 : 120,
       height: isTablet ? 280 : 240,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xffF2D8A5),
-            const Color(0xffE6C578),
-            const Color(0xffF2D8A5),
+            Color(0xffF2D8A5),
+            Color(0xffE6C578),
+            Color(0xffF2D8A5),
           ],
-          stops: const [0.0, 0.5, 1.0],
+          stops: [0.0, 0.5, 1.0],
         ),
         borderRadius: BorderRadius.circular(isTablet ? 24 : 20),
         boxShadow: [
@@ -140,10 +140,10 @@ class DashboardBlocks extends StatelessWidget {
                         child: SizedBox(
                           width: isTablet ? 24 : 20,
                           height: isTablet ? 24 : 20,
-                          child: CircularProgressIndicator(
+                          child: const CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              const Color(0xffF2D8A5),
+                              Color(0xffF2D8A5),
                             ),
                           ),
                         ),
@@ -214,15 +214,15 @@ class DashboardBlocks extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       height: isTablet ? 130 : 110,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xffCAF1D1),
-            const Color(0xffA8E6C1),
-            const Color(0xffCAF1D1),
+            Color(0xffCAF1D1),
+            Color(0xffA8E6C1),
+            Color(0xffCAF1D1),
           ],
-          stops: const [0.0, 0.5, 1.0],
+          stops: [0.0, 0.5, 1.0],
         ),
         borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
         boxShadow: [
@@ -324,10 +324,10 @@ class DashboardBlocks extends StatelessWidget {
                           child: SizedBox(
                             width: isTablet ? 16 : 12,
                             height: isTablet ? 16 : 12,
-                            child: CircularProgressIndicator(
+                            child: const CircularProgressIndicator(
                               strokeWidth: 1.5,
                               valueColor: AlwaysStoppedAnimation<Color>(
-                                const Color(0xffCAF1D1),
+                                Color(0xffCAF1D1),
                               ),
                             ),
                           ),
@@ -363,15 +363,15 @@ class DashboardBlocks extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       height: isTablet ? 130 : 110,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xffFFE5E0),
-            const Color(0xffFFD1CC),
-            const Color(0xffFFE5E0),
+            Color(0xffFFE5E0),
+            Color(0xffFFD1CC),
+            Color(0xffFFE5E0),
           ],
-          stops: const [0.0, 0.5, 1.0],
+          stops: [0.0, 0.5, 1.0],
         ),
         borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
         boxShadow: [
@@ -470,10 +470,10 @@ class DashboardBlocks extends StatelessWidget {
                         child: SizedBox(
                           width: isTablet ? 16 : 12,
                           height: isTablet ? 16 : 12,
-                          child: CircularProgressIndicator(
+                          child: const CircularProgressIndicator(
                             strokeWidth: 1.5,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              const Color(0xffFFE5E0),
+                              Color(0xffFFE5E0),
                             ),
                           ),
                         ),

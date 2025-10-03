@@ -7,19 +7,22 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/presentation/widgets/assign_card_popup.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class VisitorDetailsScreen extends StatefulWidget {
   final VisitorLog visitorLog;
   String? image;
   String? unitList;
   String? assignedCardNumber; // Add parameter for assigned card number
+  final VoidCallback? onCardAssigned; // Callback to refresh visitor log list
 
   VisitorDetailsScreen(
       {Key? key,
       required this.visitorLog,
       this.unitList,
       this.image,
-      this.assignedCardNumber})
+      this.assignedCardNumber,
+      this.onCardAssigned})
       : super(key: key);
 
   @override
@@ -32,6 +35,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
   final double _maxImageHeight = 300.0; // Maximum expanded height
   bool _isExpanded = false;
   String? _assignedCardNumber;
+  bool _visitorCardEntryEnabled = false;
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
@@ -43,7 +47,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
 
   /// Check if Assign Card button should be shown
   bool _shouldShowAssignCardButton() {
-    // API-driven: show Assign Card when entry is not from gatekeeper and no card is set
+    // API-driven: show Assign Card when entry is not from gatekeeper, no card is set, and visitor card entry is enabled
     final isNotGatekeeper = widget.visitorLog.initiated_from != "gatekeeper";
 
     final currentCardNumber =
@@ -51,7 +55,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
     final hasNoCardNumber =
         currentCardNumber == null || currentCardNumber.isEmpty;
 
-    return isNotGatekeeper && hasNoCardNumber;
+    return isNotGatekeeper && hasNoCardNumber && _visitorCardEntryEnabled;
   }
 
   /// Get the current card number (either assigned or original)
@@ -81,6 +85,10 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
           setState(() {
             _assignedCardNumber = cardNumber;
           });
+          // Trigger visitor log list refresh
+          if (widget.onCardAssigned != null) {
+            widget.onCardAssigned!();
+          }
         },
       ),
     );
@@ -100,6 +108,9 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
       _assignedCardNumber = widget.assignedCardNumber;
     }
 
+    // Load visitor card entry setting
+    _loadVisitorCardSetting();
+
     super.initState();
   }
 
@@ -115,6 +126,13 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
         _imageHeight = 160.0;
         _isExpanded = false;
       }
+    });
+  }
+
+  Future<void> _loadVisitorCardSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _visitorCardEntryEnabled = prefs.getBool('visitorCardNumber') ?? false;
     });
   }
 
@@ -369,7 +387,8 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                                     ),
                                   )
                                 : _getCurrentCardNumber() != null &&
-                                        _getCurrentCardNumber()!.isNotEmpty
+                                        _getCurrentCardNumber()!.isNotEmpty &&
+                                        _visitorCardEntryEnabled
                                     ? _buildInfoTile(
                                         icon: Icons.badge,
                                         title: "Card Number",
@@ -416,7 +435,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                             ),
                           ],
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
@@ -424,7 +443,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                               color: Colors.white,
                               size: 14,
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4),
                             Text(
                               "Pre-approved",
                               style: TextStyle(

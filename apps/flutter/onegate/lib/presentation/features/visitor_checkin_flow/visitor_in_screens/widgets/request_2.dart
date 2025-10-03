@@ -51,7 +51,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
   // Different Lottie animations for Express Entry vs Gatekeeper flows
   static const Map<RequestType, String> expressEntryLottieAnimations = {
     RequestType.allowByGatekeeper:
-        'https://assets.lottiefiles.com/packages/lf20_jcikwtux.json', // Pre-approval animation
+        'assets/animations/pre-approved.json', // Pre-approval animation (local file)
   };
 
   static const Map<RequestType, String> gatekeeperLottieAnimations = {
@@ -60,7 +60,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
   };
 
   String requestMessages(BuildContext context, RequestType type) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return {
           RequestType.allowByGatekeeper: _shouldUseExpressEntryText()
               ? l10n
@@ -153,12 +153,12 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
+                      gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          const Color(0xff4CAF50),
-                          const Color(0xff2E7D32),
+                          Color(0xff4CAF50),
+                          Color(0xff2E7D32),
                         ],
                       ),
                       shape: BoxShape.circle,
@@ -179,13 +179,12 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                   const SizedBox(height: 24),
 
                   // Title with OneGate typography
-                  Text(
+                  const Text(
                     'Success!',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color:
-                          const Color(0xff212427), // OneGate primary text color
+                      color: Color(0xff212427), // OneGate primary text color
                       letterSpacing: 0.5,
                     ),
                     textAlign: TextAlign.center,
@@ -193,13 +192,12 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                   const SizedBox(height: 8),
 
                   // Subtitle
-                  Text(
+                  const Text(
                     'Your visit has been processed',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color:
-                          const Color(0xff57636C), // OneGate muted text color
+                      color: Color(0xff57636C), // OneGate muted text color
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -321,10 +319,10 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
         Expanded(
           child: Text(
             text,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               height: 1.5,
-              color: const Color(0xff212427), // OneGate primary text color
+              color: Color(0xff212427), // OneGate primary text color
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -335,7 +333,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     const requestType = RequestType.allowByGatekeeper;
     log(widget.status.toString());
     return LoadingOverlay(
@@ -584,7 +582,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                   context: context,
                   icon: Icons.phone_outlined,
                   iconColor: Colors.green,
-                  label: AppLocalizations.of(context)!.mobile,
+                  label: AppLocalizations.of(context).mobile,
                   value: widget.visitor.mobile ?? "",
                 ),
                 const SizedBox(height: 10),
@@ -596,9 +594,9 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                         context: context,
                         icon: Icons.location_on_outlined,
                         iconColor: Colors.orange,
-                        label: AppLocalizations.of(context)!.comingFrom,
+                        label: AppLocalizations.of(context).comingFrom,
                         value: widget.visitorLog?.visitor_coming_from ??
-                            AppLocalizations.of(context)!.notSpecified,
+                            AppLocalizations.of(context).notSpecified,
                       ),
                       const SizedBox(height: 10),
                     ],
@@ -608,11 +606,11 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                   icon: _getPurposeIcon(
                       widget.visitorLog?.visitor_purpose_Category_name),
                   iconColor: Colors.orange,
-                  label: AppLocalizations.of(context)!.purpose,
+                  label: AppLocalizations.of(context).purpose,
                   value: widget.visitor.isStaff == true
-                      ? AppLocalizations.of(context)!.staff
+                      ? AppLocalizations.of(context).staff
                       : widget.visitorLog?.visitor_purpose_Category_name ??
-                          AppLocalizations.of(context)!.notSpecified,
+                          AppLocalizations.of(context).notSpecified,
                 ),
               ],
             ),
@@ -670,10 +668,7 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
         Center(
           child: SizedBox(
             height: 250,
-            child: Lottie.network(
-              _getLottieAnimationUrl(requestType),
-              fit: BoxFit.contain,
-            ),
+            child: _buildLottieAnimation(requestType),
           ),
         ),
         const SizedBox(height: 20),
@@ -694,6 +689,25 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
         ),
       ],
     );
+  }
+
+  Widget _buildLottieAnimation(RequestType requestType) {
+    String animationPath = _getLottieAnimationUrl(requestType);
+
+    // Check if it's a local asset or network URL
+    if (animationPath.startsWith('assets/')) {
+      // Use local asset
+      return Lottie.asset(
+        animationPath,
+        fit: BoxFit.contain,
+      );
+    } else {
+      // Use network URL
+      return Lottie.network(
+        animationPath,
+        fit: BoxFit.contain,
+      );
+    }
   }
 
   String _getLottieAnimationUrl(RequestType requestType) {
@@ -735,7 +749,7 @@ class LoadingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Stack(
       children: [
         child,

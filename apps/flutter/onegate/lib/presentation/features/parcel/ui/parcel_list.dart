@@ -10,10 +10,8 @@ import 'package:flutter_onegate/presentation/features/parcel/ui/parcel_details.d
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../bloc/parcel_state.dart';
-import 'package:flutter_onegate/presentation/widgets/building_dropdown.dart';
-import 'package:common_widgets/loading_view.dart';
+import 'package:common_widgets/dashboard_loader.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 class ParcelList extends StatefulWidget {
@@ -28,8 +26,7 @@ class _ParcelListState extends State<ParcelList> {
 
   TextEditingController searchController = TextEditingController();
   List<dynamic> filteredParcels = [];
-  Timer? _refreshTimer; // Add this
-  bool _isRefreshing = false; // Add this
+  Timer? _refreshTimer;
   late TextEditingController _searchController;
   late FocusNode _searchFocusNode;
   String _searchQuery = '';
@@ -68,33 +65,13 @@ class _ParcelListState extends State<ParcelList> {
     super.dispose();
   }
 
-  Future<void> _refreshPage() async {
-    if (!mounted || _isRefreshing) return;
-
-    setState(() {
-      _isRefreshing = true;
-    });
-
-    try {
-      context.read<ParcelBloc>().add(FetchParcels());
-    } catch (e) {
-      debugPrint("Error refreshing ParcelBloc: $e");
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isRefreshing = false;
-        });
-      }
-    }
-  }
-
   Widget _buildSearchField() {
     return Column(
       children: [
         // Search field
         CustomForm.textField(
           "",
-          hintText: AppLocalizations.of(context)!.searchMembers,
+          hintText: AppLocalizations.of(context).searchMembers,
           titleColor: Theme.of(context).colorScheme.onSurface,
           hintColor: Theme.of(context).colorScheme.onSurface,
           focusNode: _searchFocusNode,
@@ -462,6 +439,11 @@ class _ParcelListState extends State<ParcelList> {
   }
 
   Widget parsallist(List<dynamic> parcels, final String searchQuery) {
+    // If no parcels at all, show the enhanced empty state
+    if (parcels.isEmpty) {
+      return _buildEnhancedEmptyState(context);
+    }
+
     final query = searchQuery.toLowerCase();
     List<dynamic> filteredParcels = parcels.where((parcel) {
       final memberName = parcel['member_name']?.toString().toLowerCase() ?? '';
@@ -640,7 +622,7 @@ class _ParcelListState extends State<ParcelList> {
               SizedBox(height: isTablet ? 32 : 24),
               Container(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
+                  gradient: const LinearGradient(
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
@@ -698,118 +680,120 @@ class _ParcelListState extends State<ParcelList> {
 
   Widget _buildEnhancedEmptyState(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final availableHeight = screenHeight - keyboardHeight;
 
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.only(top: isTablet ? 100 : 80),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Enhanced icon container (staff style)
-            Container(
-              padding: EdgeInsets.all(isTablet ? 40 : 32),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.red.shade50,
-                    Colors.red.shade100.withOpacity(0.3),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(
-                  color: Colors.red.shade200.withOpacity(0.3),
-                  width: 2,
-                ),
-              ),
-              child: Icon(
-                Symbols.package_2,
-                size: isTablet ? 80 : 64,
-                color: Colors.red.shade300,
-              ),
-            ),
-            SizedBox(height: isTablet ? 32 : 24),
-
-            // Enhanced title (staff style)
-            Text(
-              AppLocalizations.of(context)!.noParcelsAvailable,
-              style: TextStyle(
-                color: const Color(0xff212427),
-                fontSize: isTablet ? 24 : 20,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.3,
-              ),
-            ),
-            SizedBox(height: isTablet ? 12 : 8),
-
-            // Enhanced subtitle (staff style)
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: isTablet ? 60 : 40),
-              child: Text(
-                AppLocalizations.of(context)!.noParcelRegistered,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: isTablet ? 16 : 14,
-                  height: 1.4,
-                ),
-              ),
-            ),
-            SizedBox(height: isTablet ? 40 : 32),
-
-            // Enhanced refresh button (staff style)
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    Color(0xff212427),
-                    Color(0xff57636C),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+    return Container(
+      height: availableHeight,
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 32 : 24,
+        vertical: isTablet ? 60 : 40,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          // Enhanced animated icon
+          TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 1500),
+            tween: Tween<double>(begin: 0, end: 1),
+            builder: (context, value, child) {
+              return Transform.translate(
+                offset: Offset(0, -10 + (10 * value)),
+                child: Container(
+                  width: isTablet ? 160 : 140,
+                  height: isTablet ? 160 : 140,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xffF44336).withOpacity(0.08),
+                        const Color(0xffff5722).withOpacity(0.03),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(isTablet ? 80 : 70),
                   ),
-                ],
-              ),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // Refresh parcel list
-                  context.read<ParcelBloc>().add(FetchParcels());
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isTablet ? 32 : 24,
-                    vertical: isTablet ? 16 : 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  child: Icon(
+                    Symbols.package_2,
+                    size: isTablet ? 64 : 56,
+                    color: const Color(0xffF44336).withOpacity(0.6),
                   ),
                 ),
-                icon: const Icon(
-                  Icons.refresh_rounded,
-                  color: Colors.white,
+              );
+            },
+          ),
+
+          SizedBox(height: isTablet ? 40 : 32),
+
+          // Enhanced title with animation
+          TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 800),
+            tween: Tween<double>(begin: 0, end: 1),
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Text(
+                  'No Parcels Today',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xff212427),
+                        fontSize: isTablet ? 30 : 26,
+                        letterSpacing: -0.5,
+                      ),
                 ),
-                label: Text(
-                  AppLocalizations.of(context)!.refresh,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: isTablet ? 16 : 14,
+              );
+            },
+          ),
+
+          SizedBox(height: isTablet ? 20 : 16),
+
+          // Enhanced description
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: isTablet ? 40 : 20),
+            child: Text(
+              'No parcels found today.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: const Color(0xff57636C),
+                    fontSize: isTablet ? 18 : 16,
+                    height: 1.6,
+                    fontWeight: FontWeight.w400,
                   ),
-                ),
-              ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Helper widget for feature items
+  Widget _buildFeatureItem(IconData icon, String label, bool isTablet) {
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(isTablet ? 10 : 8),
+            decoration: BoxDecoration(
+              color: const Color(0xffF44336).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
+            ),
+            child: Icon(
+              icon,
+              color: const Color(0xffF44336),
+              size: isTablet ? 24 : 20,
+            ),
+          ),
+          SizedBox(height: isTablet ? 10 : 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: isTablet ? 14 : 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[700],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -851,7 +835,7 @@ class _ParcelListState extends State<ParcelList> {
 
             // Enhanced title (staff style)
             Text(
-              AppLocalizations.of(context)!.somethingWentWrong,
+              AppLocalizations.of(context).somethingWentWrong,
               style: TextStyle(
                 color: const Color(0xff212427),
                 fontSize: isTablet ? 24 : 20,
@@ -865,7 +849,7 @@ class _ParcelListState extends State<ParcelList> {
             Padding(
               padding: EdgeInsets.symmetric(horizontal: isTablet ? 60 : 40),
               child: Text(
-                AppLocalizations.of(context)!.errorLoadingParcelList,
+                AppLocalizations.of(context).errorLoadingParcelList,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey.shade600,
@@ -879,7 +863,7 @@ class _ParcelListState extends State<ParcelList> {
             // Enhanced retry button (staff style)
             Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
+                gradient: const LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [
@@ -917,7 +901,7 @@ class _ParcelListState extends State<ParcelList> {
                   color: Colors.white,
                 ),
                 label: Text(
-                  AppLocalizations.of(context)!.tryAgain,
+                  AppLocalizations.of(context).tryAgain,
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -942,11 +926,11 @@ class _ParcelListState extends State<ParcelList> {
         backButtonPressed: () {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => GateDashboardView()),
+            MaterialPageRoute(builder: (context) => const GateDashboardView()),
             (Route<dynamic> route) => false,
           );
         },
-        pageTitle: AppLocalizations.of(context)!.parcels,
+        pageTitle: AppLocalizations.of(context).parcels,
         pageBody: Column(
           children: [
             Padding(
@@ -960,7 +944,10 @@ class _ParcelListState extends State<ParcelList> {
               child: BlocBuilder<ParcelBloc, ParcelState>(
                 builder: (context, state) {
                   if (state is ParcelLoading) {
-                    return const LoaderView();
+                    return const DashboardLoader(
+                      title: 'Loading Parcels',
+                      subtitle: 'Please wait while we fetch parcel data...',
+                    );
                   } else if (state is ParcelLoaded) {
                     return Stack(
                       children: [
@@ -979,14 +966,5 @@ class _ParcelListState extends State<ParcelList> {
         ),
       ),
     );
-  }
-
-  void _launchCaller(String number) async {
-    final url = 'tel:$number';
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      throw 'Could not launch $url';
-    }
   }
 }

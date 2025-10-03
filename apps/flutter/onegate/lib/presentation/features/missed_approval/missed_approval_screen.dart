@@ -21,7 +21,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:common_widgets/loading_view.dart';
+import 'package:common_widgets/dashboard_loader.dart';
 import 'package:flutter/services.dart';
 
 // Timer Service
@@ -395,6 +395,127 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
     }
   }
 
+  /// Enhanced empty state with OneGate new UI design
+  Widget _buildEnhancedEmptyState() {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final availableHeight = screenHeight - keyboardHeight;
+
+    return Container(
+      height: availableHeight,
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 32 : 24,
+        vertical: isTablet ? 60 : 40,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          // Enhanced animated icon
+          TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 1500),
+            tween: Tween<double>(begin: 0, end: 1),
+            builder: (context, value, child) {
+              return Transform.translate(
+                offset: Offset(0, -10 + (10 * value)),
+                child: Container(
+                  width: isTablet ? 160 : 140,
+                  height: isTablet ? 160 : 140,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xffF44336).withOpacity(0.08),
+                        const Color(0xffff5722).withOpacity(0.03),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(isTablet ? 80 : 70),
+                  ),
+                  child: Icon(
+                    Icons.approval_outlined,
+                    size: isTablet ? 64 : 56,
+                    color: const Color(0xffF44336).withOpacity(0.6),
+                  ),
+                ),
+              );
+            },
+          ),
+
+          SizedBox(height: isTablet ? 40 : 32),
+
+          // Enhanced title with animation
+          TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 800),
+            tween: Tween<double>(begin: 0, end: 1),
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Text(
+                  'No Missed Approvals',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xff212427),
+                        fontSize: isTablet ? 30 : 26,
+                        letterSpacing: -0.5,
+                      ),
+                ),
+              );
+            },
+          ),
+
+          SizedBox(height: isTablet ? 20 : 16),
+
+          // Enhanced description
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: isTablet ? 40 : 20),
+            child: Text(
+              'No missed approvals found today.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: const Color(0xff57636C),
+                    fontSize: isTablet ? 18 : 16,
+                    height: 1.6,
+                    fontWeight: FontWeight.w400,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Helper widget for feature items
+  Widget _buildFeatureItem(IconData icon, String label, bool isTablet) {
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(isTablet ? 10 : 8),
+            decoration: BoxDecoration(
+              color: const Color(0xffF44336).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
+            ),
+            child: Icon(
+              icon,
+              color: const Color(0xffF44336),
+              size: isTablet ? 24 : 20,
+            ),
+          ),
+          SizedBox(height: isTablet ? 10 : 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: isTablet ? 14 : 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[700],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSearchField() {
     return Column(
       children: [
@@ -563,7 +684,11 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting &&
                       !_isRefreshing) {
-                    return const LoaderView();
+                    return const DashboardLoader(
+                      title: 'Loading Missed Approvals',
+                      subtitle:
+                          'Please wait while we fetch pending approvals...',
+                    );
                   }
 
                   if (snapshot.hasError) {
@@ -587,34 +712,7 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
                   }
 
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.inbox_outlined,
-                            size: 48,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'No missed approvals',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Pull to refresh',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
+                    return _buildEnhancedEmptyState();
                   }
 
                   return ApprovalsList(

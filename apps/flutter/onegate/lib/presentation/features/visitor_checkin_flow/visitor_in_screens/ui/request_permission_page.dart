@@ -91,16 +91,16 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   };
 
   Map<RequestType, String> _getRequestMessages(BuildContext context) => {
-        RequestType.approved: AppLocalizations.of(context)!.visitorApproved,
-        RequestType.rejected: AppLocalizations.of(context)!.visitorRejected,
-        RequestType.leaveAtGate: AppLocalizations.of(context)!.leaveAtGate,
+        RequestType.approved: AppLocalizations.of(context).visitorApproved,
+        RequestType.rejected: AppLocalizations.of(context).visitorRejected,
+        RequestType.leaveAtGate: AppLocalizations.of(context).leaveAtGate,
         RequestType.notRecheable:
-            AppLocalizations.of(context)!.memberNotReachable,
-        RequestType.request: AppLocalizations.of(context)!.requestPermission,
+            AppLocalizations.of(context).memberNotReachable,
+        RequestType.request: AppLocalizations.of(context).requestPermission,
         RequestType.allowByGatekeeper:
-            AppLocalizations.of(context)!.visitorApproved,
-        RequestType.waiting: AppLocalizations.of(context)!.initializingRequest,
-        RequestType.uploading: AppLocalizations.of(context)!.uploadingImage,
+            AppLocalizations.of(context).visitorApproved,
+        RequestType.waiting: AppLocalizations.of(context).initializingRequest,
+        RequestType.uploading: AppLocalizations.of(context).uploadingImage,
       };
 
   static const Map<RequestType, Color> _requestMessagesColor = {
@@ -234,7 +234,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: Text(
-                            AppLocalizations.of(context)!.memberNotReachable,
+                            AppLocalizations.of(context).memberNotReachable,
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
@@ -369,7 +369,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     // Initialize trybuttontext with localized value
     trybuttontext = l10n.tryAgain;
 
@@ -400,7 +400,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
             ),
           ),
           title: Text(
-            AppLocalizations.of(context)!.request,
+            AppLocalizations.of(context).request,
             style: const TextStyle(
               color: Color(0xff212427),
               fontWeight: FontWeight.bold,
@@ -799,8 +799,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
             size: 24,
           ),
           label: Text(
-            AppLocalizations.of(context)!.capturePhoto,
-            style: TextStyle(
+            AppLocalizations.of(context).capturePhoto,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -887,17 +887,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-            builder: (context) => UnitSelectionView(
-              null,
-              visitor: widget.visitor,
-              purposeCategory: PurposeCategory1(
-                categoryId: widget.visitorLog?.visitor_purpose_category_id ?? 0,
-                categoryName:
-                    widget.visitorLog?.visitor_purpose_Category_name ?? '',
-              ),
-              guestname: widget.visitor.name ?? '',
-              mobileNumber: widget.visitor.mobile ?? '',
-            ),
+            builder: (context) => const GateDashboardView(),
           ),
           (Route<dynamic> route) => false,
         );
@@ -1228,7 +1218,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
             child: TextButton(
               onPressed: () async {
                 setState(() {
-                  trybuttontext = AppLocalizations.of(context)!.trying;
+                  trybuttontext = AppLocalizations.of(context).trying;
                 });
                 await _handleTryAgain();
               },
@@ -1347,7 +1337,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     }
 
     setState(() {
-      trybuttontext = AppLocalizations.of(context)!.trying;
+      trybuttontext = AppLocalizations.of(context).trying;
       _requestType = RequestType.waiting;
       _isTimeElapsed = false; // Reset the time elapsed flag
       _stateStreamController
@@ -1376,7 +1366,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     await _sendNotificationViaSocket();
 
     setState(() {
-      trybuttontext = AppLocalizations.of(context)!.tryAgain;
+      trybuttontext = AppLocalizations.of(context).tryAgain;
     });
   }
 
@@ -1942,7 +1932,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           ),
         ),
         child: Text(
-          AppLocalizations.of(context)!.finish,
+          AppLocalizations.of(context).finish,
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,

@@ -6,7 +6,6 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:common_widgets/common_widgets.dart';
-import 'package:common_widgets/loading_view.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -27,6 +26,7 @@ import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpose/provider/purposeProvider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
@@ -360,6 +360,8 @@ class _IdInputViewState extends State<IdInputView> {
                         searchedVisitor: navigateToVisitorDetailsState.visitor,
                         mobile: mobileController.text,
                         selectedValue: selectedPurpose,
+                        isGatekeeperQRPasscodeEntry:
+                            false, // This is mobile entry flow
                       ),
                     ),
                   );
@@ -384,8 +386,8 @@ class _IdInputViewState extends State<IdInputView> {
                   key: mobileControllerFormKey,
                   child: MyScrollView(
                     pageTitle: _currentIndex == 0
-                        ? AppLocalizations.of(context)!.enterMobileNumber
-                        : AppLocalizations.of(context)!.enterPasscode,
+                        ? AppLocalizations.of(context).enterMobileNumber
+                        : AppLocalizations.of(context).enterPasscode,
                     pageBody: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4.0),
                       child: Column(
@@ -463,7 +465,7 @@ class _IdInputViewState extends State<IdInputView> {
                                         ),
                                         child: Center(
                                           child: Text(
-                                            AppLocalizations.of(context)!
+                                            AppLocalizations.of(context)
                                                 .mobileTab,
                                             style: TextStyle(
                                               fontSize: 16.0,
@@ -518,7 +520,7 @@ class _IdInputViewState extends State<IdInputView> {
                                         ),
                                         child: Center(
                                           child: Text(
-                                            AppLocalizations.of(context)!
+                                            AppLocalizations.of(context)
                                                 .passCodeTab,
                                             style: TextStyle(
                                               fontSize: 16.0,
@@ -605,7 +607,7 @@ class _IdInputViewState extends State<IdInputView> {
                                                             children: [
                                                               TextSpan(
                                                                 text: AppLocalizations.of(
-                                                                        context)!
+                                                                        context)
                                                                     .visitorMobileNumber,
                                                                 style:
                                                                     const TextStyle(
@@ -636,7 +638,7 @@ class _IdInputViewState extends State<IdInputView> {
                                                             height: 4),
                                                         Text(
                                                           AppLocalizations.of(
-                                                                  context)!
+                                                                  context)
                                                               .enterTheVisitorMobileNumber,
                                                           style:
                                                               const TextStyle(
@@ -670,7 +672,8 @@ class _IdInputViewState extends State<IdInputView> {
                                                   FilteringTextInputFormatter
                                                       .digitsOnly,
                                                 ],
-                                                cursorColor: Colors.black,
+                                                cursorColor:
+                                                    const Color(0xffF44336),
                                                 style: const TextStyle(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.w500,
@@ -680,7 +683,7 @@ class _IdInputViewState extends State<IdInputView> {
                                                   if (value == null ||
                                                       value.isEmpty) {
                                                     return AppLocalizations.of(
-                                                            context)!
+                                                            context)
                                                         .mobileNumberIsRequired;
                                                   } else if (value.length !=
                                                       10) {
@@ -1012,7 +1015,7 @@ class _IdInputViewState extends State<IdInputView> {
                                           child: Row(
                                             children: [
                                               // Animated Loading Indicator
-                                              Container(
+                                              SizedBox(
                                                 width: 24,
                                                 height: 24,
                                                 child:
@@ -1034,7 +1037,7 @@ class _IdInputViewState extends State<IdInputView> {
                                                   children: [
                                                     Text(
                                                       AppLocalizations.of(
-                                                              context)!
+                                                              context)
                                                           .validatingMobileNumber,
                                                       style: TextStyle(
                                                         fontSize: 14,
@@ -1204,7 +1207,8 @@ class _IdInputViewState extends State<IdInputView> {
                                                   textCapitalization:
                                                       TextCapitalization
                                                           .characters,
-                                                  cursorColor: Colors.black,
+                                                  cursorColor:
+                                                      const Color(0xffF44336),
                                                   style: const TextStyle(
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.w500,
@@ -1422,7 +1426,11 @@ class _IdInputViewState extends State<IdInputView> {
               );
             },
           ),
-          if (isLoading) const LoaderView(), // LoaderView overlay
+          if (isLoading)
+            DashboardLoader(
+              title: 'Loading Visitor Input',
+              subtitle: 'Please wait while we process your request...',
+            ), // DashboardLoader overlay
         ],
       ),
     );
@@ -1482,12 +1490,12 @@ class _IdInputViewState extends State<IdInputView> {
 
         _showEnhancedSuccessToast(
           title: "Passcode Verified",
-          message: "Welcome ${name}! Proceeding to capture your photo.",
+          message: "Welcome $name! Proceeding to guest information.",
           icon: Icons.verified_user,
         );
 
-        // ✅ Check & Request Camera Permission, then Capture Image
-        await _requestCameraPermissionAndCapture(mobileNumber, id.toString());
+        // ✅ Navigate directly to guest information page (skip camera screen)
+        await _navigateToGuestInformationPage(mobileNumber, id.toString());
       } else {
         _showEnhancedErrorToast(
           title: "Invalid Passcode",
@@ -1524,6 +1532,48 @@ class _IdInputViewState extends State<IdInputView> {
         message: errorMessage,
         icon: errorIcon,
       );
+    }
+  }
+
+  /// ✅ Navigate directly to guest information page (skip camera screen)
+  Future<void> _navigateToGuestInformationPage(
+      String mobileNumber, String id) async {
+    try {
+      // Create visitor and visitor log objects for navigation
+      Visitor visitor = Visitor(
+        name: visitorData['name'],
+        mobile: visitorData['mobile'],
+        visitor_image: visitorData['visitor_image'] ?? "",
+      );
+
+      VisitorLog visitorLog = VisitorLog(
+        visitor: visitor,
+        visitor_coming_from: visitorData['coming_from'],
+        visitor_purpose_Category_name: visitorData['category'] ?? "Guest",
+        visitor_purpose_category_id: 1,
+        visitor_count: 1,
+      );
+
+      // Navigate directly to guest information page (skip camera screen)
+      await Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => VisitorsInEntry(
+                    selfcheckinFlow: false,
+                    comingfrom: visitorData['coming_from'],
+                    searchedVisitor: visitor,
+                    selectedValue:
+                        PurposeCategory1(categoryId: 1, categoryName: "Guest"),
+                    mobile: visitorData['mobile'],
+                    guestname: visitorData['name'] ?? "",
+                    isFromQRScan:
+                        true, // Flag to indicate this is from passcode entry
+                    isGatekeeperQRPasscodeEntry:
+                        true, // Flag to indicate this is from gatekeeper passcode entry
+                    visitorLog: visitorLog,
+                  )));
+    } catch (e) {
+      print("❌ Error navigating to guest information page: $e");
     }
   }
 
@@ -1614,25 +1664,40 @@ class _IdInputViewState extends State<IdInputView> {
 
         // ✅ Update Visitor Entry with Uploaded Image URL
         await _updateVisitorEntry(mobileNumber, response, id);
+
+        // Create visitor and visitor log objects for navigation
+        Visitor visitor = Visitor(
+          visitor_image: response,
+          name: visitorData['name'],
+          mobile: visitorData['mobile'],
+        );
+
+        VisitorLog visitorLog = VisitorLog(
+          visitor: visitor,
+          visitor_coming_from: visitorData['coming_from'],
+          visitor_purpose_Category_name: visitorData['category'] ?? "Guest",
+          visitor_purpose_category_id: 1,
+          visitor_count: 1,
+        );
+
+        // Navigate to guest information page (same flow as QR scanner)
         await Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-                builder: (context) => RequestPermissionPage2(
-                    visitorLog: VisitorLog(
-                      visitor_purpose_Category_name: visitorData['category'],
-                      visitor_building_assignment: [
-                        BuildingAssignment(
-                          unit_id: [visitorData['unit_id']],
-                          visitor_id: visitorData['visitor_id'],
-                        )
-                      ],
-                    ),
-                    visitor: Visitor(
-                        name: visitorData['name'],
-                        mobile: visitorData['mobile'],
-                        visitor_image: response),
-                    selfcheckinFlow: false,
-                    isGatekeeperQRPasscodeEntry: true)));
+                builder: (context) => VisitorsInEntry(
+                      selfcheckinFlow: false,
+                      comingfrom: visitorData['coming_from'],
+                      searchedVisitor: visitor,
+                      selectedValue: PurposeCategory1(
+                          categoryId: 1, categoryName: "Guest"),
+                      mobile: visitorData['mobile'],
+                      guestname: visitorData['name'] ?? "",
+                      isFromQRScan:
+                          true, // Flag to indicate this is from passcode entry
+                      isGatekeeperQRPasscodeEntry:
+                          true, // Flag to indicate this is from gatekeeper passcode entry
+                      visitorLog: visitorLog,
+                    )));
       }
     } catch (e) {
       print("❌ Error uploading image: $e");
@@ -1956,7 +2021,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
     FocusScope.of(context).unfocus();
     if (selectedImageIndex == null) {
       myFluttertoast(
-          msg: AppLocalizations.of(context)!.pleaseSelectPurpose,
+          msg: AppLocalizations.of(context).pleaseSelectPurpose,
           backgroundColor: Colors.red);
       return;
     }
@@ -2063,7 +2128,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                 ),
                 Expanded(
                   child: Text(
-                    AppLocalizations.of(context)!.selectPurposeOfVisit,
+                    AppLocalizations.of(context).selectPurposeOfVisit,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,

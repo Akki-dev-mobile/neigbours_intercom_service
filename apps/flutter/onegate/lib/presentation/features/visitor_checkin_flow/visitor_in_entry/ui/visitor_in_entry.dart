@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:camera/camera.dart';
 import 'package:common_widgets/common_widgets.dart';
-import 'package:common_widgets/loading_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -44,6 +43,7 @@ class VisitorsInEntry extends StatefulWidget {
   final String mobile;
   final String? guestname;
   final bool isFromQRScan;
+  final bool isGatekeeperQRPasscodeEntry;
   final VisitorLog? visitorLog;
 
   VisitorsInEntry({
@@ -55,6 +55,7 @@ class VisitorsInEntry extends StatefulWidget {
     required this.mobile,
     this.guestname,
     this.isFromQRScan = false,
+    this.isGatekeeperQRPasscodeEntry = false,
     this.visitorLog,
   }) : super(key: key);
 
@@ -719,7 +720,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
     if (effectivePurpose == null) {
       return Center(
-          child: Text(AppLocalizations.of(context)!.noPurposeSelected));
+          child: Text(AppLocalizations.of(context).noPurposeSelected));
     }
 
     return BlocConsumer<VisitorInEntryBloc, VisitorInEntryState>(
@@ -873,7 +874,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 request: 'allowByGatekeeper',
                 logID: state.visitorLog.visitor?.id.toString(),
                 selfcheckinFlow: widget.selfcheckinFlow,
-                isGatekeeperQRPasscodeEntry: false, // This is mobile entry flow
+                isGatekeeperQRPasscodeEntry: widget.isGatekeeperQRPasscodeEntry, // Use the parameter to determine flow type
               ),
             ),
           );
@@ -881,23 +882,62 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       },
       builder: (context, state) {
         if (state is VisitorInEntryLoadingState) {
-          return const LoaderView();
+          return const DashboardLoader(
+            title: 'Loading Purpose Entry',
+            subtitle: 'Please wait while we prepare the form...',
+          );
         }
 
         return MyScrollView(
           isScrollable: true,
           pageTitle:
-              '${AppLocalizations.of(context)!.purposeEntry} - ${effectivePurpose.categoryName}',
+              '${AppLocalizations.of(context).purposeEntry} - ${effectivePurpose.categoryName}',
           pageBody: _buildPurposeForm(effectivePurpose),
           floatingActionButton: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            width: MediaQuery.of(context).size.width * 0.85,
-            height: 60,
-            child: CustomLargeBtn(
-              text: AppLocalizations.of(context)!.next,
-              onPressed: _isSubmitting ? null : _handleSubmit,
-              isLoading: _isSubmitting,
-              useBlackToGreyGradient: true,
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Container(
+              width: double.infinity,
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xff212427), Color(0xff57636C)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: _isSubmitting ? null : _handleSubmit,
+                  child: Center(
+                    child: Text(
+                      _isSubmitting
+                          ? 'Processing...'
+                          : AppLocalizations.of(context).next,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         );
@@ -920,8 +960,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       case 'MEMBER STAFF':
         return _buildStaffForm();
       default:
-        return Center(
-            child: Text(AppLocalizations.of(context)!.unknownPurpose));
+        return Center(child: Text(AppLocalizations.of(context).unknownPurpose));
     }
   }
 
@@ -989,7 +1028,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                AppLocalizations.of(context)!.staffInformation,
+                                AppLocalizations.of(context).staffInformation,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
@@ -998,7 +1037,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                AppLocalizations.of(context)!
+                                AppLocalizations.of(context)
                                     .pleaseFillStaffDetails,
                                 style: const TextStyle(
                                   fontSize: 14,
@@ -1023,7 +1062,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           text: TextSpan(
                             children: [
                               TextSpan(
-                                text: AppLocalizations.of(context)!.staffName,
+                                text: AppLocalizations.of(context).staffName,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -1046,7 +1085,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           controller: _guestNameController,
                           focusNode: _guestNameFocusNode,
                           textCapitalization: TextCapitalization.words,
-                          cursorColor: Colors.black,
+                          cursorColor: const Color(0xffF44336),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -1054,7 +1093,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           ),
                           decoration: InputDecoration(
                             hintText:
-                                AppLocalizations.of(context)!.enterStaffName,
+                                AppLocalizations.of(context).enterStaffName,
                             hintStyle: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w400,
@@ -1121,7 +1160,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          AppLocalizations.of(context)!.comingFrom,
+                          AppLocalizations.of(context).comingFrom,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -1133,14 +1172,14 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           controller: _guestComingFromController,
                           focusNode: _guestComingFromFocusNode,
                           textCapitalization: TextCapitalization.words,
-                          cursorColor: Colors.black,
+                          cursorColor: const Color(0xffF44336),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                             color: Color(0xff212427),
                           ),
                           decoration: InputDecoration(
-                            hintText: AppLocalizations.of(context)!
+                            hintText: AppLocalizations.of(context)
                                 .enterComingFromLocation,
                             hintStyle: const TextStyle(
                               fontSize: 16,
@@ -1259,7 +1298,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppLocalizations.of(context)!.cabInformation,
+                            AppLocalizations.of(context).cabInformation,
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
@@ -1268,7 +1307,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            AppLocalizations.of(context)!.pleaseFillCabDetails,
+                            AppLocalizations.of(context).pleaseFillCabDetails,
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xff57636C),
@@ -1292,7 +1331,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: AppLocalizations.of(context)!.cabDriverName,
+                            text: AppLocalizations.of(context).cabDriverName,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -1315,7 +1354,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       controller: _guestNameController,
                       focusNode: _guestNameFocusNode,
                       textCapitalization: TextCapitalization.words,
-                      cursorColor: Colors.black,
+                      cursorColor: const Color(0xffF44336),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -1323,7 +1362,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       ),
                       decoration: InputDecoration(
                         hintText:
-                            AppLocalizations.of(context)!.enterCabDriverName,
+                            AppLocalizations.of(context).enterCabDriverName,
                         hintStyle: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
@@ -1391,7 +1430,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: AppLocalizations.of(context)!.cabNumber,
+                            text: AppLocalizations.of(context).cabNumber,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -1415,7 +1454,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       focusNode: _carNumberFocusNode,
                       textCapitalization: TextCapitalization.characters,
                       maxLength: 10,
-                      cursorColor: Colors.black,
+                      cursorColor: const Color(0xffF44336),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -1565,7 +1604,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                             text: TextSpan(
                               children: [
                                 TextSpan(
-                                  text: AppLocalizations.of(context)!
+                                  text: AppLocalizations.of(context)
                                       .deliveryPersonName,
                                   style: const TextStyle(
                                     fontSize: 16,
@@ -1586,7 +1625,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            AppLocalizations.of(context)!
+                            AppLocalizations.of(context)
                                 .enterNameOfDeliveryPerson,
                             style: const TextStyle(
                               fontSize: 14,
@@ -1608,7 +1647,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   controller: _guestNameController,
                   focusNode: _guestNameFocusNode,
                   textCapitalization: TextCapitalization.words,
-                  cursorColor: Colors.black,
+                  cursorColor: const Color(0xffF44336),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -1616,7 +1655,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   ),
                   decoration: InputDecoration(
                     hintText:
-                        AppLocalizations.of(context)!.enterDeliveryPersonName,
+                        AppLocalizations.of(context).enterDeliveryPersonName,
                     hintStyle: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w400,
@@ -1695,7 +1734,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  AppLocalizations.of(context)!.selectDeliveryCompany,
+                  AppLocalizations.of(context).selectDeliveryCompany,
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -1904,8 +1943,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                             text: TextSpan(
                               children: [
                                 TextSpan(
-                                  text:
-                                      AppLocalizations.of(context)!.vendorName,
+                                  text: AppLocalizations.of(context).vendorName,
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -1925,7 +1963,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            AppLocalizations.of(context)!.enterNameOfVendor,
+                            AppLocalizations.of(context).enterNameOfVendor,
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xff57636C),
@@ -1946,14 +1984,14 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                   controller: _guestNameController,
                   focusNode: _guestNameFocusNode,
                   textCapitalization: TextCapitalization.words,
-                  cursorColor: Colors.black,
+                  cursorColor: const Color(0xffF44336),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     color: Color(0xff212427),
                   ),
                   decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!.enterVendorName,
+                    hintText: AppLocalizations.of(context).enterVendorName,
                     hintStyle: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w400,
@@ -2032,7 +2070,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  AppLocalizations.of(context)!.selectVendorCategory,
+                  AppLocalizations.of(context).selectVendorCategory,
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -2213,7 +2251,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppLocalizations.of(context)!.guestInformation,
+                            AppLocalizations.of(context).guestInformation,
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
@@ -2222,8 +2260,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            AppLocalizations.of(context)!
-                                .pleaseFillGuestDetails,
+                            AppLocalizations.of(context).pleaseFillGuestDetails,
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xff57636C),
@@ -2247,7 +2284,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: AppLocalizations.of(context)!.guestName,
+                            text: AppLocalizations.of(context).guestName,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -2270,14 +2307,14 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       controller: _guestNameController,
                       focusNode: _guestNameFocusNode,
                       textCapitalization: TextCapitalization.words,
-                      cursorColor: Colors.black,
+                      cursorColor: const Color(0xffF44336),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: Color(0xff212427),
                       ),
                       decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)!.enterGuestName,
+                        hintText: AppLocalizations.of(context).enterGuestName,
                         hintStyle: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
@@ -2345,7 +2382,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: AppLocalizations.of(context)!.comingFrom,
+                            text: AppLocalizations.of(context).comingFrom,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -2369,14 +2406,14 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       controller: _guestComingFromController,
                       focusNode: _guestComingFromFocusNode,
                       textCapitalization: TextCapitalization.words,
-                      cursorColor: Colors.black,
+                      cursorColor: const Color(0xffF44336),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: Color(0xff212427),
                       ),
                       decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)!
+                        hintText: AppLocalizations.of(context)
                             .enterComingFromLocation,
                         hintStyle: const TextStyle(
                           fontSize: 16,
@@ -2449,7 +2486,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: AppLocalizations.of(context)!.visitorId,
+                              text: AppLocalizations.of(context).visitorId,
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -2473,15 +2510,14 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         focusNode: _visitorNumberFocusNode,
                         keyboardType: TextInputType.number,
                         maxLength: 4,
-                        cursorColor: Colors.black,
+                        cursorColor: const Color(0xffF44336),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                           color: Color(0xff212427),
                         ),
                         decoration: InputDecoration(
-                          hintText:
-                              AppLocalizations.of(context)!.enterVisitorId,
+                          hintText: AppLocalizations.of(context).enterVisitorId,
                           hintStyle: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w400,
@@ -2564,7 +2600,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       controller: _guestCountController,
                       keyboardType: TextInputType.number,
                       maxLength: 2,
-                      cursorColor: Colors.black,
+                      cursorColor: const Color(0xffF44336),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -2679,7 +2715,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   }
 
   Widget _buildGuestCountField() {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return CustomForm.textField(
       l10n.guestCount,
       textController: _guestCountController,
@@ -3083,7 +3119,7 @@ class ListeningDialogState extends State<ListeningDialog>
                           onPressed: _retryListening,
                           icon: const Icon(Icons.refresh,
                               size: 20, color: Color(0xffF44336)),
-                          label: Text(AppLocalizations.of(context)!.retry),
+                          label: Text(AppLocalizations.of(context).retry),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: const Color(0xffF44336),
