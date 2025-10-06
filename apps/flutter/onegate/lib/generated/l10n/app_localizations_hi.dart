@@ -136,7 +136,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get retry => 'पुनः प्रयास करें';
 
   @override
-  String get visitorLogTitleInOutBook => 'आगंतुक लॉग';
+  String get visitorLogTitleInOutBook => 'इन आउट बुक';
 
   @override
   String get visitorLogTitleVisitorIn => 'आगंतुक प्रवेश';

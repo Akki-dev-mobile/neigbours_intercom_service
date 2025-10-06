@@ -1,0 +1,1808 @@
+{
+  "@@locale": "hi",
+  "@@last_modified": "2024-01-01T00:00:00.000Z",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "@welcome": {
+    "description": "General welcome greeting"
+  },
+  "@welcomeToOnegate": {
+    "description": "Welcome message in splash screen"
+  },
+  "@welcomeBack": {
+    "description": "Welcome back message for returning users"
+  },
+  "@welcomeUser": {
+    "description": "Welcome message with user name",
+    "placeholders": {
+      "userName": {
+        "type": "String",
+        "example": "John"
+      }
+    }
+  },
+  "@login": {
+    "description": "Login button text"
+  },
+  "@logout": {
+    "description": "Logout button text"
+  },
+  "@settings": {
+    "description": "Settings page title"
+  },
+  "@changeLanguage": {
+    "description": "Language selection option in settings"
+  },
+  "@selectLanguage": {
+    "description": "Language selection dialog title"
+  },
+  "@currentPreference": {
+    "description": "Current preference display text"
+  },
+  "@confirm": {
+    "description": "Button text for confirm action"
+  },
+  "@cancel": {
+    "description": "Cancel button text"
+  },
+  "@change": {
+    "description": "Change button text"
+  },
+  "@close": {
+    "description": "Close button text"
+  },
+  "@save": {
+    "description": "Save button text"
+  },
+  "@dashboard": {
+    "description": "Dashboard screen title"
+  },
+  "@visitorManagement": {
+    "description": "Visitor management section"
+  },
+  "@gatekeeper": {
+    "description": "Gatekeeper role"
+  },
+  "@admin": {
+    "description": "Admin role"
+  },
+  "@visitors": {
+    "description": "Visitors section"
+  },
+  "@checkin": {
+    "description": "Check in action"
+  },
+  "@checkout": {
+    "description": "Check out action"
+  },
+  "@approval": {
+    "description": "Approval status"
+  },
+  "@approved": {
+    "description": "Approved status"
+  },
+  "@pending": {
+    "description": "Pending status"
+  },
+  "@rejected": {
+    "description": "Rejected status"
+  },
+  "@selectCamera": {
+    "description": "Select camera settings title"
+  },
+  "@frontCamera": {
+    "description": "Front camera option"
+  },
+  "@backCamera": {
+    "description": "Back camera option"
+  },
+  "@cameraPermission": {
+    "description": "Camera permission dialog title"
+  },
+  "@enableLocationPermissions": {
+    "description": "Location permission request message"
+  },
+  "@openSettings": {
+    "description": "Open settings button text"
+  },
+  "@noInternetConnection": {
+    "description": "No internet connection error message"
+  },
+  "@error": {
+    "description": "Error text"
+  },
+  "@success": {
+    "description": "General success label"
+  },
+  "@retry": {
+    "description": "Retry button text"
+  },
+  "@visitorLogTitleInOutBook": {
+    "description": "Title for In Out Book visitor log"
+  },
+  "@visitorLogTitleVisitorIn": {
+    "description": "Title for Visitor In log"
+  },
+  "@visitorLogTitleVisitorOut": {
+    "description": "Title for Visitor Out log"
+  },
+  "@visitorLogTitleCards": {
+    "description": "Title for Visitor Cards log"
+  },
+  "@visitorLogTitleDefault": {
+    "description": "Default title for visitor log"
+  },
+  "@loadingMoreVisitors": {
+    "description": "Loading more visitors message"
+  },
+  "@exportVisitorLogs": {
+    "description": "Title for export dialog"
+  },
+  "@downloadLogsForDateRange": {
+    "description": "Subtitle for export dialog"
+  },
+  "@emailAddress": {
+    "description": "Email field label"
+  },
+  "@enterEmailForExport": {
+    "description": "Email field hint text"
+  },
+  "@pleaseEnterEmail": {
+    "description": "Email validation error"
+  },
+  "@pleaseEnterValidEmail": {
+    "description": "Email format validation error"
+  },
+  "@dateRange": {
+    "description": "Label for date range filter"
+  },
+  "@pleaseSelectStartDate": {
+    "description": "Start date validation error"
+  },
+  "@pleaseSelectEndDate": {
+    "description": "End date validation error"
+  },
+  "@endDateCannotBeEarlier": {
+    "description": "End date validation error"
+  },
+  "@fromDate": {
+    "description": "Start date label"
+  },
+  "@toDate": {
+    "description": "End date label"
+  },
+  "@selectStartDate": {
+    "description": "Start date picker placeholder"
+  },
+  "@selectEndDate": {
+    "description": "End date picker placeholder"
+  },
+  "@intercom": {
+    "description": "Intercom button title"
+  },
+  "@parcel": {
+    "description": "Parcel button title"
+  },
+  "@scan": {
+    "description": "Scan button title"
+  },
+  "@cards": {
+    "description": "Label for cards filter"
+  },
+  "@qrCodeScanned": {
+    "description": "QR code scan success message"
+  },
+  "@enterVisitorDetails": {
+    "description": "Enter visitor details section title"
+  },
+  "@tapToEnterMobileOrId": {
+    "description": "Instruction text for visitor input"
+  },
+  "@examples": {
+    "description": "Examples label"
+  },
+  "@loadingDashboard": {
+    "description": "Loading dashboard title"
+  },
+  "@pleaseWaitPreparingDashboard": {
+    "description": "Loading dashboard message"
+  },
+  "@fetchingDataForNetworkLogs": {
+    "description": "Network logs generation message"
+  },
+  "@searchMembers": {
+    "description": "Placeholder text for member search field"
+  },
+  "@searchMembersHint": {
+    "description": "Search members field hint"
+  },
+  "@loadingMembers": {
+    "description": "Loading members message"
+  },
+  "@searchingMembers": {
+    "description": "Searching members message"
+  },
+  "@noMembersFound": {
+    "description": "No members found message"
+  },
+  "@waitingForApproval": {
+    "description": "Waiting for approval status"
+  },
+  "@failedToSearchMembers": {
+    "description": "Failed to search members error"
+  },
+  "@errorSearchingMembers": {
+    "description": "Error searching members message"
+  },
+  "@membersDataRefreshed": {
+    "description": "Members data refresh success message"
+  },
+  "@selectUnit": {
+    "description": "Select unit dialog title"
+  },
+  "@selectMember": {
+    "description": "Select member dialog title"
+  },
+  "@continueAction": {
+    "description": "Continue button text"
+  },
+  "@back": {
+    "description": "Back button text"
+  },
+  "@next": {
+    "description": "Next button text"
+  },
+  "@submit": {
+    "description": "Submit button text"
+  },
+  "@done": {
+    "description": "Done button text"
+  },
+  "@yes": {
+    "description": "Yes button text"
+  },
+  "@no": {
+    "description": "No button text"
+  },
+  "@ok": {
+    "description": "OK button text"
+  },
+  "@apply": {
+    "description": "Apply button text"
+  },
+  "@clear": {
+    "description": "Clear button text"
+  },
+  "@reset": {
+    "description": "Reset button text"
+  },
+  "@refresh": {
+    "description": "Button text for refresh action"
+  },
+  "@search": {
+    "description": "Search button text"
+  },
+  "@filter": {
+    "description": "Filter button text"
+  },
+  "@sort": {
+    "description": "Sort button text"
+  },
+  "@add": {
+    "description": "Add button text"
+  },
+  "@edit": {
+    "description": "Edit button text"
+  },
+  "@delete": {
+    "description": "Delete button text"
+  },
+  "@view": {
+    "description": "View button text"
+  },
+  "@details": {
+    "description": "Details button text"
+  },
+  "@name": {
+    "description": "Name field label"
+  },
+  "@mobileNumber": {
+    "description": "Mobile number field label"
+  },
+  "@email": {
+    "description": "Email field label"
+  },
+  "@address": {
+    "description": "Address field label"
+  },
+  "@building": {
+    "description": "Label for building field"
+  },
+  "@unit": {
+    "description": "Unit field label"
+  },
+  "@floor": {
+    "description": "Floor field label"
+  },
+  "@date": {
+    "description": "Date field label"
+  },
+  "@time": {
+    "description": "Time field label"
+  },
+  "@status": {
+    "description": "Status field label"
+  },
+  "@active": {
+    "description": "Status text for active items"
+  },
+  "@inactive": {
+    "description": "Status text for inactive items"
+  },
+  "@enabled": {
+    "description": "Enabled status"
+  },
+  "@disabled": {
+    "description": "Disabled status"
+  },
+  "@online": {
+    "description": "Online status"
+  },
+  "@offline": {
+    "description": "Offline status"
+  },
+  "@connected": {
+    "description": "Connected status"
+  },
+  "@disconnected": {
+    "description": "Disconnected status"
+  },
+  "@available": {
+    "description": "Available status"
+  },
+  "@unavailable": {
+    "description": "Unavailable status"
+  },
+  "@signUp": {
+    "description": "Sign up button text"
+  },
+  "@forgotPassword": {
+    "description": "Forgot password button text"
+  },
+  "@resetPassword": {
+    "description": "Reset password button text"
+  },
+  "@password": {
+    "description": "Password field label"
+  },
+  "@confirmPassword": {
+    "description": "Confirm password field label"
+  },
+  "@username": {
+    "description": "Username field label"
+  },
+  "@adminDashboardShortcuts": {
+    "description": "Admin dashboard shortcuts placeholder text"
+  },
+  "@gateSelection": {
+    "description": "Gate selection screen title"
+  },
+  "@selectYourGate": {
+    "description": "Select your gate instruction"
+  },
+  "@unknownGate": {
+    "description": "Unknown gate fallback text"
+  },
+  "@enableDisable": {
+    "description": "Enable/Disable prefix text"
+  },
+  "@gateChangedTo": {
+    "description": "Gate changed success message prefix"
+  },
+  "@noGateSelected": {
+    "description": "No gate selected error message"
+  },
+  "@language": {
+    "description": "Language settings title"
+  },
+  "@camera": {
+    "description": "Camera settings title"
+  },
+  "@visitorSettings": {
+    "description": "Visitor settings menu item"
+  },
+  "@appPermissions": {
+    "description": "Title for app permissions screen"
+  },
+  "@networkLogs": {
+    "description": "Network logs title"
+  },
+  "@dataObservability": {
+    "description": "Data observability menu item"
+  },
+  "@gateSettings": {
+    "description": "Gate settings menu item"
+  },
+  "@staffManagement": {
+    "description": "Staff management label"
+  },
+  "@dutyAlarms": {
+    "description": "Duty alarms label"
+  },
+  "@kioskMode": {
+    "description": "Kiosk mode label"
+  },
+  "@newEntry": {
+    "description": "New entry button text"
+  },
+  "@passId": {
+    "description": "Pass ID label"
+  },
+  "@mobile": {
+    "description": "Mobile number field label"
+  },
+  "@comingFrom": {
+    "description": "Label for coming from field"
+  },
+  "@purpose": {
+    "description": "Label for purpose field"
+  },
+  "@guestName": {
+    "description": "Guest name field label"
+  },
+  "@guestCount": {
+    "description": "Guest count field label"
+  },
+  "@visitorNumber": {
+    "description": "Visitor number field label"
+  },
+  "@carNumber": {
+    "description": "Car number field label"
+  },
+  "@vendor": {
+    "description": "Vendor category"
+  },
+  "@delivery": {
+    "description": "Delivery category"
+  },
+  "@guest": {
+    "description": "Guest category"
+  },
+  "@staff": {
+    "description": "Staff purpose type"
+  },
+  "@cab": {
+    "description": "Cab category"
+  },
+  "@enterVendorName": {
+    "description": "Vendor name placeholder"
+  },
+  "@enterCabDriverName": {
+    "description": "Cab driver name field placeholder"
+  },
+  "@enterDeliveryPersonName": {
+    "description": "Delivery person name placeholder"
+  },
+  "@enterGuestName": {
+    "description": "Guest name field placeholder"
+  },
+  "@enterStaffName": {
+    "description": "Staff name field placeholder"
+  },
+  "@loading": {
+    "description": "Loading indicator text"
+  },
+  "@pleaseWait": {
+    "description": "Please wait message"
+  },
+  "@languageChangeConfirmation": {
+    "description": "Language change confirmation dialog",
+    "placeholders": {
+      "language": {
+        "type": "String",
+        "example": "Hindi"
+      }
+    }
+  },
+  "@languageChanged": {
+    "description": "Language change success message"
+  },
+  "@gateName": {
+    "description": "Gate name label"
+  },
+  "@selectGate": {
+    "description": "Select gate dialog title"
+  },
+  "@networkSettings": {
+    "description": "Network settings menu item"
+  },
+  "@profileSettings": {
+    "description": "Profile settings menu item"
+  },
+  "@appSettings": {
+    "description": "App settings menu item"
+  },
+  "@dataStorage": {
+    "description": "Data storage menu item"
+  },
+  "@cameraSettings": {
+    "description": "Camera settings menu item"
+  },
+  "@languageSettings": {
+    "description": "Language settings menu item"
+  },
+  "@visitorApprovalTime": {
+    "description": "Visitor approval time menu item"
+  },
+  "@choosePreference": {
+    "description": "Choose camera preference subtitle"
+  },
+  "@english": {
+    "description": "English language option"
+  },
+  "@hindi": {
+    "description": "Hindi language option"
+  },
+  "@marathi": {
+    "description": "Marathi language option"
+  },
+  "@authenticating": {
+    "description": "Authentication in progress message"
+  },
+  "@authenticationFailed": {
+    "description": "Authentication failed message"
+  },
+  "@authenticationSuccess": {
+    "description": "Authentication success message"
+  },
+  "@sessionExpired": {
+    "description": "Session expired dialog title"
+  },
+  "@pleaseLoginAgain": {
+    "description": "Please login again message"
+  },
+  "@tokenRefreshed": {
+    "description": "Token refresh success message"
+  },
+  "@refreshingToken": {
+    "description": "Token refresh in progress message"
+  },
+  "@allBuildings": {
+    "description": "Option to select all buildings"
+  },
+  "@noMoreData": {
+    "description": "No more data message for pagination"
+  },
+  "@stateNotSuccess": {
+    "description": "Debug message for state error"
+  },
+  "@visitorLogInitialized": {
+    "description": "Debug message for visitor log initialization"
+  },
+  "@triggeringFetchForInOutBook": {
+    "description": "Debug message for in out book fetch"
+  },
+  "@triggeringFetchForVisitorIn": {
+    "description": "Debug message for visitor in fetch"
+  },
+  "@triggeringFetchForCards": {
+    "description": "Debug message for cards fetch"
+  },
+  "@triggeringFetchForVisitorOut": {
+    "description": "Debug message for visitor out fetch"
+  },
+  "@triggeringSearchFor": {
+    "description": "Debug message for search trigger"
+  },
+  "@searchVisitor": {
+    "description": "Search visitor placeholder"
+  },
+  "@export": {
+    "description": "Export button text"
+  },
+  "@noVisitorsFound": {
+    "description": "No visitors found message"
+  },
+  "@checkOutSuccessful": {
+    "description": "Check out success title"
+  },
+  "@visitorCheckedOut": {
+    "description": "Visitor checked out success message"
+  },
+  "@loadingVisitors": {
+    "description": "Loading visitors message"
+  },
+  "@visitorCount": {
+    "description": "Visitor count with number",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "@singleVisitor": {
+    "description": "Single visitor count"
+  },
+  "@todayVisitors": {
+    "description": "Today visitors section"
+  },
+  "@yesterdayVisitors": {
+    "description": "Yesterday visitors section"
+  },
+  "@earlierVisitors": {
+    "description": "Earlier visitors section"
+  },
+  "@checkOutConfirmation": {
+    "description": "Check out confirmation dialog"
+  },
+  "@visitorDetails": {
+    "description": "Visitor details screen title"
+  },
+  "@buildingSelection": {
+    "description": "Building selection dialog title"
+  },
+  "@selectBuilding": {
+    "description": "Prompt to select a building"
+  },
+  "@noMoreVisitors": {
+    "description": "No more visitors message"
+  },
+  "@errorLoadingVisitors": {
+    "description": "Error loading visitors message"
+  },
+  "@retryLoading": {
+    "description": "Retry loading button text"
+  },
+  "@confirmLogout": {
+    "description": "Logout confirmation dialog title"
+  },
+  "@logoutMessage": {
+    "description": "Logout confirmation message"
+  },
+  "@logoutDescription": {
+    "description": "Logout description message"
+  },
+  "@securityConfirmationRequired": {
+    "description": "Security confirmation subtitle"
+  },
+  "@exitApp": {
+    "description": "Exit app dialog title"
+  },
+  "@exitAppConfirmation": {
+    "description": "Exit app confirmation message"
+  },
+  "@previous": {
+    "description": "Previous button text"
+  },
+  "@skip": {
+    "description": "Skip button text"
+  },
+  "@tryAgain": {
+    "description": "Button text for trying again"
+  },
+  "@changesSuccessful": {
+    "description": "Success message when changes are saved"
+  },
+  "@changesUpdated": {
+    "description": "Description for successful changes"
+  },
+  "@saveFailed": {
+    "description": "Error message when save fails"
+  },
+  "@requestPermission": {
+    "description": "Button text for requesting permission"
+  },
+  "@request": {
+    "description": "Request page title"
+  },
+  "@permission": {
+    "description": "Permission text"
+  },
+  "@selectedFlat": {
+    "description": "Label for selected flat"
+  },
+  "@visitorApproved": {
+    "description": "Message when visitor is approved"
+  },
+  "@visitorRejected": {
+    "description": "Message when visitor is rejected"
+  },
+  "@leaveAtGate": {
+    "description": "Message for leave at gate"
+  },
+  "@memberNotReachable": {
+    "description": "Message when member is not reachable"
+  },
+  "@initializingRequest": {
+    "description": "Status message when request is being initialized"
+  },
+  "@uploadingImage": {
+    "description": "Status message when image is being uploaded"
+  },
+  "@enterPasscode": {
+    "description": "Title for enter passcode screen"
+  },
+  "@visitorPasscode": {
+    "description": "Label for visitor passcode"
+  },
+  "@enterSixDigitPasscode": {
+    "description": "Description for passcode entry"
+  },
+  "@passcodeRequired": {
+    "description": "Validation message for required passcode"
+  },
+  "@enterSixDigitValidation": {
+    "description": "Validation message for 6-digit passcode"
+  },
+  "@faceIdRegistration": {
+    "description": "Title for face ID registration screen"
+  },
+  "@lookStraight": {
+    "description": "Face ID instruction to look straight"
+  },
+  "@turnHeadLeft": {
+    "description": "Face ID instruction to turn head left"
+  },
+  "@turnHeadRight": {
+    "description": "Face ID instruction to turn head right"
+  },
+  "@lookUp": {
+    "description": "Face ID instruction to look up"
+  },
+  "@lookDown": {
+    "description": "Face ID instruction to look down"
+  },
+  "@tiltHeadLeft": {
+    "description": "Face ID instruction to tilt head left"
+  },
+  "@tiltHeadRight": {
+    "description": "Face ID instruction to tilt head right"
+  },
+  "@smileSlightly": {
+    "description": "Face ID instruction to smile"
+  },
+  "@blinkEyes": {
+    "description": "Face ID instruction to blink"
+  },
+  "@allowDrawOverApps": {
+    "description": "Permission to draw over other apps"
+  },
+  "@drawOverAppsDescription": {
+    "description": "Description for draw over apps permission"
+  },
+  "@allowEscapeDND": {
+    "description": "Permission to escape Do Not Disturb mode"
+  },
+  "@escapeDNDDescription": {
+    "description": "Description for escape DND permission"
+  },
+  "@networkLogsDashboard": {
+    "description": "Title for network logs dashboard"
+  },
+  "@refreshLogs": {
+    "description": "Tooltip for refresh logs button"
+  },
+  "@noNetworkLogs": {
+    "description": "Message when no network logs available"
+  },
+  "@dataObservabilitySettings": {
+    "description": "Title for data observability settings"
+  },
+  "@healthCheckCompleted": {
+    "description": "Message when health check is completed"
+  },
+  "@healthCheckFailed": {
+    "description": "Message when health check fails"
+  },
+  "@testNotificationSent": {
+    "description": "Message when test notification is sent successfully"
+  },
+  "@testNotificationFailed": {
+    "description": "Message when test notification fails"
+  },
+  "@indexSyncCompleted": {
+    "description": "Message when index sync is completed"
+  },
+  "@indexSyncFailed": {
+    "description": "Message when index sync fails"
+  },
+  "@crashReports": {
+    "description": "Title for crash reports screen"
+  },
+  "@crashStatistics": {
+    "description": "Title for crash statistics section"
+  },
+  "@totalCrashes": {
+    "description": "Label for total crashes count"
+  },
+  "@fatalCrashes": {
+    "description": "Label for fatal crashes count"
+  },
+  "@last24h": {
+    "description": "Label for last 24 hours crashes"
+  },
+  "@uniqueErrors": {
+    "description": "Label for unique errors count"
+  },
+  "@allCrashes": {
+    "description": "Filter option for all crashes"
+  },
+  "@fatalOnly": {
+    "description": "Filter option for fatal crashes only"
+  },
+  "@nonFatal": {
+    "description": "Filter option for non-fatal crashes"
+  },
+  "@allCrashesLabel": {
+    "description": "Label for all crashes filter option"
+  },
+  "@fatalOnlyLabel": {
+    "description": "Label for fatal only filter option"
+  },
+  "@nonFatalLabel": {
+    "description": "Label for non-fatal filter option"
+  },
+  "@last24hLabel": {
+    "description": "Label for last 24 hours filter option"
+  },
+  "@noCrashesFoundTitle": {
+    "description": "Title when no crashes are found"
+  },
+  "@noCrashesFoundMessage": {
+    "description": "Message when no crashes are found"
+  },
+  "@crashDetailsTitle": {
+    "description": "Title for crash details modal"
+  },
+  "@copyCrashDetailsTooltip": {
+    "description": "Tooltip for copy crash details button"
+  },
+  "@errorTypeLabel": {
+    "description": "Label for error type field"
+  },
+  "@fatalLabel": {
+    "description": "Label for fatal field"
+  },
+  "@timestampLabel": {
+    "description": "Label for timestamp field"
+  },
+  "@appVersionLabel": {
+    "description": "Label for app version field"
+  },
+  "@platformLabel": {
+    "description": "Label for platform field"
+  },
+  "@deviceLabel": {
+    "description": "Label for device field"
+  },
+  "@userIdLabel": {
+    "description": "Label for user ID field"
+  },
+  "@gateIdLabel": {
+    "description": "Label for gate ID field"
+  },
+  "@errorMessageLabel": {
+    "description": "Label for error message field"
+  },
+  "@stackTraceLabel": {
+    "description": "Label for stack trace field"
+  },
+  "@memberStatus": {
+    "description": "Label for member status field"
+  },
+  "@towerA": {
+    "description": "Building option Tower A"
+  },
+  "@towerB": {
+    "description": "Building option Tower B"
+  },
+  "@allStatuses": {
+    "description": "Dropdown option for all statuses"
+  },
+  "@approvedMembersOnly": {
+    "description": "Filter option for approved members only"
+  },
+  "@staffOnly": {
+    "description": "Filter option for staff only"
+  },
+  "@allDates": {
+    "description": "Option for all dates"
+  },
+  "@debugReportCopiedToClipboard": {
+    "description": "Debug report copied message"
+  },
+  "@errorSendingOTPPleaseTryAgain": {
+    "description": "Error message when OTP sending fails"
+  },
+  "@otpVerifiedSuccessfully": {
+    "description": "Success message when OTP is verified"
+  },
+  "@otpVerificationFailedPleaseTryAgain": {
+    "description": "Error message when OTP verification fails"
+  },
+  "@mobileNumberIsRequired": {
+    "description": "Validation message when mobile number is empty"
+  },
+  "@noSpacesOrSpecialCharactersAllowed": {
+    "description": "Validation message for invalid mobile number format"
+  },
+  "@enterOTPSentToYourMobileNumber": {
+    "description": "Label for OTP entry field"
+  },
+  "@otpIsRequired": {
+    "description": "Validation message when OTP is empty"
+  },
+  "@pleaseEnter6DigitOTP": {
+    "description": "Validation message for incorrect OTP length"
+  },
+  "@allowByGatekeeper": {
+    "description": "Allow by gatekeeper button text"
+  },
+  "@call": {
+    "description": "Call button text"
+  },
+  "@grantAccess": {
+    "description": "Grant access button text"
+  },
+  "@noMembersAvailable": {
+    "description": "Message when no members are found"
+  },
+  "@clearSearch": {
+    "description": "Clear search button text"
+  },
+  "@noPurposeSelected": {
+    "description": "Error message when no purpose is selected"
+  },
+  "@unknownPurpose": {
+    "description": "Text for unknown purpose"
+  },
+  "@analyticsDashboard": {
+    "description": "Analytics dashboard screen title"
+  },
+  "@overview": {
+    "description": "Overview tab text"
+  },
+  "@userBehavior": {
+    "description": "User behavior tab text"
+  },
+  "@performance": {
+    "description": "Performance tab text"
+  },
+  "@events": {
+    "description": "Events tab text"
+  },
+  "@loadingAnalyticsData": {
+    "description": "Loading message for analytics data"
+  },
+  "@confirmUpload": {
+    "description": "Confirm upload dialog title"
+  },
+  "@doYouWantToUpload": {
+    "description": "Confirm upload dialog content"
+  },
+  "@male": {
+    "description": "Male gender option"
+  },
+  "@female": {
+    "description": "Female gender option"
+  },
+  "@other": {
+    "description": "Other gender option"
+  },
+  "@staffUpdatedSuccessfully": {
+    "description": "Success message when staff is updated"
+  },
+  "@selectPurposeOfVisit": {
+    "description": "Text for selecting purpose of visit"
+  },
+  "@visitorMobileNumber": {
+    "description": "Label for visitor mobile number field"
+  },
+  "@pleaseEnter10DigitNumber": {
+    "description": "Validation message for 10 digit mobile number"
+  },
+  "@enterName": {
+    "description": "Label for enter name field"
+  },
+  "@cameraPermissionRequired": {
+    "description": "Title for camera permission dialog"
+  },
+  "@needCameraAccessForQR": {
+    "description": "Message explaining need for camera access"
+  },
+  "@capturePhoto": {
+    "description": "Button text for capturing photo"
+  },
+  "@changeLanguageConfirmation": {
+    "description": "Confirmation message for language change"
+  },
+  "@passcodeVerifiedSuccessfully": {
+    "description": "Success message when passcode is verified"
+  },
+  "@invalidPasscodeTryAgain": {
+    "description": "Error message for invalid passcode"
+  },
+  "@errorVerifyingPasscode": {
+    "description": "Error message when passcode verification fails"
+  },
+  "@parcels": {
+    "description": "Parcels screen title"
+  },
+  "@noParcelsFound": {
+    "description": "Message when no parcels are found"
+  },
+  "@pleaseSelectPurpose": {
+    "description": "Error message when no purpose is selected"
+  },
+  "@selfEntrySettings": {
+    "description": "Self entry settings menu item"
+  },
+  "@enableDisableSelfEntry": {
+    "description": "Self entry settings subtitle"
+  },
+  "@changePassword": {
+    "description": "Change password menu item"
+  },
+  "@changeYourPassword": {
+    "description": "Change password subtitle"
+  },
+  "@couldNotLaunch": {
+    "description": "Error message when URL cannot be launched"
+  },
+  "@screenNavigation": {
+    "description": "Screen navigation analytics title"
+  },
+  "@noScreenNavigationRecorded": {
+    "description": "Message when no screen navigation is recorded"
+  },
+  "@noParcelsAvailable": {
+    "description": "Title when no parcels are available"
+  },
+  "@noParcelRegistered": {
+    "description": "Message when no parcels are registered"
+  },
+  "@somethingWentWrong": {
+    "description": "Generic error title"
+  },
+  "@errorLoadingParcelList": {
+    "description": "Error message when parcel list fails to load"
+  },
+  "@enterMobileNumber": {
+    "description": "Title for mobile number entry screen"
+  },
+  "@mobileTab": {
+    "description": "Mobile tab label in toggle switch"
+  },
+  "@passCodeTab": {
+    "description": "Pass code tab label in toggle switch"
+  },
+  "@enterTheVisitorMobileNumber": {
+    "description": "Placeholder text for mobile number field"
+  },
+  "@validatingMobileNumber": {
+    "description": "Loading message when validating mobile number"
+  },
+  "@introducingOnegateBrand": {
+    "description": "First intro screen description"
+  },
+  "@secureDigitalWorld": {
+    "description": "Second intro screen description"
+  },
+  "@staffs": {
+    "description": "Staffs menu item"
+  },
+  "@viewYourSocietyStaffs": {
+    "description": "Staffs menu subtitle"
+  },
+  "@visitorsAndVehiclesSettings": {
+    "description": "Visitors and vehicles settings menu item"
+  },
+  "@allVisitorsWillBeAutoApproved": {
+    "description": "Auto approval setting subtitle"
+  },
+  "@visitorsSettings": {
+    "description": "Visitors settings menu item"
+  },
+  "@markMandatoryFieldsForVisitors": {
+    "description": "Mandatory fields setting subtitle"
+  },
+  "@configureDutyAlarms": {
+    "description": "Duty alarms menu item"
+  },
+  "@enableDisableDutyAlarms": {
+    "description": "Duty alarms menu subtitle"
+  },
+  "@applicationSettings": {
+    "description": "Application settings menu item"
+  },
+  "@monitorSystemHealthSearchNotifications": {
+    "description": "Data observability menu subtitle"
+  },
+  "@chooseCameraPreference": {
+    "description": "Camera preference dialog title"
+  },
+  "@useFrontFacingCamera": {
+    "description": "Front camera option"
+  },
+  "@useRearFacingCamera": {
+    "description": "Rear camera option"
+  },
+  "@cameraSettingUpdatedSuccessfully": {
+    "description": "Camera setting update success message"
+  },
+  "@selectApprovalTime": {
+    "description": "Approval time dialog title"
+  },
+  "@chooseVisitorApprovalDuration": {
+    "description": "Approval time dialog subtitle"
+  },
+  "@approvalTimeoutDuration": {
+    "description": "Approval timeout label"
+  },
+  "@approvalTimeUpdatedSuccessfully": {
+    "description": "Approval time update success message"
+  },
+  "@selectDataStorage": {
+    "description": "Data storage dialog title"
+  },
+  "@languageChangedSuccessfully": {
+    "description": "Language change success message"
+  },
+  "@errorChangingLanguage": {
+    "description": "Language change error message",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
+    }
+  },
+  "@currentPreferenceGate": {
+    "description": "Current gate preference display",
+    "placeholders": {
+      "gateName": {
+        "type": "String",
+        "example": "Gate 1"
+      }
+    }
+  },
+  "@notSelectedGate": {
+    "description": "No gate selected text"
+  },
+  "@currentPreferenceCamera": {
+    "description": "Current camera preference display",
+    "placeholders": {
+      "cameraType": {
+        "type": "String",
+        "example": "Front Camera"
+      }
+    }
+  },
+  "@notSelectedCamera": {
+    "description": "No camera selected text"
+  },
+  "@seconds": {
+    "description": "Seconds unit label"
+  },
+  "@visitorIsSelfCheckIn": {
+    "description": "Self check-in visitor status message"
+  },
+  "@visitorIsAllowedByGatekeeper": {
+    "description": "Pre-approved visitor status message"
+  },
+  "@visitorIsAllowedByGatekeeperOriginal": {
+    "description": "Original gatekeeper approval message"
+  },
+  "@unknownRequestType": {
+    "description": "Unknown request type fallback message"
+  },
+  "@finish": {
+    "description": "Finish button text"
+  },
+  "@notSpecified": {
+    "description": "Text shown when information is not specified"
+  },
+  "@select": {
+    "description": "Select button text"
+  },
+  "@societyOffice": {
+    "description": "Label for society office"
+  },
+  "@tapToViewDetails": {
+    "description": "Tap to view details instruction"
+  },
+  "@visitorAllowedByGatekeeper": {
+    "description": "Visitor allowed by gatekeeper status"
+  },
+  "@errorProcessingSelection": {
+    "description": "Error processing selection message"
+  },
+  "@trying": {
+    "description": "Trying button text when in progress"
+  },
+  "@inOutBook": {
+    "description": "In Out Book visitor log type"
+  },
+  "@visitorIn": {
+    "description": "Visitor In log type"
+  },
+  "@visitorOut": {
+    "description": "Visitor Out log type"
+  },
+  "@defaultCategory": {
+    "description": "Default purpose category name"
+  },
+  "@locationPermissionRequired": {
+    "description": "Location permission dialog title"
+  },
+  "@locationPermissionMessage": {
+    "description": "Location permission dialog message"
+  },
+  "@purposeEntry": {
+    "description": "Purpose entry page title"
+  },
+  "@staffInformation": {
+    "description": "Staff information section title"
+  },
+  "@pleaseFillStaffDetails": {
+    "description": "Staff form instruction text"
+  },
+  "@staffName": {
+    "description": "Staff name field label"
+  },
+  "@enterComingFromLocation": {
+    "description": "Coming from location placeholder"
+  },
+  "@cabInformation": {
+    "description": "Cab information section title"
+  },
+  "@pleaseFillCabDetails": {
+    "description": "Cab form instruction text"
+  },
+  "@cabDriverName": {
+    "description": "Cab driver name field label"
+  },
+  "@cabNumber": {
+    "description": "Cab number field label"
+  },
+  "@deliveryPersonName": {
+    "description": "Delivery person name field label"
+  },
+  "@enterNameOfDeliveryPerson": {
+    "description": "Delivery person name instruction"
+  },
+  "@selectDeliveryCompany": {
+    "description": "Select delivery company section title"
+  },
+  "@vendorName": {
+    "description": "Vendor name field label"
+  },
+  "@enterNameOfVendor": {
+    "description": "Vendor name instruction"
+  },
+  "@selectVendorCategory": {
+    "description": "Select vendor category section title"
+  },
+  "@guestInformation": {
+    "description": "Guest information section title"
+  },
+  "@pleaseFillGuestDetails": {
+    "description": "Guest form instruction text"
+  },
+  "@visitorId": {
+    "description": "Visitor ID field label"
+  },
+  "@enterVisitorId": {
+    "description": "Visitor ID field placeholder"
+  },
+  "@allow": {
+    "description": "Allow button text"
+  },
+  "@deny": {
+    "description": "Deny button text"
+  },
+  "@uploading": {
+    "description": "Upload progress text"
+  },
+  "@captureImage": {
+    "description": "Capture image button text"
+  },
+  "@exportLogs": {
+    "description": "Button text for exporting logs"
+  },
+  "@applyFilter": {
+    "description": "Button text for applying filters"
+  },
+  "@contactInformation": {
+    "description": "Section title for contact information"
+  },
+  "@phoneNumber": {
+    "description": "Label for phone number field"
+  },
+  "@visitDetails": {
+    "description": "Section title for visit details"
+  },
+  "@visitingUnit": {
+    "description": "Label for visiting unit"
+  },
+  "@cardNumber": {
+    "description": "Label for card number"
+  },
+  "@visitorTimeline": {
+    "description": "Section title for visitor timeline"
+  },
+  "@checkIn": {
+    "description": "Label for check in time"
+  },
+  "@checkOut": {
+    "description": "Label for check out time"
+  },
+  "@approvedBy": {
+    "description": "Label for approved by field"
+  },
+  "@searchHint": {
+    "description": "Hint text for search fields"
+  },
+  "@actions": {
+    "description": "Section title for actions"
+  },
+  "@unknownVisitor": {
+    "description": "Text shown for unknown visitor"
+  },
+  "@inGate": {
+    "description": "Label for in-gate field"
+  },
+  "@always": {
+    "description": "Text for always option"
+  },
+  "@alwaysAllowed": {
+    "description": "Status text for always allowed visitors"
+  },
+  "@retryIn": {
+    "description": "Text shown with countdown timer"
+  },
+  "appTitle": "वनगेट",
+  "welcome": "स्वागत है",
+  "welcomeToOnegate": "वनगेट में आपका स्वागत है",
+  "welcomeBack": "वापसी पर स्वागत है!",
+  "welcomeUser": "{userName} आपका स्वागत है! आपकी फोटो लेने की प्रक्रिया जारी है।",
+  "login": "लॉगिन",
+  "logout": "लॉगआउट",
+  "settings": "सेटिंग्स",
+  "changeLanguage": "भाषा बदलें",
+  "selectLanguage": "भाषा चुनें",
+  "currentPreference": "वर्तमान पसंद: {preference}",
+  "confirm": "पुष्टि करें",
+  "cancel": "रद्द करें",
+  "change": "बदलें",
+  "close": "बंद करें",
+  "save": "सहेजें",
+  "dashboard": "डैशबोर्ड",
+  "visitorManagement": "आगंतुक प्रबंधन",
+  "gatekeeper": "गेटकीपर",
+  "admin": "एडमिन",
+  "visitors": "आगंतुक",
+  "checkin": "चेक इन",
+  "checkout": "चेक आउट",
+  "approval": "अनुमोदन",
+  "approved": "अनुमोदित",
+  "pending": "लंबित",
+  "rejected": "अस्वीकृत",
+  "selectCamera": "कैमरा चुनें",
+  "frontCamera": "फ्रंट कैमरा",
+  "backCamera": "बैक कैमरा",
+  "cameraPermission": "कैमरा अनुमति",
+  "enableLocationPermissions": "इस सुविधा का उपयोग करने के लिए कृपया अपने डिवाइस सेटिंग्स में लोकेशन अनुमतियां सक्षम करें।",
+  "openSettings": "सेटिंग्स खोलें",
+  "noInternetConnection": "कोई इंटरनेट कनेक्शन उपलब्ध नहीं है। कृपया अपनी नेटवर्क सेटिंग्स जांचें।",
+  "error": "त्रुटि",
+  "success": "सफलता",
+  "retry": "पुनः प्रयास करें",
+  "visitorLogTitleInOutBook": "आगंतुक लॉग",
+  "visitorLogTitleVisitorIn": "आगंतुक प्रवेश",
+  "visitorLogTitleVisitorOut": "आगंतुक निकास",
+  "visitorLogTitleCards": "आगंतुक कार्ड",
+  "visitorLogTitleDefault": "आगंतुक लॉग",
+  "loadingMoreVisitors": "अधिक आगंतुक लोड हो रहे हैं...",
+  "exportVisitorLogs": "आगंतुक लॉग निर्यात करें",
+  "downloadLogsForDateRange": "निर्दिष्ट तिथि सीमा के लिए लॉग डाउनलोड करें",
+  "emailAddress": "ईमेल पता",
+  "enterEmailForExport": "निर्यात के लिए ईमेल दर्ज करें",
+  "pleaseEnterEmail": "कृपया ईमेल दर्ज करें",
+  "pleaseEnterValidEmail": "कृपया एक वैध ईमेल दर्ज करें",
+  "dateRange": "तिथि सीमा",
+  "pleaseSelectStartDate": "कृपया प्रारंभ तिथि चुनें",
+  "pleaseSelectEndDate": "कृपया समाप्ति तिथि चुनें",
+  "endDateCannotBeEarlier": "समाप्ति तिथि प्रारंभ तिथि से पहले नहीं हो सकती",
+  "fromDate": "प्रारंभ तिथि",
+  "toDate": "समाप्ति तिथि",
+  "selectStartDate": "प्रारंभ तिथि चुनें",
+  "selectEndDate": "समाप्ति तिथि चुनें",
+  "intercom": "इंटरकॉम",
+  "parcel": "पार्सल",
+  "scan": "स्कैन",
+  "cards": "कार्ड्स",
+  "qrCodeScanned": "क्यूआर कोड स्कैन किया गया",
+  "enterVisitorDetails": "आगंतुक विवरण दर्ज करें",
+  "tapToEnterMobileOrId": "मोबाइल नंबर या आगंतुक आईडी दर्ज करने के लिए टैप करें",
+  "examples": "उदाहरण:",
+  "loadingDashboard": "डैशबोर्ड लोड हो रहा है",
+  "pleaseWaitPreparingDashboard": "कृपया प्रतीक्षा करें जबकि हम आपका गेट डैशबोर्ड तैयार कर रहे हैं",
+  "fetchingDataForNetworkLogs": "नेटवर्क लॉग्स जनरेट करने के लिए डेटा प्राप्त किया जा रहा है...",
+  "searchMembers": "सदस्य खोजें",
+  "searchMembersHint": "सदस्य खोजें (कम से कम 3 अक्षर टाइप करें)",
+  "loadingMembers": "सदस्य लोड हो रहे हैं...",
+  "searchingMembers": "सदस्यों की खोज की जा रही है...",
+  "noMembersFound": "कोई सदस्य नहीं मिला।\nसदस्यों को उनके नाम या फ्लैट से खोजने के लिए कम से कम 3 अक्षर टाइप करें",
+  "waitingForApproval": "अनुमोदन की प्रतीक्षा की जा रही है...",
+  "failedToSearchMembers": "सदस्यों की खोज करने में विफल",
+  "errorSearchingMembers": "सदस्यों की खोज में त्रुटि",
+  "membersDataRefreshed": "सदस्यों का डेटा सफलतापूर्वक रिफ्रेश किया गया",
+  "selectUnit": "इकाई चुनें",
+  "selectMember": "सदस्य चुनें",
+  "continueAction": "जारी रखें",
+  "back": "वापस",
+  "next": "अगला",
+  "submit": "जमा करें",
+  "done": "हो गया",
+  "yes": "हां",
+  "no": "नहीं",
+  "ok": "ठीक है",
+  "apply": "लागू करें",
+  "clear": "साफ़ करें",
+  "reset": "रीसेट करें",
+  "refresh": "रिफ्रेश करें",
+  "search": "खोजें",
+  "filter": "फ़िल्टर करें",
+  "sort": "क्रमबद्ध करें",
+  "add": "जोड़ें",
+  "edit": "संपादित करें",
+  "delete": "हटाएं",
+  "view": "देखें",
+  "details": "विवरण",
+  "name": "नाम",
+  "mobileNumber": "मोबाइल नंबर",
+  "email": "ईमेल",
+  "address": "पता",
+  "building": "इमारत",
+  "unit": "इकाई",
+  "floor": "मंजिल",
+  "date": "तारीख",
+  "time": "समय",
+  "status": "स्थिति",
+  "active": "सक्रिय",
+  "inactive": "निष्क्रिय",
+  "enabled": "सक्षम",
+  "disabled": "अक्षम",
+  "online": "ऑनलाइन",
+  "offline": "ऑफलाइन",
+  "connected": "कनेक्टेड",
+  "disconnected": "डिस्कनेक्टेड",
+  "available": "उपलब्ध",
+  "unavailable": "अनुपलब्ध",
+  "signUp": "साइन अप",
+  "forgotPassword": "पासवर्ड भूल गए",
+  "resetPassword": "पासवर्ड रीसेट करें",
+  "password": "पासवर्ड",
+  "confirmPassword": "पासवर्ड की पुष्टि करें",
+  "username": "उपयोगकर्ता नाम",
+  "adminDashboardShortcuts": "एडमिन डैशबोर्ड शॉर्टकट्स (बेहतर किया जाएगा)",
+  "gateSelection": "गेट चयन",
+  "selectYourGate": "अपना गेट चुनें",
+  "unknownGate": "अज्ञात गेट",
+  "enableDisable": "सक्षम/अक्षम करें",
+  "gateChangedTo": "गेट बदलकर हो गया",
+  "noGateSelected": "कोई गेट चयनित नहीं",
+  "language": "भाषा",
+  "camera": "कैमरा",
+  "visitorSettings": "आगंतुक सेटिंग्स",
+  "appPermissions": "ऐप अनुमतियां",
+  "networkLogs": "नेटवर्क लॉग्स",
+  "dataObservability": "डेटा अवलोकन",
+  "gateSettings": "गेट सेटिंग्स",
+  "staffManagement": "स्टाफ प्रबंधन",
+  "dutyAlarms": "ड्यूटी अलार्म",
+  "kioskMode": "कियोस्क मोड",
+  "newEntry": "नई एंट्री",
+  "passId": "पास आईडी",
+  "mobile": "मोबाइल",
+  "comingFrom": "कहां से आ रहे हैं",
+  "purpose": "उद्देश्य",
+  "guestName": "अतिथि का नाम",
+  "guestCount": "अतिथियों की संख्या",
+  "visitorNumber": "आगंतुक संख्या",
+  "carNumber": "कार नंबर",
+  "vendor": "विक्रेता",
+  "delivery": "डिलीवरी",
+  "guest": "अतिथि",
+  "staff": "स्टाफ",
+  "cab": "कैब",
+  "enterVendorName": "विक्रेता का नाम दर्ज करें",
+  "enterCabDriverName": "कैब ड्राइवर का नाम दर्ज करें",
+  "enterDeliveryPersonName": "डिलीवरी व्यक्ति का नाम दर्ज करें",
+  "enterGuestName": "अतिथि का नाम दर्ज करें",
+  "enterStaffName": "स्टाफ का नाम दर्ज करें",
+  "loading": "लोड हो रहा है...",
+  "pleaseWait": "कृपया प्रतीक्षा करें...",
+  "languageChangeConfirmation": "क्या आप वाकई भाषा को {language} में बदलना चाहते हैं? ऐप तुरंत नई भाषा लागू कर देगा।",
+  "languageChanged": "भाषा सफलतापूर्वक बदली गई",
+  "gateName": "गेट का नाम",
+  "selectGate": "गेट चुनें",
+  "networkSettings": "नेटवर्क सेटिंग्स",
+  "profileSettings": "प्रोफाइल सेटिंग्स",
+  "appSettings": "ऐप सेटिंग्स",
+  "dataStorage": "डेटा स्टोरेज",
+  "cameraSettings": "कैमरा सेटिंग्स",
+  "languageSettings": "भाषा सेटिंग्स",
+  "visitorApprovalTime": "आगंतुक अनुमोदन समय",
+  "choosePreference": "कैमरा प्राथमिकता चुनें",
+  "english": "अंग्रेज़ी",
+  "hindi": "हिंदी",
+  "marathi": "मराठी",
+  "authenticating": "प्रमाणीकरण हो रहा है...",
+  "authenticationFailed": "प्रमाणीकरण विफल हुआ",
+  "authenticationSuccess": "प्रमाणीकरण सफल हुआ",
+  "sessionExpired": "सत्र समाप्त हो गया",
+  "pleaseLoginAgain": "कृपया फिर से लॉग इन करें",
+  "tokenRefreshed": "टोकन सफलतापूर्वक रिफ्रेश किया गया",
+  "refreshingToken": "टोकन रिफ्रेश हो रहा है...",
+  "allBuildings": "सभी भवन",
+  "noMoreData": "लोड करने के लिए और डेटा नहीं है",
+  "stateNotSuccess": "स्थिति VisitorLogSuccessState नहीं है",
+  "visitorLogInitialized": "VisitorLogView ID के साथ आरंभ किया गया",
+  "triggeringFetchForInOutBook": "इन आउट बुक के लिए FetchVisitorLogEvent ट्रिगर किया जा रहा है",
+  "triggeringFetchForVisitorIn": "विज़िटर इन के लिए FetchCheckInLogEvent ट्रिगर किया जा रहा है",
+  "triggeringFetchForCards": "कार्ड्स के लिए FetchCheckOutLogEvent ट्रिगर किया जा रहा है",
+  "triggeringFetchForVisitorOut": "विज़िटर आउट के लिए FetchCheckOutLogEvent ट्रिगर किया जा रहा है",
+  "triggeringSearchFor": "के लिए खोज ट्रिगर की जा रही है",
+  "searchVisitor": "विज़िटर खोजें",
+  "export": "निर्यात करें",
+  "noVisitorsFound": "कोई विज़िटर नहीं मिला",
+  "checkOutSuccessful": "चेक-आउट सफल हुआ",
+  "visitorCheckedOut": "विज़िटर को सफलतापूर्वक चेक आउट कर दिया गया है",
+  "loadingVisitors": "विज़िटर लोड हो रहे हैं...",
+  "visitorCount": "{count} आगंतुक",
+  "singleVisitor": "1 आगंतुक",
+  "todayVisitors": "आज",
+  "yesterdayVisitors": "कल",
+  "earlierVisitors": "पहले",
+  "checkOutConfirmation": "क्या आप वाकई इस आगंतुक को चेक आउट करना चाहते हैं?",
+  "visitorDetails": "आगंतुक विवरण",
+  "buildingSelection": "भवन चयन",
+  "selectBuilding": "भवन चुनें",
+  "noMoreVisitors": "और आगंतुक लोड करने के लिए नहीं हैं",
+  "errorLoadingVisitors": "आगंतुकों को लोड करने में त्रुटि",
+  "retryLoading": "पुनः लोड करें",
+  "confirmLogout": "लॉगआउट की पुष्टि करें",
+  "logoutMessage": "क्या आप वाकई लॉगआउट करना चाहते हैं?",
+  "logoutDescription": "अपने खाते तक पहुंचने के लिए आपको फिर से साइन इन करना होगा।",
+  "securityConfirmationRequired": "सुरक्षा पुष्टिकरण आवश्यक है",
+  "exitApp": "ऐप से बाहर निकलें",
+  "exitAppConfirmation": "क्या आप वाकई ऐप से बाहर निकलना चाहते हैं?",
+  "previous": "पिछला",
+  "skip": "छोड़ें",
+  "tryAgain": "पुनः प्रयास करें",
+  "changesSuccessful": "परिवर्तन सफलतापूर्वक सहेजे गए!",
+  "changesUpdated": "आपकी आगंतुक सेटिंग्स अपडेट कर दी गई हैं",
+  "saveFailed": "सहेजना विफल",
+  "requestPermission": "अनुमति का अनुरोध करें",
+  "request": "अनुरोध",
+  "permission": "अनुमति",
+  "selectedFlat": "चयनित फ्लैट",
+  "visitorApproved": "आगंतुक स्वीकृत",
+  "visitorRejected": "आगंतुक अस्वीकृत",
+  "leaveAtGate": "गेट पर छोड़ दें",
+  "memberNotReachable": "सदस्य तक पहुंच नहीं हो पा रही है",
+  "initializingRequest": "अनुरोध प्रारंभ हो रहा है...",
+  "uploadingImage": "छवि अपलोड हो रही है...",
+  "enterPasscode": "पासकोड दर्ज करें",
+  "visitorPasscode": "आगंतुक पासकोड",
+  "enterSixDigitPasscode": "जारी रखने के लिए अपना 6-अंकीय पासकोड दर्ज करें",
+  "passcodeRequired": "पासकोड आवश्यक है",
+  "enterSixDigitValidation": "कृपया 6-अंकीय पासकोड दर्ज करें",
+  "faceIdRegistration": "फेस आईडी पंजीकरण",
+  "lookStraight": "सीधे देखें",
+  "turnHeadLeft": "अपना सिर थोड़ा बाएं घुमाएं",
+  "turnHeadRight": "अपना सिर थोड़ा दाएं घुमाएं",
+  "lookUp": "थोड़ा ऊपर देखें",
+  "lookDown": "थोड़ा नीचे देखें",
+  "tiltHeadLeft": "अपना सिर बाएं झुकाएं",
+  "tiltHeadRight": "अपना सिर दाएं झुकाएं",
+  "smileSlightly": "थोड़ा मुस्कुराएं",
+  "blinkEyes": "अपनी आंखें झपकाएं",
+  "allowDrawOverApps": "'onegate' को अन्य ऐप्स के ऊपर प्रदर्शित होने की अनुमति दें",
+  "drawOverAppsDescription": "यह अनुमति आगंतुक के लिए अनुमोदन अनुरोध आने पर अनुमोदन स्क्रीन दिखाने के लिए आवश्यक है",
+  "allowEscapeDND": "'onegate' को 'परेशान न करें' मोड से बाहर निकलने की अनुमति दें",
+  "escapeDNDDescription": "यह अनुमति आपातकालीन अलार्म बजाने के लिए आवश्यक है, भले ही आपका डिवाइस DND मोड में हो",
+  "networkLogsDashboard": "नेटवर्क लॉग डैशबोर्ड",
+  "refreshLogs": "लॉग रीफ्रेश करें",
+  "noNetworkLogs": "कोई नेटवर्क लॉग उपलब्ध नहीं है",
+  "dataObservabilitySettings": "डेटा अवलोकन सेटिंग्स",
+  "healthCheckCompleted": "स्वास्थ्य जांच पूरी हुई",
+  "healthCheckFailed": "स्वास्थ्य जांच विफल रही",
+  "testNotificationSent": "परीक्षण सूचना सफलतापूर्वक भेजी गई",
+  "testNotificationFailed": "परीक्षण सूचना भेजने में विफल",
+  "indexSyncCompleted": "इंडेक्स सिंक सफलतापूर्वक पूरा हुआ",
+  "indexSyncFailed": "इंडेक्स सिंक विफल - कॉन्फ़िगरेशन जांचें",
+  "crashReports": "क्रैश रिपोर्ट्स",
+  "crashStatistics": "क्रैश सांख्यिकी",
+  "totalCrashes": "कुल क्रैश",
+  "fatalCrashes": "गंभीर क्रैश",
+  "last24h": "पिछले 24 घंटे",
+  "uniqueErrors": "अद्वितीय त्रुटियां",
+  "allCrashes": "सभी क्रैश",
+  "fatalOnly": "केवल गंभीर",
+  "nonFatal": "गैर-गंभीर",
+  "allCrashesLabel": "सभी क्रैश",
+  "fatalOnlyLabel": "केवल गंभीर",
+  "nonFatalLabel": "गैर-गंभीर",
+  "last24hLabel": "पिछले 24 घंटे",
+  "noCrashesFoundTitle": "कोई क्रैश नहीं मिला",
+  "noCrashesFoundMessage": "बहुत अच्छा! चयनित फ़िल्टर के लिए कोई क्रैश रिपोर्ट नहीं की गई है।",
+  "crashDetailsTitle": "क्रैश विवरण",
+  "copyCrashDetailsTooltip": "क्रैश विवरण कॉपी करें",
+  "errorTypeLabel": "त्रुटि प्रकार",
+  "fatalLabel": "गंभीर",
+  "timestampLabel": "समय-मुद्रा",
+  "appVersionLabel": "ऐप संस्करण",
+  "platformLabel": "प्लेटफॉर्म",
+  "deviceLabel": "डिवाइस",
+  "userIdLabel": "उपयोगकर्ता आईडी",
+  "gateIdLabel": "गेट आईडी",
+  "errorMessageLabel": "त्रुटि संदेश",
+  "stackTraceLabel": "स्टैक ट्रेस",
+  "memberStatus": "सदस्य स्थिति",
+  "towerA": "टॉवर A",
+  "towerB": "टॉवर B",
+  "allStatuses": "सभी स्थितियां",
+  "approvedMembersOnly": "केवल स्वीकृत सदस्य",
+  "staffOnly": "केवल स्टाफ",
+  "allDates": "सभी तिथियां",
+  "debugReportCopiedToClipboard": "डीबग रिपोर्ट क्लिपबोर्ड पर कॉपी की गई",
+  "errorSendingOTPPleaseTryAgain": "OTP भेजने में त्रुटि। कृपया पुनः प्रयास करें।",
+  "otpVerifiedSuccessfully": "OTP सफलतापूर्वक सत्यापित!",
+  "otpVerificationFailedPleaseTryAgain": "OTP सत्यापन विफल हुआ। कृपया पुनः प्रयास करें।",
+  "mobileNumberIsRequired": "मोबाइल नंबर आवश्यक है",
+  "noSpacesOrSpecialCharactersAllowed": "रिक्त स्थान या विशेष वर्ण अनुमति नहीं है",
+  "enterOTPSentToYourMobileNumber": "आपके मोबाइल नंबर पर भेजा गया OTP दर्ज करें",
+  "otpIsRequired": "OTP आवश्यक है",
+  "pleaseEnter6DigitOTP": "कृपया 6-अंकों का OTP दर्ज करें",
+  "allowByGatekeeper": "गेटकीपर द्वारा अनुमति दें",
+  "call": "कॉल करें",
+  "grantAccess": "पहुंच प्रदान करें",
+  "noMembersAvailable": "कोई सदस्य उपलब्ध नहीं है",
+  "clearSearch": "खोज साफ़ करें",
+  "noPurposeSelected": "कोई उद्देश्य चयनित नहीं",
+  "unknownPurpose": "अज्ञात उद्देश्य",
+  "analyticsDashboard": "एनालिटिक्स डैशबोर्ड",
+  "overview": "अवलोकन",
+  "userBehavior": "उपयोगकर्ता व्यवहार",
+  "performance": "प्रदर्शन",
+  "events": "घटनाएँ",
+  "loadingAnalyticsData": "एनालिटिक्स डेटा लोड हो रहा है...",
+  "confirmUpload": "अपलोड की पुष्टि करें",
+  "doYouWantToUpload": "क्या आप इस छवि को अपलोड करना चाहते हैं?",
+  "male": "पुरुष",
+  "female": "महिला",
+  "other": "अन्य",
+  "staffUpdatedSuccessfully": "स्टाफ सफलतापूर्वक अपडेट किया गया",
+  "selectPurposeOfVisit": "आगमन का उद्देश्य चुनें",
+  "visitorMobileNumber": "आगंतुक का मोबाइल नंबर",
+  "pleaseEnter10DigitNumber": "कृपया 10 अंकों का नंबर दर्ज करें",
+  "enterName": "नाम दर्ज करें",
+  "cameraPermissionRequired": "कैमरा अनुमति आवश्यक है",
+  "needCameraAccessForQR": "QR कोड स्कैन करने के लिए हमें कैमरा एक्सेस की आवश्यकता है",
+  "capturePhoto": "फोटो खींचें",
+  "changeLanguageConfirmation": "क्या आप वाकई भाषा को {language} में बदलना चाहते हैं? ऐप तुरंत नई भाषा लागू करेगा।",
+  "passcodeVerifiedSuccessfully": "पासकोड सफलतापूर्वक सत्यापित किया गया!",
+  "invalidPasscodeTryAgain": "अमान्य पासकोड। पुनः प्रयास करें।",
+  "errorVerifyingPasscode": "अमान्य पासकोड: पासकोड सत्यापित करने में विफल",
+  "parcels": "पार्सल",
+  "noParcelsFound": "कोई पार्सल नहीं मिला।",
+  "pleaseSelectPurpose": "कृपया उद्देश्य चुनें",
+  "selfEntrySettings": "स्वयं प्रवेश सेटिंग्स",
+  "enableDisableSelfEntry": "स्वयं प्रवेश सक्षम/अक्षम करें",
+  "changePassword": "पासवर्ड बदलें",
+  "changeYourPassword": "अपना पासवर्ड बदलें",
+  "couldNotLaunch": "{url} लॉन्च नहीं किया जा सका",
+  "screenNavigation": "स्क्रीन नेविगेशन",
+  "noScreenNavigationRecorded": "अभी तक कोई स्क्रीन नेविगेशन दर्ज नहीं किया गया",
+  "noParcelsAvailable": "कोई पार्सल उपलब्ध नहीं",
+  "noParcelRegistered": "वर्तमान में सिस्टम में कोई पार्सल पंजीकृत नहीं है।",
+  "somethingWentWrong": "कुछ गलत हो गया",
+  "errorLoadingParcelList": "पार्सल सूची लोड करने में त्रुटि हुई। कृपया अपने कनेक्शन की जांच करें और पुनः प्रयास करें।",
+  "enterMobileNumber": "मोबाइल नंबर दर्ज करें",
+  "mobileTab": "मोबाइल",
+  "passCodeTab": "पास कोड",
+  "enterTheVisitorMobileNumber": "आगंतुक का मोबाइल नंबर दर्ज करें",
+  "validatingMobileNumber": "मोबाइल नंबर सत्यापित किया जा रहा है...",
+  "introducingOnegateBrand": "onegate आपका संपूर्ण डिजिटल संरक्षक",
+  "secureDigitalWorld": "onegate के साथ अपनी डिजिटल दुनिया को सुरक्षित करें,\nऑल-इन-वन सुरक्षा एप्लिकेशन।",
+  "staffs": "कर्मचारी",
+  "viewYourSocietyStaffs": "अपने सोसायटी के कर्मचारियों को देखें",
+  "visitorsAndVehiclesSettings": "आगंतुक और वाहन सेटिंग्स",
+  "allVisitorsWillBeAutoApproved": "सभी आगंतुकों को स्वतः अनुमोदित किया जाएगा",
+  "visitorsSettings": "आगंतुक सेटिंग्स",
+  "markMandatoryFieldsForVisitors": "आगंतुकों के लिए अनिवार्य फ़ील्ड चिह्नित करें",
+  "configureDutyAlarms": "ड्यूटी अलार्म कॉन्फ़िगर करें",
+  "enableDisableDutyAlarms": "ड्यूटी अलार्म सक्षम/अक्षम करें",
+  "applicationSettings": "एप्लिकेशन सेटिंग्स",
+  "monitorSystemHealthSearchNotifications": "सिस्टम स्वास्थ्य की निगरानी करें, खोज और सूचनाएँ",
+  "chooseCameraPreference": "कैमरा प्राथमिकता चुनें",
+  "useFrontFacingCamera": "फ्रंट-फेसिंग कैमरा का उपयोग करें",
+  "useRearFacingCamera": "रियर-फेसिंग कैमरा का उपयोग करें",
+  "cameraSettingUpdatedSuccessfully": "कैमरा सेटिंग सफलतापूर्वक अपडेट की गई",
+  "selectApprovalTime": "अनुमोदन समय चुनें",
+  "chooseVisitorApprovalDuration": "आगंतुक अनुमोदन अवधि चुनें",
+  "approvalTimeoutDuration": "अनुमोदन टाइमआउट अवधि",
+  "approvalTimeUpdatedSuccessfully": "अनुमोदन समय सफलतापूर्वक अपडेट किया गया",
+  "selectDataStorage": "डेटा स्टोरेज चुनें",
+  "languageChangedSuccessfully": "भाषा सफलतापूर्वक बदली गई",
+  "errorChangingLanguage": "भाषा बदलने में त्रुटि: {error}",
+  "currentPreferenceGate": "वर्तमान प्राथमिकता: {gateName}",
+  "notSelectedGate": "कोई गेट चयनित नहीं",
+  "currentPreferenceCamera": "वर्तमान प्राथमिकता: {cameraType}",
+  "notSelectedCamera": "कोई कैमरा चयनित नहीं",
+  "seconds": "सेकंड",
+  "visitorIsSelfCheckIn": "आगंतुक स्वयं चेक इन है",
+  "visitorIsAllowedByGatekeeper": "आगंतुक को सदस्य द्वारा पूर्व-अनुमोदित किया गया है",
+  "visitorIsAllowedByGatekeeperOriginal": "आगंतुक को गेटकीपर द्वारा अनुमति दी गई है",
+  "unknownRequestType": "अज्ञात अनुरोध प्रकार",
+  "finish": "समाप्त",
+  "notSpecified": "निर्दिष्ट नहीं",
+  "select": "चुनें",
+  "societyOffice": "सोसायटी ऑफिस",
+  "tapToViewDetails": "विवरण देखने के लिए टैप करें",
+  "visitorAllowedByGatekeeper": "आगंतुक को गेटकीपर द्वारा अनुमति दी गई है",
+  "errorProcessingSelection": "चयन प्रसंस्करण में त्रुटि",
+  "trying": "प्रयास कर रहे हैं...",
+  "inOutBook": "इन आउट बुक",
+  "visitorIn": "विज़िटर इन",
+  "visitorOut": "विज़िटर आउट",
+  "defaultCategory": "डिफ़ॉल्ट श्रेणी",
+  "locationPermissionRequired": "स्थान अनुमति आवश्यक",
+  "locationPermissionMessage": "इस सुविधा का उपयोग करने के लिए स्थान अनुमति आवश्यक है",
+  "purposeEntry": "उद्देश्य प्रविष्टि",
+  "staffInformation": "कर्मचारी जानकारी",
+  "pleaseFillStaffDetails": "कृपया सभी कर्मचारी विवरण भरें",
+  "staffName": "कर्मचारी नाम",
+  "enterComingFromLocation": "आने का स्थान दर्ज करें",
+  "cabInformation": "कैब जानकारी",
+  "pleaseFillCabDetails": "कृपया सभी कैब विवरण भरें",
+  "cabDriverName": "कैब ड्राइवर नाम",
+  "cabNumber": "कैब नंबर",
+  "deliveryPersonName": "डिलीवरी व्यक्ति नाम",
+  "enterNameOfDeliveryPerson": "डिलीवरी व्यक्ति का नाम दर्ज करें",
+  "selectDeliveryCompany": "डिलीवरी कंपनी चुनें",
+  "vendorName": "विक्रेता नाम",
+  "enterNameOfVendor": "विक्रेता का नाम दर्ज करें",
+  "selectVendorCategory": "विक्रेता श्रेणी चुनें",
+  "guestInformation": "अतिथि जानकारी",
+  "pleaseFillGuestDetails": "कृपया सभी अतिथि विवरण भरें",
+  "visitorId": "आगंतुक आईडी",
+  "enterVisitorId": "आगंतुक आईडी दर्ज करें",
+  "allow": "अनुमति दें",
+  "deny": "अस्वीकार करें",
+  "uploading": "अपलोड हो रहा है...",
+  "captureImage": "छवि कैप्चर करें",
+  "exportLogs": "लॉग एक्सपोर्ट करें",
+  "applyFilter": "फिल्टर लागू करें",
+  "contactInformation": "संपर्क जानकारी",
+  "phoneNumber": "फोन नंबर",
+  "visitDetails": "यात्रा विवरण",
+  "visitingUnit": "विज़िटिंग यूनिट",
+  "cardNumber": "कार्ड नंबर",
+  "visitorTimeline": "आगंतुक समयरेखा",
+  "checkIn": "चेक इन",
+  "checkOut": "चेक आउट",
+  "approvedBy": "द्वारा अनुमोदित",
+  "searchHint": "खोजें",
+  "actions": "कार्य",
+  "unknownVisitor": "अज्ञात",
+  "inGate": "इन-गेट",
+  "always": "हमेशा",
+  "alwaysAllowed": "हमेशा अनुमति",
+  "retryIn": "पुनः प्रयास करें:"
+}

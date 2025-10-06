@@ -136,7 +136,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get retry => 'Retry';
 
   @override
-  String get visitorLogTitleInOutBook => 'Visitor Log';
+  String get visitorLogTitleInOutBook => 'In-Out Book';
 
   @override
   String get visitorLogTitleVisitorIn => 'Visitor In';

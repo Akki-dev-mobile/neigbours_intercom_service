@@ -335,7 +335,7 @@ abstract class AppLocalizations {
   /// Title for In Out Book visitor log
   ///
   /// In en, this message translates to:
-  /// **'Visitor Log'**
+  /// **'In-Out Book'**
   String get visitorLogTitleInOutBook;
 
   /// Title for Visitor In log

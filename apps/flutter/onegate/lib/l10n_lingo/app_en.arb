@@ -199,7 +199,7 @@
     "description": "Retry button text"
   },
   
-  "visitorLogTitleInOutBook": "In-Out Book",
+  "visitorLogTitleInOutBook": "Visitor Log",
   "@visitorLogTitleInOutBook": {
     "description": "Title for In Out Book visitor log"
   },

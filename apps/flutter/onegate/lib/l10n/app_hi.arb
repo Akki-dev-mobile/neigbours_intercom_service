@@ -199,7 +199,7 @@
     "description": "Retry button text"
   },
   
-  "visitorLogTitleInOutBook": "आगंतुक लॉग",
+  "visitorLogTitleInOutBook": "इन आउट बुक",
   "@visitorLogTitleInOutBook": {
     "description": "Title for In Out Book visitor log"
   },
