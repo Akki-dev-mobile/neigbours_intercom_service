@@ -491,7 +491,7 @@ abstract class AppLocalizations {
   /// Instruction text for visitor input
   ///
   /// In en, this message translates to:
-  /// **'Tap to enter mobile number or visitor ID'**
+  /// **'Tap to enter mobile number or passcode'**
   String get tapToEnterMobileOrId;
 
   /// Examples label

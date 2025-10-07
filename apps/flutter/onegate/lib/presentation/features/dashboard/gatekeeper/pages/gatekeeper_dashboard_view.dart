@@ -802,14 +802,16 @@ class _GateDashboardViewState extends State<GateDashboardView>
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+                color: Colors.black.withOpacity(0.10),
+                blurRadius: isTablet ? 28 : 22,
+                offset: Offset(0, isTablet ? 14 : 10),
+                spreadRadius: 0,
               ),
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: isTablet ? 14 : 12,
+                offset: Offset(0, isTablet ? 6 : 5),
+                spreadRadius: 0,
               ),
             ],
           ),
@@ -845,6 +847,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
                               fontWeight: FontWeight.w700,
                               color: const Color(0xff212427),
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           SizedBox(height: isTablet ? 6 : 4),
                           Text(
@@ -858,19 +862,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                         ],
                       ),
                     ),
-                    // Enhanced arrow icon
-                    Container(
-                      padding: EdgeInsets.all(isTablet ? 10 : 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xffF44336).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        color: const Color(0xffF44336),
-                        size: isTablet ? 18 : 16,
-                      ),
-                    ),
+                    // Removed arrow icon as per request
                   ],
                 ),
               ),
@@ -892,89 +884,156 @@ class _GateDashboardViewState extends State<GateDashboardView>
                     width: 1,
                   ),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Input type icon
-                    Container(
-                      padding: EdgeInsets.all(isTablet ? 10 : 8),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            const Color(0xffF44336).withOpacity(0.1),
-                            const Color(0xffD32F2F).withOpacity(0.05),
-                          ],
+                    Row(
+                      children: [
+                        // Input type icon
+                        Container(
+                          padding: EdgeInsets.all(isTablet ? 10 : 8),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                const Color(0xffF44336).withOpacity(0.1),
+                                const Color(0xffD32F2F).withOpacity(0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xffF44336).withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.edit_rounded,
+                            color: const Color(0xffF44336),
+                            size: isTablet ? 20 : 18,
+                          ),
                         ),
+
+                        SizedBox(width: isTablet ? 16 : 12),
+
+                        // Animated input examples
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.l10n.examples,
+                                style: TextStyle(
+                                  fontSize: isTablet ? 14 : 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xff57636C),
+                                ),
+                              ),
+                              SizedBox(height: isTablet ? 6 : 4),
+                              DefaultTextStyle(
+                                style: TextStyle(
+                                  color: const Color(0xff212427),
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: isTablet ? 18 : 16,
+                                  letterSpacing: 0.3,
+                                ),
+                                child: AnimatedTextKit(
+                                  repeatForever: true,
+                                  animatedTexts: [
+                                    TyperAnimatedText(
+                                      '9912345678',
+                                      speed: const Duration(milliseconds: 100),
+                                    ),
+                                    TyperAnimatedText(
+                                      '390709',
+                                      speed: const Duration(milliseconds: 100),
+                                    ),
+                                  ],
+                                  onTap: () {},
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Microphone icon (visual only)
+                        Container(
+                          padding: EdgeInsets.all(isTablet ? 8 : 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffF44336).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Icon(
+                            Icons.mic,
+                            color: const Color(0xffF44336),
+                            size: isTablet ? 18 : 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: isTablet ? 14 : 12),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(isTablet ? 12 : 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xffF44336).withOpacity(0.06),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: const Color(0xffF44336).withOpacity(0.2),
+                          color: const Color(0xffF44336).withOpacity(0.15),
                           width: 1,
                         ),
                       ),
-                      child: Icon(
-                        Icons.edit_rounded,
-                        color: const Color(0xffF44336),
-                        size: isTablet ? 20 : 18,
-                      ),
-                    ),
-
-                    SizedBox(width: isTablet ? 16 : 12),
-
-                    // Animated input examples
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Text(
-                            context.l10n.examples,
-                            style: TextStyle(
-                              fontSize: isTablet ? 14 : 12,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xff57636C),
-                            ),
+                          Icon(
+                            Icons.info_outline_rounded,
+                            size: isTablet ? 16 : 14,
+                            color: const Color(0xffF44336),
                           ),
-                          SizedBox(height: isTablet ? 6 : 4),
-                          DefaultTextStyle(
-                            style: TextStyle(
-                              color: const Color(0xff212427),
-                              fontWeight: FontWeight.w500,
-                              fontSize: isTablet ? 18 : 16,
-                              letterSpacing: 0.3,
-                            ),
-                            child: AnimatedTextKit(
-                              repeatForever: true,
-                              animatedTexts: [
-                                TyperAnimatedText(
-                                  '9912345678',
-                                  speed: const Duration(milliseconds: 100),
-                                ),
-                                TyperAnimatedText(
-                                  'G-39070',
-                                  speed: const Duration(milliseconds: 100),
-                                ),
-                              ],
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                Navigator.push(context, _createRoute());
-                              },
+                          SizedBox(width: isTablet ? 8 : 6),
+                          Expanded(
+                            child: Text(
+                              'This is an example preview. Tap Enter details to proceed.',
+                              style: TextStyle(
+                                color: const Color(0xff57636C),
+                                fontSize: isTablet ? 14 : 12,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-
-                    // Microphone icon (visual only)
-                    Container(
-                      padding: EdgeInsets.all(isTablet ? 8 : 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xffF44336).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Icon(
-                        Icons.mic,
-                        color: const Color(0xffF44336),
-                        size: isTablet ? 18 : 16,
+                    SizedBox(height: isTablet ? 12 : 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.push(context, _createRoute());
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xffF44336),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isTablet ? 14 : 12,
+                            vertical: isTablet ? 10 : 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: BorderSide(
+                              color: const Color(0xffF44336).withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        icon: const Icon(Icons.arrow_forward_rounded),
+                        label: Text(
+                          'Enter details',
+                          style: TextStyle(
+                            fontSize: isTablet ? 14 : 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                   ],

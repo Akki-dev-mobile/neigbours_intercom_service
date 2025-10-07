@@ -27,6 +27,11 @@ class DashboardBlocks extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
 
+    // Compute a common, responsive card height based on the In-Out card's sizing rules
+    final double targetWidth = screenWidth * (isTablet ? 0.22 : 0.3);
+    final double cardWidth = targetWidth.clamp(120.0, 180.0);
+    final double commonCardHeight = (cardWidth * 1.6).clamp(240.0, 320.0);
+
     return Container(
       margin: EdgeInsets.symmetric(
         horizontal: isTablet ? 8 : 4,
@@ -36,17 +41,23 @@ class DashboardBlocks extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Enhanced In-Out Card
-          _buildEnhancedInOutCard(context, isTablet),
+          _buildEnhancedInOutCard(context, isTablet, commonCardHeight),
 
           SizedBox(width: isTablet ? 16 : 12),
 
-          // Enhanced Visitor Cards Column
+          // Enhanced Visitor Cards Row (side-by-side)
           Expanded(
-            child: Column(
+            child: Row(
               children: [
-                _buildEnhancedVisitorInCard(context, isTablet),
-                SizedBox(height: isTablet ? 16 : 12),
-                _buildEnhancedVisitorOutCard(context, isTablet),
+                Expanded(
+                  child: _buildEnhancedVisitorInCard(
+                      context, isTablet, commonCardHeight),
+                ),
+                SizedBox(width: isTablet ? 16 : 12),
+                Expanded(
+                  child: _buildEnhancedVisitorOutCard(
+                      context, isTablet, commonCardHeight),
+                ),
               ],
             ),
           ),
@@ -56,49 +67,35 @@ class DashboardBlocks extends StatelessWidget {
   }
 
   // Enhanced In-Out Card with modern styling
-  Widget _buildEnhancedInOutCard(BuildContext context, bool isTablet) {
+  Widget _buildEnhancedInOutCard(
+      BuildContext context, bool isTablet, double commonCardHeight) {
     final screenWidth = MediaQuery.of(context).size.width;
     final double targetWidth = screenWidth * (isTablet ? 0.22 : 0.3);
     final double cardWidth = targetWidth.clamp(120.0, 180.0);
-    final double cardHeight = (cardWidth * 1.6).clamp(240.0, 320.0);
+    final double cardHeight = commonCardHeight;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       width: cardWidth,
       height: cardHeight,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          begin: Alignment.topCenter,
+          begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xffFFE0B2), // light orange 100
-            Color(0xffFFCC80), // medium orange 200 (slightly darker)
             Color(0xffFFE0B2),
+            Color(0xffFFCC80),
           ],
-          stops: [0.0, 0.5, 1.0],
         ),
         borderRadius: BorderRadius.circular(isTablet ? 24 : 20),
         border: Border.all(
           color: const Color(0xFFFFFFFF).withOpacity(0.35),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: isTablet ? 20 : 15,
-            offset: const Offset(0, 4),
-            spreadRadius: 0,
-          ),
-          BoxShadow(
-            color: const Color(0xffFFCC80).withOpacity(0.35),
-            blurRadius: isTablet ? 10 : 8,
-            offset: const Offset(0, 2),
-            spreadRadius: 0,
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Material(
         color: Colors.transparent,
-        elevation: isTablet ? 6 : 4,
+        elevation: isTablet ? 5 : 4,
         shadowColor: Colors.black.withOpacity(0.15),
         child: InkWell(
           borderRadius: BorderRadius.circular(isTablet ? 24 : 20),
@@ -111,7 +108,7 @@ class DashboardBlocks extends StatelessWidget {
             }
           },
           child: Padding(
-            padding: EdgeInsets.all(isTablet ? 20 : 16),
+            padding: EdgeInsets.all(isTablet ? 16 : 12),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -226,43 +223,27 @@ class DashboardBlocks extends StatelessWidget {
   }
 
   // Enhanced Visitor-In Card with modern styling
-  Widget _buildEnhancedVisitorInCard(BuildContext context, bool isTablet) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final double vCardHeight =
-        (screenWidth * (isTablet ? 0.16 : 0.18)).clamp(104.0, 144.0);
+  Widget _buildEnhancedVisitorInCard(
+      BuildContext context, bool isTablet, double commonCardHeight) {
+    final double vCardHeight = commonCardHeight;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       height: vCardHeight,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          begin: Alignment.topCenter,
+          begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xffC8E6C9), // lighter green
-            Color(0xff81C784), // mid green
             Color(0xffC8E6C9),
+            Color(0xff81C784),
           ],
-          stops: [0.0, 0.5, 1.0],
         ),
         borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
         border: Border.all(
           color: const Color(0xff81C784).withOpacity(0.35),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: isTablet ? 15 : 10,
-            offset: const Offset(0, 4),
-            spreadRadius: 0,
-          ),
-          BoxShadow(
-            color: const Color(0xff81C784).withOpacity(0.45),
-            blurRadius: isTablet ? 8 : 6,
-            offset: const Offset(0, 2),
-            spreadRadius: 0,
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Material(
         color: Colors.transparent,
@@ -278,42 +259,12 @@ class DashboardBlocks extends StatelessWidget {
           },
           child: Padding(
             padding: EdgeInsets.all(isTablet ? 16 : 12),
-            child: Row(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Enhanced content
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Enhanced count
-                      Text(
-                        inBook.toString(),
-                        style: TextStyle(
-                          color: const Color(0xff212427),
-                          fontSize: isTablet ? 32 : 28,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      SizedBox(height: isTablet ? 4 : 2),
-                      // Enhanced label
-                      Text(
-                        'Visitor-In',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: isTablet ? 16 : 14,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Enhanced icon container with better shadows
                 Container(
-                  padding: EdgeInsets.all(isTablet ? 12 : 10),
+                  padding: EdgeInsets.all(isTablet ? 16 : 12),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
@@ -333,33 +284,38 @@ class DashboardBlocks extends StatelessWidget {
                   child: Transform(
                     transform: Matrix4.rotationY(math.pi),
                     alignment: Alignment.center,
-                    child: CachedNetworkImage(
-                      height: isTablet ? 40 : 32,
-                      width: isTablet ? 40 : 32,
+                    child: Image(
+                      image: const CachedNetworkImageProvider(
+                        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z',
+                      ),
+                      height: isTablet ? 64 : 48,
+                      width: isTablet ? 64 : 48,
                       fit: BoxFit.contain,
-                      imageUrl:
-                          'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z',
-                      placeholder: (context, url) => Container(
-                        height: isTablet ? 40 : 32,
-                        width: isTablet ? 40 : 32,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Center(
-                          child: SizedBox(
-                            width: isTablet ? 16 : 12,
-                            height: isTablet ? 16 : 12,
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 1.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xff81C784),
+                      gaplessPlayback: true,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          height: isTablet ? 40 : 32,
+                          width: isTablet ? 40 : 32,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Center(
+                            child: SizedBox(
+                              width: isTablet ? 16 : 12,
+                              height: isTablet ? 16 : 12,
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Color(0xff81C784),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Container(
                         height: isTablet ? 40 : 32,
                         width: isTablet ? 40 : 32,
                         decoration: BoxDecoration(
@@ -375,6 +331,43 @@ class DashboardBlocks extends StatelessWidget {
                     ),
                   ),
                 ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Visitor-In',
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: isTablet ? 20 : 18,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 16 : 12,
+                    vertical: isTablet ? 8 : 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.5),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    inBook.toString(),
+                    style: TextStyle(
+                      color: const Color(0xff212427),
+                      fontSize: isTablet ? 28 : 24,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -384,43 +377,27 @@ class DashboardBlocks extends StatelessWidget {
   }
 
   // Enhanced Visitor-Out Card with modern styling
-  Widget _buildEnhancedVisitorOutCard(BuildContext context, bool isTablet) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final double vCardHeight =
-        (screenWidth * (isTablet ? 0.16 : 0.18)).clamp(104.0, 144.0);
+  Widget _buildEnhancedVisitorOutCard(
+      BuildContext context, bool isTablet, double commonCardHeight) {
+    final double vCardHeight = commonCardHeight;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       height: vCardHeight,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          begin: Alignment.topCenter,
+          begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xffEF9A9A), // lighter red (swapped from In-Out)
-            Color(0xffFFAB91), // lighter deep orange
             Color(0xffEF9A9A),
+            Color(0xffFFAB91),
           ],
-          stops: [0.0, 0.5, 1.0],
         ),
         borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
         border: Border.all(
           color: const Color(0xffFFAB91).withOpacity(0.35),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: isTablet ? 15 : 10,
-            offset: const Offset(0, 4),
-            spreadRadius: 0,
-          ),
-          BoxShadow(
-            color: const Color(0xffFFAB91).withOpacity(0.45),
-            blurRadius: isTablet ? 8 : 6,
-            offset: const Offset(0, 2),
-            spreadRadius: 0,
-          ),
-        ],
+        boxShadow: const [],
       ),
       child: Material(
         color: Colors.transparent,
@@ -436,42 +413,12 @@ class DashboardBlocks extends StatelessWidget {
           },
           child: Padding(
             padding: EdgeInsets.all(isTablet ? 16 : 12),
-            child: Row(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Enhanced content
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Enhanced count
-                      Text(
-                        outBook.toString(),
-                        style: TextStyle(
-                          color: const Color(0xff212427),
-                          fontSize: isTablet ? 32 : 28,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      SizedBox(height: isTablet ? 4 : 2),
-                      // Enhanced label
-                      Text(
-                        'Visitor-Out',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: isTablet ? 16 : 14,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Enhanced icon container with better shadows
                 Container(
-                  padding: EdgeInsets.all(isTablet ? 12 : 10),
+                  padding: EdgeInsets.all(isTablet ? 16 : 12),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
@@ -488,33 +435,38 @@ class DashboardBlocks extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: CachedNetworkImage(
-                    height: isTablet ? 40 : 32,
-                    width: isTablet ? 40 : 32,
+                  child: Image(
+                    image: const CachedNetworkImageProvider(
+                      'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z',
+                    ),
+                    height: isTablet ? 64 : 48,
+                    width: isTablet ? 64 : 48,
                     fit: BoxFit.contain,
-                    imageUrl:
-                        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z',
-                    placeholder: (context, url) => Container(
-                      height: isTablet ? 40 : 32,
-                      width: isTablet ? 40 : 32,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Center(
-                        child: SizedBox(
-                          width: isTablet ? 16 : 12,
-                          height: isTablet ? 16 : 12,
-                          child: const CircularProgressIndicator(
-                            strokeWidth: 1.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xffFFAB91),
+                    gaplessPlayback: true,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        height: isTablet ? 40 : 32,
+                        width: isTablet ? 40 : 32,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Center(
+                          child: SizedBox(
+                            width: isTablet ? 16 : 12,
+                            height: isTablet ? 16 : 12,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 1.5,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xffFFAB91),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => Container(
                       height: isTablet ? 40 : 32,
                       width: isTablet ? 40 : 32,
                       decoration: BoxDecoration(
@@ -526,6 +478,43 @@ class DashboardBlocks extends StatelessWidget {
                         color: const Color(0xffFFAB91),
                         size: isTablet ? 24 : 20,
                       ),
+                    ),
+                  ),
+                ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Visitor-Out',
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: isTablet ? 20 : 18,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 16 : 12,
+                    vertical: isTablet ? 8 : 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.5),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    outBook.toString(),
+                    style: TextStyle(
+                      color: const Color(0xff212427),
+                      fontSize: isTablet ? 28 : 24,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ),

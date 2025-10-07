@@ -216,7 +216,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterVisitorDetails => 'Enter Visitor Details';
 
   @override
-  String get tapToEnterMobileOrId => 'Tap to enter mobile number or visitor ID';
+  String get tapToEnterMobileOrId => 'Tap to enter mobile number or passcode';
 
   @override
   String get examples => 'Examples:';

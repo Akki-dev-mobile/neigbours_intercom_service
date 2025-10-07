@@ -329,7 +329,7 @@
     "description": "Enter visitor details section title"
   },
   
-  "tapToEnterMobileOrId": "Tap to enter mobile number or visitor ID",
+  "tapToEnterMobileOrId": "Tap to enter mobile number or passcode",
   "@tapToEnterMobileOrId": {
     "description": "Instruction text for visitor input"
   },
