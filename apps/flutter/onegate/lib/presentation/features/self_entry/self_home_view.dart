@@ -1004,8 +1004,13 @@ class _SelfHomeViewState extends State<SelfHomeView>
                 _positionAnimation.value
         : currentY;
 
+    // Calculate right alignment position
+    final horizontalPadding = _getResponsiveSpacing(screenWidth, 20, 24);
+    final rightPosition =
+        horizontalPadding + 16; // 16dp from the right edge of the card
+
     return Positioned(
-      left: (screenWidth - gestureSize) / 2, // bottom center horizontally
+      right: rightPosition, // right aligned with padding
       top: animatedY,
       child: AnimatedBuilder(
         animation: _tapAnimation,
