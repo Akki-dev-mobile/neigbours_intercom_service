@@ -36,9 +36,9 @@ import 'package:flutter_onegate/presentation/di/di.dart';
 import 'package:flutter_onegate/utils/ssl_helper.dart';
 import 'package:flutter_onegate/utils/custom_appauth.dart';
 import 'package:flutter_onegate/utils/ssl_bypass.dart';
-import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/auth/pages/login_provider.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/parcel/bloc/parcel_bloc.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
@@ -384,6 +384,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   // Track previous connectivity status to detect changes.
   bool prevHasInternet = true;
 
+  // Track app resume state to prevent false connectivity loss detection
+  bool _isAppResuming = false;
+  DateTime? _lastAppPauseTime;
+
   // Session management
   UserSessionManager? _sessionManager;
   StreamSubscription<UserSessionState>? _sessionStateSubscription;
@@ -411,12 +415,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     switch (state) {
       case AppLifecycleState.resumed:
         log('📱 App resumed from background/sleep');
+        _isAppResuming = true;
         // When app resumes, check internet with a delay to avoid false positives
         // This prevents showing "no internet" page when waking from sleep
         _handleAppResume();
         break;
       case AppLifecycleState.paused:
         log('📱 App paused (going to background/sleep)');
+        _lastAppPauseTime = DateTime.now();
+        _isAppResuming = false;
         // Save current state when going to background
         _saveCurrentAppState();
         break;
@@ -474,6 +481,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           Provider.of<InternetCheckProvider>(context, listen: false);
       await provider.checkInternetAccessWithDelay(
           delay: const Duration(seconds: 2));
+
+      // Reset the app resuming flag after a delay
+      Future.delayed(const Duration(seconds: 5), () {
+        _isAppResuming = false;
+        log('📱 App resume flag reset');
+      });
     } catch (e) {
       log('❌ Error handling app resume: $e');
     }
@@ -482,6 +495,23 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   /// Handle internet loss intelligently
   void _handleInternetLoss() async {
     try {
+      // Check if this is happening during app resume from sleep
+      if (_isAppResuming) {
+        log('📱 Internet loss detected during app resume - ignoring to prevent false positive');
+        return;
+      }
+
+      // Check if this happened shortly after app pause (likely sleep/wake cycle)
+      if (_lastAppPauseTime != null) {
+        final timeSincePause = DateTime.now().difference(_lastAppPauseTime!);
+        if (timeSincePause.inSeconds < 10) {
+          log('📱 Internet loss detected shortly after app pause (${timeSincePause.inSeconds}s) - likely sleep/wake cycle, ignoring');
+          return;
+        }
+      }
+
+      log('🌐 Real internet loss detected - proceeding with no internet page');
+
       // Save the current route information before showing no internet page
       _saveCurrentAppState();
 
@@ -690,8 +720,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           }
         }
       } else {
-        // User was on gatekeeper dashboard or other routes, redirect to login
-        print('🔍 [DEBUG] Redirecting to MyAppLogin (Gatekeeper/Other)');
+        // User was on gatekeeper dashboard or other routes, redirect to gatekeeper dashboard
+        print('🔍 [DEBUG] Redirecting to GateDashboardView (Gatekeeper/Other)');
 
         // Add a small delay to ensure smooth transition
         await Future.delayed(const Duration(milliseconds: 500));
@@ -701,7 +731,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         if (context != null && context.mounted) {
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
-              builder: (_) => const MyAppLogin(),
+              builder: (_) => const GateDashboardView(),
             ),
             (route) => false,
           );
@@ -715,7 +745,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           if (retryContext != null && retryContext.mounted) {
             Navigator.of(retryContext).pushAndRemoveUntil(
               MaterialPageRoute(
-                builder: (_) => const MyAppLogin(),
+                builder: (_) => const GateDashboardView(),
               ),
               (route) => false,
             );
@@ -723,86 +753,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           }
         }
       }
-    }
-
-    // Save current route information before internet loss
-    void saveCurrentRouteInfo() async {
-      final currentRoute =
-          ModalRoute.of(navigatorKey.currentContext!)?.settings.name;
-
-      // Check if current route is express entry related
-      bool isExpressEntry = false;
-      if (currentRoute != null) {
-        // Check if the current route contains express entry related paths
-        isExpressEntry = currentRoute.contains('SelfHomeView') ||
-            currentRoute.contains('self_entry') ||
-            currentRoute.contains('SelfEntryView') ||
-            currentRoute.contains('SelfEntryFacerecView') ||
-            currentRoute.contains('RequestPermissionPage2') ||
-            currentRoute.contains('qr_scanner_self') ||
-            currentRoute.contains('passcode_entry_view') ||
-            currentRoute.contains('visitor_in_entry') ||
-            currentRoute.contains('unit_selection_view') ||
-            currentRoute.contains('visitor_checkin_flow') ||
-            currentRoute.contains('VisitorsInEntry') ||
-            currentRoute.contains('PasscodeEntryView') ||
-            currentRoute.contains('QRScannerSelf') ||
-            currentRoute.contains('UnitSelectionView') ||
-            currentRoute.contains('RequestPermissionPage') ||
-            currentRoute.contains('visitor_in_screens');
-      }
-
-      // Additional check: if no specific route name, check if we're in express entry context
-      if (!isExpressEntry) {
-        // Check if the current widget context suggests express entry flow
-        final context = navigatorKey.currentContext;
-        if (context != null) {
-          // Check if we're in a widget that's part of express entry flow
-          final widget = context.widget;
-          final widgetType = widget.runtimeType.toString();
-          isExpressEntry = widgetType.contains('SelfHomeView') ||
-              widgetType.contains('SelfEntryView') ||
-              widgetType.contains('SelfEntryFacerecView') ||
-              widgetType.contains('RequestPermissionPage2') ||
-              widgetType.contains('QRScannerSelf') ||
-              widgetType.contains('PasscodeEntryView') ||
-              widgetType.contains('VisitorsInEntry') ||
-              widgetType.contains('UnitSelectionView') ||
-              widgetType.contains('RequestPermissionPage') ||
-              widgetType.contains('VisitorInEntry') ||
-              widgetType.contains('VisitorCheckinFlow') ||
-              widgetType.contains('SelfEntry') ||
-              widgetType.contains('ExpressEntry');
-        }
-      }
-
-      // Final fallback: Check if we're in any express entry related context
-      if (!isExpressEntry) {
-        final context = navigatorKey.currentContext;
-        if (context != null) {
-          // Check the widget tree for express entry indicators
-          final widget = context.widget;
-          final widgetString = widget.toString().toLowerCase();
-          isExpressEntry = widgetString.contains('self') &&
-              (widgetString.contains('entry') ||
-                  widgetString.contains('checkin') ||
-                  widgetString.contains('visitor') ||
-                  widgetString.contains('qr') ||
-                  widgetString.contains('passcode'));
-        }
-      }
-
-      // Debug logging
-      print('🔍 [DEBUG] Saving route info - currentRoute: $currentRoute');
-      print('🔍 [DEBUG] Saving route info - isExpressEntry: $isExpressEntry');
-      print(
-          '🔍 [DEBUG] Saving route info - widgetType: ${navigatorKey.currentContext?.widget.runtimeType}');
-
-      // Save the route information
-      await RouteTracker.saveCurrentRoute(
-        currentRoute ?? 'unknown',
-        isExpressEntry: isExpressEntry,
-      );
     }
 
     // If connectivity has changed, schedule a navigation update.

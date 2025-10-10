@@ -41,6 +41,17 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
   bool _isAutoCaptureReady = false;
   Timer? _faceDetectionTimer;
   Timer? _autoCaptureTimer;
+  Timer? _alignmentStabilityTimer;
+
+  // Stability tracking for smoother auto capture
+  DateTime? _alignmentStartTime;
+  bool _isAlignmentStable = false;
+
+  // Get alignment duration for progress feedback
+  int get _alignmentDurationMs {
+    if (_alignmentStartTime == null) return 0;
+    return DateTime.now().difference(_alignmentStartTime!).inMilliseconds;
+  }
 
   // Animation controllers
   late AnimationController _pulseController;
@@ -64,9 +75,13 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
   static const double _maxHeadRotationZ = 10.0; // Max head tilt
   static const double _minEyeOpenProbability = 0.3; // Min eye open probability
 
-  // Auto-capture settings
-  static const int _autoCaptureDelayMs = 2000; // 2 seconds of good alignment
-  static const int _faceDetectionIntervalMs = 100; // Check every 100ms
+  // Auto-capture settings - optimized for smoother flow
+  static const int _autoCaptureDelayMs =
+      1500; // 1.5 seconds of good alignment (reduced for faster capture)
+  static const int _faceDetectionIntervalMs =
+      150; // Check every 150ms (optimized for performance)
+  static const int _alignmentStabilityMs =
+      800; // Require 800ms of stable alignment before starting timer
 
   @override
   void initState() {
@@ -90,6 +105,7 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
     WidgetsBinding.instance.removeObserver(this);
     _faceDetectionTimer?.cancel();
     _autoCaptureTimer?.cancel();
+    _alignmentStabilityTimer?.cancel();
     _faceDetector.close();
     _pulseController.dispose();
     _scanController.dispose();
@@ -159,6 +175,7 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
       try {
         await _tts.stop();
         await _tts.speak(instruction);
+        print('📢 TTS: $instruction');
       } catch (_) {}
     });
   }
@@ -178,7 +195,8 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
   }
 
   Future<void> _detectFaces() async {
-    if (_isProcessing || !_cameraController.value.isInitialized) return;
+    if (_isProcessing || !_cameraController.value.isInitialized || _isCapturing)
+      return;
 
     _isProcessing = true;
     try {
@@ -201,7 +219,10 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
             _isFaceInFrame = false;
             _isGoodLighting = false;
             _isAutoCaptureReady = false;
+            _isAlignmentStable = false;
+            _alignmentStartTime = null;
             _autoCaptureTimer?.cancel();
+            _alignmentStabilityTimer?.cancel();
           }
         });
         _maybeSpeakInstruction();
@@ -242,17 +263,33 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
     _isGoodLighting = true; // For now, assume good lighting
 
     // Overall alignment check
+    final wasAligned = _isFaceAligned;
     _isFaceAligned = _isFaceInFrame &&
         isHeadStraight &&
         isLookingAtCamera &&
         _isGoodLighting;
 
-    // Auto-capture logic
-    if (_isFaceAligned && !_isAutoCaptureReady) {
-      _isAutoCaptureReady = true;
-      _startAutoCaptureTimer();
-    } else if (!_isFaceAligned && _isAutoCaptureReady) {
+    // Enhanced auto-capture logic with stability tracking
+    if (_isFaceAligned && !wasAligned) {
+      // Face just became aligned - start stability timer
+      _alignmentStartTime = DateTime.now();
+      _alignmentStabilityTimer?.cancel();
+      _alignmentStabilityTimer = Timer(
+        const Duration(milliseconds: _alignmentStabilityMs),
+        () {
+          if (_isFaceAligned && !_isAutoCaptureReady) {
+            _isAlignmentStable = true;
+            _isAutoCaptureReady = true;
+            _startAutoCaptureTimer();
+          }
+        },
+      );
+    } else if (!_isFaceAligned && wasAligned) {
+      // Face became misaligned - reset everything
+      _alignmentStartTime = null;
+      _isAlignmentStable = false;
       _isAutoCaptureReady = false;
+      _alignmentStabilityTimer?.cancel();
       _autoCaptureTimer?.cancel();
     }
   }
@@ -273,11 +310,17 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
     _autoCaptureTimer = Timer(
       const Duration(milliseconds: _autoCaptureDelayMs),
       () {
-        if (_isFaceAligned && _isAutoCaptureReady && !_isCapturing) {
+        if (_isFaceAligned &&
+            _isAutoCaptureReady &&
+            _isAlignmentStable &&
+            !_isCapturing) {
+          print('📷 Auto-capture triggered - face is stable and aligned');
           _lastInstructionSpoken = null;
           _tts.stop();
           _tts.speak('Hold still. Capturing.');
           _captureImage();
+        } else {
+          print('📷 Auto-capture cancelled - face not ready');
         }
       },
     );
@@ -286,25 +329,29 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
   Future<void> _captureImage() async {
     if (_isCapturing) return;
 
+    print('📷 Starting image capture process');
     setState(() {
       _isCapturing = true;
     });
 
     try {
-      // Stop face detection
+      // Stop all timers and detection
       _faceDetectionTimer?.cancel();
       _autoCaptureTimer?.cancel();
+      _alignmentStabilityTimer?.cancel();
 
       // Play success animation
       _successController.forward();
 
-      // Wait for animation
-      await Future.delayed(const Duration(milliseconds: 800));
+      // Reduced wait time for smoother experience
+      await Future.delayed(const Duration(milliseconds: 600));
 
       // Capture the image
+      print('📷 Taking picture...');
       final XFile image = await _cameraController.takePicture();
 
       if (mounted) {
+        print('📷 Image captured successfully');
         // For Express Entry, automatically proceed to next step
         if (widget.isExpressEntry) {
           Navigator.of(context).pop(image);
@@ -316,12 +363,22 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
         }
       }
     } catch (e) {
-      print('Error capturing image: $e');
+      print('❌ Error capturing image: $e');
       if (mounted) {
         _showErrorSnackBar('Failed to capture image. Please try again.');
+        // Reset state to allow retry
+        setState(() {
+          _isCapturing = false;
+          _isAutoCaptureReady = false;
+          _isAlignmentStable = false;
+        });
+        // Restart face detection for Express Entry
+        if (widget.isExpressEntry) {
+          _startFaceDetection();
+        }
       }
     } finally {
-      if (mounted) {
+      if (mounted && !widget.isExpressEntry) {
         setState(() {
           _isCapturing = false;
         });
@@ -330,6 +387,14 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
   }
 
   Future<void> _switchCamera() async {
+    // For express entry, prevent camera switching to maintain front camera
+    if (widget.isExpressEntry) {
+      print(
+          '📷 Express Entry: Camera switching disabled - maintaining front camera');
+      _showErrorSnackBar('Camera switching is disabled for face verification');
+      return;
+    }
+
     try {
       final cameras = await availableCameras();
       final CameraDescription newCamera = cameras.firstWhere(
@@ -723,17 +788,8 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
                     ),
                     child: _capturedImage == null
                         ? widget.isExpressEntry
-                            ? // Express Entry: Only show camera switch button
-                            Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  _buildControlButton(
-                                    onPressed: _switchCamera,
-                                    icon: Icons.flip_camera_ios_rounded,
-                                    size: isTablet ? 40 : 30,
-                                  ),
-                                ],
-                              )
+                            ? // Express Entry: No camera switch button (front camera only)
+                            Container() // Empty container - no camera switch for express entry
                             : // Regular flow: Show all controls
                             Row(
                                 mainAxisAlignment:
@@ -898,7 +954,12 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
     if (!_isFaceAligned) {
       return 'Look straight at the camera and keep your head steady.';
     }
-    if (_isAutoCaptureReady) {
+    if (_isAutoCaptureReady && !_isAlignmentStable) {
+      final progress =
+          (_alignmentDurationMs / _alignmentStabilityMs * 100).round();
+      return 'Hold steady. $progress% ready.';
+    }
+    if (_isAutoCaptureReady && _isAlignmentStable) {
       return 'Perfect. Hold still. Capturing soon.';
     }
     return null;

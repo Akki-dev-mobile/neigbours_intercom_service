@@ -439,6 +439,13 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                             const SizedBox(height: 60),
                             // Action Buttons
                             Center(child: _buildStatusText()),
+
+                            // Add Finish button for express entry flow only - below status text
+                            if (widget.selfcheckinFlow == true &&
+                                (requestType == RequestType.approved ||
+                                    requestType == RequestType.rejected))
+                              _buildExpressEntryFinishButton(),
+
                             const SizedBox(height: 60),
                           ],
                         ),
@@ -462,7 +469,11 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                       ],
                     ),
                     child: SafeArea(
-                      child: _buildActionButton(requestType),
+                      child: widget.selfcheckinFlow == true &&
+                              (requestType == RequestType.approved ||
+                                  requestType == RequestType.rejected)
+                          ? Container() // Empty container for express entry flow when approved/rejected
+                          : _buildActionButton(requestType),
                     ),
                   ),
                 ],
@@ -1938,6 +1949,98 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
             fontWeight: FontWeight.bold,
             color: Colors.white,
             letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Build responsive Finish button for express entry flow
+  Widget _buildExpressEntryFinishButton() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallMobile = screenWidth < 360;
+    final isMobile = screenWidth >= 360 && screenWidth < 768;
+    final isTablet = screenWidth >= 768;
+
+    return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: isSmallMobile
+            ? 16
+            : isMobile
+                ? 20
+                : 24,
+        vertical: isSmallMobile
+            ? 16
+            : isMobile
+                ? 20
+                : 24,
+      ),
+      child: Container(
+        width: double.infinity,
+        height: isSmallMobile
+            ? 56
+            : isMobile
+                ? 60
+                : isTablet
+                    ? 64
+                    : 68,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              Color(0xff212427),
+              Color(0xff57636C),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(
+            isSmallMobile
+                ? 16
+                : isMobile
+                    ? 18
+                    : 20,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: isSmallMobile ? 12 : 16,
+              offset: const Offset(0, 6),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: isSmallMobile ? 6 : 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: TextButton(
+          onPressed: _navigateToDashboard,
+          style: TextButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(
+                isSmallMobile
+                    ? 16
+                    : isMobile
+                        ? 18
+                        : 20,
+              ),
+            ),
+          ),
+          child: Text(
+            AppLocalizations.of(context).finish,
+            style: TextStyle(
+              fontSize: isSmallMobile
+                  ? 18
+                  : isMobile
+                      ? 20
+                      : isTablet
+                          ? 22
+                          : 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              letterSpacing: 0.5,
+            ),
           ),
         ),
       ),

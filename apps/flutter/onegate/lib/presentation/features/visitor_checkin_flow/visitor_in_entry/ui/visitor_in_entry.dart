@@ -309,7 +309,26 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       late CameraDescription selectedCamera;
 
       // Select the appropriate camera
-      if (selectedCameraValue == 'front') {
+      // For express entry (self check-in flow), always use front camera for face verification
+      if (widget.selfcheckinFlow) {
+        try {
+          selectedCamera = cameras.firstWhere(
+            (camera) => camera.lensDirection == CameraLensDirection.front,
+          );
+          print('📷 Express Entry: Using front camera for face verification');
+        } catch (e) {
+          // Fallback to back camera if front camera not available
+          selectedCamera = cameras.firstWhere(
+            (camera) => camera.lensDirection == CameraLensDirection.back,
+            orElse: () => cameras.first,
+          );
+          _showEnhancedErrorToast(
+            'Front Camera Unavailable',
+            'Using back camera instead for face verification',
+            Icons.camera_alt_outlined,
+          );
+        }
+      } else if (selectedCameraValue == 'front') {
         try {
           selectedCamera = cameras.firstWhere(
             (camera) => camera.lensDirection == CameraLensDirection.front,
@@ -879,7 +898,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                 request: 'allowByGatekeeper',
                 logID: state.visitorLog.visitor?.id.toString(),
                 selfcheckinFlow: widget.selfcheckinFlow,
-                isGatekeeperQRPasscodeEntry: widget.isGatekeeperQRPasscodeEntry, // Use the parameter to determine flow type
+                isGatekeeperQRPasscodeEntry: widget
+                    .isGatekeeperQRPasscodeEntry, // Use the parameter to determine flow type
               ),
             ),
           );
@@ -898,53 +918,56 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           pageTitle:
               '${AppLocalizations.of(context).purposeEntry} - ${effectivePurpose.categoryName}',
           pageBody: _buildPurposeForm(effectivePurpose),
-          floatingActionButton: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            child: Container(
-              width: double.infinity,
-              height: 56,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xff212427), Color(0xff57636C)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: _isSubmitting ? null : _handleSubmit,
-                  child: Center(
-                    child: Text(
-                      _isSubmitting
-                          ? 'Processing...'
-                          : AppLocalizations.of(context).next,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
+          floatingActionButton: widget.selfcheckinFlow
+              ? null
+              : Container(
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  child: Container(
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xff212427), Color(0xff57636C)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: _isSubmitting ? null : _handleSubmit,
+                        child: Center(
+                          child: Text(
+                            _isSubmitting
+                                ? 'Processing...'
+                                : AppLocalizations.of(context).next,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ),
         );
       },
     );
@@ -2688,6 +2711,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
         // Bottom spacing
         const SizedBox(height: 120),
+
+        // Add Next button for express entry flow only
+        if (widget.selfcheckinFlow) _buildExpressEntryNextButton(),
       ],
     );
   }
@@ -2702,6 +2728,97 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           Ionicons.mic_outline,
           size: 22,
           color: Color(0xffF44336),
+        ),
+      ),
+    );
+  }
+
+  // Build responsive Next button for express entry flow
+  Widget _buildExpressEntryNextButton() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallMobile = screenWidth < 360;
+    final isMobile = screenWidth >= 360 && screenWidth < 768;
+    final isTablet = screenWidth >= 768;
+
+    return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: isSmallMobile
+            ? 16
+            : isMobile
+                ? 20
+                : 24,
+        vertical: isSmallMobile
+            ? 16
+            : isMobile
+                ? 20
+                : 24,
+      ),
+      child: Container(
+        width: double.infinity,
+        height: isSmallMobile
+            ? 56
+            : isMobile
+                ? 60
+                : isTablet
+                    ? 64
+                    : 68,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xff212427), Color(0xff57636C)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(
+            isSmallMobile
+                ? 16
+                : isMobile
+                    ? 18
+                    : 20,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: isSmallMobile ? 12 : 16,
+              offset: const Offset(0, 6),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: isSmallMobile ? 6 : 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(
+              isSmallMobile
+                  ? 16
+                  : isMobile
+                      ? 18
+                      : 20,
+            ),
+            onTap: _isSubmitting ? null : _handleSubmit,
+            child: Center(
+              child: Text(
+                _isSubmitting
+                    ? 'Processing...'
+                    : AppLocalizations.of(context).next,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: isSmallMobile
+                      ? 18
+                      : isMobile
+                          ? 20
+                          : isTablet
+                              ? 22
+                              : 24,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

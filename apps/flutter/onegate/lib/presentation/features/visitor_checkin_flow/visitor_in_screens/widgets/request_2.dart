@@ -711,8 +711,125 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
     }
   }
 
-  // Build enhanced success item with QR scanner style
-  Widget _buildEnhancedSuccessItem({
+  // Build combined success card with all information in one read-only card
+  Widget _buildCombinedSuccessCard({
+    required BuildContext context,
+    required bool isTablet,
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallMobile = screenWidth < 360;
+    final isMobile = screenWidth >= 360 && screenWidth < 768;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.all(isSmallMobile
+          ? 16
+          : isMobile
+              ? 18
+              : isTablet
+                  ? 20
+                  : 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF4CAF50).withOpacity(0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4CAF50).withOpacity(0.15),
+            spreadRadius: 2,
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with read-only indicator
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.visibility_outlined,
+                      color: const Color(0xFF4CAF50),
+                      size: isSmallMobile ? 14 : 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Information Only',
+                      style: TextStyle(
+                        color: const Color(0xFF4CAF50),
+                        fontSize: isSmallMobile ? 10 : 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                Icons.info_outline,
+                color: const Color(0xFF4CAF50),
+                size: isSmallMobile ? 18 : 20,
+              ),
+            ],
+          ),
+
+          SizedBox(height: isSmallMobile ? 16 : 20),
+
+          // Entry Recorded section
+          _buildInfoSection(
+            context: context,
+            isTablet: isTablet,
+            icon: Icons.check_circle,
+            title: 'Entry Recorded',
+            description: 'Your visitor entry has been successfully recorded.',
+            color: const Color(0xFF4CAF50),
+          ),
+
+          SizedBox(height: isSmallMobile ? 12 : 16),
+
+          // Access Card section
+          _buildInfoSection(
+            context: context,
+            isTablet: isTablet,
+            icon: Icons.credit_card,
+            title: 'Access Card',
+            description:
+                'Please ask the receptionist to assign an access card for you.',
+            color: const Color(0xFF2196F3),
+          ),
+
+          SizedBox(height: isSmallMobile ? 12 : 16),
+
+          // Easy Access section
+          _buildInfoSection(
+            context: context,
+            isTablet: isTablet,
+            icon: Icons.elevator,
+            title: 'Easy Access',
+            description:
+                'This will allow easy access to the lift and your designated floor.',
+            color: const Color(0xFFFF9800),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Build individual info section within the combined card
+  Widget _buildInfoSection({
     required BuildContext context,
     required bool isTablet,
     required IconData icon,
@@ -724,128 +841,100 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
     final isSmallMobile = screenWidth < 360;
     final isMobile = screenWidth >= 360 && screenWidth < 768;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: EdgeInsets.all(isSmallMobile
-          ? 12
-          : isMobile
-              ? 14
-              : isTablet
-                  ? 16
-                  : 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
+    return Row(
+      children: [
+        // Icon section
+        Container(
+          width: isSmallMobile
+              ? 36
+              : isMobile
+                  ? 40
+                  : isTablet
+                      ? 44
+                      : 48,
+          height: isSmallMobile
+              ? 36
+              : isMobile
+                  ? 40
+                  : isTablet
+                      ? 44
+                      : 48,
+          decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: color.withOpacity(0.3),
+              width: 1,
+            ),
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Enhanced icon section
-          Container(
+          child: Icon(
+            icon,
+            color: color,
+            size: isSmallMobile
+                ? 18
+                : isMobile
+                    ? 20
+                    : isTablet
+                        ? 22
+                        : 24,
+          ),
+        ),
+
+        SizedBox(
             width: isSmallMobile
-                ? 40
+                ? 12
                 : isMobile
-                    ? 44
+                    ? 14
                     : isTablet
-                        ? 48
-                        : 56,
-            height: isSmallMobile
-                ? 40
-                : isMobile
-                    ? 44
-                    : isTablet
-                        ? 48
-                        : 56,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(0.2),
-                  spreadRadius: 1,
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: isSmallMobile
-                  ? 20
-                  : isMobile
-                      ? 22
-                      : isTablet
-                          ? 24
-                          : 28,
-            ),
-          ),
-          SizedBox(
-              width: isSmallMobile
-                  ? 12
-                  : isMobile
+                        ? 16
+                        : 18),
+
+        // Content section
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: isSmallMobile
                       ? 14
-                      : isTablet
-                          ? 16
-                          : 20),
-          // Enhanced content section
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: isSmallMobile
-                        ? 14
-                        : isMobile
-                            ? 15
-                            : isTablet
-                                ? 16
-                                : 18,
-                    color: const Color(0xff212427),
-                  ),
+                      : isMobile
+                          ? 15
+                          : isTablet
+                              ? 16
+                              : 17,
+                  color: const Color(0xff212427),
                 ),
-                SizedBox(
-                    height: isSmallMobile
-                        ? 4
-                        : isMobile
-                            ? 5
-                            : isTablet
-                                ? 6
-                                : 8),
-                Text(
-                  description,
-                  style: TextStyle(
-                    color: const Color(0xff57636C),
-                    fontSize: isSmallMobile
-                        ? 12
-                        : isMobile
-                            ? 13
-                            : isTablet
-                                ? 14
-                                : 15,
-                    fontWeight: FontWeight.w400,
-                    height: 1.4,
-                  ),
+              ),
+              SizedBox(
+                  height: isSmallMobile
+                      ? 3
+                      : isMobile
+                          ? 4
+                          : isTablet
+                              ? 5
+                              : 6),
+              Text(
+                description,
+                style: TextStyle(
+                  color: const Color(0xff57636C),
+                  fontSize: isSmallMobile
+                      ? 12
+                      : isMobile
+                          ? 13
+                          : isTablet
+                              ? 14
+                              : 15,
+                  fontWeight: FontWeight.w400,
+                  height: 1.4,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -1027,53 +1116,10 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
                                             ? 28
                                             : 32),
 
-                            // Success message items with QR scanner style
-                            Column(
-                              children: [
-                                _buildEnhancedSuccessItem(
-                                  context: context,
-                                  isTablet: isTablet,
-                                  icon: Icons.check_circle,
-                                  title: 'Entry Recorded',
-                                  description:
-                                      'Your visitor entry has been successfully recorded.',
-                                  color: const Color(0xFF4CAF50),
-                                ),
-                                SizedBox(
-                                    height: isSmallMobile
-                                        ? 8
-                                        : isMobile
-                                            ? 10
-                                            : isTablet
-                                                ? 12
-                                                : 16),
-                                _buildEnhancedSuccessItem(
-                                  context: context,
-                                  isTablet: isTablet,
-                                  icon: Icons.credit_card,
-                                  title: 'Access Card',
-                                  description:
-                                      'Please ask the receptionist to assign an access card for you.',
-                                  color: const Color(0xFF2196F3),
-                                ),
-                                SizedBox(
-                                    height: isSmallMobile
-                                        ? 8
-                                        : isMobile
-                                            ? 10
-                                            : isTablet
-                                                ? 12
-                                                : 16),
-                                _buildEnhancedSuccessItem(
-                                  context: context,
-                                  isTablet: isTablet,
-                                  icon: Icons.elevator,
-                                  title: 'Easy Access',
-                                  description:
-                                      'This will allow easy access to the lift and your designated floor.',
-                                  color: const Color(0xFFFF9800),
-                                ),
-                              ],
+                            // Combined success information card (read-only)
+                            _buildCombinedSuccessCard(
+                              context: context,
+                              isTablet: isTablet,
                             ),
                             SizedBox(
                                 height: isSmallMobile

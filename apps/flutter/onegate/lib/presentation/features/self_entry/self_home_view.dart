@@ -25,7 +25,7 @@ class SelfHomeView extends StatefulWidget {
 }
 
 class _SelfHomeViewState extends State<SelfHomeView>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   String? selectedGateName;
 
   // Gate storage for mobile number validation
@@ -35,14 +35,15 @@ class _SelfHomeViewState extends State<SelfHomeView>
   // Animation controllers for tap gesture
   late AnimationController _tapAnimationController;
   late AnimationController _positionAnimationController;
-  late AnimationController _shimmerAnimationController;
   late Animation<double> _tapAnimation;
   late Animation<double> _positionAnimation;
-  late Animation<double> _shimmerAnimation;
 
   // Animation state
   bool _isOnQRCard = true;
   bool _isAnimating = false;
+
+  // Kiosk mode monitoring
+  Timer? _kioskModeTimer;
 
   @override
   void initState() {
@@ -52,6 +53,10 @@ class _SelfHomeViewState extends State<SelfHomeView>
     _trackExpressEntryRoute();
     _enableKioskMode();
     _initializeAnimations();
+    // Add app lifecycle observer to monitor background/foreground changes
+    WidgetsBinding.instance.addObserver(this);
+    // Start periodic kiosk mode monitoring
+    _startKioskModeMonitoring();
     super.initState();
   }
 
@@ -66,12 +71,6 @@ class _SelfHomeViewState extends State<SelfHomeView>
     // Position animation controller (for moving between cards)
     _positionAnimationController = AnimationController(
       duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-
-    // Shimmer animation controller (for text shimmer effect)
-    _shimmerAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
 
@@ -91,14 +90,6 @@ class _SelfHomeViewState extends State<SelfHomeView>
       ),
     );
 
-    // Shimmer animation for text effect
-    _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
-      CurvedAnimation(
-        parent: _shimmerAnimationController,
-        curve: Curves.easeInOut,
-      ),
-    );
-
     // Start the animation loop
     _startAnimationLoop();
   }
@@ -106,7 +97,6 @@ class _SelfHomeViewState extends State<SelfHomeView>
   // Start the continuous animation loop
   void _startAnimationLoop() {
     _tapAnimationController.repeat(reverse: true);
-    _shimmerAnimationController.repeat();
 
     // Timer to alternate between cards: 6s on QR, 6s on Passcode
     Timer.periodic(const Duration(seconds: 6), (timer) {
@@ -139,7 +129,10 @@ class _SelfHomeViewState extends State<SelfHomeView>
   void dispose() {
     _tapAnimationController.dispose();
     _positionAnimationController.dispose();
-    _shimmerAnimationController.dispose();
+    // Stop kiosk mode monitoring
+    _kioskModeTimer?.cancel();
+    // Remove app lifecycle observer
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -155,12 +148,95 @@ class _SelfHomeViewState extends State<SelfHomeView>
     await RouteTracker.saveCurrentRoute('SelfHomeView', isExpressEntry: true);
   }
 
+  // Monitor app lifecycle to prevent background swapping in kiosk mode
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.paused:
+        // App is going to background - re-enforce kiosk mode
+        log('📱 App paused - re-enforcing kiosk mode');
+        _enforceKioskMode();
+        break;
+      case AppLifecycleState.resumed:
+        // App is returning to foreground - ensure kiosk mode is still active
+        log('📱 App resumed - ensuring kiosk mode is active');
+        _enforceKioskMode();
+        break;
+      case AppLifecycleState.inactive:
+        // App is transitioning - maintain kiosk mode
+        log('📱 App inactive - maintaining kiosk mode');
+        _enforceKioskMode();
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Enforce kiosk mode to prevent user from accessing system UI
+  void _enforceKioskMode() {
+    try {
+      // Re-apply immersive mode
+      enterKioskMode();
+
+      // Re-start kiosk mode plugin if needed
+      _flutterKioskMode.start().catchError((e) {
+        log("Error re-starting kiosk mode: $e");
+        // Still ensure immersive UI is applied
+        enterKioskMode();
+        return false; // Return value for catchError
+      });
+    } catch (e) {
+      log("Error enforcing kiosk mode: $e");
+      // Fallback to immersive UI only
+      enterKioskMode();
+    }
+  }
+
   // Disable kiosk mode for admin access
   void _disableKioskMode() async {
     try {
       await _flutterKioskMode.stop();
     } catch (e) {
       print("Error stopping kiosk mode: $e");
+    }
+  }
+
+  // Start periodic monitoring to ensure kiosk mode stays active
+  void _startKioskModeMonitoring() {
+    _kioskModeTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (mounted) {
+        log('🔒 Periodic kiosk mode check - ensuring mode is active');
+        _enforceKioskMode();
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  // Method to reset dialog flag for testing (can be called from debug menu)
+  Future<void> resetKioskDialogFlag() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('has_seen_pinned_popup');
+      log('🔒 Kiosk mode dialog flag reset - dialog will show again on next visit');
+    } catch (e) {
+      log('❌ Error resetting kiosk mode dialog flag: $e');
+    }
+  }
+
+  // Method to check dialog flag status for debugging
+  Future<bool> getKioskDialogFlagStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final hasSeenPinnedPopup =
+          prefs.getBool('has_seen_pinned_popup') ?? false;
+      log('🔒 Kiosk mode dialog flag status: $hasSeenPinnedPopup');
+      return hasSeenPinnedPopup;
+    } catch (e) {
+      log('❌ Error checking kiosk mode dialog flag: $e');
+      return false;
     }
   }
 
@@ -198,11 +274,14 @@ class _SelfHomeViewState extends State<SelfHomeView>
   }
 
   void enterKioskMode() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // Use immersive mode to prevent user from accessing system UI
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: Colors.transparent, // Hide status bar
         systemNavigationBarColor: Colors.transparent, // Hide navigation bar
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
     );
   }
@@ -214,6 +293,8 @@ class _SelfHomeViewState extends State<SelfHomeView>
       final hasSeenPinnedPopup =
           prefs.getBool('has_seen_pinned_popup') ?? false;
 
+      log('🔒 Kiosk mode - hasSeenPinnedPopup: $hasSeenPinnedPopup');
+
       // Engage system immersive UI first
       enterKioskMode();
       // Start Android kiosk/lock task mode via plugin
@@ -221,12 +302,15 @@ class _SelfHomeViewState extends State<SelfHomeView>
 
       // If user hasn't seen the popup yet, show a custom dialog to explain kiosk mode
       if (!hasSeenPinnedPopup) {
+        log('🔒 Showing kiosk mode info dialog for first time');
         // Wait a bit for the system dialog to appear, then show our custom dialog
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
             _showKioskModeInfoDialog();
           }
         });
+      } else {
+        log('🔒 Kiosk mode info dialog already shown - skipping');
       }
     } catch (e) {
       log("Error starting kiosk mode: $e");
@@ -237,9 +321,6 @@ class _SelfHomeViewState extends State<SelfHomeView>
 
   // Show kiosk mode information dialog (only once)
   void _showKioskModeInfoDialog() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isTablet = screenWidth > 600;
-
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -300,11 +381,18 @@ class _SelfHomeViewState extends State<SelfHomeView>
                 height: 48,
                 child: ElevatedButton(
                   onPressed: () async {
-                    // Mark that user has seen the popup
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.setBool('has_seen_pinned_popup', true);
+                    try {
+                      // Mark that user has seen the popup
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('has_seen_pinned_popup', true);
 
-                    Navigator.of(context).pop(); // Close dialog
+                      log('🔒 User dismissed kiosk mode dialog - flag saved');
+
+                      Navigator.of(context).pop(); // Close dialog
+                    } catch (e) {
+                      log('❌ Error saving kiosk mode dialog flag: $e');
+                      Navigator.of(context).pop(); // Close dialog anyway
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xff2196F3),
@@ -924,83 +1012,42 @@ class _SelfHomeViewState extends State<SelfHomeView>
         builder: (context, child) {
           return Transform.scale(
             scale: _tapAnimation.value,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                // Gesture icon with ripple effect
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Ripple effect
-                    Container(
-                      width: gestureSize * 1.5,
-                      height: gestureSize * 1.5,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xffF44336).withOpacity(0.1),
-                      ),
-                      child: AnimatedBuilder(
-                        animation: _tapAnimationController,
-                        builder: (context, child) {
-                          return Transform.scale(
-                            scale: 0.5 + (_tapAnimationController.value * 0.5),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: const Color(0xffF44336).withOpacity(0.2),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    // Main gesture icon
-                    Container(
-                      width: gestureSize,
-                      height: gestureSize,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(
-                          0xffF44336,
-                        ).withOpacity(0.18), // transparent red background
-                        border: Border.all(
-                          color: const Color(0xffF44336).withOpacity(0.35),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xffF44336).withOpacity(0.25),
-                            blurRadius: 16,
-                            spreadRadius: 4,
+                // Ripple effect
+                Container(
+                  width: gestureSize * 1.5,
+                  height: gestureSize * 1.5,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xffF44336).withOpacity(0.1),
+                  ),
+                  child: AnimatedBuilder(
+                    animation: _tapAnimationController,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: 0.5 + (_tapAnimationController.value * 0.5),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xffF44336).withOpacity(0.2),
                           ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.touch_app_rounded,
-                        color: Colors.white,
-                        size: gestureSize * 0.55,
-                      ),
-                    ),
-                  ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
 
-                // Spacing between icon and text
-                SizedBox(height: isSmallMobile ? 8 : 10),
-
-                // "Tap Here" text below the gesture icon
+                // Main gesture icon
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  width: gestureSize,
+                  height: gestureSize,
                   decoration: BoxDecoration(
+                    shape: BoxShape.circle,
                     color: const Color(
                       0xffF44336,
-                    ).withOpacity(0.18), // Glassmorphism background
-                    borderRadius: BorderRadius.circular(
-                      16,
-                    ), // Smooth pill shape
+                    ).withOpacity(0.18), // transparent red background
                     border: Border.all(
                       color: const Color(0xffF44336).withOpacity(0.35),
                       width: 1,
@@ -1008,45 +1055,15 @@ class _SelfHomeViewState extends State<SelfHomeView>
                     boxShadow: [
                       BoxShadow(
                         color: const Color(0xffF44336).withOpacity(0.25),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                        blurRadius: 16,
+                        spreadRadius: 4,
                       ),
                     ],
                   ),
-                  child: AnimatedBuilder(
-                    animation: _shimmerAnimation,
-                    builder: (context, child) {
-                      return ShaderMask(
-                        shaderCallback: (bounds) {
-                          return LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              const Color(0xFF222222),
-                              Colors.white,
-                              const Color(0xFF222222),
-                            ],
-                            stops: [
-                              _shimmerAnimation.value - 0.3,
-                              _shimmerAnimation.value,
-                              _shimmerAnimation.value + 0.3,
-                            ],
-                          ).createShader(bounds);
-                        },
-                        child: Text(
-                          'Tap Here',
-                          style: TextStyle(
-                            color: Colors
-                                .white, // This will be masked by the shader
-                            fontSize: isSmallMobile
-                                ? 14
-                                : 16, // 14sp mobile, 16sp tablet
-                            fontWeight: FontWeight.w500, // Medium weight
-                            letterSpacing: 0.3, // Better clarity
-                          ),
-                        ),
-                      );
-                    },
+                  child: Icon(
+                    Icons.touch_app_rounded,
+                    color: Colors.white,
+                    size: gestureSize * 0.55,
                   ),
                 ),
               ],
