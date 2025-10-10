@@ -22,6 +22,7 @@ import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpose/entity/purpose_mapper.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
+import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/face_liveness_camera_screen.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:path_provider/path_provider.dart';
@@ -363,8 +364,12 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       final XFile? image = await Navigator.push<XFile?>(
         context,
         MaterialPageRoute(
-          builder: (context) =>
-              CameraPreviewScreen(cameraController: cameraController!),
+          builder: (context) => widget.selfcheckinFlow
+              ? FaceLivenessCameraScreen(
+                  cameraController: cameraController!,
+                  isExpressEntry: true,
+                )
+              : CameraPreviewScreen(cameraController: cameraController!),
         ),
       );
 
