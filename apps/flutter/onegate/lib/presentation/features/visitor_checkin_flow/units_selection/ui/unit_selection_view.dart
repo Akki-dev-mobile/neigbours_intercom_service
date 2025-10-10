@@ -1971,12 +1971,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Lottie.asset(
-                      'assets/json/approved.json',
-                      width: 150,
-                      height: 150,
-                      repeat: false,
-                    ),
+                    _buildResponsiveLottieAnimation(),
                     const SizedBox(height: 16),
                     const Text(
                       "Visitor Allowed By Gatekeeper",
@@ -3037,6 +3032,38 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       'company_name': companyName ?? "",
       "file": widget.visitor.visitor_image ?? ""
     };
+  }
+
+  // Build responsive LOTTIE animation for approval dialog
+  Widget _buildResponsiveLottieAnimation() {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Enhanced responsive breakpoints for better scaling
+    final isSmallMobile = screenWidth <= 600;
+    final isMediumTablet = screenWidth > 600 && screenWidth <= 900;
+    final isLargeTablet = screenWidth > 900 && screenWidth <= 1200;
+
+    // Enhanced responsive scaling factors for LOTTIE animations
+    final lottieScaleFactor = isSmallMobile
+        ? 1.0
+        : isMediumTablet
+            ? 1.4
+            : isLargeTablet
+                ? 1.8
+                : 2.2; // Much more aggressive scaling for desktop
+
+    // Base dimensions (mobile)
+    const baseLottieSize = 150.0;
+
+    // Scaled dimensions
+    final lottieSize = baseLottieSize * lottieScaleFactor;
+
+    return Lottie.asset(
+      'assets/json/approved.json',
+      width: lottieSize,
+      height: lottieSize,
+      repeat: false,
+    );
   }
 }
 

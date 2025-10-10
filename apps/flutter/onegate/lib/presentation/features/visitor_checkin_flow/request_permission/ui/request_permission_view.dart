@@ -92,7 +92,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                 Navigator.pop(context);
               },
               hasBackButton: true,
-              pageTitle: AppLocalizations.of(context)!.permission,
+              pageTitle: AppLocalizations.of(context).permission,
               pageBody: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,7 +150,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(
-                      AppLocalizations.of(context)!.selectedFlat,
+                      AppLocalizations.of(context).selectedFlat,
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -267,42 +267,64 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
   }
 
   Widget _getLottieAnimation(RequestType requestType) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Enhanced responsive breakpoints for better scaling
+    final isSmallMobile = screenWidth <= 600;
+    final isMediumTablet = screenWidth > 600 && screenWidth <= 900;
+    final isLargeTablet = screenWidth > 900 && screenWidth <= 1200;
+
+    // Enhanced responsive scaling factors for LOTTIE animations
+    final lottieScaleFactor = isSmallMobile
+        ? 1.0
+        : isMediumTablet
+            ? 1.4
+            : isLargeTablet
+                ? 1.8
+                : 2.2; // Much more aggressive scaling for desktop
+
+    // Base dimensions (mobile)
+    const baseLottieHeight = 200.0;
+
+    // Scaled dimensions
+    final lottieHeight = baseLottieHeight * lottieScaleFactor;
+
     switch (requestType) {
       case RequestType.notRecheable:
         return Lottie.network(
           'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/allow_gatekeeper_a7f14dfb91.json?updated_at=2023-09-21T12:29:40.807Z',
-          height: 200,
+          height: lottieHeight,
         );
       case RequestType.approved:
         return Lottie.network(
           'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/accepted_ef4c4982b2.json?updated_at=2023-08-23T06:28:49.810Z',
-          height: 200,
+          height: lottieHeight,
         );
       case RequestType.leaveAtGate:
         return Lottie.network(
           'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/leave_at_gate_048fedfdb6.json?updated_at=2023-08-23T06:28:51.200Z',
-          height: 200,
+          height: lottieHeight,
         );
       case RequestType.request:
         return Lottie.network(
           'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/request_permission_b6ef131475.json?updated_at=2023-08-23T06:28:52.175Z',
-          height: 200,
+          height: lottieHeight,
         );
       case RequestType.rejected:
         return Lottie.network(
           'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/rejected_4bcdedc751.json?updated_at=2023-08-23T06:28:51.894Z',
-          height: 200,
+          height: lottieHeight,
         );
       case RequestType.waiting:
         return Lottie.network(
           'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/waiting_for_approval_07eb42d1d5.json?updated_at=2023-08-23T06:28:52.591Z',
-          height: 200,
+          height: lottieHeight,
         );
       default:
         {
           return Lottie.network(
             'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/walk_e471a69550.json?updated_at=2023-08-23T06:28:52.519Z',
-            height: 200,
+            height: lottieHeight,
           );
         }
     }

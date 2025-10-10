@@ -3,7 +3,6 @@ import 'dart:developer';
 
 import 'package:alarm/alarm.dart';
 // No background task dependencies needed
-import 'package:device_preview/device_preview.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -301,74 +300,71 @@ void main() async {
   await ThemeManager.initializeWithAppId(appId);
 
   runApp(
-    DevicePreview(
-      enabled: kDebugMode, // Enable device preview only in debug mode
-      builder: (context) => ScreenUtilInit(
-        fontSizeResolver: (num size, ScreenUtil _) => 0.5,
-        enableScaleText: () => true,
-        designSize: const Size(360, 690),
-        minTextAdapt: true,
-        splitScreenMode: true,
-        builder: (_, child) => MultiProvider(
-          providers: [
-            // Language provider for multilingual support
-            ChangeNotifierProvider<LanguageProvider>(
-              create: (_) => LanguageProvider()..initialize(),
-            ),
-            ChangeNotifierProvider<PurposeProvider>(
-              create: (_) => PurposeProvider(),
-            ),
-            ChangeNotifierProvider<VisitorLogsProvider>(
-              create: (_) => VisitorLogsProvider(),
-            ),
-            ChangeNotifierProvider<VisitorSettingsProvider>(
-              create: (_) => VisitorSettingsProvider(),
-            ),
-            ChangeNotifierProvider<LoginProvider>(
-              create: (_) => LoginProvider(authService: GetIt.I<AuthService>()),
-            ),
-            ChangeNotifierProvider<GateProvider>(
-              create: (_) => GateProvider(),
-            ),
-            ChangeNotifierProvider(create: (_) => InternetCheckProvider()),
-            ChangeNotifierProvider<CameraSettingsProvider>(
-              create: (_) => CameraSettingsProvider(),
-            ),
-            ChangeNotifierProvider<VisitorApprovalTimeProvider>(
-              create: (_) => VisitorApprovalTimeProvider(),
-            ),
-            ChangeNotifierProvider(create: (context) => TimerService()),
-          ],
-          child: MultiBlocProvider(
-            providers: [
-              BlocProvider(create: (context) => ParcelBloc(RemoteDataSource())),
-              BlocProvider(
-                  create: (context) =>
-                      LicensePlateBloc(LicensePlateRepository())),
-              BlocProvider<GatekeeperDashboardBloc>(
-                create: (context) => GatekeeperDashboardBloc(
-                  VisitorUsecase(
-                    VisitorRepoImpl(RemoteDataSource()), // Pass dependencies
-                  ),
-                  VisitorLogUsecase(
-                    VisitorLogRepositoryImpl(
-                      RemoteDataSource(),
-                    ),
-                  ),
-                ),
-              ),
-              BlocProvider<VisitorLogBloc>(
-                create: (context) => VisitorLogBloc(
-                  VisitorLogUsecase(
-                    VisitorLogRepositoryImpl(
-                      RemoteDataSource(),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-            child: const MyApp(),
+    ScreenUtilInit(
+      fontSizeResolver: (num size, ScreenUtil _) => 0.5,
+      enableScaleText: () => true,
+      designSize: const Size(360, 690),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (_, child) => MultiProvider(
+        providers: [
+          // Language provider for multilingual support
+          ChangeNotifierProvider<LanguageProvider>(
+            create: (_) => LanguageProvider()..initialize(),
           ),
+          ChangeNotifierProvider<PurposeProvider>(
+            create: (_) => PurposeProvider(),
+          ),
+          ChangeNotifierProvider<VisitorLogsProvider>(
+            create: (_) => VisitorLogsProvider(),
+          ),
+          ChangeNotifierProvider<VisitorSettingsProvider>(
+            create: (_) => VisitorSettingsProvider(),
+          ),
+          ChangeNotifierProvider<LoginProvider>(
+            create: (_) => LoginProvider(authService: GetIt.I<AuthService>()),
+          ),
+          ChangeNotifierProvider<GateProvider>(
+            create: (_) => GateProvider(),
+          ),
+          ChangeNotifierProvider(create: (_) => InternetCheckProvider()),
+          ChangeNotifierProvider<CameraSettingsProvider>(
+            create: (_) => CameraSettingsProvider(),
+          ),
+          ChangeNotifierProvider<VisitorApprovalTimeProvider>(
+            create: (_) => VisitorApprovalTimeProvider(),
+          ),
+          ChangeNotifierProvider(create: (context) => TimerService()),
+        ],
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (context) => ParcelBloc(RemoteDataSource())),
+            BlocProvider(
+                create: (context) =>
+                    LicensePlateBloc(LicensePlateRepository())),
+            BlocProvider<GatekeeperDashboardBloc>(
+              create: (context) => GatekeeperDashboardBloc(
+                VisitorUsecase(
+                  VisitorRepoImpl(RemoteDataSource()), // Pass dependencies
+                ),
+                VisitorLogUsecase(
+                  VisitorLogRepositoryImpl(
+                    RemoteDataSource(),
+                  ),
+                ),
+              ),
+            ),
+            BlocProvider<VisitorLogBloc>(
+              create: (context) => VisitorLogBloc(
+                VisitorLogUsecase(
+                  VisitorLogRepositoryImpl(
+                    RemoteDataSource(),
+                  ),
+                ),
+              ),
+            ),
+          ],
+          child: const MyApp(),
         ),
       ),
     ),
@@ -406,6 +402,121 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           Provider.of<InternetCheckProvider>(context, listen: false);
       provider.checkInternetAccess();
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.resumed:
+        log('📱 App resumed from background/sleep');
+        // When app resumes, check internet with a delay to avoid false positives
+        // This prevents showing "no internet" page when waking from sleep
+        _handleAppResume();
+        break;
+      case AppLifecycleState.paused:
+        log('📱 App paused (going to background/sleep)');
+        // Save current state when going to background
+        _saveCurrentAppState();
+        break;
+      case AppLifecycleState.inactive:
+        log('📱 App inactive');
+        break;
+      case AppLifecycleState.detached:
+        log('📱 App detached');
+        break;
+      case AppLifecycleState.hidden:
+        log('📱 App hidden');
+        break;
+    }
+  }
+
+  /// Save current app state when going to background/sleep
+  void _saveCurrentAppState() async {
+    try {
+      final currentRoute =
+          ModalRoute.of(navigatorKey.currentContext!)?.settings.name;
+      log('💾 Saving app state - current route: $currentRoute');
+
+      // Save the current route and context
+      await RouteTracker.saveCurrentRoute(
+        currentRoute ?? 'unknown',
+        isExpressEntry: _isExpressEntryRoute(currentRoute),
+      );
+    } catch (e) {
+      log('❌ Error saving app state: $e');
+    }
+  }
+
+  /// Check if current route is express entry related
+  bool _isExpressEntryRoute(String? route) {
+    if (route == null) return false;
+
+    return route.contains('SelfHomeView') ||
+        route.contains('self_entry') ||
+        route.contains('SelfEntryView') ||
+        route.contains('SelfEntryFacerecView') ||
+        route.contains('RequestPermissionPage2') ||
+        route.contains('qr_scanner_self') ||
+        route.contains('passcode_entry_view') ||
+        route.contains('visitor_in_entry') ||
+        route.contains('unit_selection_view') ||
+        route.contains('visitor_checkin_flow');
+  }
+
+  /// Handle app resume from sleep/background
+  void _handleAppResume() async {
+    try {
+      log('📱 Handling app resume - checking internet with delay');
+      // Use delayed internet check to avoid false positives when resuming from sleep
+      final provider =
+          Provider.of<InternetCheckProvider>(context, listen: false);
+      await provider.checkInternetAccessWithDelay(
+          delay: const Duration(seconds: 2));
+    } catch (e) {
+      log('❌ Error handling app resume: $e');
+    }
+  }
+
+  /// Handle internet loss intelligently
+  void _handleInternetLoss() async {
+    try {
+      // Save the current route information before showing no internet page
+      _saveCurrentAppState();
+
+      // Wait a moment to see if internet comes back quickly (common when resuming from sleep)
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Check if internet is still lost after the delay
+      final provider =
+          Provider.of<InternetCheckProvider>(context, listen: false);
+      await provider.checkInternetAccess();
+
+      // Only show no internet page if internet is still actually lost
+      if (!provider.hasInternet && mounted) {
+        log('🌐 Internet is still lost, showing no internet page');
+        Navigator.of(navigatorKey.currentContext!).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => const ErrorNoInternetPage(),
+          ),
+          (route) => false,
+        );
+      } else {
+        log('🌐 Internet connection restored, staying on current page');
+      }
+    } catch (e) {
+      log('❌ Error handling internet loss: $e');
+      // Fallback: show no internet page if there's an error
+      if (mounted) {
+        Navigator.of(navigatorKey.currentContext!).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => const ErrorNoInternetPage(),
+          ),
+          (route) => false,
+        );
+      }
+    }
   }
 
   /// Initialize session state listener to handle token expiration
@@ -535,7 +646,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     final hasInternet = internetProvider.hasInternet;
 
     // Handle internet restoration with proper route redirection
-    void _handleInternetRestoration() async {
+    void handleInternetRestoration() async {
       final wasExpressEntry = await RouteTracker.wasExpressEntryRoute();
       final lastRoute = await RouteTracker.getLastRoute();
 
@@ -615,7 +726,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     }
 
     // Save current route information before internet loss
-    void _saveCurrentRouteInfo() async {
+    void saveCurrentRouteInfo() async {
       final currentRoute =
           ModalRoute.of(navigatorKey.currentContext!)?.settings.name;
 
@@ -700,18 +811,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         // When internet is lost, save current route and replace with NoInternetScreen.
         if (!hasInternet) {
-          // Save the current route information before showing no internet page
-          _saveCurrentRouteInfo();
-
-          Navigator.of(navigatorKey.currentContext!).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (_) => ErrorNoInternetPage(),
-            ),
-            (route) => false,
-          );
+          // Only show no internet page if we're not just resuming from sleep
+          // Check if this is a real connectivity loss vs app resume
+          _handleInternetLoss();
         } else {
           // When internet is restored, check where user was before and redirect appropriately
-          _handleInternetRestoration();
+          handleInternetRestoration();
         }
       });
     }
@@ -723,8 +828,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           'app_${languageProvider.currentLanguageCode}_${languageProvider.rebuildKey}'),
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
-      // Configure device preview settings
-      useInheritedMediaQuery: true,
       // Localization configuration
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -748,7 +851,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         // If the device locale is not supported, return English as default
         return const Locale('en');
       },
-      builder: DevicePreview.appBuilder,
       theme: ThemeManager.lightTheme.copyWith(
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: <TargetPlatform, PageTransitionsBuilder>{
@@ -773,7 +875,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           return false; // Don't exit if no context available
         },
         // Initially show the correct screen based on connectivity.
-        child: hasInternet ? const SplashView() : ErrorNoInternetPage(),
+        child: hasInternet ? const SplashView() : const ErrorNoInternetPage(),
       ),
     );
 

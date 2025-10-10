@@ -55,8 +55,8 @@ class AdminDashboardBloc
         _visitorLogUsecase.fetchCheckOutLogs(companyId, today)
       ]);
 
-      final checkedInVisitors = results[0] as List<VisitorLog>?;
-      final checkedOutVisitors = results[1] as List<VisitorLog>?;
+      final checkedInVisitors = results[0];
+      final checkedOutVisitors = results[1];
 
       final int inBook = checkedInVisitors?.length ?? 0;
       final int outBook = checkedOutVisitors?.length ?? 0;

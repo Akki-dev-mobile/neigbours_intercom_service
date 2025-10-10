@@ -4,13 +4,11 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
-import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/exceptions/visitor_exceptions.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
-import 'package:flutter_onegate/utils/shared_pref.dart';
-import 'package:get_it/get_it.dart';
+// import 'package:flutter_onegate/utils/shared_pref.dart';
+// import 'package:get_it/get_it.dart';
 import 'package:meta/meta.dart';
 
 part 'gatekeeper_dashboard_event.dart';
@@ -20,7 +18,7 @@ class GatekeeperDashboardBloc
     extends Bloc<GatekeeperDashboardEvent, GatekeeperDashboardState> {
   final VisitorUsecase _visitorUsecase;
   final VisitorLogUsecase visitorLogUsecase;
-  final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+  // PreferenceUtils is available via GetIt if needed in future flows
   bool _hasNavigated = false;
 
   GatekeeperDashboardBloc(this._visitorUsecase, this.visitorLogUsecase)
@@ -127,9 +125,6 @@ class GatekeeperDashboardBloc
     // Emit navigation state
     emit(GDInAndOutButtonPressedState());
 
-    // Fetch the updated data for the dashboard
-    await _emitDashboardSuccessState(emit);
-
     Future.delayed(
         const Duration(milliseconds: 500), () => _hasNavigated = false);
   }
@@ -149,9 +144,6 @@ class GatekeeperDashboardBloc
     // Emit navigation state
     emit(GDVisitorsInButtonPressedState());
 
-    // Fetch the updated data for the dashboard
-    await _emitDashboardSuccessState(emit);
-
     Future.delayed(
         const Duration(milliseconds: 500), () => _hasNavigated = false);
   }
@@ -170,34 +162,9 @@ class GatekeeperDashboardBloc
 
     emit(GDVisitorsOutButtonPressedState());
 
-    await _emitDashboardSuccessState(emit);
-
     Future.delayed(
         const Duration(milliseconds: 500), () => _hasNavigated = false);
   }
 
-  Future<void> _emitDashboardSuccessState(
-      Emitter<GatekeeperDashboardState> emit) async {
-    try {
-      emit(GatekeeperDashboardLoadingState());
-
-      final gateStorage = GateStorage();
-      final companyId = await gateStorage.getSocietyId();
-      final today = DateTime.now();
-
-      // Use V2 API to get counts instead of calling both individual methods
-      // This avoids the conflict where both fetchCheckInLogs and fetchCheckOutLogs
-      // are called simultaneously, causing only checked-out visitors to be shown
-      final counts = await visitorLogUsecase.getVisitorCounts(
-          int.parse(companyId.toString()), today.toString());
-
-      final int inBook = counts['visitor_in'] ?? 0; // Checked-in visitors count
-      final int outBook =
-          counts['visitor_out'] ?? 0; // Checked-out visitors count
-
-      emit(GatekeeperDashboardSuccessState(inBook: inBook, outBook: outBook));
-    } catch (e) {
-      emit(GatekeeperDashboardErrorState(message: e.toString()));
-    }
-  }
+  // Removed unused _emitDashboardSuccessState to avoid showing dashboard loader during navigation
 }

@@ -47,8 +47,11 @@ class InternetCheckProvider with ChangeNotifier {
     _connectivitySubscription =
         Connectivity().onConnectivityChanged.listen((result) {
       log("🔄 Connectivity changed: $result");
-      // Perform a real connectivity check when the status changes
-      checkInternetAccess();
+      // Add a small delay before checking internet to avoid false positives
+      // when resuming from sleep or switching networks
+      Future.delayed(const Duration(milliseconds: 500), () {
+        checkInternetAccess();
+      });
     });
   }
 
@@ -117,6 +120,13 @@ class InternetCheckProvider with ChangeNotifier {
       _internetStatusController.add(status);
       notifyListeners();
     }
+  }
+
+  /// Check internet access with a delay to handle app resume gracefully
+  Future<void> checkInternetAccessWithDelay(
+      {Duration delay = const Duration(seconds: 1)}) async {
+    await Future.delayed(delay);
+    await checkInternetAccess();
   }
 
   @override

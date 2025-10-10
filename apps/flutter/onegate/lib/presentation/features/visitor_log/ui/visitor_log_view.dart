@@ -365,9 +365,14 @@ class _VisitorLogViewState extends State<VisitorLogView>
       builder: (context, state) {
         switch (state.runtimeType) {
           case VisitorLogLoadingState:
-            // When coming specifically from In-Out Book, avoid showing the extra loader
+            // When coming from dashboard navigation, avoid showing the extra loader
+            // since dashboard already shows appropriate loading states
             if (widget.id == 'In Out Book' ||
-                widget.id == AppLocalizations.of(context).inOutBook) {
+                widget.id == AppLocalizations.of(context).inOutBook ||
+                widget.id == 'Visitor In' ||
+                widget.id == AppLocalizations.of(context).visitorIn ||
+                widget.id == 'Visitor Out' ||
+                widget.id == AppLocalizations.of(context).visitorOut) {
               return const SizedBox.shrink();
             }
             return DashboardLoader(

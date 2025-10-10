@@ -14,6 +14,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
+import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -181,6 +182,22 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
   void _onQRViewCreated(QRViewController controller) {
     this.controller = controller;
+
+    // For express entry (self_checkin), always use front camera
+    if (widget.self_checkin) {
+      // Switch to front camera for express entry
+      controller.flipCamera().then((_) {
+        log("📱 Switched to front camera for express entry");
+        // Update the state to reflect that we're now using front camera
+        if (mounted) {
+          setState(() {
+            _isFrontCamera = true;
+          });
+        }
+      }).catchError((error) {
+        log("⚠️ Could not switch to front camera: $error");
+      });
+    }
 
     controller.scannedDataStream.listen((scanData) async {
       if (!mounted || _isProcessing || scanData.code == null || _isScanComplete)
@@ -797,15 +814,15 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Color(0xFFF44336), // OneGate primary red
-                            Color(0xFFff5722), // OneGate accent color
+                            Color(0xFF4CAF50), // Green primary
+                            Color(0xFF2E7D32), // Green accent color
                           ],
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFF44336)
-                                .withOpacity(0.4), // OneGate primary red
+                            color: const Color(0xFF4CAF50)
+                                .withOpacity(0.4), // Green primary
                             blurRadius: 20,
                             spreadRadius: 2,
                           ),
@@ -855,8 +872,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Color(0xFFF44336), // OneGate primary red
-                          Color(0xFFff5722), // OneGate accent color
+                          Color(0xFF4CAF50), // Green primary
+                          Color(0xFF2E7D32), // Green accent color
                         ],
                       ).createShader(bounds),
                       child: const Text(
@@ -913,9 +930,9 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF44336).withOpacity(
+                                color: const Color(0xFF4CAF50).withOpacity(
                                   0.3 + (0.7 * value),
-                                ), // OneGate primary red
+                                ), // Green primary
                                 shape: BoxShape.circle,
                               ),
                             );
@@ -1060,18 +1077,100 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     if (_isDialogOpen) return; // Prevent duplicate pop-ups
     _isDialogOpen = true;
 
-    // Use enhanced toast design from gatekeeper app
-    _showEnhancedErrorToast(
-      title: "Verification Failed",
-      message:
-          "The QR code could not be verified. It may be invalid or expired.",
-      icon: Icons.error_outline,
-    );
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent dismissing by tapping outside
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 8,
+          backgroundColor: Colors.white,
+          contentPadding: const EdgeInsets.all(24),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Error icon
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: const Color(0xffF44336).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.error_outline,
+                  color: Color(0xffF44336),
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 20),
 
-    // Reset dialog flag after a delay
-    Future.delayed(const Duration(seconds: 4), () {
-      _isDialogOpen = false;
-    });
+              // Title
+              const Text(
+                "QR Code Verification Failed",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF212427),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+
+              // Message
+              const Text(
+                "The QR code could not be verified. It may be invalid or expired. Please try again or contact support.",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Color(0xFF6B7280),
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+
+              // OK Button
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close dialog
+                    _isDialogOpen = false;
+
+                    // Navigate back to express entry dashboard
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SelfHomeView(),
+                      ),
+                      (Route<dynamic> route) => false,
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xffF44336),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                  child: const Text(
+                    "OK",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   /// Play success sound for QR verification

@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -17,21 +18,31 @@ import 'package:flutter_onegate/presentation/widgets/enhanced_video_carousel.dar
 class SelfHomeView extends StatefulWidget {
   final bool isKioskModeEnabled;
 
-  const SelfHomeView({
-    this.isKioskModeEnabled = true,
-    super.key,
-  });
+  const SelfHomeView({this.isKioskModeEnabled = true, super.key});
 
   @override
   State<SelfHomeView> createState() => _SelfHomeViewState();
 }
 
-class _SelfHomeViewState extends State<SelfHomeView> {
+class _SelfHomeViewState extends State<SelfHomeView>
+    with TickerProviderStateMixin {
   String? selectedGateName;
 
   // Gate storage for mobile number validation
   final GateStorage _gateStorage = GateStorage();
   final _flutterKioskMode = FlutterKioskMode.instance();
+
+  // Animation controllers for tap gesture
+  late AnimationController _tapAnimationController;
+  late AnimationController _positionAnimationController;
+  late AnimationController _shimmerAnimationController;
+  late Animation<double> _tapAnimation;
+  late Animation<double> _positionAnimation;
+  late Animation<double> _shimmerAnimation;
+
+  // Animation state
+  bool _isOnQRCard = true;
+  bool _isAnimating = false;
 
   @override
   void initState() {
@@ -40,7 +51,96 @@ class _SelfHomeViewState extends State<SelfHomeView> {
     _getSelectedGate();
     _trackExpressEntryRoute();
     _enableKioskMode();
+    _initializeAnimations();
     super.initState();
+  }
+
+  // Initialize animation controllers and start the tap gesture animation
+  void _initializeAnimations() {
+    // Tap animation controller (for the tap gesture effect)
+    _tapAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    // Position animation controller (for moving between cards)
+    _positionAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    // Shimmer animation controller (for text shimmer effect)
+    _shimmerAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    // Tap animation with bounce effect
+    _tapAnimation = Tween<double>(begin: 1.0, end: 0.8).animate(
+      CurvedAnimation(
+        parent: _tapAnimationController,
+        curve: Curves.elasticOut,
+      ),
+    );
+
+    // Position animation for smooth transitions
+    _positionAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _positionAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    // Shimmer animation for text effect
+    _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
+      CurvedAnimation(
+        parent: _shimmerAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    // Start the animation loop
+    _startAnimationLoop();
+  }
+
+  // Start the continuous animation loop
+  void _startAnimationLoop() {
+    _tapAnimationController.repeat(reverse: true);
+    _shimmerAnimationController.repeat();
+
+    // Timer to alternate between cards: 6s on QR, 6s on Passcode
+    Timer.periodic(const Duration(seconds: 6), (timer) {
+      if (mounted && !_isAnimating) {
+        _switchToNextCard();
+      }
+    });
+  }
+
+  // Switch to the next card with smooth transition
+  void _switchToNextCard() {
+    if (_isAnimating) return;
+
+    setState(() {
+      _isAnimating = true;
+    });
+
+    _positionAnimationController.forward().then((_) {
+      setState(() {
+        _isOnQRCard = !_isOnQRCard;
+      });
+      _positionAnimationController.reset();
+      setState(() {
+        _isAnimating = false;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _tapAnimationController.dispose();
+    _positionAnimationController.dispose();
+    _shimmerAnimationController.dispose();
+    super.dispose();
   }
 
   Future<void> _getSelectedGate() async {
@@ -52,10 +152,7 @@ class _SelfHomeViewState extends State<SelfHomeView> {
 
   // Track that user is on express entry dashboard
   Future<void> _trackExpressEntryRoute() async {
-    await RouteTracker.saveCurrentRoute(
-      'SelfHomeView',
-      isExpressEntry: true,
-    );
+    await RouteTracker.saveCurrentRoute('SelfHomeView', isExpressEntry: true);
   }
 
   // Disable kiosk mode for admin access
@@ -76,7 +173,9 @@ class _SelfHomeViewState extends State<SelfHomeView> {
     List<String> allowed = faceRecConfig != null
         ? List<String>.from(faceRecConfig['allowed'] ?? [])
         : [];
-    log("fetchAndStoreFaceRecConfig societyid${allowed.contains(societyid.toString())}");
+    log(
+      "fetchAndStoreFaceRecConfig societyid${allowed.contains(societyid.toString())}",
+    );
 
     if (faceRecConfig != null &&
         faceRecConfig['url'] != null &&
@@ -100,18 +199,35 @@ class _SelfHomeViewState extends State<SelfHomeView> {
 
   void enterKioskMode() {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent, // Hide status bar
-      systemNavigationBarColor: Colors.transparent, // Hide navigation bar
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent, // Hide status bar
+        systemNavigationBarColor: Colors.transparent, // Hide navigation bar
+      ),
+    );
   }
 
   Future<void> _enableKioskMode() async {
     try {
+      // Check if user has already dismissed the "app is pinned" popup
+      final prefs = await SharedPreferences.getInstance();
+      final hasSeenPinnedPopup =
+          prefs.getBool('has_seen_pinned_popup') ?? false;
+
       // Engage system immersive UI first
       enterKioskMode();
       // Start Android kiosk/lock task mode via plugin
       await _flutterKioskMode.start();
+
+      // If user hasn't seen the popup yet, show a custom dialog to explain kiosk mode
+      if (!hasSeenPinnedPopup) {
+        // Wait a bit for the system dialog to appear, then show our custom dialog
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            _showKioskModeInfoDialog();
+          }
+        });
+      }
     } catch (e) {
       log("Error starting kiosk mode: $e");
       // Still ensure immersive UI is applied even if plugin fails
@@ -119,30 +235,142 @@ class _SelfHomeViewState extends State<SelfHomeView> {
     }
   }
 
-  // Responsive Express Check-in label
+  // Show kiosk mode information dialog (only once)
+  void _showKioskModeInfoDialog() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 8,
+          backgroundColor: Colors.white,
+          contentPadding: const EdgeInsets.all(24),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Info icon
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: const Color(0xff2196F3).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.info_outline,
+                  color: Color(0xff2196F3),
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Title
+              const Text(
+                "App is Pinned",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF212427),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+
+              // Message
+              const Text(
+                "The app is now running in kiosk mode for a better user experience. This ensures the app stays active and secure.",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Color(0xFF6B7280),
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+
+              // Got it Button
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    // Mark that user has seen the popup
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('has_seen_pinned_popup', true);
+
+                    Navigator.of(context).pop(); // Close dialog
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff2196F3),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                  child: const Text(
+                    "Got it",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Responsive Express Check-in label with comprehensive scaling
   Widget _buildGatekeeperStyleLabel(BuildContext context) {
-    final isTablet = MediaQuery.of(context).size.width > 600;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Enhanced responsive breakpoints for better scaling
+    final isSmallMobile = screenWidth <= 600;
+    final isMediumTablet = screenWidth > 600 && screenWidth <= 900;
+    final isLargeTablet = screenWidth > 900 && screenWidth <= 1200;
+
+    // Enhanced responsive scaling factors for better visibility on large screens
+    final scaleFactor = isSmallMobile
+        ? 1.0
+        : isMediumTablet
+            ? 1.4
+            : isLargeTablet
+                ? 1.8
+                : 2.2; // Much more aggressive scaling for desktop
+
+    // Base dimensions (mobile)
+    const baseIconSize = 28.0;
+    const baseTitleFontSize = 20.0;
+    const baseSubtitleFontSize = 14.0;
+    const baseHorizontalPadding = 12.0;
+    const baseVerticalPadding = 8.0;
+    const baseBorderRadius = 12.0;
+    const baseSpacing = 16.0;
+
+    // Scaled dimensions
+    final iconSize = baseIconSize * scaleFactor;
+    final titleFontSize = baseTitleFontSize * scaleFactor;
+    final subtitleFontSize = baseSubtitleFontSize * scaleFactor;
+    final horizontalPadding = baseHorizontalPadding * scaleFactor;
+    final verticalPadding = baseVerticalPadding * scaleFactor;
+    final borderRadius = baseBorderRadius * scaleFactor;
+    final spacing = baseSpacing * scaleFactor;
+
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isTablet ? 16 : 12,
-        vertical: isTablet ? 12 : 8,
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
       ),
       child: Row(
         children: [
-          // Left side - Icon and text
-          Container(
-            padding: EdgeInsets.all(isTablet ? 14 : 12),
-            decoration: BoxDecoration(
-              color: const Color(0xffF44336).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
-            ),
-            child: Icon(
-              Icons.assignment_turned_in_rounded,
-              color: const Color(0xffF44336),
-              size: isTablet ? 32 : 28,
-            ),
-          ),
-          SizedBox(width: isTablet ? 20 : 16),
+          // Text content without icon
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,17 +378,17 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                 Text(
                   'Express Check-in',
                   style: TextStyle(
-                    fontSize: isTablet ? 24 : 20,
+                    fontSize: titleFontSize,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xff212427),
                     letterSpacing: 0.3,
                   ),
                 ),
-                SizedBox(height: isTablet ? 6 : 4),
+                SizedBox(height: spacing * 0.25),
                 Text(
                   'Choose your preferred check-in method',
                   style: TextStyle(
-                    fontSize: isTablet ? 16 : 14,
+                    fontSize: subtitleFontSize,
                     color: const Color(0xff57636C),
                     fontWeight: FontWeight.w400,
                     height: 1.3,
@@ -170,17 +398,17 @@ class _SelfHomeViewState extends State<SelfHomeView> {
             ),
           ),
 
-          // Right side - Info button
+          // Right side - Info button with responsive sizing
           InkWell(
             onTap: () => _showSelfCheckInInfo(context),
-            borderRadius: BorderRadius.circular(isTablet ? 12 : 10),
+            borderRadius: BorderRadius.circular(borderRadius),
             child: Container(
-              width: isTablet ? 52 : 48,
-              height: isTablet ? 52 : 48,
+              width: iconSize + 20, // Icon size + padding
+              height: iconSize + 20,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: const Color(0xffF44336).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(isTablet ? 12 : 10),
+                borderRadius: BorderRadius.circular(borderRadius),
                 border: Border.all(
                   color: const Color(0xffF44336).withOpacity(0.2),
                   width: 1,
@@ -189,7 +417,7 @@ class _SelfHomeViewState extends State<SelfHomeView> {
               child: Icon(
                 Icons.info_outline_rounded,
                 color: const Color(0xffF44336),
-                size: isTablet ? 24 : 20,
+                size: iconSize * 0.7, // Slightly smaller than main icon
               ),
             ),
           ),
@@ -235,8 +463,10 @@ class _SelfHomeViewState extends State<SelfHomeView> {
               // Enhanced header with gradient background
               Container(
                 width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -283,9 +513,10 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                         children: [
                           Text(
                             'Express Check-in Options',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.headlineSmall?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: const Color(0xff212427),
                                   fontSize: 20,
@@ -321,6 +552,21 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                         _buildOneGateInfoCard(
                           context: context,
                           isTablet: isTablet,
+                          icon: Icons.qr_code_scanner_rounded,
+                          title: 'Scan QR Code',
+                          description:
+                              'Scan your QR code for instant check-in. Most convenient method for regular visitors.',
+                          features: [
+                            'Instant check-in',
+                            'No typing required',
+                            'Secure access',
+                          ],
+                          color: const Color(0xffFF9800),
+                        ),
+                        SizedBox(height: isTablet ? 20 : 16),
+                        _buildOneGateInfoCard(
+                          context: context,
+                          isTablet: isTablet,
                           icon: Icons.lock_outline_rounded,
                           title: 'Passcode',
                           description:
@@ -331,21 +577,6 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                             'Secure access',
                           ],
                           color: const Color(0xff2196F3),
-                        ),
-                        SizedBox(height: isTablet ? 20 : 16),
-                        _buildOneGateInfoCard(
-                          context: context,
-                          isTablet: isTablet,
-                          icon: Icons.qr_code_scanner_rounded,
-                          title: 'Scan QR Code',
-                          description:
-                              'Scan your QR code for instant check-in. Most convenient method for regular visitors.',
-                          features: [
-                            'Instant check-in',
-                            'No typing required',
-                            'Works offline',
-                          ],
-                          color: const Color(0xffFF9800),
                         ),
                       ],
                     ),
@@ -422,10 +653,7 @@ class _SelfHomeViewState extends State<SelfHomeView> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
@@ -466,11 +694,7 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                         ),
                       ],
                     ),
-                    child: Icon(
-                      icon,
-                      size: isTablet ? 28 : 24,
-                      color: color,
-                    ),
+                    child: Icon(icon, size: isTablet ? 28 : 24, color: color),
                   ),
                   SizedBox(width: isTablet ? 20 : 16),
                   Expanded(
@@ -504,51 +728,53 @@ class _SelfHomeViewState extends State<SelfHomeView> {
 
               // Features List
               ...features
-                  .map((feature) => Container(
-                        margin: EdgeInsets.only(bottom: isTablet ? 12 : 8),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isTablet ? 16 : 12,
-                          vertical: isTablet ? 12 : 8,
+                  .map(
+                    (feature) => Container(
+                      margin: EdgeInsets.only(bottom: isTablet ? 12 : 8),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isTablet ? 16 : 12,
+                        vertical: isTablet ? 12 : 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(isTablet ? 12 : 8),
+                        border: Border.all(
+                          color: color.withOpacity(0.1),
+                          width: 1,
                         ),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.05),
-                          borderRadius:
-                              BorderRadius.circular(isTablet ? 12 : 8),
-                          border: Border.all(
-                            color: color.withOpacity(0.1),
-                            width: 1,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: isTablet ? 24 : 20,
+                            height: isTablet ? 24 : 20,
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 12 : 6,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.check_rounded,
+                              size: isTablet ? 16 : 14,
+                              color: color,
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: isTablet ? 24 : 20,
-                              height: isTablet ? 24 : 20,
-                              decoration: BoxDecoration(
-                                color: color.withOpacity(0.1),
-                                borderRadius:
-                                    BorderRadius.circular(isTablet ? 12 : 6),
-                              ),
-                              child: Icon(
-                                Icons.check_rounded,
-                                size: isTablet ? 16 : 14,
-                                color: color,
+                          SizedBox(width: isTablet ? 12 : 10),
+                          Expanded(
+                            child: Text(
+                              feature,
+                              style: TextStyle(
+                                fontSize: isTablet ? 14 : 12,
+                                color: const Color(0xff212427),
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                            SizedBox(width: isTablet ? 12 : 10),
-                            Expanded(
-                              child: Text(
-                                feature,
-                                style: TextStyle(
-                                  fontSize: isTablet ? 14 : 12,
-                                  color: const Color(0xff212427),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ))
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
                   .toList(),
             ],
           ),
@@ -557,84 +783,336 @@ class _SelfHomeViewState extends State<SelfHomeView> {
     );
   }
 
-  // Enhanced Express Check-in Options with equal card dimensions and responsive layout
+  // Enhanced Express Check-in Options with comprehensive responsive layout
   Widget _buildEnhancedSelfCheckInOptions(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final screenWidth = screenSize.width;
-    final isTablet = screenWidth > 600;
+    final screenHeight = screenSize.height;
 
-    return Column(
+    // Comprehensive responsive breakpoints
+    final isSmallMobile = screenWidth <= 600;
+    final isMediumTablet = screenWidth > 600 && screenWidth <= 900;
+
+    // Responsive spacing
+    final cardSpacing = isSmallMobile
+        ? 12.0
+        : isMediumTablet
+            ? 16.0
+            : 20.0;
+
+    return Stack(
       children: [
-        // QR Scan Option - Top (Equal height with Passcode)
-        Expanded(
-          child: _buildGridCard(
-            context: context,
-            isTablet: isTablet,
-            icon: Icons.qr_code_scanner_rounded,
-            title: 'Scan QR Code',
-            subtitle: 'Scan your QR code for quick check-in',
-            backgroundColor: const Color(0xFFFFF3E0), // Light yellow
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => QRScannerScreen(self_checkin: true),
-                ),
-              );
-            },
-          ),
+        Column(
+          children: [
+            // QR Scan Option - Top (Equal height with Passcode)
+            Expanded(
+              child: _buildGridCard(
+                context: context,
+                screenWidth: screenWidth,
+                screenHeight: screenHeight,
+                icon: Icons.qr_code_scanner_rounded,
+                title: 'Tap Here To Scan QR Code',
+                subtitle: 'Scan your QR code for quick check-in',
+                backgroundColor: const Color(
+                  0xFFF6EEDD,
+                ), // Light beige as per requirements
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => QRScannerScreen(self_checkin: true),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            SizedBox(height: cardSpacing),
+
+            // Passcode Option - Bottom (Equal height with QR Code)
+            Expanded(
+              child: _buildGridCard(
+                context: context,
+                screenWidth: screenWidth,
+                screenHeight: screenHeight,
+                icon: Icons.lock_outline_rounded,
+                title: 'Tap Here To Enter Passcode',
+                subtitle: 'Enter your secure passcode for quick check-in',
+                backgroundColor: const Color(
+                  0xFFDDE8F7,
+                ), // Pale blue as per requirements
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          PasscodeEntryView(selfcheckinFlow: true),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            // Add responsive spacing below the passcode card
+            SizedBox(height: _getResponsiveSpacing(screenWidth, 20, 32)),
+          ],
         ),
 
-        SizedBox(height: isTablet ? 16 : 12),
-
-        // Passcode Option - Bottom (Equal height with QR Code)
-        Expanded(
-          child: _buildGridCard(
-            context: context,
-            isTablet: isTablet,
-            icon: Icons.lock_outline_rounded,
-            title: 'Passcode',
-            subtitle: 'Enter your secure passcode for quick check-in',
-            backgroundColor: const Color(0xFFE3F2FD), // Light blue
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      PasscodeEntryView(selfcheckinFlow: true),
-                ),
-              );
-            },
-          ),
+        // Animated Tap Gesture Overlay
+        _buildAnimatedTapGesture(
+          context,
+          screenWidth,
+          screenHeight,
+          cardSpacing,
         ),
       ],
     );
   }
 
-  // Grid card for Express Check-in options with responsive sizing
+  // Build animated tap gesture that alternates between cards
+  Widget _buildAnimatedTapGesture(
+    BuildContext context,
+    double screenWidth,
+    double screenHeight,
+    double cardSpacing,
+  ) {
+    final isSmallMobile = screenWidth <= 600;
+    final isMediumTablet = screenWidth > 600 && screenWidth <= 900;
+
+    // Calculate card dimensions for positioning (approximate the visible column area)
+    final cardHeight =
+        (screenHeight * 0.4) / 2 - cardSpacing / 2; // Approximate card height
+
+    // Responsive gesture size: 48-56dp on mobile, 72-84dp on tablet
+    final gestureSize = isSmallMobile
+        ? 48.0
+        : isMediumTablet
+            ? 72.0
+            : 84.0;
+
+    // Top positions for each card area within the Stack
+    const double qrCardTop = 0.0;
+    final double passcodeCardTop = cardHeight + cardSpacing;
+
+    // Position gesture in bottom-center area of each card
+    final double bottomPadding = isSmallMobile
+        ? 12.0
+        : isMediumTablet
+            ? 14.0
+            : 16.0; // 12-16dp from bottom
+    final double qrCardGestureY =
+        qrCardTop + cardHeight - bottomPadding - gestureSize / 2;
+    final double passcodeCardGestureY =
+        passcodeCardTop + cardHeight - bottomPadding - gestureSize / 2;
+
+    // Animated Y position
+    final currentY = _isOnQRCard ? qrCardGestureY : passcodeCardGestureY;
+
+    final targetY = _isOnQRCard ? passcodeCardGestureY : qrCardGestureY;
+
+    final animatedY = _isAnimating
+        ? (_isOnQRCard ? qrCardGestureY : passcodeCardGestureY) +
+            (targetY - (_isOnQRCard ? qrCardGestureY : passcodeCardGestureY)) *
+                _positionAnimation.value
+        : currentY;
+
+    return Positioned(
+      left: (screenWidth - gestureSize) / 2, // bottom center horizontally
+      top: animatedY,
+      child: AnimatedBuilder(
+        animation: _tapAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _tapAnimation.value,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Gesture icon with ripple effect
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Ripple effect
+                    Container(
+                      width: gestureSize * 1.5,
+                      height: gestureSize * 1.5,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xffF44336).withOpacity(0.1),
+                      ),
+                      child: AnimatedBuilder(
+                        animation: _tapAnimationController,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: 0.5 + (_tapAnimationController.value * 0.5),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: const Color(0xffF44336).withOpacity(0.2),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                    // Main gesture icon
+                    Container(
+                      width: gestureSize,
+                      height: gestureSize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(
+                          0xffF44336,
+                        ).withOpacity(0.18), // transparent red background
+                        border: Border.all(
+                          color: const Color(0xffF44336).withOpacity(0.35),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xffF44336).withOpacity(0.25),
+                            blurRadius: 16,
+                            spreadRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.touch_app_rounded,
+                        color: Colors.white,
+                        size: gestureSize * 0.55,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Spacing between icon and text
+                SizedBox(height: isSmallMobile ? 8 : 10),
+
+                // "Tap Here" text below the gesture icon
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(
+                      0xffF44336,
+                    ).withOpacity(0.18), // Glassmorphism background
+                    borderRadius: BorderRadius.circular(
+                      16,
+                    ), // Smooth pill shape
+                    border: Border.all(
+                      color: const Color(0xffF44336).withOpacity(0.35),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xffF44336).withOpacity(0.25),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: AnimatedBuilder(
+                    animation: _shimmerAnimation,
+                    builder: (context, child) {
+                      return ShaderMask(
+                        shaderCallback: (bounds) {
+                          return LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              const Color(0xFF222222),
+                              Colors.white,
+                              const Color(0xFF222222),
+                            ],
+                            stops: [
+                              _shimmerAnimation.value - 0.3,
+                              _shimmerAnimation.value,
+                              _shimmerAnimation.value + 0.3,
+                            ],
+                          ).createShader(bounds);
+                        },
+                        child: Text(
+                          'Tap Here',
+                          style: TextStyle(
+                            color: Colors
+                                .white, // This will be masked by the shader
+                            fontSize: isSmallMobile
+                                ? 14
+                                : 16, // 14sp mobile, 16sp tablet
+                            fontWeight: FontWeight.w500, // Medium weight
+                            letterSpacing: 0.3, // Better clarity
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // Grid card for Express Check-in options with comprehensive responsive sizing
   Widget _buildGridCard({
     required BuildContext context,
-    required bool isTablet,
+    required double screenWidth,
+    required double screenHeight,
     required IconData icon,
     required String title,
     required String subtitle,
     required Color backgroundColor,
     required VoidCallback onTap,
   }) {
-    // Dynamic sizing based on device type
-    final iconSize = isTablet ? 60.0 : 44.0; // 60dp tablet, 44dp mobile
-    final iconContainerSize = isTablet ? 100.0 : 80.0;
-    final titleFontSize = isTablet ? 22.0 : 18.0; // 22sp tablet, 18sp mobile
-    final subtitleFontSize = isTablet ? 16.0 : 14.0; // 16sp tablet, 14sp mobile
+    // Enhanced responsive breakpoints for better scaling
+    final isSmallMobile = screenWidth <= 600;
+    final isMediumTablet = screenWidth > 600 && screenWidth <= 900;
+    final isLargeTablet = screenWidth > 900 && screenWidth <= 1200;
 
-    // Responsive padding: 12-14dp mobile, 20-24dp tablet
-    final horizontalPadding = isTablet ? 20.0 : 16.0; // Left/Right padding
-    final verticalPadding = isTablet ? 16.0 : 12.0; // Top/Bottom padding
-    final borderRadius = isTablet ? 20.0 : 16.0;
-    final spacing = isTablet ? 24.0 : 20.0;
+    // Enhanced responsive scaling factors for better visibility on large screens
+    final scaleFactor = isSmallMobile
+        ? 1.0
+        : isMediumTablet
+            ? 1.8
+            : isLargeTablet
+                ? 2.5
+                : 3.2; // Much more aggressive scaling for desktop
+
+    // Base dimensions (mobile) - Increased for better visibility
+    const baseIconSize = 56.0; // Increased from 48.0
+    const baseIconContainerSize = 96.0; // Increased from 80.0
+    const baseTitleFontSize = 20.0; // Increased from 18.0
+    const baseSubtitleFontSize = 16.0; // Increased from 14.0
+    const baseHorizontalPadding = 20.0; // Increased from 16.0
+    const baseVerticalPadding = 16.0; // Increased from 12.0
+    const baseBorderRadius = 24.0; // Increased from 20.0
+    const baseSpacing = 24.0; // Increased from 20.0
+
+    // Scaled dimensions
+    final iconSize = baseIconSize * scaleFactor;
+    final iconContainerSize = baseIconContainerSize * scaleFactor;
+    final titleFontSize = baseTitleFontSize * scaleFactor;
+    final subtitleFontSize = baseSubtitleFontSize * scaleFactor;
+    final horizontalPadding = baseHorizontalPadding * scaleFactor;
+    final verticalPadding = baseVerticalPadding * scaleFactor;
+    const borderRadius = baseBorderRadius;
+    final spacing = baseSpacing * scaleFactor;
+
+    // Ensure minimum touch target size (48dp)
+    const minTouchTarget = 48.0;
+    final effectiveIconContainerSize =
+        iconContainerSize < minTouchTarget ? minTouchTarget : iconContainerSize;
 
     return Material(
-      elevation: 5, // Material elevation for consistent depth across platforms
+      elevation: isSmallMobile
+          ? 2
+          : isMediumTablet
+              ? 3
+              : 4, // Responsive elevation
       borderRadius: BorderRadius.circular(borderRadius),
       color: backgroundColor,
       child: InkWell(
@@ -650,10 +1128,10 @@ class _SelfHomeViewState extends State<SelfHomeView> {
           ),
           child: Row(
             children: [
-              // Icon container on the left side
+              // Icon container on the left side with proper touch target
               Container(
-                width: iconContainerSize,
-                height: iconContainerSize,
+                width: effectiveIconContainerSize,
+                height: effectiveIconContainerSize,
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(20),
@@ -673,7 +1151,7 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Title with dynamic font size
+                    // Title with responsive font size
                     Text(
                       title,
                       style: TextStyle(
@@ -686,7 +1164,7 @@ class _SelfHomeViewState extends State<SelfHomeView> {
 
                     SizedBox(height: spacing * 0.3),
 
-                    // Subtitle with dynamic font size
+                    // Subtitle with responsive font size
                     Text(
                       subtitle,
                       style: TextStyle(
@@ -698,6 +1176,9 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+
+                    SizedBox(height: spacing * 0.25),
+                    // Removed old "Tap here" icon/text row for a cleaner card
                   ],
                 ),
               ),
@@ -746,8 +1227,10 @@ class _SelfHomeViewState extends State<SelfHomeView> {
               // Enhanced header with gradient background
               Container(
                 width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -795,9 +1278,10 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                         children: [
                           Text(
                             'Admin Access',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.headlineSmall?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: const Color(0xff212427),
                                   fontSize: 20,
@@ -860,8 +1344,9 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                                     width: 50,
                                     height: 50,
                                     decoration: BoxDecoration(
-                                      color: const Color(0xffF44336)
-                                          .withOpacity(0.1),
+                                      color: const Color(
+                                        0xffF44336,
+                                      ).withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: const Icon(
@@ -954,8 +1439,8 @@ class _SelfHomeViewState extends State<SelfHomeView> {
 
                         // Add extra padding at bottom for keyboard
                         SizedBox(
-                            height:
-                                MediaQuery.of(context).viewInsets.bottom + 20),
+                          height: MediaQuery.of(context).viewInsets.bottom + 20,
+                        ),
                       ],
                     ),
                   ),
@@ -984,15 +1469,9 @@ class _SelfHomeViewState extends State<SelfHomeView> {
       log('Full Username: $username');
 
       if (mobileNumber.isEmpty) {
-        EnhancedToast.error(
-          context,
-          'Mobile number is required',
-        );
+        EnhancedToast.error(context, 'Mobile number is required');
       } else if (mobileNumber.length != 10) {
-        EnhancedToast.error(
-          context,
-          'Please enter a 10-digit mobile number',
-        );
+        EnhancedToast.error(context, 'Please enter a 10-digit mobile number');
       } else if (!RegExp(r'^[0-9]+$').hasMatch(mobileNumber)) {
         EnhancedToast.error(
           context,
@@ -1012,9 +1491,7 @@ class _SelfHomeViewState extends State<SelfHomeView> {
             _disableKioskMode();
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (context) => GateDashboardView(),
-              ),
+              MaterialPageRoute(builder: (context) => GateDashboardView()),
             );
           }
         });
@@ -1037,7 +1514,21 @@ class _SelfHomeViewState extends State<SelfHomeView> {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    final isTablet = screenSize.width > 600;
+    final screenWidth = screenSize.width;
+
+    // Enhanced responsive breakpoints
+    final isSmallMobile = screenWidth <= 600;
+    final isMediumTablet = screenWidth > 600 && screenWidth <= 900;
+    final isLargeTablet = screenWidth > 900 && screenWidth <= 1200;
+
+    // Enhanced scaling factors for AppBar elements
+    final appBarScaleFactor = isSmallMobile
+        ? 1.0
+        : isMediumTablet
+            ? 1.3
+            : isLargeTablet
+                ? 1.6
+                : 2.0;
 
     return PopScope(
       canPop: false,
@@ -1053,28 +1544,48 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                 backgroundColor: Colors.white,
                 surfaceTintColor: Colors.transparent,
                 shadowColor: Colors.black.withOpacity(0.1),
-                toolbarHeight: isTablet
-                    ? 72
-                    : 60, // Slightly larger for better touch targets
+                toolbarHeight: (isSmallMobile
+                        ? 60
+                        : isMediumTablet
+                            ? 80
+                            : isLargeTablet
+                                ? 100
+                                : 120) *
+                    appBarScaleFactor, // Enhanced responsive height
                 title: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: EdgeInsets.all(isTablet ? 8 : 6),
+                      padding: EdgeInsets.all(
+                        (isSmallMobile
+                                ? 6
+                                : isMediumTablet
+                                    ? 8
+                                    : isLargeTablet
+                                        ? 10
+                                        : 12) *
+                            appBarScaleFactor,
+                      ),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xffF44336),
-                            Color(0xffD32F2F),
-                          ],
+                          colors: [Color(0xffF44336), Color(0xffD32F2F)],
                         ),
-                        borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
+                        borderRadius: BorderRadius.circular(
+                          (isSmallMobile
+                                  ? 8
+                                  : isMediumTablet
+                                      ? 10
+                                      : isLargeTablet
+                                          ? 12
+                                          : 14) *
+                              appBarScaleFactor,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: const Color(0xffF44336).withOpacity(0.3),
-                            blurRadius: 4,
+                            blurRadius: 4 * appBarScaleFactor,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -1082,17 +1593,40 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                       child: Icon(
                         Icons.sensor_door_rounded,
                         color: Colors.white,
-                        size: isTablet ? 20 : 16,
+                        size: (isSmallMobile
+                                ? 16
+                                : isMediumTablet
+                                    ? 20
+                                    : isLargeTablet
+                                        ? 24
+                                        : 28) *
+                            appBarScaleFactor,
                       ),
                     ),
-                    SizedBox(width: isTablet ? 12 : 10),
+                    SizedBox(
+                      width: (isSmallMobile
+                              ? 10
+                              : isMediumTablet
+                                  ? 12
+                                  : isLargeTablet
+                                      ? 14
+                                      : 16) *
+                          appBarScaleFactor,
+                    ),
                     Hero(
                       tag: 'gate_dashboard',
                       child: AnimatedDefaultTextStyle(
                         duration: const Duration(milliseconds: 300),
                         style: TextStyle(
                           color: const Color(0xff212427),
-                          fontSize: isTablet ? 24 : 20,
+                          fontSize: (isSmallMobile
+                                  ? 20
+                                  : isMediumTablet
+                                      ? 24
+                                      : isLargeTablet
+                                          ? 28
+                                          : 32) *
+                              appBarScaleFactor,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.3,
                         ),
@@ -1100,10 +1634,12 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                           (selectedGateName ?? 'OneGate')
                               .toString()
                               .split(' ')
-                              .map((word) => word.isNotEmpty
-                                  ? word[0].toUpperCase() +
-                                      word.substring(1).toLowerCase()
-                                  : '')
+                              .map(
+                                (word) => word.isNotEmpty
+                                    ? word[0].toUpperCase() +
+                                        word.substring(1).toLowerCase()
+                                    : '',
+                              )
                               .join(' '),
                         ),
                       ),
@@ -1113,15 +1649,41 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                 actions: [
                   // Switch to Gatekeeper Dashboard button
                   Container(
-                    margin: EdgeInsets.only(right: isTablet ? 16 : 12),
+                    margin: EdgeInsets.only(
+                      right: (isSmallMobile
+                              ? 12
+                              : isMediumTablet
+                                  ? 16
+                                  : isLargeTablet
+                                      ? 20
+                                      : 24) *
+                          appBarScaleFactor,
+                    ),
                     child: IconButton(
                       onPressed: () => _showAdminMobileModal(context),
                       icon: Container(
-                        padding: EdgeInsets.all(isTablet ? 8 : 6),
+                        padding: EdgeInsets.all(
+                          (isSmallMobile
+                                  ? 6
+                                  : isMediumTablet
+                                      ? 8
+                                      : isLargeTablet
+                                          ? 10
+                                          : 12) *
+                              appBarScaleFactor,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xffF44336).withOpacity(0.1),
-                          borderRadius:
-                              BorderRadius.circular(isTablet ? 10 : 8),
+                          borderRadius: BorderRadius.circular(
+                            (isSmallMobile
+                                    ? 8
+                                    : isMediumTablet
+                                        ? 10
+                                        : isLargeTablet
+                                            ? 12
+                                            : 14) *
+                                appBarScaleFactor,
+                          ),
                           border: Border.all(
                             color: const Color(0xffF44336).withOpacity(0.3),
                             width: 1,
@@ -1130,7 +1692,14 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                         child: Icon(
                           Icons.swap_horiz_rounded,
                           color: const Color(0xffF44336),
-                          size: isTablet ? 20 : 18,
+                          size: (isSmallMobile
+                                  ? 18
+                                  : isMediumTablet
+                                      ? 20
+                                      : isLargeTablet
+                                          ? 24
+                                          : 28) *
+                              appBarScaleFactor,
                         ),
                       ),
                       tooltip: 'Switch to Gatekeeper Dashboard',
@@ -1139,40 +1708,56 @@ class _SelfHomeViewState extends State<SelfHomeView> {
                 ],
               ),
 
-              // Ads Carousel - Responsive height and full-width
-              Container(
-                height: isTablet
-                    ? (screenSize.height * 0.3)
-                        .clamp(280.0, 320.0) // Tablet: 280-320dp
-                    : screenSize.width < 400
-                        ? (screenSize.height * 0.25)
-                            .clamp(200.0, 220.0) // Small mobile: 200-220dp
-                        : (screenSize.height * 0.28)
-                            .clamp(240.0, 260.0), // Large mobile: 240-260dp
+              // Ads Carousel - Enhanced responsive height and full-width
+              SizedBox(
+                height: isSmallMobile
+                    ? (screenSize.width < 400
+                        ? (screenSize.height * 0.25).clamp(
+                            200.0,
+                            220.0,
+                          ) // Small mobile: 200-220dp
+                        : (screenSize.height * 0.28).clamp(
+                            240.0,
+                            260.0,
+                          )) // Large mobile: 240-260dp
+                    : isMediumTablet
+                        ? (screenSize.height * 0.3).clamp(
+                            280.0,
+                            320.0,
+                          ) // Medium tablet: 280-320dp
+                        : isLargeTablet
+                            ? (screenSize.height * 0.35).clamp(
+                                320.0,
+                                380.0,
+                              ) // Large tablet: 320-380dp
+                            : (screenSize.height * 0.4).clamp(
+                                400.0,
+                                480.0,
+                              ), // Desktop: 400-480dp
                 child: _buildAdsCarousel(context),
               ),
 
-              // Spacing between carousel and Express Check-in label
-              SizedBox(height: isTablet ? 24 : 20),
+              // Responsive spacing between carousel and Express Check-in label
+              SizedBox(height: _getResponsiveSpacing(screenSize.width, 20, 24)),
 
-              // Header Section - Express Check-in label
+              // Header Section - Express Check-in label with responsive padding
               Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 24 : 20,
-                  vertical: isTablet ? 12 : 8,
+                  horizontal: _getResponsiveSpacing(screenSize.width, 20, 24),
+                  vertical: _getResponsiveSpacing(screenSize.width, 8, 12),
                 ),
                 child: _buildGatekeeperStyleLabel(context),
               ),
 
-              // Spacing between Express Check-in label and options
-              SizedBox(height: isTablet ? 20 : 16),
+              // Responsive spacing between Express Check-in label and options
+              SizedBox(height: _getResponsiveSpacing(screenSize.width, 16, 20)),
 
-              // Express Check-in Options - Takes remaining space with proper constraints
+              // Express Check-in Options - Takes remaining space with responsive constraints
               Expanded(
                 child: Padding(
                   padding: EdgeInsets.symmetric(
-                    horizontal: isTablet ? 24 : 20,
-                    vertical: isTablet ? 12 : 8,
+                    horizontal: _getResponsiveSpacing(screenSize.width, 20, 24),
+                    vertical: _getResponsiveSpacing(screenSize.width, 8, 12),
                   ),
                   child: _buildEnhancedSelfCheckInOptions(context),
                 ),
@@ -1187,5 +1772,27 @@ class _SelfHomeViewState extends State<SelfHomeView> {
   // Enhanced video carousel with 4 cyberone videos
   Widget _buildAdsCarousel(BuildContext context) {
     return const EnhancedVideoCarousel();
+  }
+
+  // Helper method for responsive spacing with enhanced scaling
+  double _getResponsiveSpacing(
+    double screenWidth,
+    double mobileValue,
+    double tabletValue,
+  ) {
+    final isSmallMobile = screenWidth <= 600;
+    final isMediumTablet = screenWidth > 600 && screenWidth <= 900;
+    final isLargeTablet = screenWidth > 900 && screenWidth <= 1200;
+
+    if (isSmallMobile) {
+      return mobileValue;
+    } else if (isMediumTablet) {
+      return mobileValue + (tabletValue - mobileValue) * 0.6;
+    } else if (isLargeTablet) {
+      return mobileValue + (tabletValue - mobileValue) * 0.8;
+    } else {
+      // Desktop - use tablet value with additional scaling
+      return tabletValue * 1.3;
+    }
   }
 }
