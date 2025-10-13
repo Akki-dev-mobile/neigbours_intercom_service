@@ -352,7 +352,17 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                               await Future.delayed(
                                   const Duration(milliseconds: 1500));
 
-                              // Navigate to VisitorsInEntry with autopopulated data (same as QR flow)
+                              // Determine the correct purpose category from API response
+                              final String categoryFromApi =
+                                  visitorData['category']?.toString() ??
+                                      "Guest";
+
+                              // Fetch the complete purpose data including subcategories
+                              final PurposeCategory1? completePurpose =
+                                  await _getCompletePurposeData(
+                                      categoryFromApi);
+
+                              // Navigate to VisitorsInEntry with autopopulated data based on actual entry type
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
@@ -360,10 +370,10 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                                     selfcheckinFlow: widget.selfcheckinFlow,
                                     comingfrom: visitorData['coming_from'],
                                     searchedVisitor: visitor,
-                                    selectedValue: PurposeCategory1(
-                                        categoryId: 1,
-                                        categoryName:
-                                            visitorData['category'] ?? "Guest"),
+                                    selectedValue: completePurpose ??
+                                        PurposeCategory1(
+                                            categoryId: 1,
+                                            categoryName: "Guest"),
                                     mobile: visitor.mobile ?? "",
                                     guestname: visitor.name ?? "",
                                     isFromQRScan:
@@ -426,5 +436,43 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
         ),
       ),
     );
+  }
+
+  /// Helper method to get category ID from category name
+  int _getCategoryIdFromName(String categoryName) {
+    switch (categoryName.toUpperCase()) {
+      case 'STAFF':
+        return 2;
+      case 'DELIVERY':
+        return 3;
+      case 'MEMBER STAFF':
+        return 4;
+      case 'VENDOR':
+        return 5;
+      case 'CABS':
+        return 6;
+      case 'GUEST':
+      default:
+        return 1;
+    }
+  }
+
+  /// Fetch complete purpose data including subcategories from API
+  Future<PurposeCategory1?> _getCompletePurposeData(String categoryName) async {
+    try {
+      final purposes = await remoteDataSource.fetchPurpose();
+      if (purposes != null) {
+        // Find the purpose that matches the category name
+        for (final purpose in purposes) {
+          if (purpose.categoryName.toUpperCase() ==
+              categoryName.toUpperCase()) {
+            return purpose;
+          }
+        }
+      }
+    } catch (e) {
+      print("❌ Error fetching complete purpose data: $e");
+    }
+    return null;
   }
 }

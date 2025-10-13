@@ -1554,7 +1554,15 @@ class _IdInputViewState extends State<IdInputView> {
         visitor_count: 1,
       );
 
-      // Navigate directly to guest information page (skip camera screen)
+      // Determine the correct purpose category from API response
+      final String categoryFromApi =
+          visitorData['category']?.toString() ?? "Guest";
+
+      // Fetch the complete purpose data including subcategories
+      final PurposeCategory1? completePurpose =
+          await _getCompletePurposeData(categoryFromApi);
+
+      // Navigate directly to purpose entry page based on actual entry type (skip camera screen)
       await Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -1562,7 +1570,7 @@ class _IdInputViewState extends State<IdInputView> {
                     selfcheckinFlow: false,
                     comingfrom: visitorData['coming_from'],
                     searchedVisitor: visitor,
-                    selectedValue:
+                    selectedValue: completePurpose ??
                         PurposeCategory1(categoryId: 1, categoryName: "Guest"),
                     mobile: visitorData['mobile'],
                     guestname: visitorData['name'] ?? "",
@@ -1911,6 +1919,44 @@ class _IdInputViewState extends State<IdInputView> {
 
     // Add haptic feedback for success
     HapticFeedback.lightImpact();
+  }
+
+  /// Helper method to get category ID from category name
+  int _getCategoryIdFromName(String categoryName) {
+    switch (categoryName.toUpperCase()) {
+      case 'STAFF':
+        return 2;
+      case 'DELIVERY':
+        return 3;
+      case 'MEMBER STAFF':
+        return 4;
+      case 'VENDOR':
+        return 5;
+      case 'CABS':
+        return 6;
+      case 'GUEST':
+      default:
+        return 1;
+    }
+  }
+
+  /// Fetch complete purpose data including subcategories from API
+  Future<PurposeCategory1?> _getCompletePurposeData(String categoryName) async {
+    try {
+      final purposes = await remoteDataSource.fetchPurpose();
+      if (purposes != null) {
+        // Find the purpose that matches the category name
+        for (final purpose in purposes) {
+          if (purpose.categoryName.toUpperCase() ==
+              categoryName.toUpperCase()) {
+            return purpose;
+          }
+        }
+      }
+    } catch (e) {
+      print("❌ Error fetching complete purpose data: $e");
+    }
+    return null;
   }
 }
 

@@ -1271,6 +1271,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
             // Bottom spacing
             const SizedBox(height: 120),
+
+            // Add Next button for express entry flow only
+            if (widget.selfcheckinFlow) _buildExpressEntryNextButton(),
           ],
         );
       },
@@ -1551,6 +1554,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
         // Bottom spacing
         const SizedBox(height: 120),
+
+        // Add Next button for express entry flow only
+        if (widget.selfcheckinFlow) _buildExpressEntryNextButton(),
       ],
     );
   }
@@ -1890,6 +1896,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
         // Bottom spacing
         const SizedBox(height: 120),
+
+        // Add Next button for express entry flow only
+        if (widget.selfcheckinFlow) _buildExpressEntryNextButton(),
       ],
     );
   }
@@ -2226,6 +2235,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
         // Bottom spacing
         const SizedBox(height: 120),
+
+        // Add Next button for express entry flow only
+        if (widget.selfcheckinFlow) _buildExpressEntryNextButton(),
       ],
     );
   }

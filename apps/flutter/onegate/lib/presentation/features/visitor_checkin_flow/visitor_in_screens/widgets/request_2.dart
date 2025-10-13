@@ -9,6 +9,7 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:confetti/confetti.dart';
+import 'package:flutter/semantics.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../../../../../generated/l10n/app_localizations.dart';
 import 'package:flutter_onegate/utils/route_tracker.dart';
@@ -133,30 +134,36 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return _ModernSuccessDialog(
-          onOkPressed: () {
-            Navigator.of(context).pop();
-            // Navigate based on flow type
-            if (self == true) {
-              // Express Entry flow - navigate to express entry dashboard
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SelfHomeView(),
-                ),
-                (Route<dynamic> route) => false,
-              );
-            } else {
-              // Gatekeeper flow - navigate to gatekeeper dashboard
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const GateDashboardView(),
-                ),
-                (Route<dynamic> route) => false,
-              );
-            }
+        return WillPopScope(
+          onWillPop: () async {
+            // Prevent dialog from closing when user navigates back
+            return false;
           },
+          child: _ModernSuccessDialog(
+            onOkPressed: () {
+              Navigator.of(context).pop();
+              // Navigate based on flow type
+              if (self == true) {
+                // Express Entry flow - navigate to express entry dashboard
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SelfHomeView(),
+                  ),
+                  (Route<dynamic> route) => false,
+                );
+              } else {
+                // Gatekeeper flow - navigate to gatekeeper dashboard
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const GateDashboardView(),
+                  ),
+                  (Route<dynamic> route) => false,
+                );
+              }
+            },
+          ),
         );
       },
     );
@@ -244,6 +251,78 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                         _buildVisitorProfileCard(),
                         const SizedBox(height: 60),
                         _buildLottieSection(requestType),
+                        // Express Entry only: Centered Finish button directly below Lottie
+                        if (widget.selfcheckinFlow == true)
+                          Center(
+                            child: Container(
+                              margin:
+                                  const EdgeInsets.only(top: 100, bottom: 50),
+                              width: MediaQuery.of(context).size.width * 0.8,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                  colors: [
+                                    Color(0xff212427),
+                                    Color(0xff57636C),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(32),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: TextButton.icon(
+                                onPressed: () {
+                                  if (self == true &&
+                                      _visitorCardEntryEnabled) {
+                                    _showSuccessDialog();
+                                  } else {
+                                    if (self == true) {
+                                      Navigator.pushAndRemoveUntil(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const SelfHomeView(),
+                                        ),
+                                        (Route<dynamic> route) => false,
+                                      );
+                                    } else {
+                                      Navigator.pushAndRemoveUntil(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const GateDashboardView(),
+                                        ),
+                                        (Route<dynamic> route) => false,
+                                      );
+                                    }
+                                  }
+                                },
+                                icon: const Icon(Icons.check_circle_outline,
+                                    color: Colors.white, size: 24),
+                                label: Text(
+                                  l10n.finish,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         const SizedBox(height: 60),
                       ],
                     ),
@@ -264,74 +343,73 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                     ],
                   ),
                   child: SafeArea(
-                    child: Container(
-                      height: 56,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [
-                            Color(0xff212427),
-                            Color(0xff57636C),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(32),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          ),
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 6,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: TextButton.icon(
-                        onPressed: () {
-                          if (self == true && _visitorCardEntryEnabled) {
-                            // Express Entry flow with visitor card entry enabled - show success dialog
-                            _showSuccessDialog();
-                          } else {
-                            // Express Entry flow with visitor card entry disabled OR Gatekeeper flow - navigate directly without dialog
-                            if (self == true) {
-                              // Express Entry - go to self entry home
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const SelfHomeView(),
+                    child: (widget.selfcheckinFlow == true)
+                        ? Container() // Hide bottom finish in Express Entry approved/rejected
+                        : Container(
+                            height: 56,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                                colors: [
+                                  Color(0xff212427),
+                                  Color(0xff57636C),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(32),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
                                 ),
-                                (Route<dynamic> route) => false,
-                              );
-                            } else {
-                              // Gatekeeper flow - go to gatekeeper dashboard
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const GateDashboardView(),
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3),
                                 ),
-                                (Route<dynamic> route) => false,
-                              );
-                            }
-                          }
-                        },
-                        icon: const Icon(Icons.check_circle_outline,
-                            color: Colors.white, size: 24),
-                        label: Text(
-                          l10n.finish,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
+                              ],
+                            ),
+                            child: TextButton.icon(
+                              onPressed: () {
+                                if (self == true && _visitorCardEntryEnabled) {
+                                  _showSuccessDialog();
+                                } else {
+                                  if (self == true) {
+                                    Navigator.pushAndRemoveUntil(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const SelfHomeView(),
+                                      ),
+                                      (Route<dynamic> route) => false,
+                                    );
+                                  } else {
+                                    Navigator.pushAndRemoveUntil(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const GateDashboardView(),
+                                      ),
+                                      (Route<dynamic> route) => false,
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.check_circle_outline,
+                                  color: Colors.white, size: 24),
+                              label: Text(
+                                l10n.finish,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
                   ),
                 ),
               ],
@@ -658,9 +736,27 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
   late AnimationController _scaleController;
   late Animation<double> _scaleAnimation;
 
+  // Sequential animation controllers
+  late AnimationController _sequenceController;
+  late AnimationController _okButtonPulseController;
+  late Animation<double> _okButtonPulseAnimation;
+  late AnimationController _handGestureController;
+  late Animation<double> _handGestureOpacity;
+  late Animation<Offset> _handGestureOffset;
+
+  // Animation states
+  int _currentRowIndex = 0;
+  bool _isSequenceComplete = false;
+  bool _isReduceMotionEnabled = false;
+  final int _handGesturePlays = 0;
+  bool _handGestureActive = false;
+
   @override
   void initState() {
     super.initState();
+
+    // Check for reduce motion preference
+    _checkReduceMotion();
 
     // Initialize confetti controller
     _confettiController =
@@ -671,6 +767,35 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
+
+    // Initialize sequence animation controller
+    _sequenceController = AnimationController(
+      duration: const Duration(milliseconds: 2000), // Total sequence duration
+      vsync: this,
+    );
+
+    // Initialize OK button pulse controller
+    _okButtonPulseController = AnimationController(
+      duration: const Duration(milliseconds: 180),
+      vsync: this,
+    );
+
+    // Hand gesture controller (tap nudge)
+    _handGestureController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _handGestureOpacity = CurvedAnimation(
+      parent: _handGestureController,
+      curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
+    );
+    _handGestureOffset = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(0, 0.08), // ~8-10dp relative on typical sizes
+    ).animate(CurvedAnimation(
+      parent: _handGestureController,
+      curve: Curves.easeOut,
+    ));
 
     // Create scale animation with bounce effect
     _scaleAnimation = TweenSequence<double>([
@@ -687,6 +812,21 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
       curve: Curves.elasticOut,
     ));
 
+    // Create OK button pulse animation
+    _okButtonPulseAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.06),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.06, end: 1.0),
+        weight: 50,
+      ),
+    ]).animate(CurvedAnimation(
+      parent: _okButtonPulseController,
+      curve: Curves.easeInOut,
+    ));
+
     // Start the scale animation
     _scaleController.forward();
 
@@ -699,6 +839,85 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
         _playSpeechAudio();
       });
     });
+
+    // Start sequential animation if not reduced motion
+    if (!_isReduceMotionEnabled) {
+      _startSequentialAnimation();
+    } else {
+      // Show all rows completed immediately
+      setState(() {
+        _currentRowIndex = 3;
+        _isSequenceComplete = true;
+      });
+      // Announce accessible state
+      SemanticsService.announce('Ready — tap OK', TextDirection.ltr);
+    }
+  }
+
+  // Check if reduce motion is enabled
+  void _checkReduceMotion() {
+    // This would typically check MediaQuery.of(context).accessibleNavigation
+    // For now, we'll assume it's disabled unless explicitly set
+    _isReduceMotionEnabled = false;
+  }
+
+  // Start the sequential animation
+  void _startSequentialAnimation() {
+    _animateNextRow();
+  }
+
+  // Animate the next row in sequence
+  void _animateNextRow() {
+    if (_currentRowIndex >= 3) {
+      // Sequence complete - pulse OK button
+      setState(() {
+        _isSequenceComplete = true;
+      });
+      _okButtonPulseController.forward();
+      // Trigger hand gesture hint if allowed
+      if (!_isReduceMotionEnabled) {
+        _startHandGestureSequence();
+      } else {
+        // Accessible static hint
+        SemanticsService.announce('Ready — tap OK', TextDirection.ltr);
+      }
+      return;
+    }
+
+    // Wait for dwell time (1.2s) + tick animation (600ms) + advance delay (200ms)
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (mounted) {
+        setState(() {
+          _currentRowIndex++;
+        });
+        _animateNextRow();
+      }
+    });
+  }
+
+  // Start hand gesture sequence (max 2 plays with 1.2s pause)
+  void _startHandGestureSequence() async {
+    if (!mounted) return;
+    _handGestureActive = true;
+    // Loop until user taps OK or dialog is closed
+    while (mounted && _handGestureActive) {
+      await _playHandGestureOnce();
+      if (!mounted || !_handGestureActive) break;
+      await Future.delayed(const Duration(milliseconds: 1200));
+    }
+  }
+
+  Future<void> _playHandGestureOnce() async {
+    try {
+      // Sync a subtle pulse on the OK button (160ms)
+      await _okButtonPulseController.forward();
+      _okButtonPulseController.reset();
+
+      // Play hand tap: move down and fade
+      _handGestureController.reset();
+      await _handGestureController.forward();
+      await _handGestureController.reverse();
+    } catch (_) {}
   }
 
   // Play speech audio
@@ -711,7 +930,7 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
     }
   }
 
-  // Build combined success card with all information in one read-only card
+  // Build animated sequential success card
   Widget _buildCombinedSuccessCard({
     required BuildContext context,
     required bool isTablet,
@@ -788,10 +1007,11 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
 
           SizedBox(height: isSmallMobile ? 16 : 20),
 
-          // Entry Recorded section
-          _buildInfoSection(
+          // Animated sequential information rows
+          _buildAnimatedInfoSection(
             context: context,
             isTablet: isTablet,
+            index: 0,
             icon: Icons.check_circle,
             title: 'Entry Recorded',
             description: 'Your visitor entry has been successfully recorded.',
@@ -800,10 +1020,10 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
 
           SizedBox(height: isSmallMobile ? 12 : 16),
 
-          // Access Card section
-          _buildInfoSection(
+          _buildAnimatedInfoSection(
             context: context,
             isTablet: isTablet,
+            index: 1,
             icon: Icons.credit_card,
             title: 'Access Card',
             description:
@@ -813,10 +1033,10 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
 
           SizedBox(height: isSmallMobile ? 12 : 16),
 
-          // Easy Access section
-          _buildInfoSection(
+          _buildAnimatedInfoSection(
             context: context,
             isTablet: isTablet,
+            index: 2,
             icon: Icons.elevator,
             title: 'Easy Access',
             description:
@@ -828,10 +1048,11 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
     );
   }
 
-  // Build individual info section within the combined card
-  Widget _buildInfoSection({
+  // Build animated info section with sequential reveal
+  Widget _buildAnimatedInfoSection({
     required BuildContext context,
     required bool isTablet,
+    required int index,
     required IconData icon,
     required String title,
     required String description,
@@ -841,100 +1062,172 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
     final isSmallMobile = screenWidth < 360;
     final isMobile = screenWidth >= 360 && screenWidth < 768;
 
-    return Row(
-      children: [
-        // Icon section
-        Container(
-          width: isSmallMobile
-              ? 36
-              : isMobile
-                  ? 40
-                  : isTablet
-                      ? 44
-                      : 48,
-          height: isSmallMobile
-              ? 36
-              : isMobile
-                  ? 40
-                  : isTablet
-                      ? 44
-                      : 48,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: color.withOpacity(0.3),
-              width: 1,
+    // Determine animation state for this row
+    final bool isRowActive = _currentRowIndex == index;
+    final bool isRowCompleted = _currentRowIndex > index;
+    final bool isRowVisible = _currentRowIndex >= index;
+
+    // Opacity based on state
+    double opacity = 0.6; // Initial muted state
+    if (isRowActive) {
+      opacity = 1.0; // Active/highlighted
+    } else if (isRowCompleted) {
+      opacity = 0.85; // Completed (slightly dimmed)
+    }
+
+    return AnimatedOpacity(
+      opacity: _isReduceMotionEnabled ? 1.0 : opacity,
+      duration: const Duration(milliseconds: 300),
+      child: Row(
+        children: [
+          // Icon section with tick animation
+          Container(
+            width: isSmallMobile
+                ? 36
+                : isMobile
+                    ? 40
+                    : isTablet
+                        ? 44
+                        : 48,
+            height: isSmallMobile
+                ? 36
+                : isMobile
+                    ? 40
+                    : isTablet
+                        ? 44
+                        : 48,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: color.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Original icon
+                AnimatedOpacity(
+                  opacity: isRowCompleted ? 0.0 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: isSmallMobile
+                        ? 18
+                        : isMobile
+                            ? 20
+                            : isTablet
+                                ? 22
+                                : 24,
+                  ),
+                ),
+                // Tick icon for completed rows
+                if (isRowCompleted)
+                  AnimatedScale(
+                    scale: _isReduceMotionEnabled ? 1.0 : 1.0,
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeOut,
+                    child: Container(
+                      width: isSmallMobile
+                          ? 20
+                          : isMobile
+                              ? 22
+                              : isTablet
+                                  ? 24
+                                  : 26,
+                      height: isSmallMobile
+                          ? 20
+                          : isMobile
+                              ? 22
+                              : isTablet
+                                  ? 24
+                                  : 26,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF4CAF50),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: isSmallMobile
+                            ? 12
+                            : isMobile
+                                ? 14
+                                : isTablet
+                                    ? 16
+                                    : 18,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
-          child: Icon(
-            icon,
-            color: color,
-            size: isSmallMobile
-                ? 18
-                : isMobile
-                    ? 20
-                    : isTablet
-                        ? 22
-                        : 24,
-          ),
-        ),
 
-        SizedBox(
-            width: isSmallMobile
-                ? 12
-                : isMobile
-                    ? 14
-                    : isTablet
-                        ? 16
-                        : 18),
-
-        // Content section
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: isSmallMobile
+          SizedBox(
+              width: isSmallMobile
+                  ? 12
+                  : isMobile
                       ? 14
-                      : isMobile
-                          ? 15
-                          : isTablet
-                              ? 16
-                              : 17,
-                  color: const Color(0xff212427),
-                ),
+                      : isTablet
+                          ? 16
+                          : 18),
+
+          // Content section with slide-up animation
+          Expanded(
+            child: AnimatedSlide(
+              offset: _isReduceMotionEnabled || isRowVisible
+                  ? Offset.zero
+                  : const Offset(0, 0.3),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: isSmallMobile
+                          ? 14
+                          : isMobile
+                              ? 15
+                              : isTablet
+                                  ? 16
+                                  : 17,
+                      color: const Color(0xff212427),
+                    ),
+                  ),
+                  SizedBox(
+                      height: isSmallMobile
+                          ? 3
+                          : isMobile
+                              ? 4
+                              : isTablet
+                                  ? 5
+                                  : 6),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: const Color(0xff57636C),
+                      fontSize: isSmallMobile
+                          ? 12
+                          : isMobile
+                              ? 13
+                              : isTablet
+                                  ? 14
+                                  : 15,
+                      fontWeight: FontWeight.w400,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(
-                  height: isSmallMobile
-                      ? 3
-                      : isMobile
-                          ? 4
-                          : isTablet
-                              ? 5
-                              : 6),
-              Text(
-                description,
-                style: TextStyle(
-                  color: const Color(0xff57636C),
-                  fontSize: isSmallMobile
-                      ? 12
-                      : isMobile
-                          ? 13
-                          : isTablet
-                              ? 14
-                              : 15,
-                  fontWeight: FontWeight.w400,
-                  height: 1.4,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -942,6 +1235,8 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
   void dispose() {
     _confettiController.dispose();
     _scaleController.dispose();
+    _sequenceController.dispose();
+    _okButtonPulseController.dispose();
     super.dispose();
   }
 
@@ -1130,61 +1425,169 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
                                             ? 28
                                             : 32),
 
-                            // OK Button with responsive styling
-                            Container(
-                              width: double.infinity,
-                              height: isSmallMobile
-                                  ? 48
-                                  : isMobile
-                                      ? 52
-                                      : isTablet
-                                          ? 56
-                                          : 60,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                  colors: [
-                                    Color(0xff212427), // OneGate black color
-                                    Color(0xff57636C), // OneGate grey color
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xff212427)
-                                        .withOpacity(0.3),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 6),
-                                  ),
-                                ],
-                              ),
-                              child: ElevatedButton(
-                                onPressed: widget.onOkPressed,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  foregroundColor: Colors.white,
-                                  shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  elevation: 0,
-                                ),
-                                child: Text(
-                                  'OK',
-                                  style: TextStyle(
-                                    fontSize: isSmallMobile
-                                        ? 16
+                            // OK Button with responsive styling, pulse, and hand gesture cue
+                            AnimatedBuilder(
+                              animation: _okButtonPulseAnimation,
+                              builder: (context, child) {
+                                final button = Transform.scale(
+                                  scale: _isSequenceComplete &&
+                                          !_isReduceMotionEnabled
+                                      ? _okButtonPulseAnimation.value
+                                      : 1.0,
+                                  child: Container(
+                                    width: double.infinity,
+                                    height: isSmallMobile
+                                        ? 48
                                         : isMobile
-                                            ? 17
+                                            ? 52
                                             : isTablet
-                                                ? 18
-                                                : 20,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
+                                                ? 56
+                                                : 60,
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                        colors: [
+                                          Color(0xff212427),
+                                          Color(0xff57636C),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xff212427)
+                                              .withOpacity(0.3),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        _handGestureActive = false;
+                                        widget.onOkPressed();
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.transparent,
+                                        foregroundColor: Colors.white,
+                                        shadowColor: Colors.transparent,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                        ),
+                                        elevation: 0,
+                                      ),
+                                      child: Text(
+                                        'OK',
+                                        style: TextStyle(
+                                          fontSize: isSmallMobile
+                                              ? 16
+                                              : isMobile
+                                                  ? 17
+                                                  : isTablet
+                                                      ? 18
+                                                      : 20,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+
+                                if (_isReduceMotionEnabled) {
+                                  return button;
+                                }
+
+                                return Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    button,
+                                    if (_isSequenceComplete &&
+                                        _handGestureActive)
+                                      Positioned.fill(
+                                        child: IgnorePointer(
+                                          child: Align(
+                                            alignment: Alignment.centerRight,
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                  right: 8.0),
+                                              child: FadeTransition(
+                                                opacity: _handGestureOpacity,
+                                                child: SlideTransition(
+                                                  position: _handGestureOffset,
+                                                  child: Transform.translate(
+                                                    offset: const Offset(0, -6),
+                                                    child: Column(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .center,
+                                                      children: [
+                                                        Icon(
+                                                          Icons.touch_app,
+                                                          color: Colors.white
+                                                              .withOpacity(
+                                                                  0.95),
+                                                          size: isSmallMobile
+                                                              ? 28
+                                                              : isMobile
+                                                                  ? 30
+                                                                  : isTablet
+                                                                      ? 32
+                                                                      : 34,
+                                                        ),
+                                                        const SizedBox(
+                                                            height: 4),
+                                                        Container(
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: Colors.black
+                                                                .withOpacity(
+                                                                    0.35),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        8),
+                                                          ),
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal: 8,
+                                                                  vertical: 2),
+                                                          child: Text(
+                                                            'Tap here',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: isSmallMobile
+                                                                  ? 10
+                                                                  : isMobile
+                                                                      ? 11
+                                                                      : isTablet
+                                                                          ? 12
+                                                                          : 12,
+                                                              letterSpacing:
+                                                                  0.3,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              },
                             ),
                           ],
                         ),

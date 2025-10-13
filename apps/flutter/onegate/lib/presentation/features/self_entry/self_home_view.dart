@@ -175,18 +175,12 @@ class _SelfHomeViewState extends State<SelfHomeView>
   }
 
   // Enforce kiosk mode to prevent user from accessing system UI
-  void _enforceKioskMode() {
+  void _enforceKioskMode() async {
     try {
       // Re-apply immersive mode
       enterKioskMode();
-
-      // Re-start kiosk mode plugin if needed
-      _flutterKioskMode.start().catchError((e) {
-        log("Error re-starting kiosk mode: $e");
-        // Still ensure immersive UI is applied
-        enterKioskMode();
-        return false; // Return value for catchError
-      });
+      // Express Entry: Do NOT invoke plugin start to avoid system "App is pinned" dialog
+      log('🔒 Express Entry - enforcing immersive UI only (no kiosk plugin start)');
     } catch (e) {
       log("Error enforcing kiosk mode: $e");
       // Fallback to immersive UI only
@@ -288,30 +282,10 @@ class _SelfHomeViewState extends State<SelfHomeView>
 
   Future<void> _enableKioskMode() async {
     try {
-      // Check if user has already dismissed the "app is pinned" popup
-      final prefs = await SharedPreferences.getInstance();
-      final hasSeenPinnedPopup =
-          prefs.getBool('has_seen_pinned_popup') ?? false;
-
-      log('🔒 Kiosk mode - hasSeenPinnedPopup: $hasSeenPinnedPopup');
-
       // Engage system immersive UI first
       enterKioskMode();
-      // Start Android kiosk/lock task mode via plugin
-      await _flutterKioskMode.start();
-
-      // If user hasn't seen the popup yet, show a custom dialog to explain kiosk mode
-      if (!hasSeenPinnedPopup) {
-        log('🔒 Showing kiosk mode info dialog for first time');
-        // Wait a bit for the system dialog to appear, then show our custom dialog
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) {
-            _showKioskModeInfoDialog();
-          }
-        });
-      } else {
-        log('🔒 Kiosk mode info dialog already shown - skipping');
-      }
+      // Express Entry: Do NOT start kiosk plugin to avoid system dialog entirely
+      log('🔒 Express Entry - immersive UI enabled, kiosk plugin start skipped');
     } catch (e) {
       log("Error starting kiosk mode: $e");
       // Still ensure immersive UI is applied even if plugin fails
@@ -917,6 +891,11 @@ class _SelfHomeViewState extends State<SelfHomeView>
 
             SizedBox(height: cardSpacing),
 
+            // OR Text - Centered between the two options
+            _buildOrText(context, screenWidth),
+
+            SizedBox(height: cardSpacing),
+
             // Passcode Option - Bottom (Equal height with QR Code)
             Expanded(
               child: _buildGridCard(
@@ -954,6 +933,106 @@ class _SelfHomeViewState extends State<SelfHomeView>
           cardSpacing,
         ),
       ],
+    );
+  }
+
+  // Build responsive OR text between QR scan and passcode options
+  Widget _buildOrText(BuildContext context, double screenWidth) {
+    // Responsive breakpoints
+    final isSmallMobile = screenWidth <= 600;
+    final isMediumTablet = screenWidth > 600 && screenWidth <= 900;
+    final isLargeTablet = screenWidth > 900 && screenWidth <= 1200;
+
+    // Responsive scaling factors
+    final scaleFactor = isSmallMobile
+        ? 1.0
+        : isMediumTablet
+            ? 1.4
+            : isLargeTablet
+                ? 1.8
+                : 2.2;
+
+    // Base dimensions (mobile)
+    const baseFontSize = 16.0;
+    const basePadding = 8.0;
+    const baseLineHeight = 20.0;
+
+    // Scaled dimensions
+    final fontSize = baseFontSize * scaleFactor;
+    final padding = basePadding * scaleFactor;
+    final lineHeight = baseLineHeight * scaleFactor;
+
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: padding),
+      child: Row(
+        children: [
+          // Left line
+          Expanded(
+            child: Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.transparent,
+                    const Color(0xFF9CA3AF).withOpacity(0.3),
+                    const Color(0xFF9CA3AF).withOpacity(0.6),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // OR text with background
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: padding * 2),
+            padding: EdgeInsets.symmetric(
+              horizontal: padding * 1.5,
+              vertical: padding * 0.5,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(padding * 2),
+              border: Border.all(
+                color: const Color(0xFF9CA3AF).withOpacity(0.3),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Text(
+              'OR',
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF6B7280),
+                letterSpacing: 0.5,
+                height: lineHeight / fontSize,
+              ),
+            ),
+          ),
+
+          // Right line
+          Expanded(
+            child: Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF9CA3AF).withOpacity(0.6),
+                    const Color(0xFF9CA3AF).withOpacity(0.3),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

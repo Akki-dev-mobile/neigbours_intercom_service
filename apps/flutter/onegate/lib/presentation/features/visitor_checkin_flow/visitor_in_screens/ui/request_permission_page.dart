@@ -436,15 +436,16 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                             const SizedBox(height: 60),
                             // Animation and Status
                             _buildLottieSection(requestType),
-                            const SizedBox(height: 60),
-                            // Action Buttons
-                            Center(child: _buildStatusText()),
 
-                            // Add Finish button for express entry flow only - below status text
+                            // Add Finish button for express entry flow only - centered below Lottie section
                             if (widget.selfcheckinFlow == true &&
                                 (requestType == RequestType.approved ||
                                     requestType == RequestType.rejected))
-                              _buildExpressEntryFinishButton(),
+                              Center(child: _buildExpressEntryFinishButton()),
+
+                            const SizedBox(height: 60),
+                            // Action Buttons
+                            Center(child: _buildStatusText()),
 
                             const SizedBox(height: 60),
                           ],
@@ -693,8 +694,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           if (requestType == RequestType.notRecheable ||
               (_isTimeElapsed && requestType == RequestType.waiting))
             _buildNotReacheableButtons(),
-          if (requestType == RequestType.approved ||
-              requestType == RequestType.rejected)
+          // Only show finish button in bottom area for non-express entry flows
+          if ((requestType == RequestType.approved ||
+                  requestType == RequestType.rejected) &&
+              widget.selfcheckinFlow != true)
             _buildFinishButton(),
           if (requestType == RequestType.leaveAtGate)
             _buildCapturePhotoButton(),
@@ -1964,11 +1967,6 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
     return Container(
       margin: EdgeInsets.symmetric(
-        horizontal: isSmallMobile
-            ? 16
-            : isMobile
-                ? 20
-                : 24,
         vertical: isSmallMobile
             ? 16
             : isMobile
@@ -1976,7 +1974,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                 : 24,
       ),
       child: Container(
-        width: double.infinity,
+        width: MediaQuery.of(context).size.width * 0.8,
         height: isSmallMobile
             ? 56
             : isMobile
