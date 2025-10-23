@@ -597,8 +597,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         ));
         return false;
       }
+      // Skip visitor card number validation for express entry flow
       if ((_visitorNumberController?.text ?? "").isEmpty &&
-          _visitorCardNumber == true) {
+          _visitorCardNumber == true &&
+          !widget.selfcheckinFlow) {
         _bloc.add(VIEValidationErrorEvent(
           message: 'Please enter the visitor card number',
           field: 'Card Number Required',
