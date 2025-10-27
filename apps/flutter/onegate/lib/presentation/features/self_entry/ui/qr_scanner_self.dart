@@ -15,6 +15,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.dart';
+import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -1148,14 +1149,26 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                     Navigator.of(context).pop(); // Close dialog
                     _isDialogOpen = false;
 
-                    // Navigate back to express entry dashboard
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SelfHomeView(),
-                      ),
-                      (Route<dynamic> route) => false,
-                    );
+                    // Navigate back to the appropriate dashboard based on the flow
+                    if (widget.isGatekeeperQRPasscodeEntry == true) {
+                      // Navigate back to gatekeeper dashboard
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const GateDashboardView(),
+                        ),
+                        (Route<dynamic> route) => false,
+                      );
+                    } else {
+                      // Navigate back to express entry dashboard
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SelfHomeView(),
+                        ),
+                        (Route<dynamic> route) => false,
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xffF44336),
