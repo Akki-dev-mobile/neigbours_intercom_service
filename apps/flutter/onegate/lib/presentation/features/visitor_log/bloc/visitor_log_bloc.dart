@@ -246,6 +246,7 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
             formattedDate,
             currentPage: event.currentPage,
             perPage: event.perPage,
+            searchQuery: event.searchQuery,
           );
           break;
         case "check_out":
@@ -254,6 +255,7 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
             formattedDate,
             currentPage: event.currentPage,
             perPage: event.perPage,
+            searchQuery: event.searchQuery,
           );
           break;
         default: // "all"
@@ -262,6 +264,7 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
             formattedDate,
             currentPage: event.currentPage,
             perPage: event.perPage,
+            searchQuery: event.searchQuery,
           );
       }
 

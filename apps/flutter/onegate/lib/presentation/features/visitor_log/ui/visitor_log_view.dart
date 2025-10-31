@@ -117,11 +117,24 @@ class _VisitorLogViewState extends State<VisitorLogView>
               "Loading more data for page $nextPage with filter: $filterType");
           debugPrint("Filter type: $filterType, Section: $_currentSection");
 
-          _visitorLogBloc.add(LoadMoreVisitorLogsEvent(
-            nextPage,
-            per_page,
-            filterType: filterType,
-          ));
+          // Handle pagination differently for card number search vs backend search
+          if (_isCardNumberPattern(_searchText ?? '')) {
+            // For card number search, load more data without search filter
+            _visitorLogBloc.add(LoadMoreVisitorLogsEvent(
+              nextPage,
+              100, // Get more data for client-side filtering
+              filterType: filterType,
+              searchQuery: null, // No backend search for card numbers
+            ));
+          } else {
+            // For backend search, use existing logic
+            _visitorLogBloc.add(LoadMoreVisitorLogsEvent(
+              nextPage,
+              per_page,
+              filterType: filterType,
+              searchQuery: _searchText,
+            ));
+          }
         } else {
           debugPrint(context.l10n.noMoreData ?? 'No more data');
         }
@@ -221,30 +234,86 @@ class _VisitorLogViewState extends State<VisitorLogView>
       debugPrint(
           "${context.l10n.triggeringSearchFor ?? 'Triggering search for'}: '$query'"); // Localized
 
-      // Trigger the appropriate BLoC event based on current section
-      if (_currentSection == 'CHECK_IN') {
+      final isCardNumber = _isCardNumberPattern(query.trim());
+
+      if (isCardNumber) {
+        // For card numbers: fetch all data and filter client-side
+        _performCardNumberSearch(query.trim());
+      } else {
+        // For names/mobile: use existing backend search
+        _performBackendSearch(query);
+      }
+    });
+  }
+
+  // Check if the query looks like a card number
+  bool _isCardNumberPattern(String query) {
+    if (query.isEmpty) return false;
+    // Match patterns like: V123, VC-045, 123, V-123, etc.
+    return RegExp(r'^[A-Za-z\-]*\d+[A-Za-z\-]*$').hasMatch(query);
+  }
+
+  // Perform card number search by fetching all data and filtering client-side
+  void _performCardNumberSearch(String cardNumber) {
+    debugPrint(
+        "🔍 [CARD SEARCH] Performing card number search for: '$cardNumber'");
+
+    // Fetch all data without search filter for client-side filtering
+    switch (widget.id) {
+      case "Visitor In":
         _visitorLogBloc.add(FetchCheckInLogEvent(
           DateTime.now(),
           currentPage: 1,
-          perPage: per_page,
-          searchQuery: query.isNotEmpty ? query : null,
+          perPage: 100, // Get more data for client-side filtering
+          searchQuery: null, // No backend search
         ));
-      } else if (_currentSection == 'CHECK_OUT') {
+        break;
+      case "Visitor Out":
+      case "Cards":
         _visitorLogBloc.add(FetchCheckOutLogEvent(
           DateTime.now(),
           currentPage: 1,
-          perPage: per_page,
-          searchQuery: query.isNotEmpty ? query : null,
+          perPage: 100,
+          searchQuery: null,
         ));
-      } else {
+        break;
+      default:
         _visitorLogBloc.add(FetchVisitorLogEvent(
           DateTime.now(),
           currentPage: 1,
-          perPage: per_page,
-          searchQuery: query.isNotEmpty ? query : null,
+          perPage: 100,
+          searchQuery: null,
         ));
-      }
-    });
+    }
+  }
+
+  // Perform backend search for names/mobile numbers
+  void _performBackendSearch(String query) {
+    debugPrint("🔍 [BACKEND SEARCH] Performing backend search for: '$query'");
+
+    // Trigger the appropriate BLoC event based on current section
+    if (_currentSection == 'CHECK_IN') {
+      _visitorLogBloc.add(FetchCheckInLogEvent(
+        DateTime.now(),
+        currentPage: 1,
+        perPage: per_page,
+        searchQuery: query.isNotEmpty ? query : null,
+      ));
+    } else if (_currentSection == 'CHECK_OUT') {
+      _visitorLogBloc.add(FetchCheckOutLogEvent(
+        DateTime.now(),
+        currentPage: 1,
+        perPage: per_page,
+        searchQuery: query.isNotEmpty ? query : null,
+      ));
+    } else {
+      _visitorLogBloc.add(FetchVisitorLogEvent(
+        DateTime.now(),
+        currentPage: 1,
+        perPage: per_page,
+        searchQuery: query.isNotEmpty ? query : null,
+      ));
+    }
   }
 
   // Add method for handling search text changes
@@ -399,12 +468,27 @@ class _VisitorLogViewState extends State<VisitorLogView>
               return true; // Show all logs for other cases
             }).toList();
 
+            // Apply client-side card number filtering if needed
+            List<VisitorLog> displayLogs = visitorLogs;
+            if (_isCardNumberPattern(_searchText ?? '') &&
+                (_searchText?.isNotEmpty ?? false)) {
+              debugPrint(
+                  "🔍 [CLIENT FILTER] Applying card number filter for: '$_searchText'");
+              displayLogs = visitorLogs.where((log) {
+                final cardNumber = log.visitor_card_number?.toLowerCase() ?? '';
+                final searchTerm = (_searchText ?? '').toLowerCase();
+                return cardNumber.contains(searchTerm);
+              }).toList();
+              debugPrint(
+                  "🔍 [CLIENT FILTER] Filtered ${visitorLogs.length} logs to ${displayLogs.length} matches");
+            }
+
             // Store the visitor logs for future use during search loading
-            _lastVisitorLogs = visitorLogs;
+            _lastVisitorLogs = displayLogs;
             List<VisitorLog> uniqueVisitorLogs = [];
             Set<String> checkInTimes = {};
 
-            for (var log in visitorLogs) {
+            for (var log in displayLogs) {
               final checkInTime = log.visitor_check_in?.toIso8601String();
               if (!checkInTimes.contains(checkInTime)) {
                 checkInTimes.add(checkInTime!);
@@ -429,12 +513,23 @@ class _VisitorLogViewState extends State<VisitorLogView>
 
             // List<String> sortedBuildingNames = buildingNames.toList();
 
-            // Filter visitors by name search
-            List<VisitorLog> filteredVisitors = uniqueVisitorLogs
-                .where((visitorLog) => visitorLog.visitor!.name!
-                    .toLowerCase()
-                    .contains(_searchText!.toLowerCase()))
-                .toList();
+            // Filter visitors by search (name or card number)
+            List<VisitorLog> filteredVisitors = uniqueVisitorLogs;
+            if ((_searchText?.isNotEmpty ?? false)) {
+              if (_isCardNumberPattern(_searchText!)) {
+                // For card number search, use the already filtered displayLogs
+                filteredVisitors = displayLogs;
+              } else {
+                // For name/mobile search, apply name filtering
+                filteredVisitors = uniqueVisitorLogs
+                    .where((visitorLog) =>
+                        visitorLog.visitor?.name
+                            ?.toLowerCase()
+                            .contains(_searchText!.toLowerCase()) ??
+                        false)
+                    .toList();
+              }
+            }
 
             // Filter by selected building if not "All Buildings"
             if (selectedBuilding != null &&
@@ -544,7 +639,9 @@ class _VisitorLogViewState extends State<VisitorLogView>
                   ),
                 ),
                 actions: [
-                  if (widget.id == "In Out Book")
+                  if (widget.id == "In Out Book" ||
+                      widget.id == "Visitor In" ||
+                      widget.id == "Visitor Out")
                     Padding(
                       padding: const EdgeInsets.only(right: 10.0),
                       child: Container(
@@ -965,6 +1062,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
     TextEditingController nameController = TextEditingController();
     DateTime? startDate;
     DateTime? endDate;
+    String? exportErrorMessage;
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final storedEmail = prefs.getString('email') ?? '';
@@ -1116,6 +1214,40 @@ class _VisitorLogViewState extends State<VisitorLogView>
                       ],
                     ),
                   ),
+
+                  // Inline error banner (if any)
+                  if (exportErrorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFEBEE),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFFFCDD2)),
+                        ),
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.error_outline_rounded,
+                                color: Color(0xFFD32F2F)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                exportErrorMessage ?? '',
+                                style: const TextStyle(
+                                  color: Color(0xFFD32F2F),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 4),
 
                   // Enhanced form content
                   Expanded(
@@ -1823,10 +1955,6 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                           }
                                           if (exportFormKey.currentState!
                                               .validate()) {
-                                            setState(() {
-                                              isLoading = true;
-                                            });
-
                                             await prefs.setString(
                                                 'email', emailController.text);
 
@@ -1855,12 +1983,23 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                               "in_gate": selectedGateName,
                                             };
 
+                                            // Add is_checkout based on the initiating card
+                                            if (widget.id == 'Visitor In') {
+                                              visitorData['is_checkout'] = false;
+                                            } else if (widget.id == 'Visitor Out') {
+                                              visitorData['is_checkout'] = true;
+                                            }
+
                                             try {
-                                              await remoteDataSource
-                                                  .exportLogs(visitorData);
-                                              setState(() {
-                                                isLoading = false;
-                                              });
+                                              await _showExportProgressDialog(
+                                                onExecute: () async {
+                                                  await remoteDataSource
+                                                      .exportLogs(visitorData);
+                                                },
+                                                title: 'Exporting logs...',
+                                              );
+
+                                              // Close bottom sheet after progress completes
                                               Navigator.pop(context);
                                               _showExportSuccessDialog(
                                                 title: '🎉 Export Successful!',
@@ -1870,16 +2009,14 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                                     Icons.download_done_rounded,
                                               );
                                             } catch (e) {
-                                              setState(() {
-                                                isLoading = false;
-                                              });
-                                              _showEnhancedErrorToast(
-                                                title: 'Export Failed',
-                                                message:
-                                                    'Failed to export logs. Please try again.',
-                                                icon:
-                                                    Icons.error_outline_rounded,
-                                              );
+                                              final msg = e.toString();
+                                              if (msg.contains('No data found')) {
+                                                _showNoDataFoundDialog();
+                                              } else {
+                                                _showExportErrorDialog(
+                                                  'Failed to export logs as no data was recorded for the selected date. Try selecting another date.',
+                                                );
+                                              }
                                             }
                                           }
                                         },
@@ -1922,6 +2059,120 @@ class _VisitorLogViewState extends State<VisitorLogView>
         );
       },
     );
+  }
+
+  /// Shows a determinate progress dialog while export runs and updates percentage.
+  Future<void> _showExportProgressDialog(
+      {required Future<void> Function() onExecute,
+      String title = 'Exporting...'}) async {
+    int progress = 0;
+    Timer? timer;
+    bool completed = false;
+    void Function(void Function())? dialogSetState;
+    Object? capturedError;
+
+    final dialogFuture = showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            dialogSetState ??= setState;
+            // Start timer once when dialog builds first time
+            timer ??= Timer.periodic(const Duration(milliseconds: 200), (t) {
+              if (completed) return;
+              setState(() {
+                // Smoothly progress up to 90% while waiting for server
+                if (progress < 90) {
+                  progress += 2; // ~9s to reach 90%
+                  if (progress > 90) progress = 90;
+                }
+              });
+            });
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.download_rounded,
+                            color: Color(0xffF44336)),
+                        const SizedBox(width: 8),
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF212427),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    LinearProgressIndicator(
+                      value: progress / 100.0,
+                      minHeight: 8,
+                      backgroundColor: Colors.grey[200],
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFF4CAF50)),
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        "$progress%",
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF57636C),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    // Start export concurrently and drive dialog to 100% upon completion
+    unawaited(() async {
+      try {
+        await onExecute();
+        completed = true;
+        if (dialogSetState != null) {
+          dialogSetState!(() {
+            progress = 100;
+          });
+        }
+        await Future.delayed(const Duration(milliseconds: 400));
+      } catch (e) {
+        capturedError = e;
+      } finally {
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+        timer?.cancel();
+      }
+    }());
+
+    await dialogFuture.whenComplete(() {
+      timer?.cancel();
+    });
+
+    if (capturedError != null) {
+      // Rethrow to let caller show error toast
+      throw capturedError!;
+    }
   }
 
   void _showErrorDialog(BuildContext context, String title, String message) {
@@ -2737,6 +2988,198 @@ class _VisitorLogViewState extends State<VisitorLogView>
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Shows a blocking modal dialog for "No data found"
+  void _showNoDataFoundDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.info_outline_rounded, color: Color(0xFFEF6C00)),
+                    SizedBox(width: 8),
+                    Text(
+                      'No data found',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF212427),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'No data found for the selected filters. Try a different date range or card.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF57636C),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('OK'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Shows a blocking modal dialog for generic export errors with OK button
+  void _showExportErrorDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext ctx) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Error Icon with gradient background (match success UI)
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFFFF7043), // Orange
+                          Color(0xFFD32F2F), // Red
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFD32F2F).withOpacity(0.25),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.error_outline_rounded,
+                      color: Colors.white,
+                      size: 50,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Title (match success UI typography)
+                  const Text(
+                    'Export Failed',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF212427),
+                      letterSpacing: 0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Message (match success UI body style)
+                  Text(
+                    message,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF57636C),
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+
+                  // OK Button with same sizing as success dialog
+                  Container(
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Color(0xff2C2C2C), // Black
+                          Color(0xff6E6E6E), // Grey
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'OK',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                           letterSpacing: 0.5,
                         ),
                       ),

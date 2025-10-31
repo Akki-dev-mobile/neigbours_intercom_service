@@ -890,30 +890,34 @@ class RemoteDataSource {
         ),
       );
 
-      // Handle successful response
+      // Handle response
       if (response.statusCode == 200) {
-        // Toast message will be shown from the UI layer instead
         log("Export Logs Response: ${response.data}");
+        try {
+          final data = response.data;
+          if (data is Map<String, dynamic>) {
+            final success = data['success'] == true;
+            final statusCode = data['status_code'];
+            final message = data['message']?.toString();
+            if (!success || (statusCode is int && statusCode != 200)) {
+              // Surface backend message (e.g., "No data found")
+              throw Exception(message ?? 'Export failed');
+            }
+          }
+        } catch (e) {
+          // If parsing fails, assume success already handled
+        }
       } else {
         _handleErrorResponse();
-
         log("Failed to export logs: ${response.statusMessage}");
-        myFluttertoast(
-          msg: "Failed to export logs: ${response.data}",
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-        );
+        throw Exception('Failed to export logs');
       }
     } catch (e) {
       _handleErrorResponse();
 
       // Handle errors during log export
       log("Error exporting logs: $e");
-      myFluttertoast(
-        msg: "Error exporting logs: $e",
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
+      rethrow;
     }
   }
 
@@ -1777,7 +1781,7 @@ class RemoteDataSource {
     int? passId,
   }) async {
     try {
-      final String url = 'https://gateapi.cubeone.in/api/member/pass/verify';
+      const String url = 'https://gateapi.cubeone.in/api/member/pass/verify';
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName = prefs.getString('selected_gate') ?? gateName;
       final resolvedCompanyId = await gateStorage.getSocietyId();

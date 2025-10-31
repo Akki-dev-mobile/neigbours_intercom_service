@@ -37,9 +37,10 @@ class LoadMoreVisitorLogsEvent extends VisitorLogEvent {
   final int currentPage;
   final int perPage;
   final String filterType; // "all", "check_in", "check_out"
+  final String? searchQuery;
 
   LoadMoreVisitorLogsEvent(this.currentPage, this.perPage,
-      {this.filterType = "all"});
+      {this.filterType = "all", this.searchQuery});
 }
 
 class CheckOutEvent extends VisitorLogEvent {
