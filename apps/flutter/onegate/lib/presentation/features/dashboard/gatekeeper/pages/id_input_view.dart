@@ -1546,12 +1546,17 @@ class _IdInputViewState extends State<IdInputView> {
         visitor_image: visitorData['visitor_image'] ?? "",
       );
 
+      // Extract visitor_count from API response, checking both visitor_count and guest_count fields
+      final int visitorCount = visitorData['visitor_count'] ?? 
+                               visitorData['guest_count'] ?? 
+                               1;
+
       VisitorLog visitorLog = VisitorLog(
         visitor: visitor,
         visitor_coming_from: visitorData['coming_from'],
         visitor_purpose_Category_name: visitorData['category'] ?? "Guest",
         visitor_purpose_category_id: 1,
-        visitor_count: 1,
+        visitor_count: visitorCount,
       );
 
       // Determine the correct purpose category from API response
@@ -1680,12 +1685,17 @@ class _IdInputViewState extends State<IdInputView> {
           mobile: visitorData['mobile'],
         );
 
+        // Extract visitor_count from API response, checking both visitor_count and guest_count fields
+        final int visitorCount = visitorData['visitor_count'] ?? 
+                                 visitorData['guest_count'] ?? 
+                                 1;
+
         VisitorLog visitorLog = VisitorLog(
           visitor: visitor,
           visitor_coming_from: visitorData['coming_from'],
           visitor_purpose_Category_name: visitorData['category'] ?? "Guest",
           visitor_purpose_category_id: 1,
-          visitor_count: 1,
+          visitor_count: visitorCount,
         );
 
         // Navigate to guest information page (same flow as QR scanner)

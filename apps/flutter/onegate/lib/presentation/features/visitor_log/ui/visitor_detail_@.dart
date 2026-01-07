@@ -123,41 +123,52 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Container(
-                                padding: EdgeInsets.only(
-                                  right: (widget.visitorLog.additionalDetails !=
-                                              null &&
-                                          widget.visitorLog.additionalDetails![
-                                                  'invited_guest'] ==
-                                              true)
-                                      ? 120 // Add padding when pre-approved badge is present
-                                      : 0,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    padding: EdgeInsets.only(
+                                      right: (widget.visitorLog.additionalDetails !=
+                                                  null &&
+                                              widget.visitorLog.additionalDetails![
+                                                      'invited_guest'] ==
+                                                  true)
+                                          ? 120 // Add padding when pre-approved badge is present
+                                          : 0,
+                                    ),
+                                    child: Text(
+                                      widget.visitorLog.visitorName,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xff212427),
+                                            fontSize: isTablet ? 28 : 22,
+                                          ),
+                                      softWrap: true,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
                                 ),
-                                child: Text(
-                                  widget.visitorLog.visitorName,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xff212427),
-                                        fontSize: isTablet ? 28 : 22,
-                                      ),
-                                  softWrap: true,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
+                              ],
                             ),
+                            // Move visitor count badge below the name to avoid overlap with pre-approved badge
                             if (widget.visitorLog.visitorCount != null)
-                              _buildChip(
-                                "${widget.visitorLog.visitorCount} visitor${widget.visitorLog.visitorCount == 1 ? '' : 's'}",
-                                Icons.people,
-                                const Color(0xffFFB080),
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  top: isTablet ? 8 : 6,
+                                ),
+                                child: _buildChip(
+                                  "${widget.visitorLog.visitorCount} visitor${widget.visitorLog.visitorCount == 1 ? '' : 's'}",
+                                  Icons.people,
+                                  const Color(0xffFFB080),
+                                ),
                               ),
                           ],
                         ),

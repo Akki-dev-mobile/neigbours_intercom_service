@@ -178,8 +178,11 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           await gateStorage.getComingFrom() ?? "";
     }
 
+    // Initialize guest count from visitorLog if available, otherwise default to 1
+    final int initialGuestCount = widget.visitorLog?.visitor_count ?? 1;
+    _guestCount = initialGuestCount;
     _guestCountController = TextEditingController(
-      text: '1',
+      text: initialGuestCount.toString(),
     );
     _visitorNumberController = TextEditingController();
     _carNumberController = TextEditingController();

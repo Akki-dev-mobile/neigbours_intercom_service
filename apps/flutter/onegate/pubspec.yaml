@@ -187,10 +187,10 @@ flutter:
     - shorebird.yaml
 
 flutter_native_splash:
-  color: "#FFACAC"
-  image: assets/media/images/oneapp_logo.png
-  color_dark: "#121212"
-  image_dark: assets/media/images/oneapp_logo.png
+  color: "#FFFFFF"
+  image: assets/media/images/onegate.png
+  color_dark: "#FFFFFF"
+  image_dark: assets/media/images/onegate.png
 
   android: true
   ios: true
@@ -200,13 +200,13 @@ flutter_native_splash:
   ios_content_mode: center
 
   # Use branding instead of image for Android 12+
-  branding: assets/media/images/oneapp_logo.png
-  branding_dark: assets/media/images/oneapp_logo.png
+  branding: assets/media/images/onegate.png
+  branding_dark: assets/media/images/onegate.png
 
   # Android 12 configs
   android_12:
     # Set these to null to use the branding instead
     image: null
-    icon_background_color: "#FFACAC"
+    icon_background_color: "#FFFFFF"
     image_dark: null
-    icon_background_color_dark: "#121212"
+    icon_background_color_dark: "#FFFFFF"

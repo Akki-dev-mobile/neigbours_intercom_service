@@ -318,6 +318,11 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                                 visitor_image: visitorData['visitor_image'],
                               );
 
+                              // Extract visitor_count from API response, checking both visitor_count and guest_count fields
+                              final int visitorCount = visitorData['visitor_count'] ?? 
+                                                       visitorData['guest_count'] ?? 
+                                                       1;
+
                               // Create VisitorLog object with unit details
                               VisitorLog visitorLog = VisitorLog(
                                 visitor: visitor,
@@ -325,7 +330,7 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                                 visitor_purpose_Category_name:
                                     visitorData['category'] ?? "Guest",
                                 visitor_purpose_category_id: 1,
-                                visitor_count: 1,
+                                visitor_count: visitorCount,
                                 company_id: visitorData['company_id'],
                                 initiated_from:
                                     "passcode_entry", // Mark as passcode entry

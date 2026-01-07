@@ -243,18 +243,25 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           // Play success sound for staff
           _playSuccessSound();
 
+          final staffData = result['data'][0];
           Visitor visitor = Visitor(
-            visitor_image: result['data'][0]['visitor_image'],
-            name: result['data'][0]['name'],
-            mobile: result['data'][0]['mobile'],
+            visitor_image: staffData['visitor_image'],
+            name: staffData['name'],
+            mobile: staffData['mobile'],
             // visitor_image: visitorData['qr_code'],
           );
+          
+          // Extract visitor_count from API response, checking both visitor_count and guest_count fields
+          final int staffVisitorCount = staffData['visitor_count'] ?? 
+                                       staffData['guest_count'] ?? 
+                                       1;
+          
           VisitorLog visitorLog = VisitorLog(
             visitor: visitor,
-            visitor_coming_from: result['data'][0]['coming_from'],
+            visitor_coming_from: staffData['coming_from'],
             visitor_purpose_Category_name: "Staff",
             visitor_purpose_category_id: 1,
-            visitor_count: 1,
+            visitor_count: staffVisitorCount,
           );
 
           Navigator.of(context).pop();
@@ -290,12 +297,17 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             // visitor_image: visitorData['qr_code'],
           );
 
+          // Extract visitor_count from API response, checking both visitor_count and guest_count fields
+          final int visitorCount = visitorData['visitor_count'] ?? 
+                                   visitorData['guest_count'] ?? 
+                                   1;
+
           VisitorLog visitorLog = VisitorLog(
             visitor: visitor,
             visitor_coming_from: visitorData['coming_from'],
             visitor_purpose_Category_name: visitorData['category'],
             visitor_purpose_category_id: 1,
-            visitor_count: 1,
+            visitor_count: visitorCount,
             company_id: visitorData['company_id'],
             initiated_from: "qr_code_scan", // Mark as QR code scan entry
           );

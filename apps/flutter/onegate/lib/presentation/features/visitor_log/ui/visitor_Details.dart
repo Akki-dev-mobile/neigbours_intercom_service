@@ -183,43 +183,54 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Container(
-                                padding: EdgeInsets.only(
-                                  right: (widget.visitorLog.initiated_from ==
-                                              "invited_guest" ||
-                                          widget.visitorLog.initiated_from ==
-                                              "qr_code_scan" ||
-                                          widget.visitorLog.initiated_from ==
-                                              "passcode_entry")
-                                      ? 120 // Add padding when pre-approved badge is present
-                                      : 0,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    padding: EdgeInsets.only(
+                                      right: (widget.visitorLog.initiated_from ==
+                                                  "invited_guest" ||
+                                              widget.visitorLog.initiated_from ==
+                                                  "qr_code_scan" ||
+                                              widget.visitorLog.initiated_from ==
+                                                  "passcode_entry")
+                                          ? 120 // Add padding when pre-approved badge is present
+                                          : 0,
+                                    ),
+                                    child: Text(
+                                      widget.visitorLog.visitor?.name ?? "Guest",
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xff212427),
+                                            fontSize: isTablet ? 28 : 22,
+                                          ),
+                                      softWrap: true,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
                                 ),
-                                child: Text(
-                                  widget.visitorLog.visitor?.name ?? "Guest",
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xff212427),
-                                        fontSize: isTablet ? 28 : 22,
-                                      ),
-                                  softWrap: true,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
+                              ],
                             ),
+                            // Move visitor count badge below the name to avoid overlap with pre-approved badge
                             if (widget.visitorLog.visitor_count.toString() !=
                                 '1')
-                              _buildChip(
-                                "${widget.visitorLog.visitor_count} visitors",
-                                Icons.people,
-                                const Color(0xffFFB080),
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  top: isTablet ? 8 : 6,
+                                ),
+                                child: _buildChip(
+                                  "${widget.visitorLog.visitor_count} visitors",
+                                  Icons.people,
+                                  const Color(0xffFFB080),
+                                ),
                               ),
                           ],
                         ),
