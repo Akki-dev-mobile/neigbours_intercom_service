@@ -34,7 +34,7 @@ Future<FeatureHost> createOneGateFeatureHost({
     role: role,
   );
 
-  const cfg = FeatureConfig(
+  final cfg = FeatureConfig(
     neighboursEnabled: false,
     guardIntercomEnabled: true,
     flags: {
