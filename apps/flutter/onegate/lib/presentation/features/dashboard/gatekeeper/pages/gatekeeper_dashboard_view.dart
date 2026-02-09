@@ -7,7 +7,7 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:get_it/get_it.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/intercom.dart';
+import 'package:flutter_onegate/modular_features/onegate_feature_host_adapter.dart';
 import 'package:flutter_onegate/presentation/features/license_plate_detection/ui/license_plate_detection_page.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/ui/qr_scanner_self.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
@@ -41,6 +41,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:onegate_guard_intercom/onegate_guard_intercom.dart';
 import '../../../../../generated/l10n/app_localizations.dart';
 
 import '../../../app_intro/ui/keyclock_login.dart';
@@ -493,9 +494,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
             icon: Icons.phone_rounded,
             title: context.l10n.intercom,
             isPremium: true,
-            isClickable: false, // Made non-clickable
             onTap: () {
-              // Removed navigation - now non-clickable
+              _openIntercom(context);
             },
           ),
           _buildEnhancedShortcut(
@@ -785,6 +785,28 @@ class _GateDashboardViewState extends State<GateDashboardView>
         ],
       ),
     );
+  }
+
+  Future<void> _openIntercom(BuildContext context) async {
+    try {
+      final host = await createOneGateFeatureHost(
+        logger: (String message, {Object? error, StackTrace? stackTrace}) {
+          log(message, error: error, stackTrace: stackTrace);
+        },
+      );
+
+      await startIntercom(context, host: host);
+    } catch (e, st) {
+      log('Failed to open Guard Intercom', error: e, stackTrace: st);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to open Intercom: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   // Enhanced Visitor Input Section - Guest Form Style

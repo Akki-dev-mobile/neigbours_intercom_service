@@ -1,0 +1,16 @@
+name: onegate_feature_core
+description: Core contracts and shared types for OneGate plug-and-play Flutter features.
+version: 0.1.0
+publish_to: "none"
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0

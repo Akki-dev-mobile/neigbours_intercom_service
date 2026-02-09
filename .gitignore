@@ -40,3 +40,16 @@ Thumbs.db
 
 # Flutter project specific
 /apps/flutter/onegate/android/gradle.properties
+
+# Dart / Flutter
+.dart_tool/
+**/.dart_tool/
+build/
+**/build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+
+# Lockfiles: commit for apps, ignore for packages
+/packages/**/pubspec.lock

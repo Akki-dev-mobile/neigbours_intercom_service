@@ -55,6 +55,13 @@ dependencies:
     path: ../serverpod/onegate/onegate_client
   one_gate:
     path: ../../../libs/one-gate
+  # Plug-and-play feature modules
+  onegate_feature_core:
+    path: ../../../packages/onegate_feature_core
+  onegate_neighbours:
+    path: ../../../packages/onegate_neighbours
+  onegate_guard_intercom:
+    path: ../../../packages/onegate_guard_intercom
   random_avatar: ^0.0.8
   animations: ^2.0.8
   flutter_animate: ^4.2.0+1
@@ -145,7 +152,6 @@ dev_dependencies:
   # Development and Testing Tools
   integration_test:
     sdk: flutter
-  test: ^1.24.0
   coverage: ^1.6.0
   # Note: devtools_extensions is for creating custom DevTools extensions
   # Flutter DevTools is available by default with Flutter SDK
