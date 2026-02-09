@@ -40,6 +40,9 @@ Future<FeatureHost> createOneGateFeatureHost({
     flags: {
       'onegate.gateBaseUrl': ApiUrls.gateBaseUrl,
       'onegate.societyBaseUrl': ApiUrls.societyBaseUrl,
+      'onegate.chatApiBaseUrl': 'http://13.201.27.102:7071/api/v1',
+      'onegate.callApiBaseUrl': 'http://13.201.27.102:7071/api/v1',
+      'onegate.jitsiServerUrl': 'https://collab.cubeone.in',
     },
   );
 

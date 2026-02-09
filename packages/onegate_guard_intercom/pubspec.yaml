@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   onegate_feature_core:
     path: ../onegate_feature_core
+  onegate_intercom:
+    path: ../onegate_intercom
   http: ^1.2.0
   url_launcher: ^6.3.1
 

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:onegate_feature_core/onegate_feature_core.dart';
+import 'package:onegate_intercom/onegate_intercom.dart' as intercom;
 
 import 'guard_intercom_config.dart';
-import 'ui/member_list_screen.dart';
 
 /// Public entry point API for host apps.
 Future<void> startIntercom(
@@ -29,13 +29,12 @@ Future<void> startIntercom(
     return;
   }
 
-  Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) => GuardIntercomMemberListScreen(
-        host: host,
-        ctx: effectiveCtx,
-        config: configOverride ?? const GuardIntercomConfig(),
-      ),
-    ),
+  // Start full Intercom (Neighbours-style) experience.
+  // If you need the old guard member list screen, wire it behind a flag.
+  await intercom.openIntercom(
+    context,
+    host: host,
+    ctx: effectiveCtx,
+    configOverride: const intercom.IntercomConfig(),
   );
 }

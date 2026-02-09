@@ -11,9 +11,10 @@ dependencies:
     sdk: flutter
   onegate_feature_core:
     path: ../onegate_feature_core
+  onegate_intercom:
+    path: ../onegate_intercom
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
-

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:onegate_feature_core/onegate_feature_core.dart';
+import 'package:onegate_intercom/onegate_intercom.dart' as intercom;
 
 import 'neighbours_config.dart';
-import 'ui/neighbours_home_screen.dart';
 
 /// Public entry point API for host apps.
 ///
@@ -31,14 +31,10 @@ Future<void> openNeighbours(
     return;
   }
 
-  Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) => NeighboursHomeScreen(
-        host: host,
-        ctx: effectiveCtx,
-        config: configOverride ?? const NeighboursConfig(),
-      ),
-    ),
+  await intercom.openIntercom(
+    context,
+    host: host,
+    ctx: effectiveCtx,
+    configOverride: const intercom.IntercomConfig(),
   );
 }
-

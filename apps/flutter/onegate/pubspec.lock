@@ -1203,6 +1203,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.3"
+  jitsi_meet_flutter_sdk:
+    dependency: transitive
+    description:
+      name: jitsi_meet_flutter_sdk
+      sha256: b111b7aac40c7c18d4542b32af5492e2c109669a35cdc4314049351144459043
+      url: "https://pub.dev"
+    source: hosted
+    version: "11.6.0"
   js:
     dependency: transitive
     description:
@@ -1227,6 +1235,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.8.0"
+  jwt_decoder:
+    dependency: transitive
+    description:
+      name: jwt_decoder
+      sha256: "54774aebf83f2923b99e6416b4ea915d47af3bde56884eb622de85feabbc559f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   kiosk_mode:
     dependency: "direct main"
     description:
@@ -1419,6 +1435,13 @@ packages:
     dependency: "direct main"
     description:
       path: "../../../packages/onegate_guard_intercom"
+      relative: true
+    source: path
+    version: "0.1.0"
+  onegate_intercom:
+    dependency: transitive
+    description:
+      path: "../../../packages/onegate_intercom"
       relative: true
     source: path
     version: "0.1.0"
