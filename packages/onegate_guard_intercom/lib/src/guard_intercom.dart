@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:onegate_feature_core/onegate_feature_core.dart';
 
 import 'guard_intercom_config.dart';
-import 'ui/intercom_home_screen.dart';
+import 'ui/member_list_screen.dart';
 
 /// Public entry point API for host apps.
 Future<void> startIntercom(
@@ -31,7 +31,7 @@ Future<void> startIntercom(
 
   Navigator.of(context).push(
     MaterialPageRoute(
-      builder: (_) => IntercomHomeScreen(
+      builder: (_) => GuardIntercomMemberListScreen(
         host: host,
         ctx: effectiveCtx,
         config: configOverride ?? const GuardIntercomConfig(),
@@ -39,4 +39,3 @@ Future<void> startIntercom(
     ),
   );
 }
-

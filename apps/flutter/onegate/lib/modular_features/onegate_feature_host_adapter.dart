@@ -37,6 +37,11 @@ Future<FeatureHost> createOneGateFeatureHost({
   const cfg = FeatureConfig(
     neighboursEnabled: false,
     guardIntercomEnabled: true,
+    flags: {
+      'onegate.gateBaseUrl': ApiUrls.gateBaseUrl,
+      'onegate.societyBaseUrl': ApiUrls.societyBaseUrl,
+      'onegate.intercomFromNumber': '918452060059',
+    },
   );
 
   Future<AuthSession> authSessionProvider() async {
@@ -131,4 +136,3 @@ class OneGateFeatureHostAdapter implements FeatureHost {
     _logger?.call(message, error: error, stackTrace: stackTrace);
   }
 }
-
