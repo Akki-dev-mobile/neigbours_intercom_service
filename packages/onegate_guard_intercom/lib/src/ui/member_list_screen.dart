@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:onegate_feature_core/onegate_feature_core.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../api/guard_intercom_api.dart';
 import '../guard_intercom_config.dart';
@@ -46,17 +46,6 @@ class _GuardIntercomMemberListScreenState
     super.dispose();
   }
 
-  String _fromNumber() {
-    final override = widget.config.fromNumber?.trim();
-    if (override != null && override.isNotEmpty) return override;
-
-    final flags = widget.host.featureConfig().flags;
-    final from = flags['onegate.intercomFromNumber'];
-    if (from is String && from.trim().isNotEmpty) return from.trim();
-
-    return '918452060059';
-  }
-
   Future<void> _initializeMembers() async {
     setState(() => _isLoading = true);
     try {
@@ -100,34 +89,19 @@ class _GuardIntercomMemberListScreenState
     }
   }
 
-  Future<void> _openCallHistory() async {
-    final fromNumber = _fromNumber();
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => GuardIntercomCallHistoryScreen(
-          host: widget.host,
-          fromNumber: fromNumber,
-          callsEnabled: widget.config.callsEnabled,
-          onCallBack: (toNumber, memberName) =>
-              _callMember(toNumber, memberName: memberName),
-        ),
-      ),
-    );
-  }
-
   Future<void> _callMember(String mobile, {required String memberName}) async {
     if (!widget.config.callsEnabled) return;
 
     try {
-      await _api.initiateCall(
-        fromNumber: _fromNumber(),
-        toNumber: mobile,
-        memberName: memberName,
-      );
+      final uri = Uri(scheme: 'tel', path: mobile);
+      final launched = await launchUrl(uri);
+      if (!launched) {
+        throw Exception('Dialer not available');
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Will get a call soon')),
+        const SnackBar(content: Text('Opening dialer...')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -319,233 +293,13 @@ class _GuardIntercomMemberListScreenState
         centerTitle: false,
         backgroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            color: Colors.black,
-            onPressed: _openCallHistory,
-            tooltip: 'Call History',
-          ),
-        ],
+        actions: const [],
       ),
       body: Column(
         children: [
           _buildSearchBar(),
           _buildMemberList(),
         ],
-      ),
-    );
-  }
-}
-
-class GuardIntercomCallHistoryScreen extends StatefulWidget {
-  const GuardIntercomCallHistoryScreen({
-    super.key,
-    required this.host,
-    required this.fromNumber,
-    required this.callsEnabled,
-    required this.onCallBack,
-  });
-
-  final FeatureHost host;
-  final String fromNumber;
-  final bool callsEnabled;
-  final Future<void> Function(String toNumber, String memberName) onCallBack;
-
-  @override
-  State<GuardIntercomCallHistoryScreen> createState() =>
-      _GuardIntercomCallHistoryScreenState();
-}
-
-class _GuardIntercomCallHistoryScreenState
-    extends State<GuardIntercomCallHistoryScreen> {
-  late final GuardIntercomApi _api = GuardIntercomApi.fromHost(widget.host);
-
-  bool _isLoading = true;
-  List<dynamic> _callLogs = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchCallLogs();
-  }
-
-  Future<void> _fetchCallLogs() async {
-    setState(() => _isLoading = true);
-    try {
-      final logs = await _api.fetchCallHistory(fromNumber: widget.fromNumber);
-      setState(() => _callLogs = logs);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load call logs: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  String _formatDateTime(String dateTimeString) {
-    try {
-      final dateTime = DateTime.parse(dateTimeString);
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final yesterday = today.subtract(const Duration(days: 1));
-
-      if (dateTime.isAfter(today)) {
-        return 'Today, ${DateFormat('h:mm a').format(dateTime)}';
-      } else if (dateTime.isAfter(yesterday)) {
-        return 'Yesterday, ${DateFormat('h:mm a').format(dateTime)}';
-      } else {
-        return DateFormat('MMM d, h:mm a').format(dateTime);
-      }
-    } catch (_) {
-      return dateTimeString;
-    }
-  }
-
-  IconData _getCallTypeIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'incoming':
-        return Icons.call_received;
-      case 'outgoing':
-        return Icons.call_made;
-      case 'missed':
-        return Icons.call_missed;
-      default:
-        return Icons.call;
-    }
-  }
-
-  Color _getCallTypeColor(String type) {
-    switch (type.toLowerCase()) {
-      case 'incoming':
-        return Colors.green;
-      case 'outgoing':
-        return Colors.blue;
-      case 'missed':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  Future<void> _callBack(dynamic log) async {
-    if (!widget.callsEnabled) return;
-    final map = (log is Map) ? log : const {};
-    final toNumber = map['to_number']?.toString().trim() ?? '';
-    final memberName = map['member_name']?.toString().trim() ?? '';
-    if (toNumber.isEmpty) return;
-    await widget.onCallBack(toNumber, memberName.isNotEmpty ? memberName : '-');
-  }
-
-  Widget _buildCallLogItem(dynamic log) {
-    final map = (log is Map) ? log : const {};
-    final callType = map['call_type']?.toString() ?? '';
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          )
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: _getCallTypeColor(callType).withValues(alpha: 26),
-          child: Icon(
-            _getCallTypeIcon(callType),
-            color: _getCallTypeColor(callType),
-          ),
-        ),
-        title: Text(
-          map['member_name']?.toString() ??
-              map['phone_number']?.toString() ??
-              'Unknown',
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              _formatDateTime(map['created_at']?.toString() ?? ''),
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-            ),
-            const SizedBox(height: 4),
-            if (map['call_duration'] != null)
-              Text(
-                'Duration: ${map['call_duration']} sec',
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-              ),
-          ],
-        ),
-        trailing: widget.callsEnabled
-            ? IconButton(
-                icon: const Icon(Icons.call, color: Colors.green),
-                onPressed: () => _callBack(log),
-              )
-            : null,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        title: const Text(
-          'Call History',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _fetchCallLogs,
-            color: Colors.black,
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _fetchCallLogs,
-        child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: Colors.black),
-              )
-            : _callLogs.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.history,
-                            size: 64, color: Colors.grey.shade400),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No call history found',
-                          style: TextStyle(
-                              fontSize: 18, color: Colors.grey.shade600),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    itemCount: _callLogs.length,
-                    itemBuilder: (context, index) {
-                      return _buildCallLogItem(_callLogs[index]);
-                    },
-                  ),
       ),
     );
   }

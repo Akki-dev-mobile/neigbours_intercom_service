@@ -40,7 +40,6 @@ Future<FeatureHost> createOneGateFeatureHost({
     flags: {
       'onegate.gateBaseUrl': ApiUrls.gateBaseUrl,
       'onegate.societyBaseUrl': ApiUrls.societyBaseUrl,
-      'onegate.intercomFromNumber': '918452060059',
     },
   );
 
