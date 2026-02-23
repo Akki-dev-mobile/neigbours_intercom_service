@@ -57,6 +57,16 @@ class IntercomEndpoints {
     required this.jitsiServerUrl,
   });
 
+  /// Default CubeOne endpoints used by the legacy module.
+  static const IntercomEndpoints cubeOne = IntercomEndpoints(
+    societyBackendBaseUrl: 'https://societybackend.cubeone.in/api',
+    apiGatewayBaseUrl: 'https://apigw.cubeone.in/api',
+    gateApiBaseUrl: 'https://gateapi.cubeone.in/api',
+    roomServiceBaseUrl: 'http://13.201.27.102:7071/api/v1',
+    callServiceBaseUrl: 'http://13.201.27.102:7071/api',
+    jitsiServerUrl: 'collab.cubeone.in',
+  );
+
   Uri societyBackend(String path) => Uri.parse('$societyBackendBaseUrl$path');
   Uri apiGateway(String path) => Uri.parse('$apiGatewayBaseUrl$path');
   Uri gateApi(String path) => Uri.parse('$gateApiBaseUrl$path');

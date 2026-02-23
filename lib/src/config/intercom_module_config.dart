@@ -22,6 +22,21 @@ class IntercomModuleConfig {
     required this.endpoints,
     this.httpClient,
   });
+
+  factory IntercomModuleConfig.cubeOne({
+    required IntercomAuthPort authPort,
+    required IntercomContextPort contextPort,
+    IntercomUploadPort? uploadPort,
+    http.Client? httpClient,
+  }) {
+    return IntercomModuleConfig(
+      authPort: authPort,
+      contextPort: contextPort,
+      uploadPort: uploadPort,
+      endpoints: IntercomEndpoints.cubeOne,
+      httpClient: httpClient,
+    );
+  }
 }
 
 class IntercomModule {

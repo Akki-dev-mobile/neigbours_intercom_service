@@ -141,8 +141,8 @@ class ChatWebSocketService {
   static ChatWebSocketService? _instance;
   static const String _logName = 'ChatWebSocketService';
 
-  // WebSocket configuration - matches REST API base URL
-  // WebSocket Endpoint: ws://13.201.27.102:7071/api/v1/ws?token={token}&room_id={room_id}
+  // WebSocket configuration - derived from room service base URL.
+  // WebSocket Endpoint: ws(s)://<host>/.../ws?token={token}&room_id={room_id}
   static String get _wsBaseUrl {
     // Match the REST API base URL pattern
     final restBaseUrl = AppConstants.roomServiceBaseUrl;

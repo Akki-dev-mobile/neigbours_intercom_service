@@ -20,20 +20,13 @@ dependencies:
 import 'package:intercom_module/intercom_module.dart';
 
 void main() {
+  // If you're using the same CubeOne endpoints across apps:
   IntercomModule.configure(
-    IntercomModuleConfig(
+    IntercomModuleConfig.cubeOne(
       authPort: MyAuthPort(),
       contextPort: MyContextPort(),
       // Optional: provide if you want group/post image uploads to work.
       // uploadPort: MyUploadPort(),
-      endpoints: const IntercomEndpoints(
-        societyBackendBaseUrl: 'https://your-society-backend/api',
-        apiGatewayBaseUrl: 'https://your-apigw/api',
-        gateApiBaseUrl: 'https://your-gate-api/api',
-        roomServiceBaseUrl: 'https://your-room-service/api/v1',
-        callServiceBaseUrl: 'https://your-call-service/api',
-        jitsiServerUrl: 'collab.yourdomain.com',
-      ),
     ),
   );
 

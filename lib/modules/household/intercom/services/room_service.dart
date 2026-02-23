@@ -12,7 +12,7 @@ import '../models/message_reaction_model.dart';
 import '../../../../core/constants.dart';
 
 /// Room API Service for managing rooms (groups)
-/// Base URL: http://13.201.27.102:7071/api/v1
+/// Base URL: configured via IntercomEndpoints.roomServiceBaseUrl
 class RoomService extends BaseApiService {
   static RoomService? _instance;
 
@@ -34,7 +34,7 @@ class RoomService extends BaseApiService {
 
   /// Transform localhost URLs to proper server URLs
   /// This fixes the issue where backend returns localhost URLs that don't work on mobile devices
-  /// Converts: http://localhost:8080/uploads/... -> http://13.201.27.102:7071/uploads/...
+  /// Converts: http://localhost:8080/uploads/... -> <room-service-origin>/uploads/...
   ///
   /// IMPORTANT: If the transformed URL returns 404, the files might be on S3 or a different endpoint.
   /// The backend should return the correct URL, but this transformation handles development environments.
