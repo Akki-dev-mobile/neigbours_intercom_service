@@ -10,13 +10,13 @@ coverage/
 .idea/
 .vscode/
 
-# Platform folders (keep package pure Dart/Flutter by default)
-android/
-ios/
-linux/
-macos/
-web/
-windows/
+# Platform folders at repo root (keep the package itself pure).
+/android/
+/ios/
+/linux/
+/macos/
+/web/
+/windows/
 
 # Lock file is usually not committed for packages
 pubspec.lock
