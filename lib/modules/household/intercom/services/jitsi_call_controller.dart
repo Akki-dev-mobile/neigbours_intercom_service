@@ -5,6 +5,7 @@ import '../models/call_model.dart';
 import '../models/call_status.dart';
 import 'call_history_service.dart';
 import 'call_service.dart';
+import '../../../../core/constants.dart';
 
 /// JitsiCallController handles all Jitsi SDK operations and call lifecycle events
 ///
@@ -30,7 +31,7 @@ class JitsiCallController {
   final CallService _callService = CallService.instance;
 
   /// Jitsi server URL (without protocol - SDK handles it)
-  static const String _jitsiServerUrl = 'collab.cubeone.in';
+  String get _jitsiServerUrl => AppConstants.jitsiServerUrl;
 
   /// Timeout for missed call detection (in seconds)
   static const int _missedCallTimeoutSeconds = 30;

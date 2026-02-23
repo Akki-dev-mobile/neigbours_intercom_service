@@ -6,6 +6,7 @@ import 'package:just_audio/just_audio.dart';
 
 import '../../../../core/services/call_coordinator.dart';
 import '../../../../core/services/outgoing_call_acceptance_store.dart';
+import '../../../../core/constants.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/utils/profile_data_helper.dart';
 import '../models/call_model.dart';
@@ -122,7 +123,7 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen> {
         'action': 'call_accepted',
         'call_id': call.id.toString(),
         'meeting_id': call.meetingId,
-        'jitsi_url': call.jitsiMeetingUrl ?? 'https://collab.cubeone.in',
+        'jitsi_url': call.jitsiMeetingUrl ?? 'https://${AppConstants.jitsiServerUrl}',
         'call_type': call.callType.value,
         'status': 'answered',
       };

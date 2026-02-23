@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/io.dart';
 import '../../../../core/services/auth_token_manager.dart';
+import '../../../../core/constants.dart';
 
 /// WebSocket message types
 enum WebSocketMessageType {
@@ -144,7 +145,7 @@ class ChatWebSocketService {
   // WebSocket Endpoint: ws://13.201.27.102:7071/api/v1/ws?token={token}&room_id={room_id}
   static String get _wsBaseUrl {
     // Match the REST API base URL pattern
-    const restBaseUrl = 'http://13.201.27.102:7071/api/v1';
+    final restBaseUrl = AppConstants.roomServiceBaseUrl;
     // Convert http:// to ws:// for WebSocket
     // Final URL format: ws://13.201.27.102:7071/api/v1/ws?token={token}&room_id={room_id}
     return '${restBaseUrl.replaceFirst('http://', 'ws://').replaceFirst('https://', 'wss://')}/ws';

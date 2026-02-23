@@ -1,6 +1,11 @@
-class AppConstants {
-  // Default endpoints as used in the legacy module.
-  // Host apps can choose to keep these or fork/override the services.
-  static const String callServiceBaseUrl = 'http://13.201.27.102:7071/api';
-}
+import '../src/config/intercom_module_config.dart';
 
+class AppConstants {
+  static String get callServiceBaseUrl =>
+      IntercomModule.config.endpoints.callServiceBaseUrl;
+
+  static String get roomServiceBaseUrl =>
+      IntercomModule.config.endpoints.roomServiceBaseUrl;
+
+  static String get jitsiServerUrl => IntercomModule.config.endpoints.jitsiServerUrl;
+}

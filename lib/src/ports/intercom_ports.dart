@@ -27,19 +27,48 @@ abstract class IntercomContextPort {
   Future<int?> getCurrentUserNumericId() async => null;
 }
 
+/// Host app supplies file upload behavior (images/docs/audio).
+///
+/// The legacy module used a "posts" API for uploads; for reuse this is
+/// app-specific.
+abstract class IntercomUploadPort {
+  Future<String?> uploadImage({
+    required String filename,
+    required List<int> bytes,
+    String? contentType,
+  });
+}
+
 @immutable
 class IntercomEndpoints {
   final String societyBackendBaseUrl;
   final String apiGatewayBaseUrl;
   final String gateApiBaseUrl;
+  final String roomServiceBaseUrl;
+  final String callServiceBaseUrl;
+  final String jitsiServerUrl;
 
   const IntercomEndpoints({
     required this.societyBackendBaseUrl,
     required this.apiGatewayBaseUrl,
     required this.gateApiBaseUrl,
+    required this.roomServiceBaseUrl,
+    required this.callServiceBaseUrl,
+    required this.jitsiServerUrl,
   });
 
   Uri societyBackend(String path) => Uri.parse('$societyBackendBaseUrl$path');
   Uri apiGateway(String path) => Uri.parse('$apiGatewayBaseUrl$path');
   Uri gateApi(String path) => Uri.parse('$gateApiBaseUrl$path');
+
+  Uri roomService(String path) => Uri.parse('$roomServiceBaseUrl$path');
+  Uri callService(String path) => Uri.parse('$callServiceBaseUrl$path');
+
+  /// Converts `roomServiceBaseUrl` into a websocket base URL for `/ws`.
+  String get roomWebSocketBaseUrl {
+    final base = roomServiceBaseUrl;
+    if (base.startsWith('https://')) return base.replaceFirst('https://', 'wss://');
+    if (base.startsWith('http://')) return base.replaceFirst('http://', 'ws://');
+    return base;
+  }
 }

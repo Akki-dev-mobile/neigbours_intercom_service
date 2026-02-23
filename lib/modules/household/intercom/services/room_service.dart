@@ -9,6 +9,7 @@ import '../models/room_model.dart';
 import '../models/room_message_model.dart';
 import '../models/room_info_model.dart';
 import '../models/message_reaction_model.dart';
+import '../../../../core/constants.dart';
 
 /// Room API Service for managing rooms (groups)
 /// Base URL: http://13.201.27.102:7071/api/v1
@@ -17,7 +18,7 @@ class RoomService extends BaseApiService {
 
   RoomService._()
       : super(
-          baseUrl: 'http://13.201.27.102:7071/api/v1',
+          baseUrl: AppConstants.roomServiceBaseUrl,
           serviceName: 'RoomService',
           connectTimeout:
               const Duration(seconds: 60), // Increased timeout for slow server
@@ -42,6 +43,11 @@ class RoomService extends BaseApiService {
       return url;
     }
 
+    final serviceUri = Uri.tryParse(AppConstants.roomServiceBaseUrl);
+    final serverOrigin = (serviceUri != null && serviceUri.hasAuthority)
+        ? '${serviceUri.scheme}://${serviceUri.authority}'
+        : 'http://localhost';
+
     // Check if URL contains localhost or 127.0.0.1
     if (url.contains('localhost') || url.contains('127.0.0.1')) {
       log('🔄 [RoomService] Transforming localhost URL: $url',
@@ -56,7 +62,7 @@ class RoomService extends BaseApiService {
 
         // Construct new URL with server host
         // Use the same path structure but with the actual server
-        final transformedUrl = 'http://13.201.27.102:7071$path$query$fragment';
+        final transformedUrl = '$serverOrigin$path$query$fragment';
 
         log('✅ [RoomService] Transformed URL: $transformedUrl',
             name: 'RoomService');
@@ -66,10 +72,10 @@ class RoomService extends BaseApiService {
 
       // Fallback: simple string replacement if URI parsing fails
       String transformedUrl = url
-          .replaceAll('http://localhost:8080', 'http://13.201.27.102:7071')
-          .replaceAll('https://localhost:8080', 'http://13.201.27.102:7071')
-          .replaceAll('http://127.0.0.1:8080', 'http://13.201.27.102:7071')
-          .replaceAll('https://127.0.0.1:8080', 'http://13.201.27.102:7071');
+          .replaceAll('http://localhost:8080', serverOrigin)
+          .replaceAll('https://localhost:8080', serverOrigin)
+          .replaceAll('http://127.0.0.1:8080', serverOrigin)
+          .replaceAll('https://127.0.0.1:8080', serverOrigin);
 
       log('✅ [RoomService] Transformed URL (fallback): $transformedUrl',
           name: 'RoomService');
@@ -86,7 +92,11 @@ class RoomService extends BaseApiService {
       return null;
     }
 
-    final serverBaseUrl = baseUrl ?? 'http://13.201.27.102:7071';
+    final serviceUri = Uri.tryParse(AppConstants.roomServiceBaseUrl);
+    final serverOrigin = (serviceUri != null && serviceUri.hasAuthority)
+        ? '${serviceUri.scheme}://${serviceUri.authority}'
+        : 'http://localhost';
+    final serverBaseUrl = baseUrl ?? serverOrigin;
 
     // If file_key is already a full URL, return it
     if (fileKey.startsWith('http://') || fileKey.startsWith('https://')) {

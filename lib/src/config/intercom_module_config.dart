@@ -11,12 +11,14 @@ import '../ports/intercom_ports.dart';
 class IntercomModuleConfig {
   final IntercomAuthPort authPort;
   final IntercomContextPort contextPort;
+  final IntercomUploadPort? uploadPort;
   final IntercomEndpoints endpoints;
   final http.Client? httpClient;
 
   const IntercomModuleConfig({
     required this.authPort,
     required this.contextPort,
+    this.uploadPort,
     required this.endpoints,
     this.httpClient,
   });
@@ -40,4 +42,3 @@ class IntercomModule {
     return cfg;
   }
 }
-
