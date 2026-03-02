@@ -256,12 +256,6 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
           _isLoading = false;
           _isLoadingBuildings = false;
 
-          // Auto-select first building if none selected
-          if (_selectedBuildingId == null && _buildings.isNotEmpty) {
-            _selectedBuildingId = _buildings.first['id']?.toString() ??
-                _buildings.first['soc_building_id']?.toString();
-          }
-
           // CRITICAL: Apply filtering to populate _filteredResidents
           // This ensures groups are populated and data is shown
           _filterResidents();
@@ -886,11 +880,6 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
         setState(() {
           _buildings = response.buildings;
           _isLoadingBuildings = false;
-          // Auto-select first building if none selected
-          if (_selectedBuildingId == null && _buildings.isNotEmpty) {
-            _selectedBuildingId = _buildings.first['id']?.toString() ??
-                _buildings.first['soc_building_id']?.toString();
-          }
           debugPrint(
               '✅ [ResidentsTab] Loaded ${_buildings.length} buildings from API');
         });
@@ -951,7 +940,10 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       debugPrint('👥 [ResidentsTab] Loading residents from API...');
       debugPrint(
           '🌐 [ResidentsTab] API: SocietyBackendApiService.getMembers() -> /admin/member/list');
-      final residents = await _intercomService.getResidents();
+      final selectedSocietyId = await _apiService.getSelectedSocietyId();
+      final residents = await _intercomService.getResidents(
+        companyId: selectedSocietyId,
+      );
 
       // Check token validity before updating state
       if (!token.isValid(lifecycleController.generation)) {
@@ -1211,34 +1203,27 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                         ),
                       )
                     else
-                      ..._buildings.map((building) {
-                        final buildingId = building['id']?.toString() ??
-                            building['soc_building_id']?.toString();
-                        final buildingName =
-                            building['soc_building_name']?.toString() ??
-                                building['building_name']?.toString() ??
-                                'Building';
-                        final isSelected = buildingId == _selectedBuildingId;
-                        return Padding(
+                      ...[
+                        Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: FilterChip(
                             label: Text(
-                              buildingName,
+                              'All',
                               style: TextStyle(
-                                color:
-                                    isSelected ? Colors.white : Colors.black87,
-                                fontWeight: isSelected
+                                color: _selectedBuildingId == null
+                                    ? Colors.white
+                                    : Colors.black87,
+                                fontWeight: _selectedBuildingId == null
                                     ? FontWeight.bold
                                     : FontWeight.w500,
                                 fontSize: 13,
                               ),
                             ),
-                            selected: isSelected,
+                            selected: _selectedBuildingId == null,
                             onSelected: (_) {
                               setState(() {
-                                _selectedBuildingId = buildingId;
+                                _selectedBuildingId = null;
                               });
-                              // Re-apply filters when building selection changes
                               _filterResidents();
                             },
                             backgroundColor: Colors.white,
@@ -1253,7 +1238,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                               side: BorderSide(
-                                color: isSelected
+                                color: _selectedBuildingId == null
                                     ? Colors.transparent
                                     : Colors.grey.withOpacity(0.3),
                               ),
@@ -1261,8 +1246,61 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                             materialTapTargetSize:
                                 MaterialTapTargetSize.shrinkWrap,
                           ),
-                        );
-                      }).toList(),
+                        ),
+                        ..._buildings.map((building) {
+                          final buildingId = building['id']?.toString() ??
+                              building['soc_building_id']?.toString();
+                          final buildingName =
+                              building['soc_building_name']?.toString() ??
+                                  building['building_name']?.toString() ??
+                                  'Building';
+                          final isSelected = buildingId == _selectedBuildingId;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: Text(
+                                buildingName,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.black87,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              selected: isSelected,
+                              onSelected: (_) {
+                                setState(() {
+                                  _selectedBuildingId =
+                                      isSelected ? null : buildingId;
+                                });
+                                _filterResidents();
+                              },
+                              backgroundColor: Colors.white,
+                              selectedColor: AppColors.primary,
+                              checkmarkColor: Colors.white,
+                              showCheckmark: false,
+                              elevation: 0,
+                              pressElevation: 3,
+                              shadowColor: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? Colors.transparent
+                                      : Colors.grey.withOpacity(0.3),
+                                ),
+                              ),
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          );
+                        }).toList(),
+                      ],
                   ],
                 ),
               ),

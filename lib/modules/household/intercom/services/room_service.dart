@@ -2504,8 +2504,11 @@ class RoomService extends BaseApiService {
   ///   }
   /// }
   /// ```
-  Future<ApiResponse<List<Map<String, dynamic>>>> getPresence(
-      List<String> userIds) async {
+  static const int _presenceMaxIdsPerRequest = 50;
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> _getPresenceChunk(
+    List<String> userIds,
+  ) async {
     try {
       log('👥 [RoomService] Fetching presence for ${userIds.length} users',
           name: serviceName);
@@ -2585,5 +2588,77 @@ class RoomService extends BaseApiService {
         statusCode: 0,
       );
     }
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getPresence(
+    List<String> userIds,
+  ) async {
+    final normalized = userIds
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    // De-dupe while preserving order to keep query sizes smaller.
+    final seen = <String>{};
+    final unique = <String>[];
+    for (final id in normalized) {
+      if (seen.add(id)) unique.add(id);
+    }
+
+    if (unique.isEmpty) {
+      return ApiResponse.success(
+        <Map<String, dynamic>>[],
+        message: 'No user ids provided',
+        statusCode: 200,
+      );
+    }
+
+    // Large user lists can exceed URL/request-line limits (and get truncated by
+    // proxies/LBs), causing the backend to parse an empty/invalid user_ids list.
+    // Batch requests to keep the query string small and deterministic.
+    if (unique.length <= _presenceMaxIdsPerRequest) {
+      return _getPresenceChunk(unique);
+    }
+
+    log(
+      '👥 [RoomService] Presence batching: total=${unique.length}, chunkSize=$_presenceMaxIdsPerRequest',
+      name: serviceName,
+    );
+
+    final merged = <Map<String, dynamic>>[];
+    final indexByUserId = <String, int>{};
+
+    for (var i = 0; i < unique.length; i += _presenceMaxIdsPerRequest) {
+      final chunk = unique.sublist(
+        i,
+        (i + _presenceMaxIdsPerRequest).clamp(0, unique.length),
+      );
+
+      final resp = await _getPresenceChunk(chunk);
+      if (!resp.success) return resp;
+
+      for (final item in (resp.data ?? const <Map<String, dynamic>>[])) {
+        final dynamic rawUserId = item['user_id'] ?? item['userId'];
+        final userIdKey = rawUserId?.toString();
+        if (userIdKey == null || userIdKey.isEmpty) {
+          merged.add(item);
+          continue;
+        }
+
+        final existingIndex = indexByUserId[userIdKey];
+        if (existingIndex == null) {
+          indexByUserId[userIdKey] = merged.length;
+          merged.add(item);
+        } else {
+          merged[existingIndex] = item;
+        }
+      }
+    }
+
+    return ApiResponse.success(
+      merged,
+      message: 'Presence fetched successfully',
+      statusCode: 200,
+    );
   }
 }

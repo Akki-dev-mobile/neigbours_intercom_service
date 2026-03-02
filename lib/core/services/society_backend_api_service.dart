@@ -47,6 +47,12 @@ class SocietyBackendApiService {
 
   http.Client get _client => IntercomModule.config.httpClient ?? http.Client();
 
+  int? _tryParseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    return int.tryParse(value.toString());
+  }
+
   Future<Map<String, String>> _getHeaders({String? societyId}) async {
     final token = await KeycloakService.getAccessToken();
 
@@ -105,6 +111,22 @@ class SocietyBackendApiService {
     throw Exception('Invalid response');
   }
 
+  int _extractPaginationTotal(Map<String, dynamic> response) {
+    final directTotal = _tryParseInt(response['total']);
+    if (directTotal != null) return directTotal;
+
+    final meta = response['meta'];
+    if (meta is Map) {
+      final pagination = meta['pagination'];
+      if (pagination is Map) {
+        final metaTotal = _tryParseInt(pagination['total']);
+        if (metaTotal != null) return metaTotal;
+      }
+    }
+
+    return 0;
+  }
+
   Future<BuildingListResponse> getBuildings({
     int page = 1,
     int perPage = 50,
@@ -124,10 +146,11 @@ class SocietyBackendApiService {
           ? data.map((e) => Map<String, dynamic>.from(e as Map)).toList()
           : <Map<String, dynamic>>[];
 
-      final total = (response['total'] is int)
-          ? response['total'] as int
-          : int.tryParse(response['total']?.toString() ?? '') ?? list.length;
-      final hasMore = list.length >= perPage;
+      final totalFromApi = _extractPaginationTotal(response);
+      final total = totalFromApi > 0 ? totalFromApi : list.length;
+      final hasMore = totalFromApi > 0
+          ? (page * perPage) < totalFromApi
+          : list.length >= perPage;
 
       return BuildingListResponse(
         buildings: list,
@@ -157,17 +180,71 @@ class SocietyBackendApiService {
       }
 
       final data = response['data'];
-      final list = (data is List)
+      final unitList = (data is List)
           ? data.map((e) => Map<String, dynamic>.from(e as Map)).toList()
-          : <Map<String, dynamic>>[];
+          : const <Map<String, dynamic>>[];
 
-      final total = (response['total'] is int)
-          ? response['total'] as int
-          : int.tryParse(response['total']?.toString() ?? '') ?? list.length;
-      final hasMore = list.length >= perPage;
+      // The /admin/member/list endpoint returns "units" with nested member lists.
+      // Common keys observed across deployments:
+      // - `rows` (current)
+      // - `member_details` (legacy)
+      // Flatten to a single list of member maps and enrich with unit context so
+      // callers can render unit/building info.
+      final flattenedMembers = <Map<String, dynamic>>[];
+      for (final unit in unitList) {
+        final nested = unit['rows'] ?? unit['member_details'] ?? unit['members'];
+        if (nested is! List) continue;
+
+        for (final entry in nested) {
+          if (entry is! Map) continue;
+          final member = Map<String, dynamic>.from(entry);
+
+          // Ensure unit context exists (prefer unit-level values).
+          final unitFlatNumber = unit['unit_flat_number']?.toString();
+          if (unitFlatNumber != null && unitFlatNumber.isNotEmpty) {
+            member['unit_flat_number'] = unitFlatNumber;
+          }
+
+          final buildingUnit = unit['building_unit']?.toString();
+          if (buildingUnit != null && buildingUnit.isNotEmpty) {
+            member['unit_building_unit'] = buildingUnit;
+            // Keep the member-level `building_unit` if present (it is often the
+            // member's display string). Still provide a safe fallback for UIs.
+            member.putIfAbsent('building_unit', () => buildingUnit);
+          }
+
+          final socBuildingName = unit['soc_building_name']?.toString();
+          if (socBuildingName != null && socBuildingName.isNotEmpty) {
+            member['soc_building_name'] = socBuildingName;
+          }
+
+          final fkUnitId = unit['fk_unit_id'];
+          if (fkUnitId != null) {
+            member['fk_unit_id'] = fkUnitId;
+          }
+
+          final unitId = unit['id'];
+          if (unitId != null) {
+            member['unit_id'] = unitId;
+          }
+
+          final disable = unit['disable'];
+          if (disable != null) {
+            member['unit_disable'] = disable;
+          }
+
+          flattenedMembers.add(member);
+        }
+      }
+
+      final totalFromApi = _extractPaginationTotal(response);
+      final total = totalFromApi > 0 ? totalFromApi : unitList.length;
+      final hasMore = totalFromApi > 0
+          ? (page * perPage) < totalFromApi
+          : unitList.length >= perPage;
 
       return MemberListResponse(
-        members: list,
+        members: flattenedMembers,
         hasMore: hasMore,
         currentPage: page,
         total: total,
@@ -179,4 +256,3 @@ class SocietyBackendApiService {
     }
   }
 }
-
