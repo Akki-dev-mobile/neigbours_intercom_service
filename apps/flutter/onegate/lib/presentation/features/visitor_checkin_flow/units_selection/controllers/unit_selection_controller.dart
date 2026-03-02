@@ -71,7 +71,9 @@ class UnitSelectionController {
         member['building_unit']?.toString().toLowerCase() ?? '';
 
     // Handle member details for first/last name search
-    final memberDetails = member['member_details'] as List<dynamic>? ?? [];
+    final memberDetails = (member['member_details'] as List<dynamic>?) ??
+        (member['rows'] as List<dynamic>?) ??
+        [];
     bool nameMatch = false;
 
     for (final detail in memberDetails) {
@@ -125,7 +127,9 @@ class UnitSelectionController {
     else if (buildingUnit.contains(searchQuery)) score += 20;
 
     // Name matches
-    final memberDetails = member['member_details'] as List<dynamic>? ?? [];
+    final memberDetails = (member['member_details'] as List<dynamic>?) ??
+        (member['rows'] as List<dynamic>?) ??
+        [];
     for (final detail in memberDetails) {
       final firstName =
           detail['member_first_name']?.toString().toLowerCase() ?? '';

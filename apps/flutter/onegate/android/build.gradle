@@ -32,6 +32,17 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
+// Some third-party plugins still pin Kotlin language/api version to 1.6, which is
+// rejected by Kotlin Gradle Plugin 2.x. Force a supported baseline for all modules.
+subprojects {
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            languageVersion = "1.8"
+            apiVersion = "1.8"
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }

@@ -17,7 +17,9 @@ class MemberTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final memberDetails = member['member_details'] as List<dynamic>? ?? [];
+    final memberDetails = (member['member_details'] as List<dynamic>?) ??
+        (member['rows'] as List<dynamic>?) ??
+        [];
     final unitFlatNumber = member['unit_flat_number']?.toString() ?? 'N/A';
     final buildingUnit = member['building_unit']?.toString() ?? 'N/A';
     final socBuildingName = member['soc_building_name']?.toString() ?? '';

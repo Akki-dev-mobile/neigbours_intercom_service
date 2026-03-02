@@ -38,9 +38,8 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 android {
     namespace "com.cubeonebiz.gate.flutter_onegate"
     compileSdk 36
-    ndkVersion "29.0.13113456"
-    // "29.0.13113456"  // Updated to match locally installed NDK version
-    //    flutter.ndkVersion
+    // Use Flutter's default NDK so the build works without installing a specific NDK version
+    ndkVersion flutter.ndkVersion
 
 
 //    externalNativeBuild {
@@ -52,7 +51,7 @@ android {
 
     defaultConfig {
         applicationId "com.cubeonebiz.gate.flutter_onegate"
-        minSdkVersion flutter.minSdkVersion
+        minSdkVersion 26  // jitsi-meet-sdk requires 26+
         //noinspection OldTargetApi
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
@@ -102,4 +101,8 @@ android {
 
 flutter {
     source '../..'
+}
+
+configurations.configureEach {
+    exclude group: "androidx.media3", module: "media3-exoplayer-rtsp"
 }

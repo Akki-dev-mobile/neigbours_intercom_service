@@ -54,7 +54,9 @@ class _MemberListState extends State<MemberList> {
       _filteredUnits.value = _allUnits.where((unit) {
         final flat = unit['unit_flat_number']?.toLowerCase() ?? '';
         final building = unit['soc_building_name']?.toLowerCase() ?? '';
-        final members = unit['member_details'] ?? [];
+        final members = (unit['member_details'] as List<dynamic>?) ??
+            (unit['rows'] as List<dynamic>?) ??
+            [];
 
         final matchInUnit = flat.contains(query) || building.contains(query);
         final matchInMembers = members.any((m) {
@@ -104,7 +106,9 @@ class _MemberListState extends State<MemberList> {
   Widget _buildUnitTile(Map<String, dynamic> unit) {
     final flat = unit['unit_flat_number'] ?? '-';
     final building = unit['soc_building_name'] ?? '';
-    final memberList = unit['member_details'] as List<dynamic>? ?? [];
+    final memberList = (unit['member_details'] as List<dynamic>?) ??
+        (unit['rows'] as List<dynamic>?) ??
+        [];
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),

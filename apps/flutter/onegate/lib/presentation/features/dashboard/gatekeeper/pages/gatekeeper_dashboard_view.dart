@@ -47,6 +47,7 @@ import '../../../../../generated/l10n/app_localizations.dart';
 import '../../../app_intro/ui/keyclock_login.dart';
 import '../../../parcel/ui/parcel_list.dart';
 import '../../../settings/pages/settings_home.dart';
+import '../../commons/intercom_services_launcher.dart';
 import 'id_input_view.dart';
 
 class GateDashboardView extends StatefulWidget {
@@ -485,8 +486,11 @@ class _GateDashboardViewState extends State<GateDashboardView>
         horizontal: isTablet ? 16 : 12,
         vertical: isTablet ? 8 : 6,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: Wrap(
+        alignment: WrapAlignment.spaceEvenly,
+        runAlignment: WrapAlignment.center,
+        spacing: isTablet ? 16 : 12,
+        runSpacing: isTablet ? 12 : 10,
         children: [
           _buildEnhancedShortcut(
             context,
@@ -496,6 +500,15 @@ class _GateDashboardViewState extends State<GateDashboardView>
             isPremium: true,
             onTap: () {
               _openIntercom(context);
+            },
+          ),
+          _buildEnhancedShortcut(
+            context,
+            isTablet,
+            icon: Icons.miscellaneous_services_rounded,
+            title: 'Intercom Services',
+            onTap: () {
+              IntercomServicesLauncher.open(context);
             },
           ),
           _buildEnhancedShortcut(

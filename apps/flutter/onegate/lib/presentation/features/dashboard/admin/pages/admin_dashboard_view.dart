@@ -18,6 +18,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 import '../../commons/ui/dashboard_commons.dart';
+import '../../commons/intercom_services_launcher.dart';
 
 class AdminDashboardView extends StatefulWidget {
   const AdminDashboardView({super.key});
@@ -145,18 +146,20 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Placeholder for admin shortcuts - can be enhanced later
-                Container(
-                  padding: EdgeInsets.all(16),
-                  margin: EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    AppLocalizations.of(context).adminDashboardShortcuts,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: () {
+                          IntercomServicesLauncher.open(context);
+                        },
+                        icon: const Icon(Icons.miscellaneous_services_rounded),
+                        label: const Text('Intercom Services'),
+                      ),
+                    ],
                   ),
                 ),
                 if (state is AdminDashboardSuccessState)

@@ -18,8 +18,9 @@ pluginManagement {
 
 plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-    id "com.android.application" version '8.4.1' apply false  // ✅ Fixed AGP version
-    id "org.jetbrains.kotlin.android" version "1.9.25" apply false  // ✅ Fixed Kotlin version
+    id "com.android.application" version '8.7.0' apply false  // ✅ Fixed AGP version
+    // Kotlin 1.9.x cannot read Kotlin 2.2.x metadata (some dependencies now ship Kotlin 2.2).
+    id "org.jetbrains.kotlin.android" version "2.2.20" apply false
 }
 
 include ":app"
