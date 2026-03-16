@@ -512,18 +512,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
           _buildEnhancedShortcut(
             context,
             isTablet,
-            icon: Icons.phone_rounded,
-            title: context.l10n.intercom,
-            isPremium: true,
-            onTap: () {
-              _openIntercom(context);
-            },
-          ),
-          _buildEnhancedShortcut(
-            context,
-            isTablet,
-            icon: Icons.miscellaneous_services_rounded,
-            title: 'Intercom Services',
+            icon: Icons.dialer_sip_rounded,
+            title: 'Intercom',
             onTap: () {
               IntercomServicesLauncher.open(context);
             },
@@ -691,7 +681,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
   Widget _buildEnhancedShortcut(
     BuildContext context,
     bool isTablet, {
-    required IconData icon,
+    IconData? icon,
     required String title,
     required VoidCallback onTap,
     bool isPremium = false,
@@ -729,13 +719,15 @@ class _GateDashboardViewState extends State<GateDashboardView>
                     Center(
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        child: Icon(
-                          icon,
-                          color: isClickable
-                              ? const Color(0xffF44336)
-                              : Colors.grey.shade500,
-                          size: isTablet ? 32 : 26,
-                        ),
+                        child: icon == null
+                            ? const SizedBox.shrink()
+                            : Icon(
+                                icon,
+                                color: isClickable
+                                    ? const Color(0xffF44336)
+                                    : Colors.grey.shade500,
+                                size: isTablet ? 32 : 26,
+                              ),
                       ),
                     ),
 
@@ -832,7 +824,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unable to open Intercom: $e'),
+          content: Text('Unable to open Intercom Services: $e'),
           backgroundColor: Colors.red,
         ),
       );
