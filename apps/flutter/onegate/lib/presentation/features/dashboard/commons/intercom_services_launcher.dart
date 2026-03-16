@@ -20,7 +20,7 @@ class IntercomServicesLauncher {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Unable to open Intercom Services: missing token'),
+            content: Text('Unable to open Intercom: missing token'),
             backgroundColor: Colors.red,
           ),
         );
@@ -45,11 +45,11 @@ class IntercomServicesLauncher {
         ),
       );
     } catch (e, st) {
-      log('Failed to open Intercom Services', error: e, stackTrace: st);
+      log('Failed to open Intercom', error: e, stackTrace: st);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unable to open Intercom Services: $e'),
+          content: Text('Unable to open Intercom: $e'),
           backgroundColor: Colors.red,
         ),
       );

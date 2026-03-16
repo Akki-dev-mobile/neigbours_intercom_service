@@ -244,7 +244,7 @@ class _MemberListState extends State<MemberList> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          "Intercom",
+          "Intercom Services",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: false,
