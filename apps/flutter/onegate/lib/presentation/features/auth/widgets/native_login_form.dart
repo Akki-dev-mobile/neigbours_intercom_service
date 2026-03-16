@@ -2,6 +2,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/presentation/features/auth/bloc/login_bloc.dart';
+import 'package:flutter_onegate/presentation/features/forgot_password/ui/forgot_password_view.dart';
 import 'package:flutter_onegate/presentation/features/request_gate_access/ui/request_gate_access_view.dart';
 
 /// User-friendly message for known error patterns.
@@ -374,7 +375,12 @@ class _LoginFormCard extends StatelessWidget {
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {
-                        // TODO: open forgot password URL in browser or deep link
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordView(),
+                          ),
+                        );
                       },
                       child: Text(
                         'Forgot password?',

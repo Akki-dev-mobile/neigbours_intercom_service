@@ -464,53 +464,55 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
 
-    // Validate form first before any API calls
+    // Validate form first before any API calls (including DELIVERY company)
     if (!_validateForm()) {
       setState(() => _isSubmitting = false);
-      return;
-    }
-
-    log("_remoteDataSource.createVisitor");
-    widget.searchedVisitor?.name = _guestNameController?.text;
-    widget.searchedVisitor?.mobile = widget.searchedVisitor?.mobile != ""
-        ? widget.searchedVisitor?.mobile
-        : widget.mobile;
-
-    // if (widget.searchedVisitor == null) {
-    final effectiveMobile = widget.searchedVisitor?.mobile?.isNotEmpty == true
-        ? widget.searchedVisitor!.mobile
-        : widget.mobile;
-
-    Visitor? thisvisitor = await _remoteDataSource.createVisitor(Visitor(
-      name: _guestNameController?.text,
-      mobile: effectiveMobile,
-      isStaff: widget.searchedVisitor?.isStaff, // Preserve isStaff property
-    ));
-    // }
-
-    if (!mounted) {
       return;
     }
 
     if (widget.selectedValue?.categoryName == 'DELIVERY' &&
         selectedCompanyIndex == -1) {
       _showErrorSnackBar("Please select a delivery company.");
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
+      setState(() => _isSubmitting = false);
       return;
     }
 
+    // Only create visitor after all validations pass - prevents "visitor in" on incomplete submission
+    log("_remoteDataSource.createVisitor");
+    widget.searchedVisitor?.name = _guestNameController?.text;
+    widget.searchedVisitor?.mobile = widget.searchedVisitor?.mobile != ""
+        ? widget.searchedVisitor?.mobile
+        : widget.mobile;
+
+    final effectiveMobile = widget.searchedVisitor?.mobile?.isNotEmpty == true
+        ? widget.searchedVisitor!.mobile
+        : widget.mobile;
+
+    Visitor? thisvisitor;
     try {
-      // Clear the stored coming from value after submission
+      thisvisitor = await _remoteDataSource.createVisitor(Visitor(
+        name: _guestNameController?.text,
+        mobile: effectiveMobile,
+        isStaff: widget.searchedVisitor?.isStaff,
+      ));
+    } catch (e) {
+      _showErrorSnackBar('Failed to create visitor: ${e.toString()}');
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
+    if (!mounted) return;
+
+    try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('visitor_coming_from');
       log(widget.mobile);
-      log("widget.searchedVisitor: ${widget.searchedVisitor?.id}");
+      final effectiveVisitor = thisvisitor ?? widget.searchedVisitor;
+      log("effectiveVisitor: ${effectiveVisitor?.id}");
       prefs.setString(
-          'search_visitor_id', widget.searchedVisitor?.id.toString() ?? "");
+          'search_visitor_id', effectiveVisitor?.id.toString() ?? "");
       _bloc.add(VIEGuestFormSubmitButtonPressedEvent(
-        searchedVisitor: widget.searchedVisitor,
+        searchedVisitor: effectiveVisitor,
         guestName: _guestNameController?.text,
         guestComingFrom: _guestComingFromController?.text ?? "",
         guestCount: _guestCount,
@@ -827,8 +829,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
             await _updateVisitor(updatedVisitor);
           }
-          // If coming from QR scan, navigate to camera screen instead of unit selection
-          if (widget.isFromQRScan) {
+          // Gatekeeper QR must go through unit selection - entry only after all details submitted.
+          // Self-checkin QR can skip unit selection (express entry flow).
+          if (widget.isFromQRScan && widget.isGatekeeperQRPasscodeEntry != true) {
             // Trigger camera navigation by dispatching the camera event
             _bloc.add(VIENavigateToCameraEvent(
               purposeCategory: state.purposeCategory,
@@ -881,6 +884,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               visitor: state.visitor,
               operation: "update_visitor",
               isFromQRScan: widget.isFromQRScan,
+              isGatekeeperQRPasscodeEntry: widget.isGatekeeperQRPasscodeEntry,
               visitorLog: widget.visitorLog,
             ));
           } else {

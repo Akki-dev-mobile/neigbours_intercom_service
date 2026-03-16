@@ -14,10 +14,13 @@ class RequestGateAccessBloc
 
   FutureOr<void> requestAccessButtonPressedEvent(
       RequestAccessButtonPressedEvent event,
-      Emitter<RequestGateAccessState> emit) {
-    print("requestAccessButtonPressedEvent");
-    emit(
-      RequestAccessButtonPressedState(),
-    );
+      Emitter<RequestGateAccessState> emit) async {
+    emit(RequestAccessLoadingState());
+    // Send via email only - no API call
+    emit(RequestAccessButtonPressedState(
+      name: event.name.trim(),
+      mobile: event.mobile.trim(),
+      societyName: event.societyName.trim(),
+    ));
   }
 }

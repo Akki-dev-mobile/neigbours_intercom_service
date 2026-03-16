@@ -4,6 +4,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../bloc/request_gate_access_bloc.dart';
 
@@ -43,10 +44,56 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
     });
   }
 
+  Future<void> _sendReadyToRollEmail({
+    required String name,
+    required String mobile,
+    required String societyName,
+  }) async {
+    final subject = Uri.encodeComponent('Ready to Roll - Gate Access Request');
+    final body = Uri.encodeComponent(
+      'Name: $name\nMobile: $mobile\nSociety Name: $societyName',
+    );
+    final mailtoUri = Uri.parse(
+      'mailto:support@futurescapetech.com?subject=$subject&body=$body',
+    );
+    try {
+      final launched = await launchUrl(
+        mailtoUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Email app could not open. Please email support@futurescapetech.com with your details.',
+            ),
+            backgroundColor: Colors.orange.shade700,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Could not launch email: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Email app could not open. Please email support@futurescapetech.com with your details.',
+            ),
+            backgroundColor: Colors.orange.shade700,
+          ),
+        );
+      }
+    }
+  }
+
   void _submitRequestAccessForm() {
     if (_requestAccessFormKey.currentState?.validate() ?? false) {
       FocusScope.of(context).unfocus();
-      requestGateAccessBloc.add(RequestAccessButtonPressedEvent());
+      requestGateAccessBloc.add(RequestAccessButtonPressedEvent(
+        name: clientNameTextCtrl!.text,
+        mobile: mobileNumberTextCtrl!.text,
+        societyName: clientSocietyTextCtrl!.text,
+      ));
     }
   }
 
@@ -65,11 +112,25 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
     return BlocConsumer<RequestGateAccessBloc, RequestGateAccessState>(
       bloc: requestGateAccessBloc,
       listenWhen: (previous, current) =>
-          current is RequestGateAccessActionState,
-      buildWhen: (previous, current) =>
-          current is! RequestGateAccessActionState,
+          current is RequestGateAccessActionState ||
+          current is RequestAccessErrorState,
+      buildWhen: (previous, current) => true,
       listener: (context, state) {
+        if (state is RequestAccessErrorState) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red.shade700,
+            ),
+          );
+          return;
+        }
         if (state is RequestAccessButtonPressedState) {
+          _sendReadyToRollEmail(
+            name: state.name,
+            mobile: state.mobile,
+            societyName: state.societyName,
+          );
           showDialog<void>(
             context: context,
             barrierDismissible: false,
@@ -247,8 +308,10 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
         }
       },
       builder: (context, state) {
-        return Scaffold(
-          body: SignUpContent(
+        return Stack(
+          children: [
+            Scaffold(
+              body: SignUpContent(
             onSubmitPressed: _submitRequestAccessForm,
             requestAccessFormKey: _requestAccessFormKey,
             clientNameTextCtrl: clientNameTextCtrl!,
@@ -258,6 +321,15 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
             mobileNumberFocusNode: _mobileNumberFocusNode,
             societyNameFocusNode: _societyNameFocusNode,
           ),
+            ),
+            if (state is RequestAccessLoadingState)
+              Container(
+                color: Colors.black26,
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+          ],
         );
       },
     );

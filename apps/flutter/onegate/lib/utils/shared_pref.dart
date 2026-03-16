@@ -16,7 +16,8 @@ class PreferenceUtils {
     return PreferenceUtils(preferences);
   }
 
-  static const String _accessTokenKey = 'access_token';
+  /// Full AccessTokenResponse JSON - separate from GateStorage's raw 'access_token' to avoid overwriting
+  static const String _accessTokenResponseKey = 'access_token_response';
   static const String _userInfoKey = 'user_info';
   static const String _selectedCompanyKey = 'selected_company';
   static const String _roles = 'roles';
@@ -38,7 +39,7 @@ class PreferenceUtils {
   }
 
   Future<void> saveAccessTokenResponse(AccessTokenResponse accessToken) async {
-    _preferences.setString(_accessTokenKey, jsonEncode(accessToken.toJson()));
+    _preferences.setString(_accessTokenResponseKey, jsonEncode(accessToken.toJson()));
   }
 
   Future<void> saveRoles(List<String> roles) async {
@@ -68,10 +69,26 @@ class PreferenceUtils {
   }
 
   AccessTokenResponse? getAccessToken() {
-    final accessTokenJson = _preferences.getString(_accessTokenKey);
+    // Try new key first
+    var accessTokenJson = _preferences.getString(_accessTokenResponseKey);
+    // Migration: fallback to old 'access_token' key for existing users
+    if (accessTokenJson == null) {
+      accessTokenJson = _preferences.getString('access_token');
+      if (accessTokenJson != null) {
+        try {
+          jsonDecode(accessTokenJson);
+        } catch (_) {
+          return null; // Raw token string, not AccessTokenResponse JSON
+        }
+      }
+    }
     if (accessTokenJson != null) {
-      final accessTokenMap = jsonDecode(accessTokenJson);
-      return AccessTokenResponse.fromJson(accessTokenMap);
+      try {
+        final accessTokenMap = jsonDecode(accessTokenJson);
+        return AccessTokenResponse.fromJson(accessTokenMap);
+      } catch (_) {
+        return null;
+      }
     }
     return null;
   }

@@ -530,6 +530,205 @@ class RemoteDataSource {
     }
   }
 
+  /// Request password reset link (forgot password). Sends email to backend.
+  /// Returns: (success: true) when backend sends reset email, (success: false, routeNotFound: true) when API route does not exist (e.g. 404), (success: false, routeNotFound: false) on other errors.
+  Future<({bool success, bool routeNotFound})> requestPasswordReset({
+    required String email,
+  }) async {
+    try {
+      final dio = _getPublicDio();
+      final path = ApiUrls.forgotPassword.replaceFirst(ApiUrls.gateBaseUrl, '');
+      final response = await dio.post(
+        path,
+        data: {'email': email.trim()},
+      );
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300) {
+        log('✅ Password reset request submitted for $email');
+        return (success: true, routeNotFound: false);
+      }
+      final notFound = response.statusCode == 404;
+      log('⚠️ Forgot password returned ${response.statusCode}');
+      return (success: false, routeNotFound: notFound);
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      final notFound = statusCode == 404;
+      log('❌ Forgot password failed: $statusCode ${e.message}');
+      return (success: false, routeNotFound: notFound);
+    } catch (e) {
+      log('❌ Forgot password error: $e');
+      return (success: false, routeNotFound: false);
+    }
+  }
+
+  /// Forgot password (hybrid-auth): Step 1 – request OTP for username (mobile/email).
+  /// Returns true when the OTP request is accepted by the backend.
+  Future<bool> requestForgotPasswordOtp({
+    required String username,
+  }) async {
+    try {
+      final dio = _getPublicDio();
+      final response = await dio.post(
+        'https://apigw.cubeone.in/v2/hybrid-auth/forgot-password/request-otp',
+        data: {
+          'username': username.trim(),
+        },
+      );
+      final status = response.statusCode ?? 0;
+      final ok = status >= 200 && status < 300;
+      log('🔐 requestForgotPasswordOtp status=$status username=$username ok=$ok');
+      return ok;
+    } on DioException catch (e) {
+      log('❌ requestForgotPasswordOtp failed: ${e.response?.statusCode} ${e.message}');
+      return false;
+    } catch (e) {
+      log('❌ requestForgotPasswordOtp error: $e');
+      return false;
+    }
+  }
+
+  /// Forgot password (hybrid-auth): Step 2 – verify OTP and receive fp_auth_code.
+  /// Tries to extract `fp_auth_code` from the response payload.
+  /// Returns: (success, fpAuthCode, message)
+  Future<({bool success, String? fpAuthCode, String? message})> verifyForgotPasswordOtp({
+    required String username,
+    required String otp,
+  }) async {
+    try {
+      final dio = _getPublicDio();
+      final response = await dio.post(
+        'https://apigw.cubeone.in/v2/hybrid-auth/forgot-password/verify-otp',
+        data: {
+          'username': username.trim(),
+          'otp': otp.trim(),
+        },
+      );
+      final status = response.statusCode ?? 0;
+      final ok = status >= 200 && status < 300;
+
+      String? fpAuthCode;
+      String? message;
+      final data = response.data;
+      if (data is Map) {
+        // Expected pattern from API:
+        // {
+        //   "success": true,
+        //   "data": {
+        //     "app": {...},
+        //     "status_code": 200,
+        //     "message": "User verified successfully.",
+        //     "data": { "fp_auth_code": "..." }
+        //   },
+        //   "message": "OTP verified successfully for password reset"
+        // }
+        final topLevelMessage = data['message'];
+        if (topLevelMessage is String) {
+          message = topLevelMessage;
+        }
+        final dataLevel = data['data'];
+        if (dataLevel is Map) {
+          final innerMessage = dataLevel['message'];
+          if (innerMessage is String) {
+            message = innerMessage;
+          }
+          final innerData = dataLevel['data'];
+          if (innerData is Map && innerData['fp_auth_code'] is String) {
+            fpAuthCode = innerData['fp_auth_code'] as String;
+          }
+        }
+        // Fallbacks for simpler payloads
+        if (fpAuthCode == null && data['fp_auth_code'] is String) {
+          fpAuthCode = data['fp_auth_code'] as String;
+        } else if (fpAuthCode == null &&
+            data['data'] is Map &&
+            (data['data'] as Map)['fp_auth_code'] is String) {
+          fpAuthCode = (data['data'] as Map)['fp_auth_code'] as String;
+        }
+      }
+
+      log('🔐 verifyForgotPasswordOtp status=$status username=$username ok=$ok hasCode=${fpAuthCode != null}');
+      return (success: ok && fpAuthCode != null, fpAuthCode: fpAuthCode, message: message);
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final data = e.response?.data;
+      String? message;
+      if (data is Map && data['message'] is String) {
+        message = data['message'] as String;
+      }
+      log('❌ verifyForgotPasswordOtp failed: $status ${e.message}');
+      return (success: false, fpAuthCode: null, message: message ?? e.message);
+    } catch (e) {
+      log('❌ verifyForgotPasswordOtp error: $e');
+      return (success: false, fpAuthCode: null, message: e.toString());
+    }
+  }
+
+  /// Forgot password (hybrid-auth): Step 3 – reset password using fp_auth_code.
+  /// Returns true when the password is successfully reset.
+  Future<bool> resetForgotPassword({
+    required String username,
+    required String fpAuthCode,
+    required String password,
+    String otpType = 'mobile',
+  }) async {
+    try {
+      final dio = _getPublicDio();
+      final response = await dio.post(
+        'https://apigw.cubeone.in/v2/hybrid-auth/forgot-password/reset-password',
+        data: {
+          'username': username.trim(),
+          'fp_auth_code': fpAuthCode,
+          'password': password,
+          'otp_type': otpType,
+        },
+      );
+      final status = response.statusCode ?? 0;
+      final ok = status >= 200 && status < 300;
+      log('🔐 resetForgotPassword status=$status username=$username ok=$ok');
+      return ok;
+    } on DioException catch (e) {
+      log('❌ resetForgotPassword failed: ${e.response?.statusCode} ${e.message}');
+      return false;
+    } catch (e) {
+      log('❌ resetForgotPassword error: $e');
+      return false;
+    }
+  }
+
+  /// Submit gate access / callback request (Ready to Roll form). Uses public API.
+  Future<bool> submitGateAccessRequest({
+    required String name,
+    required String mobile,
+    required String societyName,
+  }) async {
+    try {
+      final dio = _getPublicDio();
+      final response = await dio.post(
+        ApiUrls.requestGateAccess.replaceFirst(ApiUrls.gateBaseUrl, ''),
+        data: {
+          'name': name,
+          'mobile': mobile,
+          'society_name': societyName,
+        },
+      );
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300) {
+        log('✅ Gate access request submitted');
+        return true;
+      }
+      log('⚠️ Gate access request returned ${response.statusCode}');
+      return false;
+    } on DioException catch (e) {
+      log('❌ Gate access request failed: ${e.response?.statusCode} ${e.message}');
+      return false;
+    } catch (e) {
+      log('❌ Gate access request error: $e');
+      return false;
+    }
+  }
+
   Future<void> sendFcmNotification(Map<String, dynamic> requestData) async {
     try {
       final response = await _getDio().post(

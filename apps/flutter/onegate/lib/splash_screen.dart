@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:async';
 import 'dart:math' show sin;
@@ -7,7 +8,6 @@ import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/missed_approval_two.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
@@ -15,6 +15,7 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter_onegate/utils/shared_pref.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -135,21 +136,36 @@ class _SplashViewState extends State<SplashView>
     }
   }
 
+  /// On cold start, check if tokens are available and not expired.
+  /// - If tokens are valid (or successfully refreshed) → redirect to home screen
+  /// - If tokens are expired/invalid or refresh fails → redirect to login screen
   Future<void> _checkLoginState() async {
     try {
-      log('🔍 Checking stored access token...');
-      final accessToken = await _loginService.gateStorage.getAccessToken();
+      log('🔍 Checking token availability and expiry via AuthService...');
+      final authService = GetIt.I<AuthService>();
 
-      if (accessToken == null) {
-        log("❌ User is not logged in - no access token found");
+      // getValidAccessToken: returns valid token if available & not expired,
+      // or attempts refresh; returns null if no token, expired, invalid, or refresh failed
+      final validAccessToken = await authService.getValidAccessToken();
+
+      if (validAccessToken == null || validAccessToken.isEmpty) {
+        log("❌ Tokens expired/invalid or unavailable - redirecting to login");
         await Future.delayed(const Duration(seconds: 2));
         _navigateToLogin();
         return;
       }
 
-      log("✅ Access token found, checking user role...");
-      final role = await _loginService.gateStorage.getRole();
-      log("👤 User role: $role");
+      log("✅ Valid access token available - redirecting to home");
+      var role = await _loginService.gateStorage.getRole();
+      // Fallback: native login may not have saved role to GateStorage; derive from PreferenceUtils
+      if (role == null || role.isEmpty) {
+        final prefs = GetIt.I<PreferenceUtils>();
+        final isAdmin = prefs.getIsAdmin() ?? false;
+        role = isAdmin ? 'admin' : 'gatekeeper';
+        log("👤 Role derived from PreferenceUtils: $role");
+      } else {
+        log("👤 User role: $role");
+      }
 
       await Future.delayed(const Duration(seconds: 2));
       _navigateBasedOnRole(role);
@@ -208,22 +224,38 @@ class _SplashViewState extends State<SplashView>
     }
   }
 
+  /// Check if visitor purpose has been selected (stored in selected_purposes)
+  Future<bool> _isVisitorPurposeSelected(SharedPreferences prefs) async {
+    try {
+      final jsonString = prefs.getString('selected_purposes');
+      if (jsonString == null || jsonString.isEmpty) return false;
+      final jsonList = jsonDecode(jsonString) as List<dynamic>?;
+      if (jsonList == null || jsonList.isEmpty) return false;
+      return jsonList.any((p) =>
+          p is Map && (p['isSelected'] == true));
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> _performRoleBasedNavigation(String? role) async {
     final prefs = await SharedPreferences.getInstance();
-    bool hasNavigatedToGateSettings =
-        prefs.getBool('hasNavigatedToGateSettings') ?? false;
-
     final selectedGateName = prefs.getString('selected_gate') ?? '';
     final cleanedGateName = selectedGateName.toLowerCase();
 
     Widget? destination;
 
     if (role == 'admin') {
-      log('📊 Admin role detected - navigating to admin dashboard');
-      destination = const AdminDashboardView();
+      log('📊 Admin role detected - navigating to visitor settings');
+      destination = VisitorSettingsView();
     } else if (role == 'gatekeeper') {
       log('🚪 Gatekeeper role detected');
-      if (cleanedGateName.contains("tower")) {
+      final purposeSelected = await _isVisitorPurposeSelected(prefs);
+      if (!purposeSelected) {
+        log('⚙️ Visitor purpose not selected - navigating to VisitorSettings');
+        destination = VisitorSettingsView();
+        await prefs.setBool('hasNavigatedToGateSettings', true);
+      } else if (cleanedGateName.contains("tower")) {
         String formattedTowerName = "TOWER NO ";
         RegExp regExp =
             RegExp(r'tower\s*(?:no\.?|number)?\s*(\d+)', caseSensitive: false);
@@ -242,17 +274,10 @@ class _SplashViewState extends State<SplashView>
           towerName: formattedTowerName,
         );
 
-        log('🏢 Auto-navigating to tower: $formattedTowerName');
+        log('🏢 Purpose selected - auto-navigating to tower: $formattedTowerName');
       } else {
-        // If not tower, check if already went to visitor settings
-        if (!hasNavigatedToGateSettings) {
-          log('⚙️ First time gatekeeper - navigating to visitor settings');
-          destination = VisitorSettingsView(comingfrom: true);
-          await prefs.setBool('hasNavigatedToGateSettings', true);
-        } else {
-          log('🏠 Returning gatekeeper - navigating to gate dashboard');
-          destination = const GateDashboardView();
-        }
+        log('🏠 Purpose selected - navigating to home (GateDashboardView)');
+        destination = const GateDashboardView();
       }
     } else {
       log('❓ Unknown or null role: $role - defaulting to login');

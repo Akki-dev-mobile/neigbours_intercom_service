@@ -155,6 +155,7 @@ class EnhancedLogoutService {
         // Clear only authentication-related preferences
         final authKeys = [
           'access_token',
+          'access_token_response', // PreferenceUtils full response
           'refresh_token',
           'id_token',
           'token_expiry',

@@ -132,6 +132,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           if (gates.length == 1) {
             _preferenceUtils.setSelectedGate(gates[0]);
             _preferenceUtils.setIsLogin(true);
+            await GateStorage().saveRole('admin');
             emit(NavigateToAdminDashboardState());
             return;
           } else if (gates.isEmpty) {
@@ -143,6 +144,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           }
         } else {
           _preferenceUtils.setIsLogin(true);
+          await GateStorage().saveRole('admin');
           emit(NavigateToAdminDashboardState());
         }
       } else {
@@ -161,12 +163,14 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           if (gateList.length == 1) {
             _preferenceUtils.setSelectedGate(gateList[0]);
             _preferenceUtils.setIsLogin(true);
+            await GateStorage().saveRole('gatekeeper');
             emit(NavigateToGatekeeperDashboardState());
             return;
           }
           emit(GateSelectionState(gateList));
         } else {
           _preferenceUtils.setIsLogin(true);
+          await GateStorage().saveRole('gatekeeper');
           emit(NavigateToGatekeeperDashboardState());
         }
       }
@@ -181,11 +185,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       GateSelectionButtonPressedEvent event, Emitter<LoginState> emit) async {
     _preferenceUtils.setSelectedGate(event.gate);
     if (_preferenceUtils.getIsAdmin()!) {
+      await GateStorage().saveRole('admin');
       emit(NavigateToAdminDashboardState());
     } else {
       final matches = await _userMatchesSelectedGate();
       if (matches) {
         _preferenceUtils.setIsLogin(true);
+        await GateStorage().saveRole('gatekeeper');
         emit(NavigateToGatekeeperDashboardState());
       } else {
         emit(LoginErrorState(
@@ -260,6 +266,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         });
       });
       preferenceUtils.saveAccessTokenResponse(response);
+      // Ensure GateStorage has raw tokens (AuthRepositoryImpl already does this; this guards alternate flows)
+      if (response.accessToken != null && response.accessToken!.isNotEmpty) {
+        unawaited(GateStorage().saveAccessToken(response.accessToken!));
+      }
+      if (response.refresh_token != null && response.refresh_token!.isNotEmpty) {
+        unawaited(GateStorage().saveRefreshToken(response.refresh_token!));
+      }
       if (response.userInfo != null) {
         preferenceUtils.saveUserInfo(response.userInfo!);
       } else {

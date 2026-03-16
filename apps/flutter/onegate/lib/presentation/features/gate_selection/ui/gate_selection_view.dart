@@ -4,6 +4,7 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
+import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -52,14 +53,14 @@ class GateSelectionView extends StatelessWidget {
                 text: AppLocalizations.of(context).confirm,
                 onPressed: () async {
                   final selectedGate = provider.selectedGate;
+                  final prefs = await SharedPreferences.getInstance();
 
                   if (selectedGate != null) {
-                    final prefs = await SharedPreferences.getInstance();
-
-                    final selectedGate = await prefs.getString('selected_gate');
+                    final selectedGateName =
+                        await prefs.getString('selected_gate');
                     myFluttertoast(
                         msg:
-                            "${AppLocalizations.of(context).gateChangedTo} $selectedGate");
+                            "${AppLocalizations.of(context).gateChangedTo} $selectedGateName");
                   } else {
                     print("No gate selected");
                     myFluttertoast(
@@ -67,11 +68,9 @@ class GateSelectionView extends StatelessWidget {
                         backgroundColor: Colors.red);
                   }
 
-                  // Check the role and navigate accordingly
                   final role = await GateStorage().getRole();
-
                   print("role$role");
-                  // Fetch the role
+
                   if (role == 'admin' || role == 'master') {
                     Navigator.push(
                       context,
@@ -80,12 +79,30 @@ class GateSelectionView extends StatelessWidget {
                       ),
                     );
                   } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => GateDashboardView(),
-                      ),
-                    );
+                    // Gatekeeper: first time after gate selection → Visitor Settings, then dashboard
+                    final hasNavigatedToGateSettings =
+                        prefs.getBool('hasNavigatedToGateSettings') ?? false;
+                    if (!hasNavigatedToGateSettings) {
+                      await prefs.setBool('hasNavigatedToGateSettings', true);
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                VisitorSettingsView(comingfrom: true),
+                          ),
+                        );
+                      }
+                    } else {
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => GateDashboardView(),
+                          ),
+                        );
+                      }
+                    }
                   }
                 },
               ),

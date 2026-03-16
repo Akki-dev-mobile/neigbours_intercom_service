@@ -23,9 +23,9 @@ class SecureTokenManager {
     ),
   );
 
-  // Storage keys
-  static const String _accessTokenKey = 'secure_access_token';
-  static const String _refreshTokenKey = 'secure_refresh_token';
+  // Storage keys - unified with EnhancedTokenRefreshManager & AuthRepositoryImpl for consistent persistence
+  static const String _accessTokenKey = 'access_token_secure';
+  static const String _refreshTokenKey = 'refresh_token_secure';
   static const String _idTokenKey = 'secure_id_token';
 
   // State management

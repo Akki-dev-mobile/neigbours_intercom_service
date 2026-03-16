@@ -121,11 +121,51 @@ class EnhancedTokenRefreshManager {
   }
 
   /// Get a valid access token, refreshing if necessary (with dynamic buffer)
+  /// Falls back to GateStorage when secure storage is empty (e.g. app kill cleared FlutterSecureStorage)
   Future<String?> getValidAccessToken() async {
     try {
-      final accessToken = await _secureStorage.read(key: _accessTokenKey);
+      var accessToken = await _secureStorage.read(key: _accessTokenKey);
+
+      // Fallback: GateStorage persists across app kill (SharedPreferences survives).
+      // Even if the access token is expired, we migrate both tokens into secure storage
+      // so the refresh logic below can use the refresh token to get a new access token.
       if (accessToken == null) {
-        log("❌ No access token available");
+        final gateStorage = _gateStorage ?? GateStorage();
+        final gatAccessToken = await gateStorage.getAccessToken();
+        final gatRefreshToken = await gateStorage.getRefreshToken();
+
+        if (gatAccessToken != null &&
+            gatAccessToken.isNotEmpty &&
+            gatRefreshToken != null &&
+            gatRefreshToken.isNotEmpty &&
+            JwtTokenUtility.parseJwtToken(gatAccessToken) != null) {
+          // Access token is a valid JWT structure (may be expired – refresh handles that)
+          log("🔄 Migrating tokens from GateStorage to secure storage (persistence recovery)");
+          await _secureStorage.write(key: _accessTokenKey, value: gatAccessToken);
+          await _secureStorage.write(key: _refreshTokenKey, value: gatRefreshToken);
+          accessToken = gatAccessToken;
+        } else if (gatRefreshToken != null && gatRefreshToken.isNotEmpty) {
+          // We have a refresh token but no usable access token – store refresh token
+          // and attempt a refresh below which will produce a new access token.
+          log("🔄 No valid access token in GateStorage but refresh token present – migrating refresh token");
+          await _secureStorage.write(key: _refreshTokenKey, value: gatRefreshToken);
+          // Force expiry path by keeping accessToken null so refresh is triggered
+        } else {
+          log("❌ GateStorage has no usable tokens");
+        }
+      }
+
+      if (accessToken == null) {
+        // No access token, but check if we have a refresh token to recover the session
+        final storedRefresh = await _secureStorage.read(key: _refreshTokenKey);
+        if (storedRefresh != null && storedRefresh.isNotEmpty) {
+          log("🔄 No access token but refresh token present – attempting session recovery");
+          final refreshed = await refreshTokenIfNeeded();
+          if (refreshed) {
+            return await _secureStorage.read(key: _accessTokenKey);
+          }
+        }
+        log("❌ No access token and refresh failed or no refresh token");
         return null;
       }
 

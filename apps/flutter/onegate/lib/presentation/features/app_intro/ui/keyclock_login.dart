@@ -204,11 +204,19 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     );
   }
 
+  /// On cold start, restore an existing session if tokens are still valid,
+  /// refreshing them if needed via AuthService. Only send user to login when
+  /// both access and refresh tokens can no longer produce a valid session.
   Future<void> _checkLoginState() async {
     try {
-      final accessToken = await _loginService.gateStorage.getAccessToken();
-      if (accessToken == null) {
-        log("User is not logged in");
+      final authService = GetIt.I<AuthService>();
+
+      // This uses EnhancedTokenRefreshManager under the hood and will:
+      // - return a non-null token if access/refresh are still usable
+      // - return null only when the session is really gone
+      final validAccessToken = await authService.getValidAccessToken();
+      if (validAccessToken == null) {
+        log("🔐 No valid access token on startup - treating as logged out");
         return;
       }
 
@@ -691,12 +699,11 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
               _showNativeGateSelection(context, state);
             } else if (state is NavigateToAdminDashboardState) {
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const AdminDashboardView()),
+                MaterialPageRoute(builder: (_) => VisitorSettingsView()),
               );
             } else if (state is NavigateToGatekeeperDashboardState) {
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                    builder: (_) => const GateDashboardView()),
+                MaterialPageRoute(builder: (_) => VisitorSettingsView()),
               );
             }
           },

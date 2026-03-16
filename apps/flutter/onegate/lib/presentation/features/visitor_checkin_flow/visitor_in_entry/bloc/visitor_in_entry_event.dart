@@ -30,6 +30,7 @@ class VIECameraButtonPressedEvent extends VisitorInEntryEvent {
   final File? imageFile;
   final String? operation;
   final bool isFromQRScan;
+  final bool isGatekeeperQRPasscodeEntry;
   final VisitorLog? visitorLog;
 
   VIECameraButtonPressedEvent({
@@ -38,6 +39,7 @@ class VIECameraButtonPressedEvent extends VisitorInEntryEvent {
     this.imageFile,
     this.operation,
     this.isFromQRScan = false,
+    this.isGatekeeperQRPasscodeEntry = false,
     this.visitorLog,
   });
 }

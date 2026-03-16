@@ -65,7 +65,13 @@ class ApiUrls {
 
   static String get visitorApprovals => '$gateBaseUrl/visitor/approvals';
 
+  /// Request gate access / callback (Ready to Roll form)
+  static String get requestGateAccess => '$gateBaseUrl/visitor/requestAccess';
+
   static String get verifyGuestPasscode => '$gateBaseUrl/member/pass/verify';
+
+  /// Forgot password: request reset link (sends email via backend/Keycloak).
+  static String get forgotPassword => '$gateBaseUrl/auth/forgot-password';
 
   // Society API Endpoints
   static String get buildingList => '$societyBaseUrl/admin/building/list';

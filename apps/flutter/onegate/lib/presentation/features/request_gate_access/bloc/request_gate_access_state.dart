@@ -7,4 +7,22 @@ abstract class RequestGateAccessActionState extends RequestGateAccessState {}
 
 class RequestGateAccessInitial extends RequestGateAccessState {}
 
-class RequestAccessButtonPressedState extends RequestGateAccessActionState {}
+class RequestAccessLoadingState extends RequestGateAccessState {}
+
+class RequestAccessButtonPressedState extends RequestGateAccessActionState {
+  final String name;
+  final String mobile;
+  final String societyName;
+
+  RequestAccessButtonPressedState({
+    required this.name,
+    required this.mobile,
+    required this.societyName,
+  });
+}
+
+class RequestAccessErrorState extends RequestGateAccessState {
+  final String message;
+
+  RequestAccessErrorState(this.message);
+}

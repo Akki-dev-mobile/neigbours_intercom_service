@@ -99,7 +99,9 @@ class VisitorInEntryBloc
         // For QR scan flow, we need to pass the visitorLog
         await _handleExistingVisitor(
             updatedVisitor, event.purposeCategory!, emit,
-            isFromQRScan: event.isFromQRScan, visitorLog: event.visitorLog);
+            isFromQRScan: event.isFromQRScan,
+            isGatekeeperQRPasscodeEntry: event.isGatekeeperQRPasscodeEntry,
+            visitorLog: event.visitorLog);
       }
     } catch (error) {
       emit(VisitorInEntryErrorState(message: error.toString()));
@@ -126,10 +128,15 @@ class VisitorInEntryBloc
 
   Future<void> _handleExistingVisitor(Visitor visitor,
       PurposeCategory1 purposeCategory, Emitter<VisitorInEntryState> emit,
-      {bool isFromQRScan = false, VisitorLog? visitorLog}) async {
+      {bool isFromQRScan = false,
+      bool isGatekeeperQRPasscodeEntry = false,
+      VisitorLog? visitorLog}) async {
     final isUpdated = await _visitorUsecase.updateVisitor(visitor);
     if (isUpdated) {
-      if (isFromQRScan && visitorLog != null) {
+      // Gatekeeper QR flow must go through unit selection - entry only after all details submitted
+      if (isFromQRScan &&
+          visitorLog != null &&
+          !isGatekeeperQRPasscodeEntry) {
         emit(VIENavigateToRequestScreenState(
             visitor, purposeCategory, visitorLog));
       } else {

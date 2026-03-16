@@ -63,7 +63,8 @@ dependencies:
   onegate_guard_intercom:
     path: ../../../packages/onegate_guard_intercom
   intercom_module:
-    path: ../neighbours-oneapp-services/neigbours_intercom_service
+    git:
+      url: https://github.com/Akki-dev-mobile/neigbours_intercom_service.git
   random_avatar: ^0.0.8
   animations: ^2.0.8
   flutter_animate: ^4.2.0+1
