@@ -1,22 +1,24 @@
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
-
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/domain/entities/auth/company.dart';
+import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
+import 'package:flutter_onegate/presentation/features/auth/bloc/login_bloc.dart';
+import 'package:flutter_onegate/presentation/features/auth/widgets/native_login_form.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_provider.dart';
 import 'package:flutter_onegate/presentation/features/request_gate_access/ui/request_gate_access_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
+import 'package:flutter_onegate/config/gateconfig_holder.dart';
 import 'package:flutter_onegate/utils/custom_appauth.dart';
-import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:flutter_onegate/utils/ssl_bypass.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:get_it/get_it.dart';
-import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -319,11 +321,12 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
   //   }
   // }
 
-  // void _showError(String message) {
-  //   ScaffoldMessenger.of(context).showSnackBar(
-  //     SnackBar(content: Text(message)),
-  //   );
-  // }
+  void _safeUpdateState(LoginState1 newState) {
+    if (mounted && !_isDisposed) {
+      _loginState.value = newState;
+    }
+  }
+
   Future<void> _handleLogin() async {
     try {
       if (_isDisposed) return;
@@ -355,12 +358,6 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
         );
         _showError(e.toString());
       }
-    }
-  }
-
-  void _safeUpdateState(LoginState1 newState) {
-    if (mounted && !_isDisposed) {
-      _loginState.value = newState;
     }
   }
 
@@ -673,8 +670,48 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     // );
   }
 
+  /// Prefer native login UI; set to false to respect remote use_native_login only.
+  static const bool _preferNativeLogin = true;
+
   @override
   Widget build(BuildContext context) {
+    final useNative =
+        _preferNativeLogin || GateConfigHolder.useNativeLogin;
+    if (useNative) {
+      return BlocProvider<LoginBloc>(
+        create: (_) => GetIt.I<LoginBloc>(),
+        child: BlocListener<LoginBloc, LoginState>(
+          listener: (context, state) {
+            if (!mounted) return;
+            if (state is SocietySelectionState) {
+              _showNativeSocietySelection(context, state);
+            } else if (state is RoleSelectionState) {
+              _showNativeRoleSelection(context, state);
+            } else if (state is GateSelectionState) {
+              _showNativeGateSelection(context, state);
+            } else if (state is NavigateToAdminDashboardState) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const AdminDashboardView()),
+              );
+            } else if (state is NavigateToGatekeeperDashboardState) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                    builder: (_) => const GateDashboardView()),
+              );
+            }
+          },
+          child: BlocBuilder<LoginBloc, LoginState>(
+            buildWhen: (_, state) => state is LoginLoadingState,
+            builder: (context, state) {
+              return Scaffold(
+                body: const NativeLoginForm(),
+              );
+            },
+          ),
+        ),
+      );
+    }
+
     return ValueListenableBuilder<LoginState1>(
       valueListenable: _loginState,
       builder: (context, state, child) {
@@ -698,6 +735,88 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
           ),
         );
       },
+    );
+  }
+
+  void _showNativeSocietySelection(BuildContext context, SocietySelectionState state) {
+    final raw = state.companiesWithAccessToGate;
+    if (raw is! List || raw.isEmpty) return;
+    final companies = raw.whereType<Company>().toList();
+    final societies = companies
+        .map((c) => {
+              'company_id': c.companyId,
+              'company_name': c.companyName,
+            })
+        .toList();
+    showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SocietySelectionSheet(
+        societies: societies,
+        onSelected: (map) {
+          Navigator.pop(ctx);
+          final id = map['company_id']?.toString();
+          final company = companies.cast<Company?>().firstWhere(
+                (c) => c?.companyId.toString() == id,
+                orElse: () => null,
+              );
+          if (company != null) {
+            context.read<LoginBloc>().add(SocietySelectionButtonEvent(company));
+          }
+        },
+      ),
+    );
+  }
+
+  void _showNativeRoleSelection(BuildContext context, RoleSelectionState state) {
+    final roles = state.roles.whereType<String>().toList();
+    if (roles.isEmpty) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => RoleSelectionSheet(
+        availableRoles: roles,
+        onRoleSelected: (role) {
+          Navigator.pop(ctx);
+          context.read<LoginBloc>().add(
+                RoleSelectionButtonPressedEvent(role.toLowerCase() == 'admin'),
+              );
+        },
+      ),
+    );
+  }
+
+  void _showNativeGateSelection(BuildContext context, GateSelectionState state) {
+    final gates = state.gates.whereType<Gate>().toList();
+    if (gates.isEmpty) return;
+    final gateMaps = gates.map((g) {
+      final m = Map<String, dynamic>.from(g.toJson());
+      m['gate_id'] = g.id;
+      return m;
+    }).toList();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => GateSelectionSheet(
+        gates: gateMaps,
+        onGateSelected: (map) {
+          Navigator.pop(ctx);
+          final gateMap = Map<String, dynamic>.from(map);
+          gateMap['id'] = gateMap['gate_id'] ?? gateMap['id'];
+          final gate = Gate.fromJson(gateMap);
+          context.read<LoginBloc>().add(GateSelectionButtonPressedEvent(gate));
+        },
+      ),
     );
   }
 

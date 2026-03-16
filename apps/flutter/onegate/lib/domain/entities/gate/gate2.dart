@@ -26,14 +26,21 @@ class Gate {
     this.isSelected = false,
   });
 
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
   factory Gate.fromJson(Map<String, dynamic> json) {
     return Gate(
       id: json['id'],
       companyId: json['company_id'],
       gateName: json['gate_name'],
       gateType: json['gate_type'],
-      userId: json['gate_user_id'],
-      oldSsoUserId: json['old_sso_user_id'],
+      userId: _parseInt(json['gate_user_id']),
+      oldSsoUserId: _parseInt(json['old_sso_user_id']),
       status: json['status'],
       tag: json['tag'],
       createdAt: json['created_at'],

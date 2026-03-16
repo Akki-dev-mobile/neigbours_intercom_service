@@ -24,6 +24,7 @@ import 'package:flutter_onegate/utils/network_log/network_log_manager.dart';
 import 'package:flutter_onegate/utils/network_log/ui/network_log_overlay.dart';
 import 'package:flutter_onegate/utils/route_tracker.dart';
 import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.dart';
+import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_onegate/services/notifications/models/notification_models.dart';
 import 'package:flutter_onegate/utils/network_log/models/network_log.dart';
@@ -814,6 +815,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         if (kDebugMode)
           '/error-tracking-test': (context) => const ErrorTrackingTestWidget(),
         '/self-entry': (context) => const SelfHomeView(),
+        '/login': (context) => const MyAppLogin(),
       },
       home: WillPopScope(
         onWillPop: () async {

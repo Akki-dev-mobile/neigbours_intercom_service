@@ -184,9 +184,9 @@ void runApiClientTestSuite() {
       test('should not retry auth endpoints on 401', () async {
         // Arrange
         final dioError = DioException(
-          requestOptions: RequestOptions(path: '/auth/login'),
+          requestOptions: RequestOptions(path: '/gatelogin'),
           response: Response(
-            requestOptions: RequestOptions(path: '/auth/login'),
+            requestOptions: RequestOptions(path: '/gatelogin'),
             statusCode: 401,
           ),
         );
@@ -196,7 +196,7 @@ void runApiClientTestSuite() {
         interceptor.onError(dioError, handler);
 
         // Assert
-        expect(dioError.requestOptions.path, equals('/auth/login'));
+        expect(dioError.requestOptions.path, equals('/gatelogin'));
       });
 
       test('should limit retry attempts', () async {

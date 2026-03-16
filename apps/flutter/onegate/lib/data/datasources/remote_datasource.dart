@@ -8,6 +8,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_onegate/common/environment.dart';
 import 'package:flutter_onegate/config/gate_config.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 
 import 'package:flutter_onegate/data/models/staff_model.dart';
 import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
@@ -189,11 +190,128 @@ class RemoteDataSource {
     return false; // Not an auth error, don't retry
   }
 
-  /// Login user via AppAuth (deprecated - use AuthService instead)
-  @deprecated
-  Future<Map<String, dynamic>> loginUser() async {
-    throw Exception(
-        'Login method deprecated. Use AuthService.login() instead.');
+  /// Login user with username/password against backend auth endpoint
+  ///
+  /// This uses the public (unauthenticated) API client and expects the backend
+  /// to return a Keycloak-style access token response with embedded user_info,
+  /// matching `AccessTokenResponse` / `AccessTokenResponseMapper`.
+  Future<Map<String, dynamic>> loginWithCredentials({
+    required String username,
+    required String password,
+    String method = 'password',
+  }) async {
+    try {
+      final dio = _getPublicDio();
+
+      final response = await dio.post(
+        '/auth/login',
+        data: {
+          'username': username,
+          'password': password,
+          'method': method,
+        },
+      );
+
+      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+        final data = response.data as Map<String, dynamic>;
+        log('✅ LoginWithCredentials successful');
+        return data;
+      }
+
+      log(
+        '❌ LoginWithCredentials failed: ${response.statusCode} ${response.statusMessage}',
+      );
+      throw Exception(
+        'Login failed with status ${response.statusCode}: ${response.statusMessage}',
+      );
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final body = e.response?.data;
+      log('❌ DioException during loginWithCredentials: $status $body');
+      throw Exception(
+        'Login request failed${status != null ? ' (HTTP $status)' : ''}',
+      );
+    } catch (e) {
+      log('❌ Unexpected error during loginWithCredentials: $e');
+      rethrow;
+    }
+  }
+
+  /// Login using the same Keycloak API as browser/WebView flow:
+  /// token endpoint (password grant) + userinfo endpoint.
+  /// Returns a map compatible with AccessTokenResponseMapper after merging
+  /// companies from the gate API (caller should add user_info.companies).
+  Future<Map<String, dynamic>> loginWithKeycloakCredentials({
+    required String username,
+    required String password,
+  }) async {
+    try {
+      final tokenUri = Uri.parse(AppAuthConfigManager.tokenEndpoint);
+      final body = {
+        'grant_type': 'password',
+        'client_id': AppAuthConfigManager.clientId,
+        'client_secret': AppAuthConfigManager.clientSecret,
+        'username': username,
+        'password': password,
+        'scope': AppAuthConfigManager.scopes.join(' '),
+      };
+      final response = await http.post(
+        tokenUri,
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: body.entries
+            .map((e) =>
+                '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+            .join('&'),
+      );
+
+      if (response.statusCode != 200) {
+        log(
+            '❌ Keycloak token failed: ${response.statusCode} ${response.body}');
+        throw Exception(
+            'Login failed: ${response.statusCode} ${response.body}');
+      }
+
+      final tokenData =
+          jsonDecode(response.body) as Map<String, dynamic>;
+      final accessToken = tokenData['access_token'] as String?;
+      if (accessToken == null || accessToken.isEmpty) {
+        throw Exception('No access token in Keycloak response');
+      }
+
+      final userinfoUri = Uri.parse(AppAuthConfigManager.userInfoEndpoint);
+      final userinfoResponse = await http.get(
+        userinfoUri,
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (userinfoResponse.statusCode != 200) {
+        log(
+            '❌ Keycloak userinfo failed: ${userinfoResponse.statusCode} ${userinfoResponse.body}');
+        throw Exception(
+            'Failed to get user info: ${userinfoResponse.statusCode}');
+      }
+
+      final userInfo =
+          jsonDecode(userinfoResponse.body) as Map<String, dynamic>;
+      log('✅ Keycloak login (token + userinfo) successful');
+
+      return {
+        'access_token': accessToken,
+        'refresh_token': tokenData['refresh_token'],
+        'expires_in': tokenData['expires_in'],
+        'refresh_expires_in': tokenData['refresh_expires_in'],
+        'token_type': tokenData['token_type'],
+        'id_token': tokenData['id_token'],
+        'scope': tokenData['scope'],
+        'user_info': userInfo,
+      };
+    } catch (e) {
+      log('❌ loginWithKeycloakCredentials failed: $e');
+      rethrow;
+    }
   }
 
   Future<void> callMember(String mobile, BuildContext context,
@@ -266,16 +384,25 @@ class RemoteDataSource {
     }
   }
 
-  Future<List<dynamic>> fetchGates() async {
-    final String? companyId = await gateStorage.getSocietyId();
-    if (companyId == null) throw Exception('Company ID not found.');
+  /// Fetches gates for the given [companyId] (society). When [companyId] is
+  /// provided and valid, it is used; otherwise falls back to GateStorage society_id.
+  /// This ensures the selected company (e.g. DEMO CUBE ONE) is used for the API call.
+  Future<List<dynamic>> fetchGates([int? companyId]) async {
+    final String? storedSocietyId = await gateStorage.getSocietyId();
+    final String companyIdStr = (companyId != null && companyId > 0)
+        ? companyId.toString()
+        : (storedSocietyId ?? '');
+    if (companyIdStr.isEmpty) {
+      throw Exception('Company ID not found. Please select a society first.');
+    }
 
     try {
-      // Use AuthenticatedApiClient for consistent token management
+      // Use AuthenticatedApiClient for consistent token management.
+      // Send company_id as string; some backends return 400 when given an int.
       final apiClient = _getAuthenticatedApiClient();
       final response = await apiClient.get(
         ApiUrls.gates,
-        queryParameters: {'company_id': int.parse(companyId.toString())},
+        queryParameters: {'company_id': companyIdStr},
       );
 
       final responseData = response.data;
@@ -302,13 +429,13 @@ class RemoteDataSource {
       log('❌ Error fetching gates with enhanced auth: $e');
       log('Stack trace: $stackTrace');
 
-      // Fallback to old method for backward compatibility
+      // Fallback 1: retry /admin/gates with legacy headers (string company_id)
       try {
         log('🔄 Falling back to legacy method');
         final commonHeaders = await Environment.getHeaders();
         final response = await _getDio().get(
           ApiUrls.gates,
-          queryParameters: {'company_id': int.parse(companyId.toString())},
+          queryParameters: {'company_id': companyIdStr},
           options: Options(headers: commonHeaders),
         );
 
@@ -323,6 +450,32 @@ class RemoteDataSource {
         throw Exception('Fallback method also failed');
       } catch (fallbackError) {
         log('❌ Fallback method also failed: $fallbackError');
+
+        // Fallback 2: try /gates (non-admin) with society_id; used successfully elsewhere
+        try {
+          log('🔄 Trying /gates with society_id');
+          final apiClient = _getAuthenticatedApiClient();
+          final response = await apiClient.get(
+            '${ApiUrls.gateBaseUrl}/gates',
+            queryParameters: {'society_id': companyIdStr},
+          );
+          final responseData = response.data;
+          if (responseData == null) throw Exception('Response data is null');
+          if (responseData is List) {
+            log("✅ Gates fetched successfully via /gates?society_id");
+            return responseData;
+          }
+          if (responseData is Map && responseData.containsKey('data')) {
+            final data = responseData['data'];
+            if (data is List) {
+              log("✅ Gates fetched successfully via /gates?society_id (wrapped)");
+              return data;
+            }
+          }
+        } catch (altError) {
+          log('❌ /gates fallback failed: $altError');
+        }
+
         throw Exception('Failed to fetch gates: $e');
       }
     }

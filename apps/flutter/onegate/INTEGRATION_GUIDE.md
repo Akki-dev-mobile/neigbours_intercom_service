@@ -185,7 +185,7 @@ The system automatically calculates refresh timing based on JWT `exp` claims:
 
 The `SecureAuthInterceptor` automatically:
 - Adds `Authorization: Bearer <token>` headers
-- Skips auth for endpoints like `/auth/login`, `/auth/register`, `/public`
+- Skips auth for endpoints like `/gatelogin`, `/auth/register`, `/public`
 - Handles 401 responses with token refresh and retry (max 2 retries)
 - Prevents infinite retry loops
 

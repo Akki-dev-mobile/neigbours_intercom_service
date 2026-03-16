@@ -85,7 +85,7 @@ This comprehensive audit examines the OneGate Flutter application's authenticati
 12. `/sync/status` - Sync status
 
 ### Authentication Endpoints (5 endpoints)
-1. `/auth/login` - User login
+1. `/gatelogin` - User login
 2. `/auth/logout` - User logout
 3. `/auth/refresh` - Token refresh
 4. `/auth/userinfo` - User information

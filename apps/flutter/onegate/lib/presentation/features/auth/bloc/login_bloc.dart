@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/auth/access_token_response.dart';
+import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
 import 'package:flutter_onegate/domain/entities/auth/company.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
@@ -64,30 +66,36 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   FutureOr<void> societySelectionButtonEvent(
-      SocietySelectionButtonEvent event, Emitter<LoginState> emit) {
+      SocietySelectionButtonEvent event, Emitter<LoginState> emit) async {
     _preferenceUtils.saveSelectedCompany(event.company);
-    // emit(
-    //   RoleSelectionState(_preferenceUtils.getRoles()),
-    // );
-    Company selectedCompany = _preferenceUtils.getSelectedCompany()!;
-    final List<String> roles = [];
-    // for (final app in selectedCompany.apps ?? []) {
-    //   roles.addAll(app.roles ?? []);
-    // }
+    final Company selectedCompany = _preferenceUtils.getSelectedCompany()!;
+
+    // Save society id to GateStorage so fetchGates() can load gates for this society
+    final societyId = selectedCompany.companyId?.toString() ?? '';
+    if (societyId.isNotEmpty) {
+      await GateStorage().saveSocietyDetails(
+        societyId,
+        selectedCompany.companyName,
+      );
+    }
+    // Clear cached gates so next role selection fetches gates for this society
+    await _preferenceUtils.saveGatesList([]);
+
+    // Prefer user_roles from gate API (e.g. [master, gatekeeper]); fallback to apps[].roles
+    List<String> roles = selectedCompany.userRoles ?? [];
+    if (roles.isEmpty) {
+      for (final app in selectedCompany.apps ?? []) {
+        roles.addAll(app.roles ?? []);
+      }
+    }
+    // Map master -> admin for role selection sheet (Admin / Gatekeeper)
+    roles = roles.map((r) => r.toLowerCase() == 'master' ? 'admin' : r).toList();
     _preferenceUtils.saveRoles(roles);
-    if (roles.contains("master")) {
+
+    if (roles.contains('master') || roles.contains('admin')) {
       emit(RoleSelectionState(roles));
-    } else if (roles.contains("gatekeeper")) {
+    } else if (roles.contains('gatekeeper')) {
       emit(NavigateToGatekeeperDashboardState());
-      // if (_preferenceUtils.getUserInfo()?.userId ==
-      //     _preferenceUtils.getSelectedGate()?.userId) {
-      //
-      // }
-      //
-      // else {
-      //   emit(LoginErrorState(
-      //       message: "Gate Mismatch: Reach out to admin for gate correction."));
-      // }
     } else {
       emit(NavigateToAdminDashboardState());
     }
@@ -102,13 +110,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       RoleSelectionButtonPressedEvent event, Emitter<LoginState> emit) async {
     try {
       _preferenceUtils.setIsAdmin(event.isAdmin);
+      final companyId = _preferenceUtils.getSelectedCompany()?.companyId ?? 0;
       if (event.isAdmin) {
         final List<Gate> gates = await _preferenceUtils.getGatesList();
         if (gates.isEmpty) {
           emit(LoginLoadingState());
-          final response =
-              await _gateUseCase.gateList(int.parse("MyAppLogin.userId"));
-          final List<Gate> gates = response!;
+          final response = await _gateUseCase.gateList(companyId);
+          final List<Gate> gates = response ?? [];
           print(
               "Company Selected Gate IDDD: ${_preferenceUtils.getSelectedCompany()}");
           print("Company Selected Gate IDDD Response: $response");
@@ -121,12 +129,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           }
 
           emit(LoginInitial());
-          if (response.length == 1) {
-            _preferenceUtils.setSelectedGate(response[0]);
+          if (gates.length == 1) {
+            _preferenceUtils.setSelectedGate(gates[0]);
             _preferenceUtils.setIsLogin(true);
             emit(NavigateToAdminDashboardState());
             return;
+          } else if (gates.isEmpty) {
+            emit(LoginErrorState(message: "No gates found for this society"));
+            return;
           } else {
+            await _preferenceUtils.saveGatesList(gates);
             emit(GateSelectionState(gates));
           }
         } else {
@@ -134,27 +146,28 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           emit(NavigateToAdminDashboardState());
         }
       } else {
-        Gate? selectedGate = _preferenceUtils.getSelectedGate();
-        // print("Selected Gate: $selectedGate");
-        if (selectedGate != null) {
-          _preferenceUtils.setIsLogin(true);
-          print(
-            " Company Selected Gate NavigateToGatekeeperDashboardState getUserInfo: ${_preferenceUtils.getUserInfo()!.userId} getSelectedGate()!.userId: ${_preferenceUtils.getSelectedGate()!.userId} getSelectedGate()!.oldSsoUserId ${_preferenceUtils.getSelectedGate()!.oldSsoUserId}",
-          );
-
-          emit(NavigateToGatekeeperDashboardState());
-          if (_preferenceUtils.getUserInfo()!.userId ==
-              _preferenceUtils.getSelectedGate()!.userId) {
-          } else if (_preferenceUtils.getUserInfo()!.userId ==
-              _preferenceUtils.getSelectedGate()!.oldSsoUserId) {
-            emit(NavigateToGatekeeperDashboardState());
-          } else {
-            emit(LoginErrorState(
-                message:
-                    "Gate Mismatch: Reach out to admin for gate correction."));
+        // Gatekeeper: fetch gates and show gate selection
+        final List<Gate> existingGates = await _preferenceUtils.getGatesList();
+        if (existingGates.isEmpty) {
+          emit(LoginLoadingState());
+          final response = await _gateUseCase.gateList(companyId);
+          final List<Gate> gateList = response ?? [];
+          emit(LoginInitial());
+          if (gateList.isEmpty) {
+            emit(LoginErrorState(message: "No gates found for this society"));
+            return;
           }
+          await _preferenceUtils.saveGatesList(gateList);
+          if (gateList.length == 1) {
+            _preferenceUtils.setSelectedGate(gateList[0]);
+            _preferenceUtils.setIsLogin(true);
+            emit(NavigateToGatekeeperDashboardState());
+            return;
+          }
+          emit(GateSelectionState(gateList));
         } else {
-          emit(LoginErrorState(message: "Please info admin to select gate"));
+          _preferenceUtils.setIsLogin(true);
+          emit(NavigateToGatekeeperDashboardState());
         }
       }
     } catch (e) {
@@ -165,19 +178,66 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   FutureOr<void> gateSelectionButtonPressedEvent(
-      GateSelectionButtonPressedEvent event, Emitter<LoginState> emit) {
+      GateSelectionButtonPressedEvent event, Emitter<LoginState> emit) async {
     _preferenceUtils.setSelectedGate(event.gate);
     if (_preferenceUtils.getIsAdmin()!) {
       emit(NavigateToAdminDashboardState());
     } else {
-      if (_preferenceUtils.getUserInfo()!.userId ==
-          _preferenceUtils.getSelectedGate()!.userId) {
+      final matches = await _userMatchesSelectedGate();
+      if (matches) {
+        _preferenceUtils.setIsLogin(true);
         emit(NavigateToGatekeeperDashboardState());
       } else {
         emit(LoginErrorState(
             message: "Gate Mismatch: Reach out to admin for gate correction."));
       }
     }
+  }
+
+  Future<bool> _userMatchesSelectedGate() async {
+    final gate = _preferenceUtils.getSelectedGate();
+    if (gate == null) return false;
+
+    final gateUserIdStr = _gateIdToString(gate.userId);
+    final gateOldSsoStr = _gateIdToString(gate.oldSsoUserId);
+    if (gateUserIdStr.isEmpty && gateOldSsoStr.isEmpty) return true;
+
+    final userIds = <String>[];
+    final userInfo = _preferenceUtils.getUserInfo();
+    if (userInfo != null) {
+      final u = userInfo.userId?.toString();
+      final v = userInfo.uuid;
+      if (u != null && u.isNotEmpty) userIds.add(u);
+      if (v != null && v.isNotEmpty && !userIds.contains(v)) userIds.add(v);
+    }
+    if (userIds.isEmpty) {
+      final stored = await GateStorage().getUserId();
+      if (stored != null && stored.isNotEmpty) userIds.add(stored);
+    }
+    if (userIds.isEmpty) {
+      final accessToken = await GateStorage().getAccessToken();
+      if (accessToken != null) {
+        final payload = JwtTokenUtility.parseJwtToken(accessToken);
+        if (payload != null) {
+          for (final key in ['old_gate_user_id', 'old_sso_user_id']) {
+            final v = payload[key]?.toString();
+            if (v != null && v.isNotEmpty && !userIds.contains(v)) {
+              userIds.add(v);
+            }
+          }
+        }
+      }
+    }
+    if (userIds.isEmpty) return false;
+
+    return userIds.any((id) => id == gateUserIdStr || id == gateOldSsoStr);
+  }
+
+  static String _gateIdToString(dynamic value) {
+    if (value == null) return '';
+    if (value is int) return value.toString();
+    if (value is String) return value;
+    return value.toString();
   }
 
   void onSuccess(AccessTokenResponse? response, Emitter<LoginState> emit,
@@ -189,8 +249,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       response!.userInfo?.companies?.forEach((key, companyList) {
         // Iterate over each company in the list
         companyList.forEach((company) {
-          // Filter companies that have access to gate (accessTo contains 5)
-          if (company.accessTo != null && company.accessTo!.contains(5)) {
+          // Include companies with gate access (accessTo contains 5), or
+          // when accessTo is null/empty (e.g. Keycloak + gate API societies)
+          final hasGateAccess = company.accessTo == null ||
+              company.accessTo!.isEmpty ||
+              company.accessTo!.contains(5);
+          if (hasGateAccess) {
             companiesWithAccessToGate.add(company);
           }
         });
@@ -202,30 +266,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         throw Exception("UserInfo is null");
       }
       emit(LoginInitial());
-      if (preferenceUtils.getSelectedCompany() == null) {
-        emit(SocietySelectionState(companiesWithAccessToGate));
+      // Always show society list after login so user can pick society every time
+      if (companiesWithAccessToGate.isEmpty) {
+        emit(LoginErrorState(
+            message: "No societies found for your account."));
       } else {
-        Company selectedCompany = preferenceUtils.getSelectedCompany()!;
-        final List<String> roles = [];
-        // for (final app in selectedCompany.apps ?? []) {
-        //   roles.addAll(app.roles ?? []);
-        // }
-        preferenceUtils.saveRoles(roles);
-        if (roles.contains("master")) {
-          emit(RoleSelectionState(roles));
-        } else if (roles.contains("gatekeeper")) {
-          _preferenceUtils.setIsLogin(true);
-          if (_preferenceUtils.getUserInfo()!.userId ==
-              _preferenceUtils.getSelectedGate()!.userId) {
-            emit(NavigateToGatekeeperDashboardState());
-          } else {
-            emit(LoginErrorState(
-                message:
-                    "Gate Mismatch: Reach out to admin for gate correction."));
-          }
-        } else {
-          emit(NavigateToAdminDashboardState());
-        }
+        emit(SocietySelectionState(companiesWithAccessToGate));
       }
     } catch (e) {
       emit(LoginInitial());

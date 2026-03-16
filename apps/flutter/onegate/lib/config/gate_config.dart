@@ -1,16 +1,18 @@
 class GateConfig {
   final String gateBaseUrl;
-  // final String societyBaseUrl;
+  /// When true, login screen uses native username/password form and backend auth.
+  /// When false, login uses Keycloak WebView (AuthService.login).
+  final bool useNativeLogin;
 
   GateConfig({
     required this.gateBaseUrl,
-    // required this.societyBaseUrl,
+    this.useNativeLogin = true,
   });
 
   factory GateConfig.fromJson(Map<String, dynamic> json) {
     return GateConfig(
       gateBaseUrl: json['gate_base_domain'] ?? '',
-      // societyBaseUrl: json['society_base_url'] ?? '',
+      useNativeLogin: json['use_native_login'] as bool? ?? true,
     );
   }
 }

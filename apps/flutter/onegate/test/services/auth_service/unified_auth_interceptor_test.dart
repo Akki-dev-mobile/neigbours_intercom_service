@@ -29,7 +29,7 @@ void main() {
       test('should skip authentication for public endpoints', () {
         // Test that public endpoints are properly identified
         const publicPaths = [
-          '/auth/login',
+          '/gatelogin',
           '/login',
           '/logout',
           '/token',

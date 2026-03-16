@@ -69,7 +69,7 @@ void main() {
       test('should skip auth for excluded paths', () async {
         // Arrange
         final authRequestOptions = RequestOptions(
-          path: '/auth/login',
+          path: '/gatelogin',
           method: 'POST',
         );
 
@@ -181,7 +181,7 @@ void main() {
       test('should skip auth for excluded paths on 401', () async {
         // Arrange
         final authRequestOptions = RequestOptions(
-          path: '/auth/login',
+          path: '/gatelogin',
           method: 'POST',
         );
 

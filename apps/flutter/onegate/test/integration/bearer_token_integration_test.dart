@@ -150,7 +150,7 @@ void main() {
     group('Endpoint Classification Tests', () {
       test('should correctly identify public endpoints', () {
         final publicEndpoints = [
-          '/auth/login',
+          '/gatelogin',
           '/login',
           '/logout',
           '/token',

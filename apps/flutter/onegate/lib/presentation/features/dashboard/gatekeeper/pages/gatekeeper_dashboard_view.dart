@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -98,8 +99,24 @@ class _GateDashboardViewState extends State<GateDashboardView>
   Future<void> getSelectedGate() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      selectedGateName = prefs.getString('selected_gate');
+      selectedGateName = _normalizeGateName(prefs.getString('selected_gate'));
     });
+  }
+
+  String? _normalizeGateName(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return raw;
+    final trimmed = raw.trim();
+    if (trimmed.startsWith('{')) {
+      try {
+        final decoded = jsonDecode(trimmed);
+        if (decoded is Map && decoded['gate_name'] != null) {
+          return decoded['gate_name'].toString();
+        }
+      } catch (_) {
+        // If parsing fails, fall back to raw string.
+      }
+    }
+    return raw;
   }
 
   Future<void> logout(BuildContext context) async {
