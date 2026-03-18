@@ -1,0 +1,3 @@
+[submodule "apps/flutter/onegate/packages/intercom_module"]
+	path = apps/flutter/onegate/packages/intercom_module
+	url = https://github.com/Akki-dev-mobile/neigbours_intercom_service.git
