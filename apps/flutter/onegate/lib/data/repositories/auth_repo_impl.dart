@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
@@ -7,6 +9,7 @@ import 'package:flutter_onegate/domain/entities/auth/user_info.dart';
 import 'package:flutter_onegate/domain/mappers/auth/access_token_res_mapper.dart';
 import 'package:flutter_onegate/domain/repositories/auth_repo.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthenticationRepositoryImpl implements AuthenticationRepository {
   final RemoteDataSource _remoteDataSource;
@@ -22,8 +25,9 @@ class AuthenticationRepositoryImpl implements AuthenticationRepository {
   Future<AccessTokenResponse?> login(
       String username, String password, String method) async {
     try {
-      // Use same Keycloak API as browser/WebView: token endpoint (password grant) + userinfo
-      final response = await _remoteDataSource.loginWithKeycloakCredentials(
+      // Use hybrid-auth login: POST apigw.cubeone.in/v2/hybrid-auth/login
+      // Returns Keycloak tokens (access_token, refresh_token) + user data
+      final response = await _remoteDataSource.loginWithHybridAuth(
         username: username,
         password: password,
       );
@@ -157,6 +161,10 @@ class AuthenticationRepositoryImpl implements AuthenticationRepository {
       final accessToken = response.accessToken;
       final refreshToken = response.refresh_token;
 
+      // Record login time to suppress session expired modal briefly after login
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('last_login_timestamp_ms', DateTime.now().millisecondsSinceEpoch);
+
       if (accessToken != null && accessToken.isNotEmpty) {
         await _secureStorage.write(
           key: _accessTokenSecureKey,
@@ -185,9 +193,11 @@ class AuthenticationRepositoryImpl implements AuthenticationRepository {
             u.userId?.toString() ?? u.uuid ?? '');
         await _gateStorage.saveUsername(u.username ?? u.mobile ?? '');
       }
+
+      log('✅ [AuthRepo] Tokens saved successfully (SecureStorage + GateStorage)');
     } catch (e) {
-      // Token persistence failures should not crash login flow; they will be
-      // visible in logs via GateStorage or secure storage layers if needed.
+      log('❌ [AuthRepo] Token persistence failed: $e');
+      // Don't rethrow - allow login flow to continue; API clients may still work via GateStorage
     }
   }
 }

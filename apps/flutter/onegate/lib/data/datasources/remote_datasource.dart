@@ -28,6 +28,7 @@ import 'package:flutter_onegate/utils/token_refresh_util.dart';
 import 'package:flutter_onegate/services/api_client/authenticated_api_client.dart';
 import 'package:flutter_onegate/services/api_client/authenticated_dio_factory.dart';
 import 'package:flutter_onegate/services/auth_service/enhanced_token_refresh_manager.dart';
+import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
 import 'package:get_it/get_it.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
@@ -233,6 +234,122 @@ class RemoteDataSource {
       );
     } catch (e) {
       log('❌ Unexpected error during loginWithCredentials: $e');
+      rethrow;
+    }
+  }
+
+  /// Hybrid-auth login: POST https://apigw.cubeone.in/v2/hybrid-auth/login
+  /// Uses username (mobile) + password. Returns Keycloak tokens and user data.
+  /// Tokens: data.tokens.access_token, data.tokens.refresh_token
+  static const String _hybridAuthLoginUrl =
+      'https://apigw.cubeone.in/v2/hybrid-auth/login';
+
+  Future<Map<String, dynamic>> loginWithHybridAuth({
+    required String username,
+    required String password,
+  }) async {
+    try {
+      final dio = _getPublicDio();
+      final response = await dio.post(
+        _hybridAuthLoginUrl,
+        data: {
+          'username': username.trim(),
+          'password': password,
+        },
+      );
+
+      if (response.statusCode != 200 || response.data == null) {
+        log('❌ Hybrid-auth login failed: ${response.statusCode}');
+        throw Exception(
+          'Login failed: ${response.statusCode} ${response.statusMessage}',
+        );
+      }
+
+      final data = response.data as Map<String, dynamic>;
+      final success = data['success'] == true;
+      final dataPayload = data['data'] as Map<String, dynamic>?;
+
+      if (!success || dataPayload == null) {
+        final message = data['message'] as String? ?? 'Login failed';
+        log('❌ Hybrid-auth login failed: $message');
+        throw Exception(message);
+      }
+
+      // When keycloak_synced=true: data.tokens has Keycloak JWT tokens
+      // When keycloak_synced=false: data.tokens is null, use data.old_sso_tokens
+      final tokens = dataPayload['tokens'] as Map<String, dynamic>?;
+      final oldSsoTokens =
+          dataPayload['old_sso_tokens'] as Map<String, dynamic>?;
+      final tokenSource = tokens ?? oldSsoTokens;
+      final user = dataPayload['user'] as Map<String, dynamic>?;
+
+      if (tokenSource == null) {
+        log('❌ Hybrid-auth: no tokens or old_sso_tokens in response');
+        throw Exception('Login failed: no tokens received');
+      }
+
+      final accessToken = tokenSource['access_token'] as String?;
+      final refreshToken = tokenSource['refresh_token'] as String?;
+
+      if (accessToken == null || accessToken.isEmpty) {
+        throw Exception('Login failed: no access token received');
+      }
+
+      // Build user_info compatible with AuthRepoImpl (Keycloak-style keys)
+      final userInfo = <String, dynamic>{};
+      if (user != null) {
+        final userId = user['user_id'];
+        userInfo['old_sso_user_id'] = userId?.toString();
+        userInfo['given_name'] = user['first_name'];
+        userInfo['family_name'] = user['last_name'];
+        userInfo['preferred_username'] =
+            user['username'] ?? user['mobile']?.toString();
+        userInfo['username'] = user['username'];
+        userInfo['mobile'] = user['mobile']?.toString();
+        userInfo['email'] = user['email'];
+        userInfo['first_name'] = user['first_name'];
+        userInfo['last_name'] = user['last_name'];
+      }
+
+      // Merge claims from JWT when token is Keycloak JWT (keycloak_synced=true)
+      final payload = JwtTokenUtility.parseJwtToken(accessToken);
+      if (payload != null) {
+        if (userInfo['old_sso_user_id'] == null &&
+            payload['old_sso_user_id'] != null) {
+          userInfo['old_sso_user_id'] = payload['old_sso_user_id'].toString();
+        }
+        if (payload['old_gate_user_id'] != null) {
+          userInfo['old_gate_user_id'] = payload['old_gate_user_id'].toString();
+        }
+        if (payload['sub'] != null) {
+          userInfo['sub'] = payload['sub'].toString();
+        }
+      }
+
+      log('✅ Hybrid-auth login successful (${tokens != null ? "Keycloak" : "old_sso"} tokens)');
+
+      return {
+        'access_token': accessToken,
+        'refresh_token': refreshToken,
+        'expires_in': (tokenSource['expires_in'] as num?)?.toInt(),
+        'refresh_expires_in':
+            (tokenSource['refresh_expires_in'] as num?)?.toInt(),
+        'token_type': tokenSource['token_type'] ?? 'Bearer',
+        'id_token': tokenSource['id_token'],
+        'scope': tokenSource['scope'],
+        'user_info': userInfo,
+      };
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final body = e.response?.data;
+      final message = body is Map && body['message'] != null
+          ? body['message'].toString()
+          : e.message;
+      log('❌ Hybrid-auth DioException: $status $message');
+      throw Exception(
+          message != null && message.isNotEmpty ? message : 'Login failed');
+    } catch (e) {
+      log('❌ Hybrid-auth login error: $e');
       rethrow;
     }
   }

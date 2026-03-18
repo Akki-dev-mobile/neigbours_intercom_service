@@ -86,12 +86,25 @@ class EnhancedTokenRefreshManager {
   }
 
   /// Check if token needs refresh and refresh if necessary (with dynamic buffer)
+  /// Opaque tokens (e.g. old_sso_tokens from hybrid-auth) cannot be refreshed via Keycloak - skip refresh.
   Future<bool> _checkAndRefreshTokenIfNeeded() async {
     try {
       final accessToken = await _secureStorage.read(key: _accessTokenKey);
       if (accessToken == null) {
         log("⚠️ No access token found during periodic check");
         return false;
+      }
+
+      // Opaque tokens (non-JWT) - cannot refresh via Keycloak, use GateStorage expiry
+      if (JwtTokenUtility.getTokenExpirationTime(accessToken) == null) {
+        final gateStorage = _gateStorage ?? GateStorage();
+        final isExpired = await gateStorage.isTokenExpired();
+        if (isExpired) {
+          log("⚠️ Opaque token expired - cannot refresh via Keycloak");
+          return false;
+        }
+        log("✅ Opaque token valid (per stored expiry) - skipping Keycloak refresh");
+        return true;
       }
 
       // Calculate dynamic buffer for current token
@@ -134,22 +147,28 @@ class EnhancedTokenRefreshManager {
         final gatAccessToken = await gateStorage.getAccessToken();
         final gatRefreshToken = await gateStorage.getRefreshToken();
 
-        if (gatAccessToken != null &&
-            gatAccessToken.isNotEmpty &&
-            gatRefreshToken != null &&
-            gatRefreshToken.isNotEmpty &&
-            JwtTokenUtility.parseJwtToken(gatAccessToken) != null) {
-          // Access token is a valid JWT structure (may be expired – refresh handles that)
-          log("🔄 Migrating tokens from GateStorage to secure storage (persistence recovery)");
-          await _secureStorage.write(key: _accessTokenKey, value: gatAccessToken);
-          await _secureStorage.write(key: _refreshTokenKey, value: gatRefreshToken);
-          accessToken = gatAccessToken;
-        } else if (gatRefreshToken != null && gatRefreshToken.isNotEmpty) {
-          // We have a refresh token but no usable access token – store refresh token
-          // and attempt a refresh below which will produce a new access token.
-          log("🔄 No valid access token in GateStorage but refresh token present – migrating refresh token");
-          await _secureStorage.write(key: _refreshTokenKey, value: gatRefreshToken);
-          // Force expiry path by keeping accessToken null so refresh is triggered
+        if (gatAccessToken != null && gatAccessToken.isNotEmpty) {
+          final isJwt = JwtTokenUtility.parseJwtToken(gatAccessToken) != null;
+          if (isJwt && gatRefreshToken != null && gatRefreshToken.isNotEmpty) {
+            // JWT tokens - migrate and refresh if needed
+            log("🔄 Migrating JWT tokens from GateStorage to secure storage (persistence recovery)");
+            await _secureStorage.write(key: _accessTokenKey, value: gatAccessToken);
+            await _secureStorage.write(key: _refreshTokenKey, value: gatRefreshToken);
+            accessToken = gatAccessToken;
+          } else if (!isJwt) {
+            // Opaque tokens (old_sso) - migrate, cannot refresh via Keycloak
+            log("🔄 Migrating opaque tokens from GateStorage (hybrid-auth)");
+            await _secureStorage.write(key: _accessTokenKey, value: gatAccessToken);
+            if (gatRefreshToken != null && gatRefreshToken.isNotEmpty) {
+              await _secureStorage.write(key: _refreshTokenKey, value: gatRefreshToken);
+            }
+            accessToken = gatAccessToken;
+          } else if (gatRefreshToken != null && gatRefreshToken.isNotEmpty) {
+            log("🔄 No valid access token in GateStorage but refresh token present – migrating refresh token");
+            await _secureStorage.write(key: _refreshTokenKey, value: gatRefreshToken);
+          } else {
+            log("❌ GateStorage has no usable tokens");
+          }
         } else {
           log("❌ GateStorage has no usable tokens");
         }
@@ -166,6 +185,18 @@ class EnhancedTokenRefreshManager {
           }
         }
         log("❌ No access token and refresh failed or no refresh token");
+        return null;
+      }
+
+      // Opaque tokens (non-JWT) - cannot refresh via Keycloak
+      if (JwtTokenUtility.getTokenExpirationTime(accessToken) == null) {
+        final gateStorage = _gateStorage ?? GateStorage();
+        final isExpired = await gateStorage.isTokenExpired();
+        if (!isExpired) {
+          log("✅ Opaque token valid - returning without refresh");
+          return accessToken;
+        }
+        log("⚠️ Opaque token expired - cannot refresh via Keycloak");
         return null;
       }
 

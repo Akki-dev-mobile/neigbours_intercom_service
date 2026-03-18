@@ -8,6 +8,8 @@ import 'package:flutter_onegate/services/session_manager/session_management_coor
 import 'package:intercom_module/core/services/call_websocket_service.dart';
 import 'package:intercom_module/core/services/outgoing_call_acceptance_store.dart';
 import 'package:intercom_module/core/services/call_coordinator.dart';
+import 'package:intercom_module/core/services/keycloak_service.dart';
+import 'package:intercom_module/modules/household/intercom/services/call_manager.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -379,6 +381,16 @@ class UserSessionManager {
         await OutgoingCallAcceptanceStore.save(payload);
       }
       await CallCoordinator.instance.handleOutgoingCallAcceptedData(payload);
+
+      // Join Jitsi when receiver has accepted (caller flow)
+      final displayName = await _resolveDisplayNameForCall();
+      final result = await CallManager.instance.joinOutgoingCallWhenAccepted(
+        payload,
+        displayName: displayName,
+      );
+      if (!result.success) {
+        log('⚠️ [UserSessionManager] Failed to join Jitsi: ${result.message}');
+      }
       return;
     }
 
@@ -388,6 +400,19 @@ class UserSessionManager {
       await OutgoingCallAcceptanceStore.saveCallEnded(payload);
       await CallCoordinator.instance.handleCallEndedData(payload);
     }
+  }
+
+  Future<String> _resolveDisplayNameForCall() async {
+    try {
+      final userData = await KeycloakService.getUserData();
+      final name = userData?['name'] ?? userData?['preferred_username'];
+      if (name != null && name.toString().trim().isNotEmpty) {
+        return name.toString().trim();
+      }
+    } catch (e) {
+      log('⚠️ [UserSessionManager] Error resolving display name: $e');
+    }
+    return 'User';
   }
 
   /// Clear session data

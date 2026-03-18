@@ -19,6 +19,7 @@ import 'package:flutter_onegate/config/gateconfig_holder.dart';
 import 'package:flutter_onegate/utils/custom_appauth.dart';
 import 'package:flutter_onegate/utils/ssl_bypass.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
+import 'package:flutter_onegate/services/session_manager/session_management_coordinator.dart';
 import 'package:get_it/get_it.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -693,16 +694,19 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
           listener: (context, state) {
             if (!mounted) return;
             if (state is SocietySelectionState) {
+              SessionManagementCoordinator.setNavigatingToLogin(false);
               _showNativeSocietySelection(context, state);
             } else if (state is RoleSelectionState) {
               _showNativeRoleSelection(context, state);
             } else if (state is GateSelectionState) {
               _showNativeGateSelection(context, state);
             } else if (state is NavigateToAdminDashboardState) {
+              SessionManagementCoordinator.setNavigatingToLogin(false);
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (_) => VisitorSettingsView()),
               );
             } else if (state is NavigateToGatekeeperDashboardState) {
+              SessionManagementCoordinator.setNavigatingToLogin(false);
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (_) => VisitorSettingsView()),
               );

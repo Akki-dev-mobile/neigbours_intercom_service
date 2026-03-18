@@ -74,6 +74,14 @@ class GateStorage {
     await prefs.setInt(_tokenExpiryKey, expiryTime.millisecondsSinceEpoch);
   }
 
+  /// Get stored token expiry (for opaque/non-JWT tokens)
+  Future<DateTime?> getTokenExpiry() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ms = prefs.getInt(_tokenExpiryKey);
+    if (ms == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
   // static const String _societyIdKey = 'society_id';
   static const String _societyNameKey = 'society_name';
   Future<void> saveVisitorImageBase64(File imageFile) async {
@@ -177,6 +185,7 @@ class GateStorage {
   }
 
   /// Check if token is expired based on JWT exp claim only (no buffer)
+  /// Falls back to stored token_expiry for opaque tokens (e.g. old_sso_tokens from hybrid-auth)
   Future<bool> _isTokenExpiredFromJWT() async {
     try {
       final accessToken = await getAccessToken();
@@ -186,31 +195,39 @@ class GateStorage {
       }
 
       // Use JWT utility to get actual expiration time
-      final expirationTime =
+      var expirationTime =
           JwtTokenUtility.getTokenExpirationTime(accessToken);
+
+      // Fallback: opaque tokens (old_sso_tokens) are not JWTs - use stored expiry
       if (expirationTime == null) {
-        log("⚠️ Could not determine token expiration from JWT");
-        return true;
+        expirationTime = await getTokenExpiry();
+        if (expirationTime != null) {
+          log("📋 Using stored expiry for opaque token (valid until $expirationTime)");
+        } else {
+          log("⚠️ Could not determine token expiration (JWT or stored)");
+          return true;
+        }
       }
 
       final now = DateTime.now();
       final isExpired = now.isAfter(expirationTime);
 
       if (isExpired) {
-        log("⏰ JWT token expired at $expirationTime (${now.difference(expirationTime).inMinutes} minutes ago)");
+        log("⏰ Token expired at $expirationTime (${now.difference(expirationTime).inMinutes} minutes ago)");
       } else {
         final timeUntilExpiry = expirationTime.difference(now);
-        log("✅ JWT token valid for ${timeUntilExpiry.inMinutes}min ${timeUntilExpiry.inSeconds % 60}s");
+        log("✅ Token valid for ${timeUntilExpiry.inMinutes}min ${timeUntilExpiry.inSeconds % 60}s");
       }
 
       return isExpired;
     } catch (e) {
-      log("❌ Error checking JWT token expiry: $e");
+      log("❌ Error checking token expiry: $e");
       return true;
     }
   }
 
   /// Check if token is expired with dynamic buffer for refresh timing
+  /// Falls back to stored expiry for opaque tokens (e.g. old_sso_tokens)
   Future<bool> _isTokenExpiredWithBuffer() async {
     try {
       final accessToken = await getAccessToken();
@@ -219,17 +236,24 @@ class GateStorage {
         return true;
       }
 
-      // Use JWT utility for dynamic buffer calculation
-      final buffer = JwtTokenUtility.calculateOptimalRefreshBuffer(accessToken);
-      final isExpiring =
-          JwtTokenUtility.isTokenExpiredOrExpiring(accessToken, buffer: buffer);
-
-      if (isExpiring) {
-        final expirationTime =
-            JwtTokenUtility.getTokenExpirationTime(accessToken);
-        log("🔄 Token expiring within ${buffer.inMinutes}min buffer (expires at $expirationTime)");
+      // Try JWT-based check first
+      final jwtExpiration = JwtTokenUtility.getTokenExpirationTime(accessToken);
+      if (jwtExpiration != null) {
+        final buffer = JwtTokenUtility.calculateOptimalRefreshBuffer(accessToken);
+        return JwtTokenUtility.isTokenExpiredOrExpiring(accessToken, buffer: buffer);
       }
 
+      // Fallback: opaque token - use stored expiry with 5 min buffer
+      final storedExpiry = await getTokenExpiry();
+      if (storedExpiry == null) {
+        log("⚠️ Opaque token with no stored expiry - considering valid");
+        return false; // Don't force logout for opaque tokens without expiry
+      }
+      const buffer = Duration(minutes: 5);
+      final isExpiring = DateTime.now().isAfter(storedExpiry.subtract(buffer));
+      if (isExpiring) {
+        log("🔄 Opaque token expiring within ${buffer.inMinutes}min buffer (expires at $storedExpiry)");
+      }
       return isExpiring;
     } catch (e) {
       log("❌ Error checking token expiry with buffer: $e");

@@ -153,6 +153,9 @@ class SessionManagementCoordinator {
     }
   }
 
+  /// Grace period after login (suppress session expired modal)
+  static const Duration _postLoginGracePeriod = Duration(seconds: 60);
+
   /// Check if session expired modal should be shown
   static Future<bool> shouldShowSessionExpiredModal() async {
     try {
@@ -165,6 +168,16 @@ class SessionManagementCoordinator {
       }
 
       final prefs = await SharedPreferences.getInstance();
+
+      // Block modal for 60 seconds after login (avoids race with opaque token checks)
+      final lastLoginMs = prefs.getInt('last_login_timestamp_ms');
+      if (lastLoginMs != null) {
+        final lastLogin = DateTime.fromMillisecondsSinceEpoch(lastLoginMs);
+        if (DateTime.now().difference(lastLogin) < _postLoginGracePeriod) {
+          log('📱 [$_tag] Within post-login grace period - blocking session expired modal');
+          return false;
+        }
+      }
 
       // Check if modals are disabled
       final modalDisabled =
