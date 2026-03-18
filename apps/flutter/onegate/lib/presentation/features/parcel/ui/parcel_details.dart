@@ -1284,7 +1284,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
             const SizedBox(
                                         width: 20,
               height: 20,
-                                        child: CircularProgressIndicator(
+                                        child: DashboardLoaderIcon(
                                           color: Colors.white,
                                           strokeWidth: 2.5,
                                         ),

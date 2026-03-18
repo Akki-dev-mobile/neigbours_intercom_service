@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/utils/network_log/network_log_manager.dart';
 import 'package:flutter_onegate/utils/network_log/services/network_log_background_service.dart';
 import 'package:flutter_onegate/utils/network_log/services/network_log_sync_service.dart';
@@ -168,7 +169,7 @@ class _NetworkLogSyncSettingsState extends State<NetworkLogSyncSettings> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: DashboardLoaderIcon(strokeWidth: 2),
                         )
                       : const Text('Sync Now'),
                 ),

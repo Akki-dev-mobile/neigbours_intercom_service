@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/services.dart';
 
@@ -346,7 +347,7 @@ class _VideoCarouselItemState extends State<VideoCarouselItem>
                             borderRadius: BorderRadius.circular(
                                 widget.isTablet ? 16 : 12),
                           ),
-                          child: const CircularProgressIndicator(
+                          child: const DashboardLoaderIcon(
                             strokeWidth: 3,
                             valueColor: AlwaysStoppedAnimation<Color>(
                                 Color(0xffF44336)),
@@ -417,7 +418,7 @@ class _VideoCarouselItemState extends State<VideoCarouselItem>
         return Container(
           color: Colors.black12,
           child: Center(
-            child: CircularProgressIndicator(
+            child: DashboardLoaderIcon(
               value: loadingProgress.expectedTotalBytes != null
                   ? loadingProgress.cumulativeBytesLoaded /
                       loadingProgress.expectedTotalBytes!

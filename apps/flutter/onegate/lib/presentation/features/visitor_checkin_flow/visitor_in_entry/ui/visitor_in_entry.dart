@@ -1006,7 +1006,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       future: SharedPreferences.getInstance(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const CircularProgressIndicator();
+          return const DashboardLoaderIcon();
         }
 
         // final prefs = snapshot.data!;
@@ -1849,7 +1849,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           imageUrl: subCategory.image ?? '',
                           fit: BoxFit.contain,
                           placeholder: (context, url) => const Center(
-                            child: CircularProgressIndicator(
+                            child: DashboardLoaderIcon(
                               strokeWidth: 2,
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 Color(0xffF44336),
@@ -2188,7 +2188,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           imageUrl: subCategory.image ?? '',
                           fit: BoxFit.contain,
                           placeholder: (context, url) => const Center(
-                            child: CircularProgressIndicator(
+                            child: DashboardLoaderIcon(
                               strokeWidth: 2,
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 Color(0xffF44336),

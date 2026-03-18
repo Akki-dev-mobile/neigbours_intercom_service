@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 
@@ -394,7 +395,7 @@ class _AssignCardPopupState extends State<AssignCardPopup> {
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(
+                                child: DashboardLoaderIcon(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(
                                       Colors.white),

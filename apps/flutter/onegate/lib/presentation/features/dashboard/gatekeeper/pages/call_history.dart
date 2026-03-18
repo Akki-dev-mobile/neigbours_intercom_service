@@ -323,7 +323,7 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
         onRefresh: _fetchCallLogs,
         child: _isLoading
             ? const Center(
-                child: CircularProgressIndicator(
+                child: DashboardLoaderIcon(
                   color: Colors.black,
                 ),
               )

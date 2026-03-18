@@ -326,7 +326,7 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
               Container(
                 color: Colors.black26,
                 child: const Center(
-                  child: CircularProgressIndicator(),
+                  child: DashboardLoaderIcon(),
                 ),
               ),
           ],

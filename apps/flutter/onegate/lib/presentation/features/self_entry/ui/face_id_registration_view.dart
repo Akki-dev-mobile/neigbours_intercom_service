@@ -1,3 +1,4 @@
+import 'package:common_widgets/common_widgets.dart';
 // import 'dart:convert';
 // import 'dart:io';
 // import 'package:camera/camera.dart';
@@ -276,7 +277,7 @@
 //               _cameraController!.value.isInitialized)
 //             Expanded(child: CameraPreview(_cameraController!))
 //           else
-//             const Center(child: CircularProgressIndicator()),
+//             const Center(child: DashboardLoaderIcon()),
 //           const SizedBox(height: 20),
 //           const Text(
 //             "Move your head as instructed",

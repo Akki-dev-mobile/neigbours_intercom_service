@@ -398,7 +398,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                           fit: BoxFit.cover,
                           imageUrl: purpose.image ?? "",
                           placeholder: (context, url) =>
-                              const CircularProgressIndicator(),
+                              const DashboardLoaderIcon(),
                           errorWidget: (context, url, error) => const Icon(
                             Icons.error,
                             color: Colors.red,

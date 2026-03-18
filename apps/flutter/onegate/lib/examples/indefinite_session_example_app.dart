@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/services/auth_service/indefinite_session_manager.dart';
 import 'package:flutter_onegate/services/auth_service/secure_auth_interceptor.dart';
 import 'package:dio/dio.dart';
@@ -57,7 +58,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(),
+              DashboardLoaderIcon(),
               SizedBox(height: 16),
               Text('Initializing secure authentication...'),
             ],
@@ -144,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(
+                          child: DashboardLoaderIcon(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),

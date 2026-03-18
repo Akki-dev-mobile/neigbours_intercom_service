@@ -639,7 +639,7 @@ class _EditStaffState extends State<EditStaff> {
           title: const Text("Edit Staff"),
         ),
         body: const Center(
-          child: CircularProgressIndicator(),
+          child: DashboardLoaderIcon(),
         ),
       );
     }

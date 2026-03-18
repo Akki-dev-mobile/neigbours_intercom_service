@@ -154,7 +154,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                 ),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: CircularProgressIndicator(
+              child: DashboardLoaderIcon(
                 valueColor:
                     const AlwaysStoppedAnimation<Color>(Color(0xffF44336)),
                 strokeWidth: isTablet ? 4 : 3,

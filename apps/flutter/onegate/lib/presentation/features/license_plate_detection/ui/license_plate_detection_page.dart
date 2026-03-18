@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/repositories/license_plate_repository.dart';
 import 'package:flutter_onegate/presentation/features/license_plate_detection/bloc/license_plate_bloc.dart';
@@ -57,7 +58,7 @@ class _LicensePlateBodyState extends State<LicensePlateBody> {
             BlocBuilder<LicensePlateBloc, LicensePlateState>(
               builder: (context, state) {
                 if (state is LicensePlateLoading) {
-                  return const CircularProgressIndicator();
+                  return const DashboardLoaderIcon();
                 } else if (state is LicensePlateSuccess) {
                   return Text(
                     'Detected Plate: ${state.plateText}',

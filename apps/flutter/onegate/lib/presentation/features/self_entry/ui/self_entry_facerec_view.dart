@@ -381,7 +381,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
                           fit: BoxFit.cover,
                           imageUrl: purpose.image ?? "",
                           placeholder: (context, url) =>
-                              const CircularProgressIndicator(),
+                              const DashboardLoaderIcon(),
                           errorWidget: (context, url, error) => const Icon(
                             Icons.error,
                             color: Colors.red,
@@ -467,7 +467,7 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(
+                            child: DashboardLoaderIcon(
                               strokeWidth: 2,
                               color: Colors.black,
                             ),

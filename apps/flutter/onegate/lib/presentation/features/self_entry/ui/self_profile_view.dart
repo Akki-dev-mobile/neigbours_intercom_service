@@ -129,7 +129,7 @@ class _SelfProfileViewState extends State<SelfProfileView> {
                         SizedBox(
                           width: 120,
                           height: 120,
-                          child: CircularProgressIndicator(
+                          child: DashboardLoaderIcon(
                             value: _progressValue,
                             backgroundColor:
                                 Theme.of(context).colorScheme.primary,

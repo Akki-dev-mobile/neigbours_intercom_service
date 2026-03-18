@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/services/session_manager/session_debug_tool.dart';
 import 'package:flutter_onegate/services/session_manager/five_minute_token_fix.dart';
@@ -207,7 +208,7 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
         ],
       ),
       body: _lastDebugResult == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: DashboardLoaderIcon())
           : _buildDebugContent(),
       floatingActionButton: FloatingActionButton(
         onPressed: _forceTokenRefresh,

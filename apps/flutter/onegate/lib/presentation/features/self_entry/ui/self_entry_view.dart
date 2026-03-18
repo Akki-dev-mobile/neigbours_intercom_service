@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_kiosk_mode/flutter_kiosk_mode.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -791,7 +792,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                           color: const Color(0xffF44336).withOpacity(0.1),
                         ),
                         child: const Center(
-                          child: CircularProgressIndicator(
+                          child: DashboardLoaderIcon(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
                               Color(0xffF44336),

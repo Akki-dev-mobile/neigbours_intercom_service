@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/bloc/admin_dashboard_bloc.dart';
@@ -148,7 +149,7 @@ class DashboardBlocks extends StatelessWidget {
                         child: SizedBox(
                           width: isTablet ? 24 : 20,
                           height: isTablet ? 24 : 20,
-                          child: const CircularProgressIndicator(
+                          child: const DashboardLoaderIcon(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
                               Color(0xffFFCC80),
@@ -305,7 +306,7 @@ class DashboardBlocks extends StatelessWidget {
                             child: SizedBox(
                               width: isTablet ? 16 : 12,
                               height: isTablet ? 16 : 12,
-                              child: const CircularProgressIndicator(
+                              child: const DashboardLoaderIcon(
                                 strokeWidth: 1.5,
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   Color(0xff81C784),
@@ -456,7 +457,7 @@ class DashboardBlocks extends StatelessWidget {
                           child: SizedBox(
                             width: isTablet ? 16 : 12,
                             height: isTablet ? 16 : 12,
-                            child: const CircularProgressIndicator(
+                            child: const DashboardLoaderIcon(
                               strokeWidth: 1.5,
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 Color(0xffFFAB91),

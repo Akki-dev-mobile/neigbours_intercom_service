@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
@@ -420,7 +421,7 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                   ),
                   child: Center(
                     child: isLoading
-                        ? const CircularProgressIndicator(
+                        ? const DashboardLoaderIcon(
                             valueColor:
                                 AlwaysStoppedAnimation<Color>(Colors.white),
                           )

@@ -242,7 +242,7 @@ class RetryButton extends StatelessWidget {
                 ? const SizedBox(
                     width: 15,
                     height: 15,
-                    child: CircularProgressIndicator(
+                    child: DashboardLoaderIcon(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                     ),
@@ -1420,7 +1420,7 @@ class VisitorAvatar extends StatelessWidget {
                   radius: 28,
                   backgroundImage: imageProvider,
                 ),
-                placeholder: (context, url) => const CircularProgressIndicator(
+                placeholder: (context, url) => const DashboardLoaderIcon(
                   color: Colors.black,
                 ),
                 errorWidget: (context, url, error) => _buildInitial(),
@@ -1653,7 +1653,7 @@ class TimerActionSectionState extends State<TimerActionSection> {
                                     ? const SizedBox(
                                         width: 16,
                                         height: 16,
-                                        child: CircularProgressIndicator(
+                                        child: DashboardLoaderIcon(
                                           strokeWidth: 2,
                                           color: Colors.white,
                                         ),

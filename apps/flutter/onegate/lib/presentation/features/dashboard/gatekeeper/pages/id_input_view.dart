@@ -1019,7 +1019,7 @@ class _IdInputViewState extends State<IdInputView> {
                                                 width: 24,
                                                 height: 24,
                                                 child:
-                                                    CircularProgressIndicator(
+                                                    DashboardLoaderIcon(
                                                   strokeWidth: 2.5,
                                                   valueColor:
                                                       AlwaysStoppedAnimation<
@@ -1321,7 +1321,7 @@ class _IdInputViewState extends State<IdInputView> {
                                                                   width: 20,
                                                                   height: 20,
                                                                   child:
-                                                                      CircularProgressIndicator(
+                                                                      DashboardLoaderIcon(
                                                                     strokeWidth:
                                                                         2,
                                                                     valueColor: AlwaysStoppedAnimation<
@@ -2301,7 +2301,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                               .withOpacity(0.1),
                                         ),
                                         child: const Center(
-                                          child: CircularProgressIndicator(
+                                          child: DashboardLoaderIcon(
                                             strokeWidth: 2,
                                             valueColor:
                                                 AlwaysStoppedAnimation<Color>(
@@ -2429,7 +2429,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                               .withOpacity(0.1),
                                         ),
                                         child: const Center(
-                                          child: CircularProgressIndicator(
+                                          child: DashboardLoaderIcon(
                                             strokeWidth: 2,
                                             valueColor:
                                                 AlwaysStoppedAnimation<Color>(

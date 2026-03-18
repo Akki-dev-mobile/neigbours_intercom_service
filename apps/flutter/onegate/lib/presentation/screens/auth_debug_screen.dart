@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_onegate/services/auth_service/auth_token_debug_manager.dart';
@@ -84,7 +85,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
               ),
             )
           : const Center(
-              child: CircularProgressIndicator(),
+              child: DashboardLoaderIcon(),
             ),
     );
   }

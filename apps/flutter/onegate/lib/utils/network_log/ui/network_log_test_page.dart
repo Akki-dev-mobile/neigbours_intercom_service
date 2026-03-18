@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/utils/network_log/test_network_log.dart';
 import 'package:flutter_onegate/utils/network_log/ui/network_log_screen.dart';
 import 'package:flutter_onegate/utils/network_log/ui/network_log_sync_settings.dart';
@@ -152,7 +153,7 @@ class _NetworkLogTestPageState extends State<NetworkLogTestPage> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(
+                      child: DashboardLoaderIcon(
                         strokeWidth: 2,
                       ),
                     )

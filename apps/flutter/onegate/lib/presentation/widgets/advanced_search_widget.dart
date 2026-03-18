@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/services/search/meilisearch_service.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
@@ -338,7 +339,7 @@ class _AdvancedSearchWidgetState extends State<AdvancedSearchWidget> {
                             child: SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: DashboardLoaderIcon(strokeWidth: 2),
                             ),
                           )
                         : const Icon(Ionicons.search_outline),

@@ -110,7 +110,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                         ),
                         borderRadius: BorderRadius.circular(15),
                       ),
-                      child: const CircularProgressIndicator(
+                      child: const DashboardLoaderIcon(
                         valueColor:
                             AlwaysStoppedAnimation<Color>(Color(0xffF44336)),
                         strokeWidth: 3,

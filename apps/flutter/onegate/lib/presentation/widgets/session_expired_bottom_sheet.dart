@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'dart:developer';
@@ -375,7 +376,7 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
                         SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(
+                          child: DashboardLoaderIcon(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
                               Colors.white.withValues(alpha: 0.8),

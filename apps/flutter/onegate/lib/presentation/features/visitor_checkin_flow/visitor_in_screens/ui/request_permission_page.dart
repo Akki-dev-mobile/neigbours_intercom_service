@@ -414,7 +414,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           initialData: _requestType,
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: DashboardLoaderIcon());
             }
             RequestType requestType = snapshot.data!;
 
@@ -2327,7 +2327,7 @@ class LoadingOverlay extends StatelessWidget {
           Container(
             color: Colors.black54, // ✅ Background overlay
             child: const Center(
-              child: CircularProgressIndicator(
+              child: DashboardLoaderIcon(
                 strokeWidth: 4, // ✅ Thickness of loader
                 valueColor: AlwaysStoppedAnimation<Color>(
                     Colors.white), // ✅ Pure white loader

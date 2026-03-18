@@ -1863,7 +1863,7 @@ class _AddStaffState extends State<AddStaff> {
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(
+                                child: DashboardLoaderIcon(
                                   color: Colors.white,
                                   strokeWidth: 2,
                                 ),

@@ -729,7 +729,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               width: 24,
               height: 24,
               padding: const EdgeInsets.all(6),
-              child: const CircularProgressIndicator(
+              child: const DashboardLoaderIcon(
                 strokeWidth: 2,
                 color: Colors.grey,
               ),
@@ -761,7 +761,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const CircularProgressIndicator(
+                    const DashboardLoaderIcon(
                       color: Colors.black,
                     ),
                     const SizedBox(height: 16),
@@ -782,7 +782,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const CircularProgressIndicator(
+                    const DashboardLoaderIcon(
                       color: Colors.black,
                     ),
                     const SizedBox(height: 16),
@@ -1271,7 +1271,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     ? SizedBox(
                         width: isTablet ? 22 : 18,
                         height: isTablet ? 22 : 18,
-                        child: const CircularProgressIndicator(
+                        child: const DashboardLoaderIcon(
                           color: Colors.black,
                           strokeWidth: 2,
                         ),
@@ -1515,7 +1515,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                             SizedBox(
                               width: isTablet ? 24 : 20,
                               height: isTablet ? 24 : 20,
-                              child: const CircularProgressIndicator(
+                              child: const DashboardLoaderIcon(
                                 color: Colors.white,
                                 strokeWidth: 2,
                               ),
@@ -2089,7 +2089,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           width: 24,
                           height: 24,
                           margin: const EdgeInsets.all(16),
-                          child: const CircularProgressIndicator(
+                          child: const DashboardLoaderIcon(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
                                 Color(0xffF44336)),
@@ -2472,7 +2472,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             SizedBox(
               width: isTablet ? 48 : 32,
               height: isTablet ? 48 : 32,
-              child: const CircularProgressIndicator(
+              child: const DashboardLoaderIcon(
                 strokeWidth: 3,
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xffF44336)),
               ),
@@ -3074,7 +3074,7 @@ class _LoadingIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Column(
       children: [
-        CircularProgressIndicator(),
+        DashboardLoaderIcon(),
         SizedBox(height: 16),
         Text(
           "Please wait, checking in...",

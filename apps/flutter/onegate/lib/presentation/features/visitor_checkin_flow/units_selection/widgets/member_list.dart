@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/widgets/empty_state.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/widgets/member_tile.dart';
 
@@ -29,7 +30,7 @@ class MemberList extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(color: Colors.black),
+                    DashboardLoaderIcon(color: Colors.black),
                     SizedBox(height: 16),
                     Text(
                       'Loading members...',

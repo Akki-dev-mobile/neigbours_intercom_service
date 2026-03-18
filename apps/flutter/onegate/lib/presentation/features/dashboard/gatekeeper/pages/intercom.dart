@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'call_history.dart';
 
@@ -209,7 +210,7 @@ class _MemberListState extends State<MemberList> {
         builder: (context, units, _) {
           if (_isLoading) {
             return const Center(
-                child: CircularProgressIndicator(
+                child: DashboardLoaderIcon(
               color: Colors.black,
             ));
           }

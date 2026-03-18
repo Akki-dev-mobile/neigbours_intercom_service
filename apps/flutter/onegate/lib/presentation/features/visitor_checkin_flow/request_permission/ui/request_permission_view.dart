@@ -83,7 +83,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
         switch (state.runtimeType) {
           case RPLoadingState:
             return Center(
-              child: CircularProgressIndicator(),
+              child: DashboardLoaderIcon(),
             );
 
           case RequestPermissionInitial:

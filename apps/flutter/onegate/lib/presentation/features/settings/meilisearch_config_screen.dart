@@ -176,7 +176,7 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
     return MyScrollView(
       pageTitle: 'Meilisearch Configuration',
       pageBody: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: DashboardLoaderIcon())
           : Form(
               key: _formKey,
               child: Column(
@@ -298,7 +298,7 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: DashboardLoaderIcon(strokeWidth: 2),
                       )
                     : const Icon(Icons.wifi_find),
                 label: Text(

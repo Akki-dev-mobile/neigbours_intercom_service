@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
@@ -86,7 +87,7 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(),
+        child: DashboardLoaderIcon(),
       );
     }
 

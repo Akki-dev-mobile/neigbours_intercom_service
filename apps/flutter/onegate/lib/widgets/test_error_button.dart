@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/services/error_tracking/posthog_error_tracking_service.dart';
 import 'dart:developer' as dev;
 
@@ -41,7 +42,7 @@ class _TestErrorButtonState extends State<TestErrorButton> {
                 ? const SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: DashboardLoaderIcon(strokeWidth: 2),
                   )
                 : const Icon(Icons.bug_report, color: Colors.white),
             label: Text(

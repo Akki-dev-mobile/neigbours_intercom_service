@@ -40,16 +40,51 @@ class _IntercomHomeScreenState extends State<IntercomHomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final featureConfig = widget.host.featureConfig();
+    final title =
+        featureConfig.neighboursEnabled ? 'Neighbors' : 'Intercom';
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Intercom'),
-        bottom: TabBar(
-          controller: _controller,
-          tabs: const [
-            Tab(text: 'Residents'),
-            Tab(text: 'Committee'),
-            Tab(text: 'Groups'),
-          ],
+        title: Text(title),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(72),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: TabBar(
+                controller: _controller,
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                labelColor: const Color(0xffc62828),
+                unselectedLabelColor: Colors.grey[700],
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                ),
+                indicator: BoxDecoration(
+                  color: const Color(0xffffebee),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                tabs: const [
+                  Tab(icon: Icon(Icons.people), text: 'Residents'),
+                  Tab(icon: Icon(Icons.groups), text: 'Committee'),
+                  Tab(icon: Icon(Icons.forum), text: 'Groups'),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
       body: TabBarView(

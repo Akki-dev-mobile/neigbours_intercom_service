@@ -686,7 +686,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                             color: const Color(0xffF44336).withOpacity(0.1),
                           ),
                           child: const Center(
-                            child: CircularProgressIndicator(
+                            child: DashboardLoaderIcon(
                               strokeWidth: 2,
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 Color(0xffF44336),
@@ -881,7 +881,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                       SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(
+                        child: DashboardLoaderIcon(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             Colors.white.withOpacity(0.8),

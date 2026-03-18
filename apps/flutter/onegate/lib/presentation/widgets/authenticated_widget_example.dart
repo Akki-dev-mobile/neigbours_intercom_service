@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/services/api_service/onegate_api_service.dart';
 import 'package:flutter_onegate/services/session_manager/user_session_manager.dart';
@@ -160,7 +161,7 @@ class _AuthenticatedWidgetExampleState extends State<AuthenticatedWidgetExample>
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: DashboardLoaderIcon())
           : _error != null
               ? Center(
                   child: Column(

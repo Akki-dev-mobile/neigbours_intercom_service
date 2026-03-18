@@ -3,7 +3,11 @@ import 'dart:developer';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
+import 'package:flutter_onegate/services/intercom/onegate_intercom_bootstrap.dart';
 import 'package:flutter_onegate/services/session_manager/session_management_coordinator.dart';
+import 'package:intercom_module/core/services/call_websocket_service.dart';
+import 'package:intercom_module/core/services/outgoing_call_acceptance_store.dart';
+import 'package:intercom_module/core/services/call_coordinator.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,6 +26,7 @@ class UserSessionManager {
 
   Timer? _sessionMonitorTimer;
   Timer? _tokenRefreshTimer;
+  StreamSubscription<Map<String, dynamic>>? _callWsSubscription;
 
   final StreamController<UserSessionState> _sessionStateController =
       StreamController<UserSessionState>.broadcast();
@@ -319,9 +324,11 @@ class UserSessionManager {
     switch (to) {
       case UserSessionState.authenticated:
         log("✅ User session authenticated");
+        _connectCallWebSocket();
         break;
       case UserSessionState.unauthenticated:
         log("🚪 User session unauthenticated");
+        _disconnectCallWebSocket();
         _clearSessionData();
         break;
       case UserSessionState.tokenExpired:
@@ -333,6 +340,53 @@ class UserSessionManager {
       case UserSessionState.unknown:
         log("❓ User session state unknown");
         break;
+    }
+  }
+
+  Future<void> _connectCallWebSocket() async {
+    try {
+      await OneGateIntercomBootstrap.ensureConfigured();
+      final token = await _authService.tokenRefreshManager.getValidAccessToken() ??
+          await _gateStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        log('⚠️ [UserSessionManager] Missing token; skipping call WS connect');
+        return;
+      }
+      await CallWebSocketService.instance.connect(accessToken: token);
+      _callWsSubscription?.cancel();
+      _callWsSubscription =
+          CallWebSocketService.instance.events.listen(_handleCallWsEvent);
+    } catch (e) {
+      log('⚠️ [UserSessionManager] Call WS connect failed: $e');
+    }
+  }
+
+  void _disconnectCallWebSocket() {
+    _callWsSubscription?.cancel();
+    _callWsSubscription = null;
+    CallWebSocketService.instance.disconnect();
+  }
+
+  Future<void> _handleCallWsEvent(Map<String, dynamic> payload) async {
+    final action = payload['action']?.toString();
+    if (action == null || action.isEmpty) return;
+
+    final callId = payload['call_id']?.toString();
+    if (action == 'call_accepted' || action == 'call_answered') {
+      if (callId != null && callId.isNotEmpty) {
+        await OutgoingCallAcceptanceStore.saveForCallId(callId, payload);
+      } else {
+        await OutgoingCallAcceptanceStore.save(payload);
+      }
+      await CallCoordinator.instance.handleOutgoingCallAcceptedData(payload);
+      return;
+    }
+
+    if (action == 'call_declined' ||
+        action == 'call_rejected' ||
+        action == 'call_ended') {
+      await OutgoingCallAcceptanceStore.saveCallEnded(payload);
+      await CallCoordinator.instance.handleCallEndedData(payload);
     }
   }
 

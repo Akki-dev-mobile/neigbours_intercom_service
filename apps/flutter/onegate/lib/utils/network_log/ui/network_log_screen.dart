@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/utils/network_log/models/network_log.dart';
 import 'package:flutter_onegate/utils/network_log/network_log_manager.dart';
@@ -132,7 +133,7 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
             ? const SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(
+                child: DashboardLoaderIcon(
                   color: Colors.white,
                   strokeWidth: 2,
                 ),

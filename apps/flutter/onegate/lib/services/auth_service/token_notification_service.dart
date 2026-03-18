@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
@@ -283,7 +284,7 @@ class TokenNotificationService {
               const SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(
+                child: DashboardLoaderIcon(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),

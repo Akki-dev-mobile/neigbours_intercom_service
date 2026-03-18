@@ -1032,7 +1032,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                 SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(
+                  child: DashboardLoaderIcon(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       const Color(0xffF44336),
@@ -1911,7 +1911,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                       child: const SizedBox(
                                         width: 24,
                                         height: 24,
-                                        child: CircularProgressIndicator(
+                                        child: DashboardLoaderIcon(
                                           color: Color(0xff2C2C2C),
                                           strokeWidth: 2.5,
                                         ),
@@ -4292,7 +4292,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                                                             ? 24
                                                                             : 22,
                                                                     child:
-                                                                        const CircularProgressIndicator(
+                                                                        const DashboardLoaderIcon(
                                                                       valueColor: AlwaysStoppedAnimation<
                                                                               Color>(
                                                                           Colors

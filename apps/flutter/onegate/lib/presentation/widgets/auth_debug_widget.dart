@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/data/datasources/enhanced_keycloak_config.dart';
 import 'package:flutter_onegate/services/auth_service/enhanced_auth_service.dart';
 import 'package:flutter_onegate/utils/auth_debug_tool.dart';
@@ -272,7 +273,7 @@ class _AuthDebugWidgetState extends State<AuthDebugWidget> {
                           ? const SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: DashboardLoaderIcon(strokeWidth: 2),
                             )
                           : const Icon(Icons.bug_report),
                       label: Text(_isRunningDiagnostics ? 'Running...' : 'Run Diagnostics'),
@@ -304,7 +305,7 @@ class _AuthDebugWidgetState extends State<AuthDebugWidget> {
                           ? const SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: DashboardLoaderIcon(strokeWidth: 2),
                             )
                           : const Icon(Icons.login),
                       label: Text(_isTestingAuth ? 'Testing...' : 'Test Authentication'),

@@ -73,7 +73,7 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
     return MyScrollView(
       pageTitle: AppLocalizations.of(context)!.crashReports,
       pageBody: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: DashboardLoaderIcon())
           : Column(
               children: [
                 _buildStatisticsCard(),

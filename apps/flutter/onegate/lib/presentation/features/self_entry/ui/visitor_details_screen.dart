@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
 
 class VisitorDetailsScreen extends StatefulWidget {
@@ -209,7 +210,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                     width: 3,
                   ),
                 ),
-                child: CircularProgressIndicator(
+                child: DashboardLoaderIcon(
                   value: 0.7, // Partial loading
                   strokeWidth: 3,
                   valueColor: AlwaysStoppedAnimation<Color>(

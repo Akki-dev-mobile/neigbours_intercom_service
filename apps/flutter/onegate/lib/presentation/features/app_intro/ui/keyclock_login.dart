@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
@@ -737,7 +738,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
                 },
               ),
               if (state.isLoading)
-                const Center(child: CircularProgressIndicator()),
+                const Center(child: DashboardLoaderIcon()),
             ],
           ),
         );

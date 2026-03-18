@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class CallingScreen extends StatelessWidget {
@@ -104,7 +105,7 @@ class CallingScreen extends StatelessWidget {
               const SizedBox(height: 40),
 
               // Animated Progress Indicator
-              const CircularProgressIndicator(
+              const DashboardLoaderIcon(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 strokeWidth: 3,
               ).animate().scale(duration: 600.ms).fade(duration: 600.ms),

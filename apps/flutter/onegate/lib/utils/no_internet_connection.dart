@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_onegate/common/internet_check_provider.dart';
 
@@ -234,7 +235,7 @@ class _ErrorNoInternetPageState extends State<ErrorNoInternetPage>
                           ? const SizedBox(
                               width: 24,
                               height: 24,
-                              child: CircularProgressIndicator(
+                              child: DashboardLoaderIcon(
                                 strokeWidth: 2.5,
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   Colors.white,

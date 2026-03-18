@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -912,7 +913,7 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
                 ? SizedBox(
                     width: innerSize * 0.4,
                     height: innerSize * 0.4,
-                    child: const CircularProgressIndicator(
+                    child: const DashboardLoaderIcon(
                       color: Colors.black,
                       strokeWidth: 3,
                     ),

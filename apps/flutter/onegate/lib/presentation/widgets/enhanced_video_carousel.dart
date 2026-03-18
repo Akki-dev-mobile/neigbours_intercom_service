@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:common_widgets/common_widgets.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
@@ -275,7 +276,7 @@ class _EnhancedVideoCarouselState extends State<EnhancedVideoCarousel> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const CircularProgressIndicator(
+                              const DashboardLoaderIcon(
                                 strokeWidth: 3,
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   Color(0xffF44336),

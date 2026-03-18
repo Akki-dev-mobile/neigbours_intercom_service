@@ -676,7 +676,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                     ? SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(
+                        child: DashboardLoaderIcon(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
                               Theme.of(context).primaryColor),
@@ -874,7 +874,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                           SizedBox(
                             width: 70,
                             height: 70,
-                            child: CircularProgressIndicator(
+                            child: DashboardLoaderIcon(
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 Colors.white.withOpacity(0.8),
                               ),
