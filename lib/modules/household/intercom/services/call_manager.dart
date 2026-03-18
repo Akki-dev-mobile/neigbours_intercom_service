@@ -307,6 +307,73 @@ class CallManager {
     }
   }
 
+  /// Join Jitsi when receiver has accepted (call_accepted payload from WebSocket/FCM).
+  /// Call this from UserSessionManager when call_accepted is received.
+  Future<CallResult> joinOutgoingCallWhenAccepted(
+    Map<String, dynamic> payload, {
+    required String displayName,
+    String? avatarUrl,
+    String? userEmail,
+  }) async {
+    try {
+      log('📞 [CallManager] Joining Jitsi (call_accepted): $payload',
+          name: 'CallManager');
+
+      if (isCallInProgress) {
+        log('⚠️ [CallManager] Call already in progress, ignoring join',
+            name: 'CallManager');
+        return CallResult.failure(
+          error: 'Call in progress',
+          message: 'A call is already active',
+        );
+      }
+
+      final call = Call.fromAcceptPayload(payload);
+      if (call.id == 0 || call.meetingId.isEmpty) {
+        log('❌ [CallManager] Invalid payload: missing call_id or meeting_id',
+            name: 'CallManager');
+        return CallResult.failure(
+          error: 'Invalid payload',
+          message: 'Missing call_id or meeting_id in call_accepted payload',
+        );
+      }
+
+      final permissionResult = await _checkAndRequestPermissions(call.callType);
+      if (!permissionResult.granted) {
+        log('❌ [CallManager] Permissions denied for join',
+            name: 'CallManager');
+        return CallResult.failure(
+          error: 'Permissions required',
+          message: permissionResult.message,
+          permissionsDenied: true,
+        );
+      }
+
+      final callerAvatarUrl =
+          (avatarUrl != null && avatarUrl.trim().isNotEmpty)
+              ? avatarUrl.trim()
+              : await _resolveCurrentUserAvatarUrl();
+
+      await _jitsiController.joinCall(
+        call: call,
+        displayName: displayName,
+        avatarUrl: callerAvatarUrl,
+        userEmail: userEmail,
+      );
+
+      log('✅ [CallManager] Joined Jitsi (call_accepted)', name: 'CallManager');
+      return CallResult.success(call: call);
+    } catch (e, stackTrace) {
+      log('❌ [CallManager] Error joining call (call_accepted): $e',
+          name: 'CallManager');
+      log('   Stack trace: $stackTrace', name: 'CallManager');
+      return CallResult.failure(
+        error: 'Failed to join call',
+        message: e.toString(),
+      );
+    }
+  }
+
   /// Check and request required permissions for the call
   ///
   /// Required permissions:

@@ -143,6 +143,24 @@ class Call extends Equatable {
     );
   }
 
+  /// Build Call from call_accepted / call_answered WebSocket or FCM payload.
+  /// Payload keys: call_id, meeting_id, jitsi_url (or jitsi_meeting_url), call_type.
+  factory Call.fromAcceptPayload(Map<String, dynamic> json) {
+    final id = int.tryParse(json['call_id']?.toString() ?? '') ?? 0;
+    final meetingId = json['meeting_id']?.toString() ?? '';
+    final jitsiUrl = json['jitsi_url']?.toString() ??
+        json['jitsi_meeting_url']?.toString();
+    final callTypeRaw = json['call_type']?.toString() ?? 'video';
+    final callType = CallType.tryFromString(callTypeRaw) ?? CallType.video;
+    return Call(
+      id: id,
+      meetingId: meetingId,
+      jitsiMeetingUrl: jitsiUrl,
+      callType: callType,
+      status: CallStatus.answered,
+    );
+  }
+
   /// Convert to JSON for API requests
   Map<String, dynamic> toJson() {
     return {

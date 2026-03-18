@@ -57,6 +57,13 @@ mixin TabActivationMixin<T extends StatefulWidget> on State<T> {
     return _lifecycleController!;
   }
 
+  /// Safely check if a token is still valid.
+  /// Returns false if controller is disposed/uninitialized (caller should not update state).
+  bool isTokenValid(TabCancellationToken? token) {
+    if (token == null || _lifecycleController == null) return false;
+    return token.isValid(_lifecycleController!.generation);
+  }
+
   /// Initialize tab activation with lifecycle controller
   /// 
   /// Call this in initState() after setting up other state
@@ -185,6 +192,9 @@ mixin TabActivationMixin<T extends StatefulWidget> on State<T> {
       mountedCheck: () => mounted,
     );
   }
+
+  /// Whether tab activation has been initialized (controller exists)
+  bool get isTabActivationInitialized => _lifecycleController != null;
 
   /// Clean up tab activation listener
   /// 

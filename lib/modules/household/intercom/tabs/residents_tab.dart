@@ -370,16 +370,25 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
           });
         }
 
-        // Reload after a delay (cancellable)
-        scheduleDelayed(
-          delay: TabConstants.kCompanyChangeReloadDelay,
-          callback: () {
+        // Reload after a delay (cancellable when tab activation is initialized)
+        if (isTabActivationInitialized) {
+          scheduleDelayed(
+            delay: TabConstants.kCompanyChangeReloadDelay,
+            callback: () {
+              if (mounted && !_isLoading && !_isLoadingBuildings) {
+                _loadBuildings();
+                _loadContacts();
+              }
+            },
+          );
+        } else {
+          Future.delayed(TabConstants.kCompanyChangeReloadDelay, () {
             if (mounted && !_isLoading && !_isLoadingBuildings) {
               _loadBuildings();
               _loadContacts();
             }
-          },
-        );
+          });
+        }
       }
     } catch (e) {
       debugPrint('❌ [ResidentsTab] Error checking company change: $e');
@@ -420,7 +429,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       final currentCompanyId = await _apiService.getSelectedSocietyId();
 
       // Check if token is still valid (tab might have become inactive)
-      if (!token.isValid(lifecycleController.generation)) {
+      if (!isTokenValid(token)) {
         debugPrint('⏹️ [ResidentsTab] Tab became inactive, cancelling load');
         return;
       }
@@ -503,7 +512,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
   void _setupPresenceUpdates() {
     _fetchPresence();
     // Refresh presence every 30 seconds
-    _presenceTimer = Timer.periodic(const Duration(seconds: 30), (_) => _fetchPresence());
+    _presenceTimer =
+        Timer.periodic(const Duration(seconds: 30), (_) => _fetchPresence());
   }
 
   /// Fetch presence data for all contacts
@@ -520,7 +530,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     }
 
     try {
-      debugPrint('👥 [ResidentsTab] Fetching presence for ${userIds.length} users');
+      debugPrint(
+          '👥 [ResidentsTab] Fetching presence for ${userIds.length} users');
       final response = await _chatService.getPresence(userIds);
 
       if (response.success && response.data != null) {
@@ -534,9 +545,11 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
         // Update contact statuses with fetched presence data
         _updateContactsPresence();
 
-        debugPrint('✅ [ResidentsTab] Successfully fetched presence for ${response.data!.length} users');
+        debugPrint(
+            '✅ [ResidentsTab] Successfully fetched presence for ${response.data!.length} users');
       } else {
-        debugPrint('⚠️ [ResidentsTab] Failed to fetch presence: ${response.error}');
+        debugPrint(
+            '⚠️ [ResidentsTab] Failed to fetch presence: ${response.error}');
       }
     } catch (e) {
       debugPrint('❌ [ResidentsTab] Error fetching presence: $e');
@@ -567,7 +580,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
             try {
               lastSeenAt = DateTime.parse(lastSeenString);
             } catch (e) {
-              debugPrint('⚠️ [ResidentsTab] Failed to parse last_seen time: $e');
+              debugPrint(
+                  '⚠️ [ResidentsTab] Failed to parse last_seen time: $e');
             }
           }
 
@@ -660,7 +674,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       final statusString = wsMessage.data?['status']?.toString();
 
       if (userId != null && mounted) {
-        debugPrint('👤 [ResidentsTab] Presence update: user=$userId, online=$isOnline, status=$statusString');
+        debugPrint(
+            '👤 [ResidentsTab] Presence update: user=$userId, online=$isOnline, status=$statusString');
 
         // Update presence map with real-time data
         setState(() {
@@ -860,7 +875,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       final societyId = await _apiService.getSelectedSocietyId();
 
       // Check if token is still valid
-      if (!token.isValid(lifecycleController.generation)) {
+      if (!isTokenValid(token)) {
         debugPrint(
             '⏹️ [ResidentsTab] Tab became inactive during buildings load, cancelling');
         return;
@@ -889,7 +904,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       );
 
       // Check token validity again before updating state
-      if (!token.isValid(lifecycleController.generation)) {
+      if (!isTokenValid(token)) {
         debugPrint(
             '⏹️ [ResidentsTab] Tab became inactive after buildings load, discarding result');
         return;
@@ -923,7 +938,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       }
     } catch (e) {
       debugPrint('❌ [ResidentsTab] Error loading buildings: $e');
-      if (mounted && token.isValid(lifecycleController.generation)) {
+      if (mounted && isTokenValid(token)) {
         setState(() {
           _isLoadingBuildings = false;
         });
@@ -987,7 +1002,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       );
 
       // Check token validity before updating state
-      if (!token.isValid(lifecycleController.generation)) {
+      if (!isTokenValid(token)) {
         debugPrint(
             '⏹️ [ResidentsTab] Tab became inactive during contacts load, discarding result');
         return;
@@ -1020,7 +1035,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
         markDataLoaded();
       }
     } catch (e) {
-      if (mounted && token.isValid(lifecycleController.generation)) {
+      if (mounted && isTokenValid(token)) {
         setState(() {
           _isLoading = false;
           // Don't clear existing data on error - keep what we have
@@ -1121,8 +1136,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
         }
         if (extractedBuilding != null &&
             extractedBuilding.isNotEmpty &&
-            extractedBuilding.toLowerCase() ==
-                buildingName.toLowerCase()) {
+            extractedBuilding.toLowerCase() == buildingName.toLowerCase()) {
           return true;
         }
       }
@@ -1212,8 +1226,16 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       }).toList();
     }
 
-    // Always show full list (no UI pagination)
-    _visibleResidentCount = _filteredResidents.length;
+    // Use UI pagination for smoother scrolling
+    final initialBatch = TabConstants.kResidentsUiPageSize;
+    if (resetPagination) {
+      _visibleResidentCount = _filteredResidents.length <= initialBatch
+          ? _filteredResidents.length
+          : initialBatch;
+    } else if (_visibleResidentCount > _filteredResidents.length) {
+      // Cap when filter reduces the list (e.g. presence update)
+      _visibleResidentCount = _filteredResidents.length;
+    }
     _isLoadingMoreResidents = false;
   }
 
@@ -1267,8 +1289,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     if (_preferAllBuildings) return;
     if (_selectedBuildingId != null || _buildings.isEmpty) return;
     final first = _buildings.first;
-    final id =
-        first['id']?.toString() ?? first['soc_building_id']?.toString();
+    final id = first['id']?.toString() ?? first['soc_building_id']?.toString();
     if (id == null || id.trim().isEmpty) return;
     _selectedBuildingId = id;
   }
@@ -1344,9 +1365,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
         subtitle: 'Fetching resident information...',
       );
     }
-    final visibleResidents = _filteredResidents
-        .take(_visibleResidentCount)
-        .toList();
+    final visibleResidents =
+        _filteredResidents.take(_visibleResidentCount).toList();
     final groups = _groupResidents(visibleResidents);
     final sortedKeys = groups.keys.toList()..sort();
     final buildingsForChips =
@@ -1357,8 +1377,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
           resident.building != null && resident.building!.isNotEmpty
               ? resident.building!
               : 'Building';
-      buildingTotals[buildingName] =
-          (buildingTotals[buildingName] ?? 0) + 1;
+      buildingTotals[buildingName] = (buildingTotals[buildingName] ?? 0) + 1;
     }
 
     return SafeArea(
@@ -1428,69 +1447,66 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       )
-                    else
-                      ...[
-                        ...buildingsForChips.map((building) {
-                          final buildingId = building['id']?.toString() ??
-                              building['soc_building_id']?.toString();
-                          final buildingName =
-                              building['soc_building_name']?.toString() ??
-                                  building['building_name']?.toString() ??
-                                  'Building';
-                          final isSelected = buildingId == _selectedBuildingId;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              label: Text(
-                                buildingName,
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : Colors.grey.shade800,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
+                    else ...[
+                      ...buildingsForChips.map((building) {
+                        final buildingId = building['id']?.toString() ??
+                            building['soc_building_id']?.toString();
+                        final buildingName =
+                            building['soc_building_name']?.toString() ??
+                                building['building_name']?.toString() ??
+                                'Building';
+                        final isSelected = buildingId == _selectedBuildingId;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            label: Text(
+                              buildingName,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.grey.shade800,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
                               ),
-                              selected: isSelected,
-                              onSelected: (_) {
-                                final nextId = isSelected ? null : buildingId;
-                                final nextIdInt = nextId != null
-                                    ? int.tryParse(nextId)
-                                    : null;
-                                setState(() {
-                                  _selectedBuildingId = nextId;
-                                  _isBuildingScopedFetch =
-                                      nextIdInt != null;
-                                });
-                                _filterResidents(resetPagination: true);
-                                if (nextIdInt != null) {
-                                  _loadContacts(
-                                    buildingIdOverride: nextId,
-                                  );
-                                }
-                              },
-                              backgroundColor: Colors.white,
-                              selectedColor: const Color(0xffc62828),
-                              checkmarkColor: Colors.white,
-                              showCheckmark: false,
-                              elevation: 0,
-                              pressElevation: 0,
-                              shadowColor: Colors.transparent,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 10),
-                              shape: StadiumBorder(
-                                side: BorderSide(
-                                  color: isSelected
-                                      ? Colors.transparent
-                                      : Colors.grey.withOpacity(0.3),
-                                ),
-                              ),
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
                             ),
-                          );
-                        }).toList(),
-                      ],
+                            selected: isSelected,
+                            onSelected: (_) {
+                              final nextId = isSelected ? null : buildingId;
+                              final nextIdInt =
+                                  nextId != null ? int.tryParse(nextId) : null;
+                              setState(() {
+                                _selectedBuildingId = nextId;
+                                _isBuildingScopedFetch = nextIdInt != null;
+                              });
+                              _filterResidents(resetPagination: true);
+                              if (nextIdInt != null) {
+                                _loadContacts(
+                                  buildingIdOverride: nextId,
+                                );
+                              }
+                            },
+                            backgroundColor: Colors.white,
+                            selectedColor: const Color(0xffc62828),
+                            checkmarkColor: Colors.white,
+                            showCheckmark: false,
+                            elevation: 0,
+                            pressElevation: 0,
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 10),
+                            shape: StadiumBorder(
+                              side: BorderSide(
+                                color: isSelected
+                                    ? Colors.transparent
+                                    : Colors.grey.withOpacity(0.3),
+                              ),
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        );
+                      }).toList(),
+                    ],
                   ],
                 ),
               ),
@@ -1736,7 +1752,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
   }
 
   /// Show popup menu with Audio and Video Call options using Jitsi SDK
-  /// 
+  ///
   /// This method shows the CallBottomSheet which:
   /// - Displays audio and video call options
   /// - Handles permissions
@@ -1747,21 +1763,21 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     String displayName = 'User';
     String? userEmail;
     String? avatarUrl;
-    
+
     try {
       final userData = await KeycloakService.getUserData();
       if (userData != null) {
-        displayName = userData['name'] as String? ?? 
-                      userData['preferred_username'] as String? ?? 
-                      'User';
+        displayName = userData['name'] as String? ??
+            userData['preferred_username'] as String? ??
+            'User';
         userEmail = userData['email'] as String?;
       }
     } catch (e) {
       debugPrint('⚠️ [ResidentsTab] Error getting user data: $e');
     }
-    
+
     if (!mounted) return;
-    
+
     // Show the call bottom sheet
     unawaited(CallBottomSheet.show(
       context: context,
@@ -2027,8 +2043,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
               if (!resident.hasUserId) ...[
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
-                  onPressed: () =>
-                      OneAppShare.shareInvite(name: resident.name),
+                  onPressed: () => OneAppShare.shareInvite(name: resident.name),
                   icon: const Icon(Icons.person_add_alt_1, size: 16),
                   label: const Text(
                     'Invite',

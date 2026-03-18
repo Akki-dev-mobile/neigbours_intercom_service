@@ -6,12 +6,14 @@ import 'package:just_audio/just_audio.dart';
 
 import '../../../../core/services/call_coordinator.dart';
 import '../../../../core/services/outgoing_call_acceptance_store.dart';
+import '../../../../core/services/keycloak_service.dart';
 import '../../../../core/constants.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/utils/profile_data_helper.dart';
 import '../models/call_model.dart';
 import '../models/call_status.dart';
 import '../services/call_history_service.dart';
+import '../services/call_manager.dart';
 import '../services/call_service.dart';
 
 class OutgoingCallScreen extends StatefulWidget {
@@ -123,13 +125,19 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen> {
         'action': 'call_accepted',
         'call_id': call.id.toString(),
         'meeting_id': call.meetingId,
-        'jitsi_url': call.jitsiMeetingUrl ?? 'https://${AppConstants.jitsiServerUrl}',
+        'jitsi_url': call.jitsiMeetingUrl ??
+            'https://${AppConstants.jitsiServerUrl}/${call.meetingId}',
         'call_type': call.callType.value,
         'status': 'answered',
       };
       await CallCoordinator.instance.handleOutgoingCallAcceptedData(
         payload,
         fromBackground: false,
+      );
+      final displayName = await _resolveDisplayNameForCall();
+      await CallManager.instance.joinOutgoingCallWhenAccepted(
+        payload,
+        displayName: displayName,
       );
     } catch (e) {
       log('⚠️ [OutgoingCall] Status poll error: $e');
@@ -157,6 +165,24 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen> {
       pending,
       fromBackground: false,
     );
+    final displayName = await _resolveDisplayNameForCall();
+    await CallManager.instance.joinOutgoingCallWhenAccepted(
+      pending,
+      displayName: displayName,
+    );
+  }
+
+  Future<String> _resolveDisplayNameForCall() async {
+    try {
+      final userData = await KeycloakService.getUserData();
+      final name = userData?['name'] ?? userData?['preferred_username'];
+      if (name != null && name.toString().trim().isNotEmpty) {
+        return name.toString().trim();
+      }
+    } catch (e) {
+      log('⚠️ [OutgoingCall] Error resolving display name: $e');
+    }
+    return 'User';
   }
 
   /// Pops the outgoing call screen so the user is never stuck. Prefer pop() over

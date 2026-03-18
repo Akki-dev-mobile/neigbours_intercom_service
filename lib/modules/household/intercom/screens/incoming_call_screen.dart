@@ -9,6 +9,7 @@ import '../../../../core/theme/colors.dart';
 import '../models/call_model.dart';
 import '../models/call_status.dart';
 import '../services/call_service.dart';
+import '../services/call_manager.dart';
 import '../../../../core/services/call_coordinator.dart';
 
 class IncomingCallScreen extends StatefulWidget {
@@ -66,22 +67,37 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     };
 
     // Step 1: POST accept (sets accepted_at; backend may send call_accepted FCM).
-    unawaited(
-      CallService.instance.acceptCall(widget.call.id).then((_) {}, onError: (e, st) {
-        log('⚠️ [IncomingCall] acceptCall failed: $e');
-      }),
+    try {
+      await CallService.instance.acceptCall(widget.call.id);
+    } catch (e) {
+      log('⚠️ [IncomingCall] acceptCall failed: $e');
+      if (mounted) setState(() => _isProcessing = false);
+      return;
+    }
+
+    // Step 2: PATCH status answered (triggers FCM "call_answered" to caller).
+    try {
+      await CallService.instance.updateCallStatus(
+        callId: widget.call.id,
+        status: CallStatus.answered,
+      );
+    } catch (e) {
+      log('⚠️ [IncomingCall] Failed to notify backend (answered): $e');
+      // Continue - caller may still receive via WebSocket
+    }
+
+    // Step 3: Join Jitsi (receiver flow)
+    final result = await CallManager.instance.answerIncomingCall(
+      call: widget.call,
+      displayName: widget.currentUserName,
+      userEmail: widget.currentUserEmail,
     );
-    // Step 2: PATCH status answered (triggers FCM "call_answered" to caller with meeting details).
-    unawaited(
-      CallService.instance
-          .updateCallStatus(
-            callId: widget.call.id,
-            status: CallStatus.answered,
-          )
-          .then((_) {}, onError: (e, st) {
-        log('⚠️ [IncomingCall] Failed to notify backend (answered): $e');
-      }),
-    );
+
+    if (!result.success && mounted) {
+      log('⚠️ [IncomingCall] Failed to join Jitsi: ${result.message}');
+      setState(() => _isProcessing = false);
+      return;
+    }
 
     await CallCoordinator.instance.acceptIncomingCall(payload);
 

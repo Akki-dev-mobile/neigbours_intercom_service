@@ -113,9 +113,9 @@ class RoomService extends BaseApiService {
     return constructedUrl;
   }
 
-  /// Override getAuthHeaders to use old_gate_user_id for x-user-id header
-  /// This ensures consistency with the user_id used when adding members
-  /// CRITICAL: The x-user-id header must match the user_id used in member addition API calls
+  /// Override getAuthHeaders to use x-user-id header for room service API calls.
+  /// Room service backend uses SSO user IDs for user lookup; old_sso_user_id is tried first.
+  /// If backend returns "User not found", it may need old_gate_user_id - adjust priority as needed.
   @override
   Future<Map<String, String>> getAuthHeaders() async {
     try {
@@ -135,16 +135,16 @@ class RoomService extends BaseApiService {
         log('🔍 [RoomService] user_id: ${userData['user_id']}',
             name: serviceName);
 
-        // CRITICAL FIX: Use old_gate_user_id for x-user-id header
-        // This matches the user_id used when adding members to rooms
-        // Priority: old_gate_user_id > old_sso_user_id > user_id
-        final userId = userData['old_gate_user_id']?.toString() ??
-            userData['old_sso_user_id']?.toString() ??
+        // Room service backend typically uses SSO user IDs for user lookup.
+        // Priority: old_sso_user_id > old_gate_user_id > user_id
+        // (old_sso_user_id fixes "User not found" when room service uses SSO user table)
+        final userId = userData['old_sso_user_id']?.toString() ??
+            userData['old_gate_user_id']?.toString() ??
             userData['user_id']?.toString();
 
         if (userId != null && userId.isNotEmpty) {
           headers['x-user-id'] = userId;
-          log('✅ [RoomService] Set x-user-id header: $userId (from old_gate_user_id)',
+          log('✅ [RoomService] Set x-user-id header: $userId',
               name: serviceName);
           log('🔍 [RoomService] All headers being sent: ${headers.keys.toList()}',
               name: serviceName);

@@ -3256,9 +3256,23 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                   }
                   if (!hasGroups) {
                     return _isLoading
-                        ? const OneGateGlobalLoader(
-                            title: 'Loading Groups',
-                            subtitle: 'Fetching your group chats...',
+                        ? LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight,
+                                  ),
+                                  child: const Center(
+                                    child: OneGateGlobalLoader(
+                                      title: 'Loading Groups',
+                                      subtitle: 'Fetching your group chats...',
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           )
                         : _buildEmptyState();
                   }
