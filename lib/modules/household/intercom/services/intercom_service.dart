@@ -361,33 +361,82 @@ class IntercomService {
       // This endpoint returns all members with building info already included
       final societyBackendApiService = SocietyBackendApiService.instance;
 
-      // Fetch all members (use a high perPage to get all members in one call)
-      // If needed, we can implement pagination later
+      // Fetch all members from /admin/member/list with pagination support.
+      // Some backends ignore per_page and return a fixed small page size, so we
+      // must iterate until hasMore/total is satisfied.
       log('🔵 [IntercomService] Fetching members from /admin/member/list endpoint');
-      final memberResponse = await societyBackendApiService.getMembers(
-        page: 1,
-        perPage: 1000, // Get a large number to fetch all members
-        societyId: companyIdToUse
-            .toString(), // FIX: Use companyIdToUse instead of companyId
-      );
+      const perPage = 50;
+      final allMembers = <Map<String, dynamic>>[];
+      final seenIds = <String>{};
 
-      log('✅ [IntercomService] Received ${memberResponse.members.length} members from API');
-      log('📊 [IntercomService] Total members: ${memberResponse.total}, Has more: ${memberResponse.hasMore}');
+      int page = 1;
+      bool shouldContinue = true;
+      int total = 0;
+
+      while (shouldContinue) {
+        final memberResponse = await societyBackendApiService.getMembers(
+          page: page,
+          perPage: perPage,
+          societyId: companyIdToUse
+              .toString(), // FIX: Use companyIdToUse instead of companyId
+        );
+
+        total = memberResponse.total;
+        final hasMore = memberResponse.hasMore;
+
+        log('✅ [IntercomService] Page $page: received ${memberResponse.members.length} members (total: $total, hasMore: $hasMore)');
+
+        int addedCount = 0;
+        for (final member in memberResponse.members) {
+          final id = member['member_id'] ??
+              member['fk_member_id'] ??
+              member['id'] ??
+              member['user_id'] ??
+              member['contact_id'];
+          if (id != null) {
+            final key = id.toString();
+            if (seenIds.contains(key)) continue;
+            seenIds.add(key);
+          }
+          allMembers.add(member);
+          addedCount += 1;
+        }
+
+        // If API doesn't provide total, stop when a page returns empty.
+        if (memberResponse.members.isEmpty) {
+          break;
+        }
+
+        // Safety: stop if we've already fetched total or too many pages.
+        if (total > 0 && allMembers.length >= total) {
+          break;
+        }
+        if (page >= 200) {
+          log('⚠️ [IntercomService] Pagination safety stop at page $page');
+          break;
+        }
+
+        // Decide if we should continue:
+        // - If API provides total, rely on hasMore (plus total safety above).
+        // - If total is missing, continue only if this page added new members.
+        if (total > 0) {
+          shouldContinue = hasMore;
+        } else {
+          shouldContinue = addedCount > 0;
+        }
+
+        page += 1;
+      }
+
+      log('✅ [IntercomService] Total members collected: ${allMembers.length}');
 
       // Log sample member data for debugging
-      if (memberResponse.members.isNotEmpty) {
-        final sampleMember = memberResponse.members.first;
+      if (allMembers.isNotEmpty) {
+        final sampleMember = allMembers.first;
         log('📝 [IntercomService] Sample member keys: ${sampleMember.keys.take(10).join(", ")}');
         log('📝 [IntercomService] Sample member data: ${sampleMember.toString().substring(0, sampleMember.toString().length > 200 ? 200 : sampleMember.toString().length)}');
       } else {
         log('⚠️ [IntercomService] WARNING: Received empty members list from API!');
-      }
-
-      // If there are more pages, fetch them
-      if (memberResponse.hasMore && memberResponse.total > 1000) {
-        log('⚠️ [IntercomService] More than 1000 members found. Fetching additional pages...');
-        // For now, we'll fetch the first 1000. If needed, we can implement full pagination.
-        // The user can filter by building to reduce the number of results.
       }
 
       final List<IntercomContact> residents = [];
@@ -395,7 +444,7 @@ class IntercomService {
       // Map each member to IntercomContact
       int mappedCount = 0;
       int skippedCount = 0;
-      for (final member in memberResponse.members) {
+      for (final member in allMembers) {
         // If buildingId is specified, filter by building
         if (buildingId != null) {
           // Check if member belongs to the specified building
@@ -966,17 +1015,21 @@ class IntercomService {
     String? contactId;
     int? numericUserId;
 
-    // Check if user_id is actually null (not just the string "null")
-    // This is critical: members without user_id are not OneApp users
-    final userIdValue = member['user_id']; // Get raw value, not string
+    // Check if user identifiers are actually present (not just the string "null")
+    // Some backends use old_gate_user_id / old_sso_user_id instead of user_id.
+    final userIdValue = member['user_id']; // raw value
     final userId = userIdValue?.toString();
-    final hasUserId = userIdValue != null &&
-        userId != null &&
-        userId != 'null' &&
-        userId.isNotEmpty;
 
-    final userAccountId = member['user_account_id']?.toString() ??
-        member['old_gate_user_id']?.toString();
+    final userAccountId = member['user_account_id']?.toString();
+    final oldGateUserId = member['old_gate_user_id']?.toString();
+    final oldSsoUserId = member['old_sso_user_id']?.toString();
+
+    bool _hasValue(String? v) {
+      if (v == null) return false;
+      final trimmed = v.trim();
+      if (trimmed.isEmpty || trimmed == 'null' || trimmed == '0') return false;
+      return true;
+    }
     final memberId = member['member_id']?.toString();
     final id = member['id']?.toString();
 
@@ -989,26 +1042,47 @@ class IntercomService {
       contactId = userAccountId;
     }
 
-    // Extract numeric user ID for call APIs.
-    // Prefer user_id for call routing (device token registration aligns to user_id),
-    // but keep contactId priority unchanged for chat/presence identifiers.
-    if (userId != null && !userId.contains('-')) {
+    // Extract numeric user ID for call/group APIs.
+    // Priority: old_gate_user_id > old_sso_user_id > user_id > user_account_id
+    if (_hasValue(oldGateUserId) && !oldGateUserId!.contains('-')) {
+      numericUserId = int.tryParse(oldGateUserId);
+    } else if (_hasValue(oldSsoUserId) && !oldSsoUserId!.contains('-')) {
+      numericUserId = int.tryParse(oldSsoUserId);
+    } else if (_hasValue(userId) && !userId!.contains('-')) {
       numericUserId = int.tryParse(userId);
-    } else if (userAccountId != null && !userAccountId.contains('-')) {
+    } else if (_hasValue(userAccountId) && !userAccountId!.contains('-')) {
       numericUserId = int.tryParse(userAccountId);
-    } else if (memberId != null) {
-      numericUserId = int.tryParse(memberId);
-    } else if (id != null) {
-      numericUserId = int.tryParse(id);
     }
+
+    // Treat 0 or negative as invalid (non-app users often return 0)
+    if (numericUserId != null && numericUserId! <= 0) {
+      numericUserId = null;
+    }
+
+    final hasUserId = numericUserId != null;
 
     // If no UUID-based contactId was set above, fall back to numeric identifiers
     if (contactId == null) {
-      contactId = userAccountId ?? userId ?? memberId ?? id ?? 'unknown';
+      // Prefer valid numeric ID if available; otherwise fall back to local identifiers
+      contactId = (numericUserId != null ? numericUserId.toString() : null) ??
+          (_hasValue(userAccountId) ? userAccountId : null) ??
+          (_hasValue(userId) ? userId : null) ??
+          (_hasValue(oldGateUserId) ? oldGateUserId : null) ??
+          (_hasValue(oldSsoUserId) ? oldSsoUserId : null) ??
+          (_hasValue(memberId) ? memberId : null) ??
+          (_hasValue(id) ? id : null) ??
+          'unknown';
     }
 
     // Final fallbacks for contactId (redundant safety)
-    contactId ??= userId ?? userAccountId ?? memberId ?? id ?? 'unknown';
+    contactId ??= (numericUserId != null ? numericUserId.toString() : null) ??
+        (_hasValue(userId) ? userId : null) ??
+        (_hasValue(userAccountId) ? userAccountId : null) ??
+        (_hasValue(oldGateUserId) ? oldGateUserId : null) ??
+        (_hasValue(oldSsoUserId) ? oldSsoUserId : null) ??
+        (_hasValue(memberId) ? memberId : null) ??
+        (_hasValue(id) ? id : null) ??
+        'unknown';
 
     String? photoUrl = member['photo']?.toString().trim() ??
         member['photo_url']?.toString().trim() ??

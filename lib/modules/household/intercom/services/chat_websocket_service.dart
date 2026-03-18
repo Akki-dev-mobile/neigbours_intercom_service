@@ -148,7 +148,11 @@ class ChatWebSocketService {
     final restBaseUrl = AppConstants.roomServiceBaseUrl;
     // Convert http:// to ws:// for WebSocket
     // Final URL format: ws://13.201.27.102:7071/api/v1/ws?token={token}&room_id={room_id}
-    return '${restBaseUrl.replaceFirst('http://', 'ws://').replaceFirst('https://', 'wss://')}/ws';
+    final wsBase = restBaseUrl
+        .replaceFirst('http://', 'ws://')
+        .replaceFirst('https://', 'wss://');
+    if (wsBase.endsWith('/ws')) return wsBase;
+    return '$wsBase/ws';
   }
 
   WebSocketChannel? _channel;
@@ -306,6 +310,10 @@ class ChatWebSocketService {
           name: _logName);
 
       String wsUrl = '$_wsBaseUrl?token=$tokenParam';
+      final packageName = AppConstants.appPackageName;
+      if (packageName != null && packageName.trim().isNotEmpty) {
+        wsUrl += '&package_name=${Uri.encodeComponent(packageName.trim())}';
+      }
 
       // Add room_id to URL if provided (required for 1-to-1 chat and group chat)
       if (roomId != null && roomId.isNotEmpty) {
@@ -382,10 +390,10 @@ class ChatWebSocketService {
         // support headers, so we rely on query parameter authentication.
         // If server requires Authorization header, we'd need to use a different approach.
 
-        webSocket = await WebSocket.connect(
-          wsUrl,
-          customClient: httpClient,
-        ).timeout(
+      webSocket = await WebSocket.connect(
+        wsUrl,
+        customClient: httpClient,
+      ).timeout(
           const Duration(seconds: 15),
           onTimeout: () {
             httpClient.close(force: true);
@@ -407,6 +415,8 @@ class ChatWebSocketService {
 
       // Store references
       _webSocket = webSocket;
+      // Keep the socket alive to avoid server idle timeouts.
+      _webSocket?.pingInterval = const Duration(seconds: 20);
       _channel = IOWebSocketChannel(webSocket);
 
       // Set up message listener

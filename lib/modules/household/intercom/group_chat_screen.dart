@@ -4231,7 +4231,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
                         return CircleAvatar(
                           radius: 16,
-                          backgroundColor: AppColors.primary.withOpacity(0.1),
+                          backgroundColor: const Color(0xffffebee),
                           // Use cached avatar from RoomInfo API, WebSocket message, or Messages API
                           // Priority: message.senderAvatar > _memberAvatarCache > initials
                           backgroundImage:
@@ -4246,8 +4246,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                           child: !hasAvatar
                               ? Text(
                                   message.senderInitials,
-                                  style: TextStyle(
-                                    color: AppColors.primary,
+                                  style: const TextStyle(
+                                    color: Color(0xffc62828),
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -5019,7 +5019,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         children: [
           CircleAvatar(
             radius: 16,
-            backgroundColor: AppColors.primary.withOpacity(0.1),
+            backgroundColor: const Color(0xffffebee),
             // Show typing member's avatar, not group avatar
             backgroundImage:
                 typingUserAvatar != null && typingUserAvatar.isNotEmpty
@@ -5241,7 +5241,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: AppColors.primary.withOpacity(0.1),
+            backgroundColor: const Color(0xffffebee),
             child: const Icon(Icons.person, color: AppColors.primary),
           ),
           const SizedBox(width: 12),
@@ -5399,7 +5399,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                   const SizedBox(width: 8),
                   if (_messageController.text.trim().isNotEmpty)
                     CircleAvatar(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: const Color(0xffc62828),
                       child: IconButton(
                         icon: const Icon(Icons.send),
                         color: Colors.white,
@@ -5432,14 +5432,12 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: _isPressingMic
-                              ? AppColors.primary.withOpacity(0.8)
-                              : AppColors.primary,
+                          color: const Color(0xffc62828),
                           shape: BoxShape.circle,
                           boxShadow: _isPressingMic
                               ? [
                                   BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.4),
+                                    color: const Color(0xffc62828),
                                     spreadRadius: 4,
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
@@ -6208,7 +6206,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
             Container(
               padding: const EdgeInsets.all(24),
               decoration: const BoxDecoration(
-                color: Colors.red,
+                color: Color(0xffc62828),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -9632,10 +9630,10 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: const Color(0xffffebee),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: AppColors.primary, size: 28),
+            child: Icon(icon, color: const Color(0xffc62828), size: 28),
           ),
           const SizedBox(height: 8),
           Text(
@@ -9835,7 +9833,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                         icon: const Icon(Icons.send),
                         label: const Text('Send'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: const Color(0xffc62828),
                           foregroundColor: Colors.white,
                         ),
                       ),
@@ -10540,14 +10538,14 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           children: [
             Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.1),
+                color: Color(0xffffebee),
               ),
               child: const Icon(
                 Icons.chat_bubble_outline,
                 size: 28,
-                color: AppColors.primary,
+                color: Color(0xffc62828),
               ),
             ),
             const SizedBox(height: 16),
@@ -10631,7 +10629,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: const Color(0xffc62828),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),

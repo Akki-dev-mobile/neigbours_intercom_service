@@ -288,6 +288,9 @@ class InitiateCallRequest {
   /// Platform identifier expected by backend (e.g. android/ios/web)
   final String? platform;
 
+  /// Optional app package name (OneGate/OneApp)
+  final String? packageName;
+
   /// Type of call (audio or video) - REQUIRED
   final CallType callType;
 
@@ -296,6 +299,7 @@ class InitiateCallRequest {
     this.toUserId,
     this.imageAvatarUrl,
     this.platform,
+    this.packageName,
     required this.callType,
   });
 
@@ -310,6 +314,8 @@ class InitiateCallRequest {
       'call_type': callType.value,
       if (platform != null && platform!.trim().isNotEmpty)
         'platform': platform!.trim(),
+      if (packageName != null && packageName!.trim().isNotEmpty)
+        'package_name': packageName!.trim(),
     };
   }
 }

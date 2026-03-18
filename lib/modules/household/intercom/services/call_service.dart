@@ -195,6 +195,7 @@ class CallService extends BaseApiService {
         imageAvatarUrl: imageAvatarUrl,
         callType: callType,
         platform: _platformForApi(),
+        packageName: AppConstants.appPackageName,
       );
       final requestJson = request.toJson();
       log(

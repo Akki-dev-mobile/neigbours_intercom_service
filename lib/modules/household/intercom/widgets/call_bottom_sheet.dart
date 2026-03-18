@@ -133,12 +133,12 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: const Color(0xffffebee),
             shape: BoxShape.circle,
           ),
           child: Icon(
             Icons.phone,
-            color: AppColors.primary,
+            color: const Color(0xffc62828),
             size: 20,
           ),
         ),
@@ -177,7 +177,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: const Color(0xffffebee),
             borderRadius: BorderRadius.circular(24),
           ),
           child: ClipRRect(
@@ -192,7 +192,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
                         child: Text(
                           widget.contact.initials,
                           style: TextStyle(
-                            color: AppColors.primary,
+                            color: const Color(0xffc62828),
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
@@ -204,7 +204,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
                     child: Text(
                       widget.contact.initials,
                       style: TextStyle(
-                        color: AppColors.primary,
+                        color: const Color(0xffc62828),
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),

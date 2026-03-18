@@ -423,7 +423,7 @@ class _CalleeAvatar extends StatelessWidget {
       ),
       child: CircleAvatar(
         radius: radius,
-        backgroundColor: AppColors.primary.withOpacity(0.22),
+        backgroundColor: const Color(0xffc62828),
         backgroundImage: hasAvatar ? NetworkImage(resolved) : null,
         child: hasAvatar
             ? null

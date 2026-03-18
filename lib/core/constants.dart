@@ -8,4 +8,6 @@ class AppConstants {
       IntercomModule.config.endpoints.roomServiceBaseUrl;
 
   static String get jitsiServerUrl => IntercomModule.config.endpoints.jitsiServerUrl;
+
+  static String? get appPackageName => IntercomModule.config.appPackageName;
 }

@@ -444,7 +444,7 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
       child: Text(
         initials,
         style: const TextStyle(
-          color: AppColors.primary,
+          color: Color(0xffc62828),
           fontWeight: FontWeight.bold,
           fontSize: 18,
         ),
@@ -510,7 +510,7 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
       width: 52,
       height: 52,
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: const Color(0xffffebee),
         shape: BoxShape.circle,
       ),
       child: photoUrl != null && photoUrl.isNotEmpty
@@ -538,7 +538,7 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
       child: Text(
         initials,
         style: const TextStyle(
-          color: AppColors.primary,
+          color: Color(0xffc62828),
           fontWeight: FontWeight.bold,
           fontSize: 18,
         ),

@@ -93,6 +93,7 @@ class _IntercomScreenState extends State<IntercomScreen>
     });
   }
 
+
   void _handleTabChange() {
     if (!_tabController.indexIsChanging) {
       final newIndex = _tabController.index;
@@ -179,19 +180,37 @@ class _IntercomScreenState extends State<IntercomScreen>
   @override
   Widget build(BuildContext context) {
     return AppScaffold.internal(
-      title: widget.fromNeighborsCard ? 'Neighbors' : 'Intercom',
-      actions: _isGroupsTabSelected
-          ? null // Hide chat history icon when Groups tab is selected
-          : [
-              IconButton(
-                icon: const Icon(Icons.history),
-                onPressed: () {
-                  // Show call history
-                  _showCallHistory();
-                },
-                tooltip: 'Chat History',
-              ),
-            ],
+      title: 'Intercom',
+      customAppBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.white,
+        titleSpacing: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          color: Colors.black,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text(
+          'Intercom',
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        actions: _isGroupsTabSelected
+            ? null
+            : [
+                IconButton(
+                  icon: const Icon(Icons.history),
+                  color: const Color(0xffc62828),
+                  onPressed: () {
+                    _showCallHistory();
+                  },
+                  tooltip: 'Chat History',
+                ),
+              ],
+      ),
       body: Column(
         children: [
           // Modern Segmented Control Tabs
@@ -200,7 +219,9 @@ class _IntercomScreenState extends State<IntercomScreen>
             tabLabels: _tabTitles,
             tabIcons: _tabIcons,
             currentIndex: _currentIndex,
-            padding: EdgeInsets.zero,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            segmented: true,
+            compact: true,
           ),
 
           // Tab content
@@ -334,16 +355,21 @@ class _CallHistoryPageState extends State<CallHistoryPage>
     return Scaffold(
       backgroundColor: Colors.white, // White background for the page
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.white,
+        titleSpacing: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          color: Colors.black,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: const Text(
           'Chats & Calls History',
-          style: TextStyle(color: Colors.black),
-        ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
       body: Column(
@@ -353,7 +379,9 @@ class _CallHistoryPageState extends State<CallHistoryPage>
             tabLabels: const ['Chats', 'Calls'],
             tabIcons: const [Icons.chat, Icons.call],
             currentIndex: _currentIndex,
-            padding: EdgeInsets.zero,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            segmented: true,
+            compact: true,
           ),
 
           // Tab content
@@ -508,14 +536,14 @@ class _CallsEmptyState extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.1),
+                color: Color(0xffffebee),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.call_outlined,
                 size: 28,
-                color: AppColors.primary,
+                color: Color(0xffc62828),
               ),
             ),
             const SizedBox(height: 16),
@@ -616,7 +644,7 @@ class _CallHistoryItem extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       leading: CircleAvatar(
-        backgroundColor: AppColors.primary.withOpacity(0.1),
+        backgroundColor: const Color(0xffffebee),
         backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
         onBackgroundImageError: avatarUrl != null
             ? (exception, stackTrace) {
@@ -627,7 +655,7 @@ class _CallHistoryItem extends StatelessWidget {
             ? null
             : Icon(
                 Icons.person,
-                color: AppColors.primary,
+                color: const Color(0xffc62828),
               ),
       ),
       title: Text(
@@ -1639,14 +1667,14 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
           children: [
             Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.1),
+                color: Color(0xffffebee),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.chat_bubble_outline,
                 size: 28,
-                color: AppColors.primary,
+                color: Color(0xffc62828),
               ),
             ),
             const SizedBox(height: 16),
@@ -1838,7 +1866,7 @@ class _ChatHistoryItem extends StatelessWidget {
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           leading: CircleAvatar(
-            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+            backgroundColor: const Color(0xffffebee),
             backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
             onBackgroundImageError:
                 avatarUrl != null
@@ -1849,7 +1877,7 @@ class _ChatHistoryItem extends StatelessWidget {
             child: avatarUrl == null
                 ? Icon(
                     Icons.person,
-                    color: AppColors.primary,
+                    color: const Color(0xffc62828),
                   )
                 : null,
           ),

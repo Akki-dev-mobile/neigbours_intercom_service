@@ -678,7 +678,7 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
                                 child: IconButton(
                                   icon: Icon(
                                     _isListening ? Icons.mic : Icons.mic_none,
-                                    color: const Color(0xFFEE4D5F),
+                                    color: const Color(0xffc62828),
                                     size: 20,
                                   ),
                                   onPressed: _startListening,
@@ -1066,14 +1066,14 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
           children: [
             Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.1),
+                color: Color(0xffffebee),
               ),
               child: Icon(
                 icon,
                 size: 28,
-                color: AppColors.primary,
+                color: const Color(0xffc62828),
               ),
             ),
             const SizedBox(height: 16),

@@ -172,7 +172,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
               children: [
                 CircleAvatar(
                   radius: 48,
-                  backgroundColor: AppColors.primary.withOpacity(0.2),
+                  backgroundColor: const Color(0xffc62828),
                   child: Text(
                     _initials,
                     style: const TextStyle(

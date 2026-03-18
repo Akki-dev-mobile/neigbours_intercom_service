@@ -5,9 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:common_widgets/common_widgets.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/widgets/app_loader.dart';
 import '../../../../core/widgets/enhanced_toast.dart';
+import '../../../../core/widgets/onegate_global_loader.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/keycloak_service.dart';
@@ -598,6 +600,11 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     // if the tab is inactive when it completes (mounted check)
     _isLoadingGroups = false;
     _inFlightLoad = null;
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
 
     // Increment generation to invalidate any pending delayed operations
     _activationGeneration++;
@@ -1497,6 +1504,11 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
             DateTime.now().difference(_cachedGroupsData!.timestamp);
         debugPrint(
             '✅ [GroupsTab] Cache is valid (age: ${cacheAge.inSeconds}s), skipping API call');
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
         // Cache is valid - no need to call API
         widget.loadingNotifier?.value = false;
         return;
@@ -1880,7 +1892,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           // Other errors
           setState(() {
             _isLoading = false;
-            _hasError = true;
+            _hasError = _groups.isNotEmpty;
             _errorMessage = errorMessage;
           });
           _isLoadingGroups = false;
@@ -1913,7 +1925,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       }
       setState(() {
         _isLoading = false;
-        _hasError = true;
+        _hasError = _groups.isNotEmpty;
         _errorMessage = 'An unexpected error occurred: $e';
       });
       _hasLoadedOnce = true; // Mark as loaded to prevent immediate retry
@@ -2947,6 +2959,14 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading && !_isLoadingGroups && _inFlightLoad == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+        });
+      });
+    }
     // Check for company change on every build to ensure we catch changes
     // This is more reliable than didChangeDependencies which may not be called
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -3004,7 +3024,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                       padding: const EdgeInsets.all(16),
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AppColors.primary, Color(0xFFFF9292)],
+                          colors: [Color(0xffc62828), Color(0xffff8a80)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -3039,7 +3059,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                 style: GoogleFonts.montserrat(
                                   color: Colors.white,
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                               const Spacer(),
@@ -3058,7 +3078,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                         shape: BoxShape.circle,
                                         color: _isWebSocketConnected
                                             ? Colors.green.shade300
-                                            : Colors.white.withOpacity(0.5),
+                                            : Colors.white.withOpacity(0.6),
                                       ),
                                     ),
                                     const SizedBox(width: 6),
@@ -3099,66 +3119,59 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                           const SizedBox(height: 16),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                  // boxShadow: [
-                                  //   BoxShadow(
-                                  //     color: Colors.red.withOpacity(0.1),
-                                  //     blurRadius: 4,
-                                  //     offset: const Offset(0, 2),
-                                  //   ),
-                                  // ],
-                                ),
-                                child: Text(
-                                  'Total: ${_groups.length}',
-                                  style: GoogleFonts.montserrat(
-                                    color: AppColors.primary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
                                   ),
-                                ),
-                              ),
-                              Container(
-                                decoration: BoxDecoration(
-                                  gradient: AppColors.blackToGreyGradient,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.2),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: ElevatedButton.icon(
-                                  onPressed: _navigateToCreateGroup,
-                                  icon: const Icon(
-                                    Icons.add,
-                                    color: Colors.white,
-                                    size: 18,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xffffebee),
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
-                                  label: Text(
-                                    'Create Group',
+                                  child: Text(
+                                    'Total: ${_groups.length}',
                                     style: GoogleFonts.montserrat(
-                                      color: Colors.white,
+                                      color: const Color(0xffc62828),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
+                                ),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.black,
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ElevatedButton.icon(
+                                    onPressed: _navigateToCreateGroup,
+                                    icon: const Icon(
+                                      Icons.add,
+                                      color: Colors.white,
+                                      size: 18,
                                     ),
+                                    label: Text(
+                                      'Create Group',
+                                      style: GoogleFonts.montserrat(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.transparent,
+                                      shadowColor: Colors.transparent,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -3182,64 +3195,52 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
+                border: Border.all(color: Colors.grey.shade300),
+                boxShadow: [
                   BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                    offset: Offset(0, 3),
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search groups...',
-                  hintStyle: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontSize: 14,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: const Color(0xFFEE4D5F).withOpacity(0.7),
-                    size: 20,
-                  ),
-                  suffixIcon: Container(
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEE4D5F).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+              child: Row(
+                children: [
+                  const SizedBox(width: 12),
+                  const Icon(Icons.search, color: Colors.grey, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search groups...',
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontSize: 14,
                         ),
-                      ],
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Color(0xffffebee),
+                      shape: BoxShape.circle,
                     ),
                     child: IconButton(
                       icon: Icon(
                         _isListening ? Icons.mic : Icons.mic_none,
                         color:
-                            _isListening ? Colors.red : const Color(0xFFEE4D5F),
+                            _isListening ? Colors.red : const Color(0xffc62828),
                         size: 20,
                       ),
                       onPressed:
                           _isListening ? _stopListening : _startListening,
                       tooltip: 'Voice Search',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      iconSize: 20,
                     ),
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
+                ],
               ),
             ),
 
@@ -3253,41 +3254,29 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                   if (_hasError && _groups.isEmpty) {
                     return _buildErrorState();
                   }
-                  if (_isLoading && !hasGroups) {
-                    return const Center(
-                      child: AppLoader(
-                        title: 'Loading Groups',
-                        subtitle: 'Fetching your group chats...',
-                        icon: Icons.chat_rounded,
-                      ),
-                    );
-                  }
                   if (!hasGroups) {
-                    return _buildEmptyState();
-                  }
-                  return _isLoading
-                      ? const Center(
-                          child: AppLoader(
+                    return _isLoading
+                        ? const OneGateGlobalLoader(
                             title: 'Loading Groups',
                             subtitle: 'Fetching your group chats...',
-                            icon: Icons.chat_rounded,
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _loadGroups,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                            itemCount: groupsToShow.length,
-                            physics: const BouncingScrollPhysics(),
-                            itemBuilder: (context, index) {
-                              final group = groupsToShow[index];
-                              // Match 1-to-1 logic: show indicator when unread > 0 regardless of opened flag
-                              final isOpened = group.unreadCount == 0 &&
-                                  _openedGroups.contains(group.id);
-                              return _buildGroupCard(group, isOpened: isOpened);
-                            },
-                          ),
-                        );
+                          )
+                        : _buildEmptyState();
+                  }
+                  return RefreshIndicator(
+                    onRefresh: _loadGroups,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      itemCount: groupsToShow.length,
+                      physics: const BouncingScrollPhysics(),
+                      itemBuilder: (context, index) {
+                        final group = groupsToShow[index];
+                        // Match 1-to-1 logic: show indicator when unread > 0 regardless of opened flag
+                        final isOpened = group.unreadCount == 0 &&
+                            _openedGroups.contains(group.id);
+                        return _buildGroupCard(group, isOpened: isOpened);
+                      },
+                    ),
+                  );
                 },
               ),
             ),
@@ -3328,12 +3317,12 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: const Color(0xffffebee),
                       ),
                       child: const Icon(
                         Icons.group_outlined,
                         size: 28,
-                        color: AppColors.primary,
+                        color: Color(0xffc62828),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -3359,7 +3348,11 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                     const SizedBox(height: 16),
                     Container(
                       decoration: BoxDecoration(
-                        gradient: AppColors.blackToGreyGradient,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xff6f6f6f), Color(0xff2f2f2f)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
@@ -3581,7 +3574,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                           width: 50,
                           height: 50,
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: const Color(0xffffebee),
                             borderRadius: BorderRadius.circular(25),
                           ),
                           child: group.iconUrl != null &&
@@ -3603,8 +3596,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                         child: Text(
                                           group.initials,
                                           style: const TextStyle(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xffc62828),
+                                            fontWeight: FontWeight.w700,
                                             fontSize: 18,
                                           ),
                                         ),
@@ -3618,8 +3611,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                         child: Text(
                                           group.initials,
                                           style: const TextStyle(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xffc62828),
+                                            fontWeight: FontWeight.w700,
                                             fontSize: 18,
                                           ),
                                         ),
@@ -3631,8 +3624,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                   child: Text(
                                     group.initials,
                                     style: const TextStyle(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xffc62828),
+                                      fontWeight: FontWeight.w700,
                                       fontSize: 18,
                                     ),
                                   ),

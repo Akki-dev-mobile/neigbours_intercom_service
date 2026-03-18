@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:common_widgets/common_widgets.dart';
 import '../../../../core/theme/colors.dart';
-import '../../../../core/widgets/app_loader.dart';
 import '../models/intercom_contact.dart';
 import '../chat_screen.dart';
 import '../widgets/voice_search_screen.dart';
 import '../services/intercom_service.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/enhanced_toast.dart';
+import '../../../../core/widgets/onegate_global_loader.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import '../../../../core/utils/oneapp_share.dart';
 import 'tab_constants.dart';
@@ -803,6 +804,12 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const OneGateGlobalLoader(
+        title: 'Loading Committee',
+        subtitle: 'Fetching committee members...',
+      );
+    }
     return SafeArea(
       child: Container(
         decoration: const BoxDecoration(
@@ -835,19 +842,19 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header with gradient
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [AppColors.primary, Color(0xFFFF9292)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(24),
-                            topRight: Radius.circular(24),
+                  // Header with gradient
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xffc62828), Color(0xffff8a80)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
                           ),
                         ),
                         child: Stack(
@@ -868,23 +875,12 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                                   style: GoogleFonts.montserrat(
                                     color: Colors.white,
                                     fontSize: 16,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],
                             ),
                           ],
-                        ),
-                      ),
-
-                      // Progress bar showing availability ratio
-                      Container(
-                        height: 4,
-                        width: double.infinity,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [AppColors.primary, Color(0xFFFF9292)],
-                          ),
                         ),
                       ),
 
@@ -913,21 +909,13 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withOpacity(0.1),
+                                    color: const Color(0xffffebee),
                                     borderRadius: BorderRadius.circular(20),
-                                    // // boxShadow: [
-                                    // //   BoxShadow(
-                                    // //     color:
-                                    // //         AppColors.primary.withOpacity(0.1),
-                                    // //     blurRadius: 4,
-                                    // //     offset: const Offset(0, 2),
-                                    // //   ),
-                                    // ],
                                   ),
                                   child: Text(
                                     'Total: ${_committeeMembers.length}',
                                     style: GoogleFonts.montserrat(
-                                      color: AppColors.primary,
+                                      color: const Color(0xffc62828),
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -939,15 +927,8 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.green.withOpacity(0.1),
+                                    color: const Color(0xffe8f5e9),
                                     borderRadius: BorderRadius.circular(20),
-                                    // boxShadow: [
-                                    //   BoxShadow(
-                                    //     color: Colors.green.withOpacity(0.1),
-                                    //     blurRadius: 4,
-                                    //     offset: const Offset(0, 2),
-                                    //   ),
-                                    // ],
                                   ),
                                   child: Row(
                                     children: [
@@ -955,12 +936,12 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                                         width: 8,
                                         height: 8,
                                         decoration: BoxDecoration(
-                                          color: Colors.green,
+                                          color: const Color(0xff43a047),
                                           shape: BoxShape.circle,
                                           boxShadow: [
                                             BoxShadow(
-                                              color:
-                                                  Colors.green.withOpacity(0.3),
+                                              color: const Color(0xff43a047)
+                                                  .withOpacity(0.3),
                                               blurRadius: 4,
                                               spreadRadius: 1,
                                             ),
@@ -971,7 +952,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                                       Text(
                                         'Available: ${_committeeMembers.where((m) => m.status == IntercomContactStatus.online).length}',
                                         style: GoogleFonts.montserrat(
-                                          color: Colors.green,
+                                          color: const Color(0xff43a047),
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -995,76 +976,61 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: const [
+                  border: Border.all(color: Colors.grey.shade300),
+                  boxShadow: [
                     BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 6,
-                      offset: Offset(0, 3),
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search committee members...',
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: 14,
-                    ),
-                    prefixIcon: Icon(
-                      Icons.search,
-                      color: const Color(0xFFB71C1C).withOpacity(0.7),
-                      size: 20,
-                    ),
-                    suffixIcon: Container(
-                      margin: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFB71C1C).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 12),
+                    const Icon(Icons.search, color: Colors.grey, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search committee members...',
+                          hintStyle: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 14,
                           ),
-                        ],
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xffffebee),
+                        shape: BoxShape.circle,
                       ),
                       child: IconButton(
                         icon: Icon(
                           _isListening ? Icons.mic : Icons.mic_none,
                           color: _isListening
                               ? Colors.red
-                              : const Color(0xFFB71C1C),
+                              : const Color(0xffc62828),
                           size: 20,
                         ),
                         onPressed:
                             _isListening ? _stopListening : _startListening,
                         tooltip: 'Voice Search',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        iconSize: 20,
                       ),
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
-                  ),
+                  ],
                 ),
               ),
 
               // Committee members list with enhanced cards
               _isLoading
-                  ? const Center(
-                      child: AppLoader(
-                        title: 'Loading Committee',
-                        subtitle: 'Fetching committee members...',
-                        icon: Icons.groups_rounded,
-                      ),
+                  ? const OneGateGlobalLoader(
+                      title: 'Loading Committee',
+                      subtitle: 'Fetching committee members...',
                     )
                   : (_searchQuery.isEmpty
                               ? _committeeMembers
@@ -1126,7 +1092,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                           width: 50,
                           height: 50,
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: const Color(0xffffebee),
                             borderRadius: BorderRadius.circular(25),
                           ),
                           child: ClipRRect(
@@ -1141,8 +1107,8 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                                         child: Text(
                                           _getInitials(member.name),
                                           style: const TextStyle(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xffc62828),
+                                            fontWeight: FontWeight.w700,
                                             fontSize: 18,
                                           ),
                                         ),
@@ -1153,8 +1119,8 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                                     child: Text(
                                       _getInitials(member.name),
                                       style: const TextStyle(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xffc62828),
+                                        fontWeight: FontWeight.w700,
                                         fontSize: 18,
                                       ),
                                     ),
@@ -1238,7 +1204,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                                 style: TextStyle(
                                   color: Colors.orange.shade700,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -1250,7 +1216,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                       ElevatedButton.icon(
                         onPressed: () =>
                             OneAppShare.shareInvite(name: member.name),
-                        icon: const Icon(Icons.person_add, size: 16),
+                        icon: const Icon(Icons.person_add_alt_1, size: 16),
                         label: const Text(
                           'Invite',
                           style: TextStyle(
@@ -1260,10 +1226,10 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                           backgroundColor: Colors.orange,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
+                              horizontal: 12, vertical: 8),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                       ),
@@ -1284,15 +1250,15 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                           size: 18,
                           color: !member.hasUserId
                               ? Colors.grey.shade400
-                              : Colors.blue,
+                              : Colors.blue.shade600,
                         ),
                         label: Text(
                           'Chat',
                           style: TextStyle(
                             color: !member.hasUserId
                                 ? Colors.grey.shade400
-                                : Colors.blue,
-                            fontWeight: FontWeight.w500,
+                                : Colors.blue.shade600,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         onPressed: !member.hasUserId
@@ -1330,7 +1296,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.green,
+                                    Color(0xff4caf50),
                                   ),
                                 ),
                               )
@@ -1339,7 +1305,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                                 size: 22,
                                 color: !member.hasUserId
                                     ? Colors.grey.shade400
-                                    : Colors.green,
+                                    : const Color(0xff4caf50),
                               ),
                       ),
                     ),
@@ -1501,12 +1467,12 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.1),
+                color: const Color(0xffffebee),
               ),
               child: const Icon(
                 Icons.groups_outlined,
                 size: 28,
-                color: AppColors.primary,
+                color: Color(0xffc62828),
               ),
             ),
             const SizedBox(height: 16),

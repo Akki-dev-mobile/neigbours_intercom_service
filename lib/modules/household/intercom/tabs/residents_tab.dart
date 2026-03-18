@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../../core/theme/colors.dart';
-import '../../../../core/widgets/app_loader.dart';
+import '../../../../core/widgets/onegate_global_loader.dart';
 import '../models/intercom_contact.dart';
 import '../chat_screen.dart';
 import '../widgets/voice_search_screen.dart';
@@ -72,6 +72,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
   final TextEditingController _searchController = TextEditingController();
   // Riverpod now manages: _searchResults, _isSearching, _searchError, and UserProvider interaction
   final Debouncer _debouncer = Debouncer(milliseconds: 500);
+  final ScrollController _residentScrollController = ScrollController();
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
   String _searchQuery = '';
@@ -84,6 +85,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
   // Data for residents
   List<IntercomContact> _residents = [];
   bool _isLoading = true;
+  bool _isLoadingMoreResidents = false;
+  int _visibleResidentCount = 0;
   final Set<String> _callStartingContactIds = <String>{};
   final IntercomService _intercomService = IntercomService();
 
@@ -94,6 +97,9 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
   // Cache for residents and buildings data
   _CachedResidentsData? _cachedData;
   int? _lastLoadedCompanyId; // Track company ID for cache invalidation
+  bool _didForceFullRefresh = false;
+  final bool _preferAllBuildings = true;
+  bool _isBuildingScopedFetch = false;
 
   // Request throttling: Minimum interval between requests (2-3 seconds)
   static const Duration _minRequestInterval = Duration(seconds: 2);
@@ -126,6 +132,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _residentScrollController.addListener(_onResidentScroll);
     _initializeSpeech();
     _loadCurrentUserIds();
     // Initialize tab activation (handles initial load and listener setup)
@@ -182,6 +189,17 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
         final cacheAge = DateTime.now().difference(_cachedData!.timestamp);
         debugPrint(
             '✅ [ResidentsTab] Cache is valid (age: ${cacheAge.inSeconds}s), skipping API call');
+
+        // If cache looks truncated (previous UI pagination), force one refresh.
+        if (!_didForceFullRefresh &&
+            _cachedData!.residents.length <=
+                TabConstants.kResidentsUiPageSize) {
+          _didForceFullRefresh = true;
+          debugPrint(
+              '🔄 [ResidentsTab] Cache may be truncated (${_cachedData!.residents.length}); forcing refresh');
+          _checkCacheAndLoad();
+          return;
+        }
 
         // CRITICAL FIX: Always ensure state is restored, even if cache is valid
         // When returning from Group chat, state might be cleared even though cache exists
@@ -252,13 +270,14 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
           // Render cached data immediately - this ensures UI is never blank
           _residents = List.from(_cachedData!.residents);
           _buildings = List.from(_cachedData!.buildings);
+          _ensureDefaultBuildingSelected();
           // CRITICAL: Set loading state to false to show data, not loading spinner
           _isLoading = false;
           _isLoadingBuildings = false;
 
           // CRITICAL: Apply filtering to populate _filteredResidents
           // This ensures groups are populated and data is shown
-          _filterResidents();
+          _filterResidents(resetPagination: true);
 
           // VERIFY: Ensure _filteredResidents is populated
           // If building filter results in empty, reset building selection to show all residents
@@ -266,10 +285,10 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
               _residents.isNotEmpty &&
               _selectedBuildingId != null) {
             debugPrint(
-                '⚠️ [ResidentsTab] Building filter resulted in empty residents, resetting building selection');
+                '⚠️ [ResidentsTab] Building filter resulted in empty residents, resetting to first building');
             _selectedBuildingId = null;
-            // Re-filter with no building selection
-            _filterResidents();
+            _ensureDefaultBuildingSelected();
+            _filterResidents(resetPagination: true);
           }
 
           // FINAL CHECK: If still empty after reset, ensure we show all residents
@@ -438,6 +457,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     _presenceTimer?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _residentScrollController.removeListener(_onResidentScroll);
+    _residentScrollController.dispose();
     _debouncer.dispose();
     _speech.stop();
     // Clean up tab activation listener
@@ -879,6 +900,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
 
         setState(() {
           _buildings = response.buildings;
+          _ensureDefaultBuildingSelected();
           _isLoadingBuildings = false;
           debugPrint(
               '✅ [ResidentsTab] Loaded ${_buildings.length} buildings from API');
@@ -896,7 +918,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
 
         // Apply filtering after buildings are loaded and building is auto-selected
         if (mounted) {
-          _filterResidents();
+          _filterResidents(resetPagination: true);
         }
       }
     } catch (e) {
@@ -914,7 +936,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     }
   }
 
-  Future<void> _loadContacts({TabCancellationToken? token}) async {
+  Future<void> _loadContacts(
+      {TabCancellationToken? token, String? buildingIdOverride}) async {
     // Token should be provided by caller (from _checkCacheAndLoad)
     // If not provided, this is a standalone call - acquire lock
     bool shouldReleaseLock = false;
@@ -940,9 +963,27 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       debugPrint('👥 [ResidentsTab] Loading residents from API...');
       debugPrint(
           '🌐 [ResidentsTab] API: SocietyBackendApiService.getMembers() -> /admin/member/list');
+
+      // Match CreateGroupPage member list API usage exactly
       final selectedSocietyId = await _apiService.getSelectedSocietyId();
+      if (selectedSocietyId == null) {
+        debugPrint(
+            '⚠️ [ResidentsTab] No society ID found, cannot load members');
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      final buildingId = buildingIdOverride ?? _selectedBuildingId;
+      final buildingIdInt =
+          buildingId != null ? int.tryParse(buildingId) : null;
+
       final residents = await _intercomService.getResidents(
         companyId: selectedSocietyId,
+        buildingId: buildingIdInt,
       );
 
       // Check token validity before updating state
@@ -958,13 +999,14 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
         setState(() {
           _residents = residents;
           _isLoading = false;
+          _isBuildingScopedFetch = buildingIdInt != null;
         });
 
         // Apply filtering after loading residents
-        _filterResidents();
+        _filterResidents(resetPagination: true);
 
         // Update cache with fresh data
-        if (currentCompanyId != null) {
+        if (currentCompanyId != null && buildingIdInt == null) {
           _cachedData = _CachedResidentsData(
             residents: List.from(residents), // Create copy for cache
             buildings: List.from(_buildings), // Use already loaded buildings
@@ -1027,6 +1069,9 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     if (_selectedBuildingId == null) {
       return _residents;
     }
+    if (_isBuildingScopedFetch) {
+      return _residents;
+    }
     // Find building name from ID
     final selectedBuilding = _buildings.firstWhere(
       (b) =>
@@ -1035,29 +1080,73 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       orElse: () => <String, dynamic>{},
     );
     final buildingName = selectedBuilding['soc_building_name']?.toString() ??
-        selectedBuilding['building_name']?.toString();
+        selectedBuilding['building_name']?.toString() ??
+        _selectedBuildingId;
+    final buildingId = _selectedBuildingId?.toString();
 
-    if (buildingName == null) return _residents;
+    if ((buildingName == null || buildingName.isEmpty) &&
+        (buildingId == null || buildingId.isEmpty)) {
+      return _residents;
+    }
 
-    return _residents
-        .where((resident) => resident.building == buildingName)
-        .toList();
+    bool matchesBuilding(IntercomContact resident) {
+      final residentBuilding = resident.building?.trim();
+      if (residentBuilding != null && residentBuilding.isNotEmpty) {
+        if (buildingName != null &&
+            residentBuilding.toLowerCase() == buildingName.toLowerCase()) {
+          return true;
+        }
+        if (buildingName != null) {
+          final normalizedResident =
+              residentBuilding.toLowerCase().replaceAll(' ', '');
+          final normalizedSelected =
+              buildingName.toLowerCase().replaceAll(' ', '');
+          if (normalizedResident == normalizedSelected) {
+            return true;
+          }
+        }
+        if (buildingId != null && residentBuilding == buildingId) {
+          return true;
+        }
+      }
+
+      // Fallback: derive building from unit if present (e.g., "A-101")
+      final unit = resident.unit?.trim();
+      if (unit != null && unit.isNotEmpty && buildingName != null) {
+        String? extractedBuilding;
+        if (unit.contains('-')) {
+          extractedBuilding = unit.split('-')[0].trim();
+        } else if (RegExp(r'^[A-Za-z]').hasMatch(unit)) {
+          extractedBuilding = unit[0].toUpperCase();
+        }
+        if (extractedBuilding != null &&
+            extractedBuilding.isNotEmpty &&
+            extractedBuilding.toLowerCase() ==
+                buildingName.toLowerCase()) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    return _residents.where(matchesBuilding).toList();
   }
 
   // Group residents by floor
   Map<String, List<IntercomContact>> get groupedResidents {
-    // Use _filteredResidents which already handles both building and search filtering
-    final filteredByBuilding = _filteredResidents;
+    return _groupResidents(_filteredResidents);
+  }
+
+  Map<String, List<IntercomContact>> _groupResidents(
+      List<IntercomContact> residents) {
     final Map<String, List<IntercomContact>> result = {};
 
-    for (final resident in filteredByBuilding) {
-      // Handle null floor - omit floor if null/empty
+    for (final resident in residents) {
       final buildingText =
           resident.building != null && resident.building!.isNotEmpty
               ? resident.building!
               : 'Building';
-      // Use building name from API as-is (it may already include "Wing" if needed)
-      // Only include floor if it's not null/empty
       final key = resident.floor != null && resident.floor!.isNotEmpty
           ? '$buildingText - Floor ${resident.floor}'
           : buildingText;
@@ -1070,12 +1159,28 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     return result;
   }
 
+  List<Map<String, dynamic>> _deriveBuildingsFromResidents() {
+    final names = <String>{};
+    final derived = <Map<String, dynamic>>[];
+    for (final resident in _residents) {
+      final name = resident.building?.trim();
+      if (name == null || name.isEmpty) continue;
+      if (names.add(name)) {
+        derived.add(<String, dynamic>{
+          'soc_building_id': name,
+          'soc_building_name': name,
+        });
+      }
+    }
+    return derived;
+  }
+
   Future<void> _performSearch() async {
     final searchQuery = _searchController.text.trim();
     setState(() {
       _searchQuery = searchQuery;
       // Apply local filtering immediately
-      _filterResidents();
+      _filterResidents(resetPagination: true);
     });
 
     // Clear API search when search query is empty
@@ -1086,7 +1191,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     // to provide instant results. API search can be enabled if needed.
   }
 
-  void _filterResidents() {
+  void _filterResidents({bool resetPagination = false}) {
     // First get building-filtered residents
     final buildingFiltered = filteredResidents;
 
@@ -1106,6 +1211,66 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
         return matchesName || matchesUnit || matchesBuilding || matchesPhone;
       }).toList();
     }
+
+    // Always show full list (no UI pagination)
+    _visibleResidentCount = _filteredResidents.length;
+    _isLoadingMoreResidents = false;
+  }
+
+  bool get _hasMoreResidents =>
+      _visibleResidentCount < _filteredResidents.length;
+
+  void _onResidentScroll() {
+    if (!_residentScrollController.hasClients) return;
+    if (_isLoadingMoreResidents || !_hasMoreResidents) return;
+
+    final position = _residentScrollController.position;
+    const triggerThreshold = 80.0;
+    if (position.pixels >= position.maxScrollExtent - triggerThreshold) {
+      _loadMoreResidents();
+    }
+  }
+
+  void _loadMoreResidents() {
+    if (!_hasMoreResidents || _isLoadingMoreResidents) return;
+    setState(() {
+      _isLoadingMoreResidents = true;
+    });
+
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      setState(() {
+        final nextCount =
+            _visibleResidentCount + TabConstants.kResidentsUiPageSize;
+        _visibleResidentCount = nextCount > _filteredResidents.length
+            ? _filteredResidents.length
+            : nextCount;
+        _isLoadingMoreResidents = false;
+      });
+      _scheduleAutoLoadIfNeeded();
+    });
+  }
+
+  void _scheduleAutoLoadIfNeeded() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_residentScrollController.hasClients) return;
+      if (_isLoadingMoreResidents || !_hasMoreResidents) return;
+      final position = _residentScrollController.position;
+      if (position.maxScrollExtent <= 0) {
+        _loadMoreResidents();
+      }
+    });
+  }
+
+  void _ensureDefaultBuildingSelected() {
+    if (_preferAllBuildings) return;
+    if (_selectedBuildingId != null || _buildings.isEmpty) return;
+    final first = _buildings.first;
+    final id =
+        first['id']?.toString() ?? first['soc_building_id']?.toString();
+    if (id == null || id.trim().isEmpty) return;
+    _selectedBuildingId = id;
   }
 
   void _onSearchChanged() {
@@ -1127,7 +1292,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                   TextPosition(offset: text.length),
                 );
                 _searchQuery = text;
-                _filterResidents();
+                _filterResidents(resetPagination: true);
               });
             }
           },
@@ -1140,7 +1305,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                   TextPosition(offset: text.length),
                 );
                 _searchQuery = text;
-                _filterResidents();
+                _filterResidents(resetPagination: true);
               });
 
               // Trigger search if text is not empty
@@ -1173,8 +1338,28 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
 
   @override
   Widget build(BuildContext context) {
-    final groups = groupedResidents;
+    if (_isLoading && _residents.isEmpty) {
+      return const OneGateGlobalLoader(
+        title: 'Loading Residents',
+        subtitle: 'Fetching resident information...',
+      );
+    }
+    final visibleResidents = _filteredResidents
+        .take(_visibleResidentCount)
+        .toList();
+    final groups = _groupResidents(visibleResidents);
     final sortedKeys = groups.keys.toList()..sort();
+    final buildingsForChips =
+        _buildings.isNotEmpty ? _buildings : _deriveBuildingsFromResidents();
+    final buildingTotals = <String, int>{};
+    for (final resident in _filteredResidents) {
+      final buildingName =
+          resident.building != null && resident.building!.isNotEmpty
+              ? resident.building!
+              : 'Building';
+      buildingTotals[buildingName] =
+          (buildingTotals[buildingName] ?? 0) + 1;
+    }
 
     return SafeArea(
       child: Container(
@@ -1192,6 +1377,47 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                 physics: const BouncingScrollPhysics(),
                 child: Row(
                   children: [
+                    // All chip
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        label: Text(
+                          'All',
+                          style: TextStyle(
+                            color: _selectedBuildingId == null
+                                ? Colors.white
+                                : Colors.grey.shade800,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        selected: _selectedBuildingId == null,
+                        onSelected: (_) {
+                          setState(() {
+                            _selectedBuildingId = null;
+                          });
+                          _filterResidents(resetPagination: true);
+                          _loadContacts(buildingIdOverride: null);
+                        },
+                        backgroundColor: Colors.white,
+                        selectedColor: const Color(0xffc62828),
+                        checkmarkColor: Colors.white,
+                        showCheckmark: false,
+                        elevation: 0,
+                        pressElevation: 0,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                        shape: StadiumBorder(
+                          side: BorderSide(
+                            color: _selectedBuildingId == null
+                                ? Colors.transparent
+                                : Colors.grey.withOpacity(0.3),
+                          ),
+                        ),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
                     // Building chips from API
                     if (_isLoadingBuildings)
                       const Padding(
@@ -1204,50 +1430,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                       )
                     else
                       ...[
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: FilterChip(
-                            label: Text(
-                              'All',
-                              style: TextStyle(
-                                color: _selectedBuildingId == null
-                                    ? Colors.white
-                                    : Colors.black87,
-                                fontWeight: _selectedBuildingId == null
-                                    ? FontWeight.bold
-                                    : FontWeight.w500,
-                                fontSize: 13,
-                              ),
-                            ),
-                            selected: _selectedBuildingId == null,
-                            onSelected: (_) {
-                              setState(() {
-                                _selectedBuildingId = null;
-                              });
-                              _filterResidents();
-                            },
-                            backgroundColor: Colors.white,
-                            selectedColor: AppColors.primary,
-                            checkmarkColor: Colors.white,
-                            showCheckmark: false,
-                            elevation: 0,
-                            pressElevation: 3,
-                            shadowColor: Colors.transparent,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                              side: BorderSide(
-                                color: _selectedBuildingId == null
-                                    ? Colors.transparent
-                                    : Colors.grey.withOpacity(0.3),
-                              ),
-                            ),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                          ),
-                        ),
-                        ..._buildings.map((building) {
+                        ...buildingsForChips.map((building) {
                           final buildingId = building['id']?.toString() ??
                               building['soc_building_id']?.toString();
                           final buildingName =
@@ -1263,32 +1446,39 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                                 style: TextStyle(
                                   color: isSelected
                                       ? Colors.white
-                                      : Colors.black87,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.w500,
+                                      : Colors.grey.shade800,
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 13,
                                 ),
                               ),
                               selected: isSelected,
                               onSelected: (_) {
+                                final nextId = isSelected ? null : buildingId;
+                                final nextIdInt = nextId != null
+                                    ? int.tryParse(nextId)
+                                    : null;
                                 setState(() {
-                                  _selectedBuildingId =
-                                      isSelected ? null : buildingId;
+                                  _selectedBuildingId = nextId;
+                                  _isBuildingScopedFetch =
+                                      nextIdInt != null;
                                 });
-                                _filterResidents();
+                                _filterResidents(resetPagination: true);
+                                if (nextIdInt != null) {
+                                  _loadContacts(
+                                    buildingIdOverride: nextId,
+                                  );
+                                }
                               },
                               backgroundColor: Colors.white,
-                              selectedColor: AppColors.primary,
+                              selectedColor: const Color(0xffc62828),
                               checkmarkColor: Colors.white,
                               showCheckmark: false,
                               elevation: 0,
-                              pressElevation: 3,
+                              pressElevation: 0,
                               shadowColor: Colors.transparent,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 10),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
+                                  horizontal: 14, vertical: 10),
+                              shape: StadiumBorder(
                                 side: BorderSide(
                                   color: isSelected
                                       ? Colors.transparent
@@ -1312,75 +1502,61 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
+                border: Border.all(color: Colors.grey.shade300),
+                boxShadow: [
                   BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search residents...',
-                  hintStyle: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontSize: 14,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: AppColors.primary.withOpacity(0.7),
-                    size: 20,
-                  ),
-                  suffixIcon: Container(
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+              child: Row(
+                children: [
+                  const SizedBox(width: 12),
+                  const Icon(Icons.search, color: Colors.grey, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search residents...',
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontSize: 14,
                         ),
-                      ],
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Color(0xffffebee),
+                      shape: BoxShape.circle,
                     ),
                     child: IconButton(
                       icon: Icon(
                         _isListening ? Icons.mic : Icons.mic_none,
-                        color: _isListening ? Colors.red : AppColors.primary,
+                        color:
+                            _isListening ? Colors.red : const Color(0xffc62828),
                         size: 20,
                       ),
                       onPressed:
                           _isListening ? _stopListening : _startListening,
                       tooltip: 'Voice Search',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      iconSize: 20,
                     ),
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
+                ],
               ),
             ),
 
             // Contact list grouped by floor with improved styling
             Expanded(
               child: _isLoading
-                  ? const Center(
-                      child: AppLoader(
-                        title: 'Loading Residents',
-                        subtitle: 'Fetching resident information...',
-                        icon: Icons.people_rounded,
-                      ),
+                  ? const OneGateGlobalLoader(
+                      title: 'Loading Residents',
+                      subtitle: 'Fetching resident information...',
                     )
                   : groups.isEmpty
                       ? _searchQuery.isNotEmpty
@@ -1403,10 +1579,26 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                                   subtitle: 'No residents available',
                                 )
                       : ListView.builder(
-                          itemCount: sortedKeys.length,
+                          controller: _residentScrollController,
+                          itemCount: sortedKeys.length +
+                              (_isLoadingMoreResidents ? 1 : 0),
                           itemBuilder: (context, index) {
+                            if (_isLoadingMoreResidents &&
+                                index == sortedKeys.length) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                                child: Center(
+                                  child: OneGateGlobalLoaderIcon(size: 42),
+                                ),
+                              );
+                            }
+
                             final key = sortedKeys[index];
                             final residentsInGroup = groups[key]!;
+                            final buildingName = key.split(' - Floor ').first;
+                            final totalForBuilding =
+                                buildingTotals[buildingName] ??
+                                    residentsInGroup.length;
                             // The following Container was previously misplaced with a 'return'
                             return Container(
                               padding: const EdgeInsets.all(8),
@@ -1452,21 +1644,20 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                                         // Resident count badge (right side, opposite to building label)
                                         Container(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
+                                            horizontal: 12,
+                                            vertical: 6,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: AppColors.coolGrey
-                                                .withOpacity(0.1),
+                                            color: const Color(0xffffebee),
                                             borderRadius:
                                                 BorderRadius.circular(20),
                                           ),
                                           child: Text(
-                                            '${residentsInGroup.length} residents',
+                                            '$totalForBuilding residents',
                                             style: TextStyle(
-                                              color: AppColors.primary,
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w900,
+                                              color: const Color(0xffc62828),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
                                             ),
                                           ),
                                         ),
@@ -1666,7 +1857,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                     width: 50,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: const Color(0xffffebee),
                       borderRadius: BorderRadius.circular(25),
                     ),
                     child: ClipRRect(
@@ -1682,8 +1873,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                                   child: Text(
                                     resident.initials,
                                     style: const TextStyle(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xffc62828),
+                                      fontWeight: FontWeight.w700,
                                       fontSize: 18,
                                     ),
                                   ),
@@ -1694,8 +1885,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                               child: Text(
                                 resident.initials,
                                 style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xffc62828),
+                                  fontWeight: FontWeight.w700,
                                   fontSize: 18,
                                 ),
                               ),
@@ -1767,7 +1958,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                           child: Text(
                             resident.name,
                             style: const TextStyle(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                               fontSize: 15,
                             ),
                             maxLines: 2,
@@ -1826,7 +2017,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                           style: TextStyle(
                             color: Colors.orange.shade700,
                             fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -1838,7 +2029,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                 ElevatedButton.icon(
                   onPressed: () =>
                       OneAppShare.shareInvite(name: resident.name),
-                  icon: const Icon(Icons.person_add, size: 16),
+                  icon: const Icon(Icons.person_add_alt_1, size: 16),
                   label: const Text(
                     'Invite',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
@@ -1847,10 +2038,10 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                     backgroundColor: Colors.orange,
                     foregroundColor: Colors.white,
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),
@@ -1873,15 +2064,15 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                     size: 18,
                     color: !resident.hasUserId
                         ? Colors.grey.shade400
-                        : Colors.blue,
+                        : Colors.blue.shade600,
                   ),
                   label: Text(
                     'Chat',
                     style: TextStyle(
                       color: !resident.hasUserId
                           ? Colors.grey.shade400
-                          : Colors.blue,
-                      fontWeight: FontWeight.w500,
+                          : Colors.blue.shade600,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   onPressed: !resident.hasUserId
@@ -1923,7 +2114,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.green,
+                              const Color(0xff4caf50),
                             ),
                           ),
                         )
@@ -1932,7 +2123,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                           size: 22,
                           color: !resident.hasUserId
                               ? Colors.grey.shade400
-                              : Colors.green,
+                              : const Color(0xff4caf50),
                         ),
                 ),
               ),
@@ -2266,14 +2457,14 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
           children: [
             Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.1),
+                color: Color(0xffffebee),
               ),
               child: Icon(
                 icon,
                 size: 28,
-                color: AppColors.primary,
+                color: const Color(0xffc62828),
               ),
             ),
             const SizedBox(height: 16),

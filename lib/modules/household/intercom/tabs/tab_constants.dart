@@ -48,6 +48,9 @@ class TabConstants {
   /// Note: Backend may return more, but we process up to this limit
   static const int kResidentsPerPage = 1000;
 
+  /// UI page size for residents list (initial batch and load more)
+  static const int kResidentsUiPageSize = 6;
+
   /// Maximum committees to fetch per page
   /// Current effective limit: 20 (preserved for backward compatibility)
   static const int kCommitteesPerPage = 20;

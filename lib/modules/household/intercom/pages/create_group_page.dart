@@ -21,7 +21,7 @@ import 'dart:developer' as developer;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/widgets/enhanced_toast.dart';
-import '../../../../core/widgets/app_loader.dart';
+import '../../../../core/widgets/onegate_global_loader.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/society_backend_api_service.dart';
 import '../../../../core/network/network_interceptors.dart';
@@ -1888,23 +1888,16 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.white, Colors.white],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
+        surfaceTintColor: Colors.white,
+        titleSpacing: 0,
         title: Text(
           _isEditMode ? 'Update Group' : 'Create Group',
           style: GoogleFonts.montserrat(
             color: Colors.black,
             fontSize: 18,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
         leading: IconButton(
@@ -1916,7 +1909,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
             padding: const EdgeInsets.only(right: 8.0),
             child: Container(
               decoration: BoxDecoration(
-                gradient: AppColors.blackToGreyGradient,
+                color: Colors.black,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -1955,7 +1948,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                         style: GoogleFonts.montserrat(
                           color: Colors.white,
                           fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
               ),
@@ -2001,7 +1994,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [AppColors.primary, Color(0xFFFF9292)],
+                            colors: [Color(0xffc62828), Color(0xffff8a80)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -2025,23 +2018,12 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                   style: GoogleFonts.montserrat(
                                     color: Colors.white,
                                     fontSize: 18,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],
                             ),
                           ],
-                        ),
-                      ),
-
-                      // Progress bar
-                      Container(
-                        height: 4,
-                        width: double.infinity,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [AppColors.primary, Color(0xFFFF9292)],
-                          ),
                         ),
                       ),
 
@@ -2100,7 +2082,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                     Icons.group,
                                     color: widget.isAddMemberMode
                                         ? Colors.grey.shade400
-                                        : AppColors.primary.withOpacity(0.7),
+                                        : const Color(0xffc62828),
                                     size: 20,
                                   ),
                                   border: OutlineInputBorder(
@@ -2160,7 +2142,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                       Icons.description,
                                       color: widget.isAddMemberMode
                                           ? Colors.grey.shade400
-                                          : AppColors.primary.withOpacity(0.7),
+                                          : const Color(0xffc62828),
                                       size: 20,
                                     ),
                                   ),
@@ -2213,7 +2195,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                         padding: const EdgeInsets.all(16),
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [AppColors.primary, Color(0xFFFF9292)],
+                            colors: [Color(0xffc62828), Color(0xffff8a80)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -2235,21 +2217,10 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                               style: GoogleFonts.montserrat(
                                 color: Colors.white,
                                 fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
-                        ),
-                      ),
-
-                      // Progress bar
-                      Container(
-                        height: 4,
-                        width: double.infinity,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [AppColors.primary, Color(0xFFFF9292)],
-                          ),
                         ),
                       ),
 
@@ -2264,7 +2235,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                 _resolveAvatarUrl(member.photoUrl);
                             return Container(
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
+                                color: const Color(0xffffebee),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               padding: const EdgeInsets.symmetric(
@@ -2277,7 +2248,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                   CircleAvatar(
                                     radius: 12,
                                     backgroundColor:
-                                        AppColors.primary.withOpacity(0.2),
+                                        const Color(0xffffebee),
                                     backgroundImage: avatarUrl != null
                                         ? NetworkImage(avatarUrl)
                                         : null,
@@ -2288,16 +2259,18 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                         ? Text(
                                             _getInitials(member.name),
                                             style: const TextStyle(
-                                              color: AppColors.primary,
+                                              color: Color(0xffc62828),
                                               fontSize: 10,
-                                              fontWeight: FontWeight.bold,
+                                              fontWeight: FontWeight.w700,
                                             ),
                                           )
                                         : null,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    member.name,
+                                    member.name.length > 23
+                                        ? '${member.name.substring(0, 23)}...'
+                                        : member.name,
                                     style: GoogleFonts.montserrat(
                                       color: Colors.grey.shade800,
                                       fontSize: 12,
@@ -2354,7 +2327,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                       padding: const EdgeInsets.all(16),
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AppColors.primary, Color(0xFFFF9292)],
+                          colors: [Color(0xffc62828), Color(0xffff8a80)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -2376,23 +2349,10 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                             style: GoogleFonts.montserrat(
                               color: Colors.white,
                               fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
-                      ),
-                    ),
-
-                    // Progress bar
-                    Container(
-                      height: 4,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [AppColors.primary, Color(0xFFFF9292)],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
                       ),
                     ),
 
@@ -2420,25 +2380,23 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                             selected ? building : null;
                                       });
                                     },
-                                    backgroundColor: Colors.grey.shade100,
-                                    selectedColor:
-                                        AppColors.primary.withOpacity(0.2),
-                                    checkmarkColor: AppColors.primary,
+                                    backgroundColor: Colors.white,
+                                    selectedColor: const Color(0xffc62828),
+                                    checkmarkColor: Colors.white,
                                     labelStyle: TextStyle(
                                       color: isSelected
-                                          ? AppColors.primary
-                                          : Colors.grey.shade700,
-                                      fontWeight: isSelected
-                                          ? FontWeight.w600
-                                          : FontWeight.normal,
+                                          ? Colors.white
+                                          : Colors.grey.shade800,
+                                      fontWeight: FontWeight.w600,
                                       fontSize: 13,
                                     ),
                                     side: BorderSide(
                                       color: isSelected
-                                          ? AppColors.primary
+                                          ? Colors.transparent
                                           : Colors.grey.shade300,
-                                      width: isSelected ? 1.5 : 1,
                                     ),
+                                    showCheckmark: false,
+                                    shape: const StadiumBorder(),
                                   ),
                                 );
                               }),
@@ -2456,63 +2414,49 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade300),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
+                              color: Colors.black.withOpacity(0.06),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            hintText: 'Search residents by name',
-                            hintStyle: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: 14,
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 12),
+                            const Icon(Icons.search,
+                                color: Colors.grey, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                controller: _searchController,
+                                decoration: InputDecoration(
+                                  hintText: 'Search residents by name',
+                                  hintStyle: TextStyle(
+                                    color: Colors.grey.shade400,
+                                    fontSize: 14,
+                                  ),
+                                  border: InputBorder.none,
+                                ),
+                                onChanged: (value) {
+                                  setState(() {});
+                                },
+                              ),
                             ),
-                            prefixIcon: const Icon(
-                              Icons.search,
-                              color: AppColors.primary,
-                            ),
-                            suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(
-                                      Icons.clear,
-                                      color: Colors.grey,
-                                    ),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      setState(() {});
-                                    },
-                                  )
-                                : null,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide:
-                                  BorderSide(color: Colors.grey.shade300),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide:
-                                  BorderSide(color: Colors.grey.shade300),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                  color: AppColors.primary, width: 2),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey.shade50,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 16,
-                            ),
-                          ),
-                          onChanged: (value) {
-                            setState(() {}); // Trigger rebuild for suffix icon
-                          },
+                            if (_searchController.text.isNotEmpty)
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.clear,
+                                  color: Colors.grey,
+                                ),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {});
+                                },
+                              ),
+                          ],
                         ),
                       ),
                     ),
@@ -2521,15 +2465,9 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       child: _isLoadingMembers && _availableResidents.isEmpty
-                          ? const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(40.0),
-                                child: AppLoader(
-                                  title: 'Loading Residents',
-                                  subtitle: 'Fetching resident information...',
-                                  icon: Icons.people_rounded,
-                                ),
-                              ),
+                          ? const OneGateGlobalLoader(
+                              title: 'Loading Residents',
+                              subtitle: 'Fetching resident information...',
                             )
                           : _errorMessage != null && _availableResidents.isEmpty
                               ? _buildErrorState()
@@ -2586,7 +2524,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                       BorderRadius.circular(16),
                                                   side: BorderSide(
                                                     color: isSelected
-                                                        ? AppColors.primary
+                                                        ? const Color(0xffc62828)
                                                         : Colors.grey.shade100,
                                                     width: 1,
                                                   ),
@@ -2611,10 +2549,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                           CircleAvatar(
                                                             radius: 20,
                                                             backgroundColor:
-                                                                AppColors
-                                                                    .primary
-                                                                    .withOpacity(
-                                                                        0.1),
+                                                                const Color(
+                                                                    0xffffebee),
                                                             backgroundImage:
                                                                 _resolveAvatarUrl(
                                                                             resident
@@ -2641,11 +2577,11 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                                             .name),
                                                                     style:
                                                                         const TextStyle(
-                                                                      color: AppColors
-                                                                          .primary,
+                                                                      color: Color(
+                                                                          0xffc62828),
                                                                       fontWeight:
                                                                           FontWeight
-                                                                              .bold,
+                                                                              .w700,
                                                                       fontSize:
                                                                           16,
                                                                     ),
@@ -2669,7 +2605,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                                       const TextStyle(
                                                                     fontWeight:
                                                                         FontWeight
-                                                                            .bold,
+                                                                            .w700,
                                                                     fontSize:
                                                                         14,
                                                                   ),
@@ -2699,7 +2635,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                                           .shade700,
                                                                       fontSize: 12,
                                                                       fontWeight:
-                                                                          FontWeight.bold,
+                                                                          FontWeight.w600,
                                                                     ),
                                                                   ),
                                                               ],
@@ -2715,7 +2651,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                                     .name,
                                                               ),
                                                               icon: const Icon(
-                                                                Icons.person_add,
+                                                                Icons.person_add_alt_1,
                                                                 size: 16,
                                                               ),
                                                               label: const Text(
@@ -2735,8 +2671,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                                     Colors.white,
                                                                 padding: const EdgeInsets
                                                                     .symmetric(
-                                                                  horizontal: 8,
-                                                                  vertical: 4,
+                                                                  horizontal: 10,
+                                                                  vertical: 6,
                                                                 ),
                                                                 elevation: 0,
                                                                 minimumSize:
@@ -2750,7 +2686,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                                   borderRadius:
                                                                       BorderRadius
                                                                           .circular(
-                                                                              8),
+                                                                              12),
                                                                 ),
                                                               ),
                                                             )
@@ -2764,9 +2700,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                               ),
                                                               decoration:
                                                                   BoxDecoration(
-                                                                color: Colors
-                                                                    .red
-                                                                    .shade100,
+                                                                color: const Color(
+                                                                    0xffffebee),
                                                                 borderRadius:
                                                                     BorderRadius
                                                                         .circular(
@@ -2780,9 +2715,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                                   fontWeight:
                                                                       FontWeight
                                                                           .w600,
-                                                                  color: Colors
-                                                                      .red
-                                                                      .shade700,
+                                                                  color: const Color(
+                                                                      0xffc62828),
                                                                 ),
                                                               ),
                                                             )
@@ -2796,8 +2730,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                                     ? Colors.grey
                                                                         .shade200
                                                                     : (isSelected
-                                                                        ? AppColors.primary.withOpacity(
-                                                                            0.1)
+                                                                        ? const Color(
+                                                                            0xffffebee)
                                                                         : Colors
                                                                             .grey
                                                                             .shade100),
@@ -2816,7 +2750,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                                           .grey
                                                                           .shade400
                                                                       : (isSelected
-                                                                          ? AppColors.primary
+                                                                          ? const Color(
+                                                                              0xffc62828)
                                                                           : Colors
                                                                               .grey
                                                                               .shade700),
@@ -2838,12 +2773,12 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                             padding: const EdgeInsets.only(
                                                 top: 8, bottom: 8),
                                             child: _isLoadingMore
-                                                ? const Center(
-                                                    child: Padding(
-                                                      padding:
-                                                          EdgeInsets.all(16.0),
-                                                      child:
-                                                          CircularProgressIndicator(),
+                                                ? const SizedBox(
+                                                    height: 240,
+                                                    child: OneGateGlobalLoader(
+                                                      title: 'Loading Residents',
+                                                      subtitle:
+                                                          'Fetching resident information...',
                                                     ),
                                                   )
                                                 : ElevatedButton.icon(
@@ -3066,14 +3001,14 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
           children: [
             Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.1),
+                color: Color(0xffffebee),
               ),
               child: Icon(
                 icon,
                 size: 28,
-                color: AppColors.primary,
+                color: const Color(0xffc62828),
               ),
             ),
             const SizedBox(height: 16),

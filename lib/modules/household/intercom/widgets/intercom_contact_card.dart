@@ -336,8 +336,8 @@ class _IntercomContactCardState extends State<IntercomContactCard> {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.grey.shade500, Colors.grey.shade700],
+            gradient: const LinearGradient(
+              colors: [Color(0xffef5350), Color(0xffc62828)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -392,14 +392,14 @@ class _IntercomContactCardState extends State<IntercomContactCard> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
+              color: const Color(0xffffebee),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Center(
               child: Text(
                 member.initials,
                 style: TextStyle(
-                  color: Colors.grey.shade700,
+                  color: const Color(0xffc62828),
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),

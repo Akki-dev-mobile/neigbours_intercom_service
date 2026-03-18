@@ -603,7 +603,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                             child: IconButton(
                               icon: const Icon(
                                 Icons.mic,
-                                color: Color(0xFFFF416C),
+                                color: Color(0xffc62828),
                                 size: 20,
                               ),
                               onPressed: () {

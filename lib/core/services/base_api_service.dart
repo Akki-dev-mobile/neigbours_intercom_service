@@ -40,8 +40,20 @@ abstract class BaseApiService {
           handler.next(options);
         },
         onError: (error, handler) async {
-          if (error.response?.statusCode == 401) {
+          if (error.response?.statusCode == 401 &&
+              (error.requestOptions.extra['auth_retry'] != true)) {
+            // Attempt one refresh + retry
             await AuthTokenManager.refreshTokenIfNeeded();
+            final headers = await getAuthHeaders();
+            final requestOptions = error.requestOptions;
+            requestOptions.extra['auth_retry'] = true;
+            requestOptions.headers.addAll(headers);
+            try {
+              final response = await _dio.fetch(requestOptions);
+              return handler.resolve(response);
+            } catch (e) {
+              // fall through to original error
+            }
           }
           handler.next(error);
         },

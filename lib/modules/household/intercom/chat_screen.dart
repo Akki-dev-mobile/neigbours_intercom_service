@@ -1452,10 +1452,12 @@ class _ChatScreenState extends State<ChatScreen>
             // No in-flight creation - create room now
             try {
               // Create Future for room creation (for deduplication)
-              final createFuture = RoomService.instance
-                  .createOneToOneRoom(
+              final contactIdForRoom = widget.contact.numericUserId != null
+                  ? widget.contact.numericUserId!.toString()
+                  : widget.contact.id;
+              final createFuture = RoomService.instance.createOneToOneRoom(
                 contactName: widget.contact.name,
-                contactId: widget.contact.id,
+                contactId: contactIdForRoom,
                 companyId: companyId,
                 contactPhone: widget.contact.phoneNumber,
               )
@@ -4330,7 +4332,7 @@ class _ChatScreenState extends State<ChatScreen>
               }
             },
             child: CircleAvatar(
-              backgroundColor: AppColors.primary.withOpacity(0.1),
+              backgroundColor: const Color(0xffffebee),
               radius: 16,
               backgroundImage:
                   (_memberAvatar != null && _memberAvatar!.isNotEmpty)
@@ -4353,7 +4355,7 @@ class _ChatScreenState extends State<ChatScreen>
                   ? Text(
                       widget.contact.initials,
                       style: TextStyle(
-                        color: AppColors.primary,
+                        color: const Color(0xffc62828),
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -4825,7 +4827,8 @@ class _ChatScreenState extends State<ChatScreen>
                                           .trim()
                                           .isNotEmpty)
                                         CircleAvatar(
-                                          backgroundColor: AppColors.primary,
+                                          backgroundColor:
+                                              const Color(0xffc62828),
                                           child: IconButton(
                                             icon: const Icon(Icons.send),
                                             color: Colors.white,
@@ -4863,15 +4866,13 @@ class _ChatScreenState extends State<ChatScreen>
                                             height: 48,
                                             decoration: BoxDecoration(
                                               color: _isPressingMic
-                                                  ? AppColors.primary
-                                                      .withOpacity(0.8)
-                                                  : AppColors.primary,
+                                                  ? const Color(0xffc62828)
+                                                  : const Color(0xffc62828),
                                               shape: BoxShape.circle,
                                               boxShadow: _isPressingMic
                                                   ? [
                                                       BoxShadow(
-                                                        color: AppColors.primary
-                                                            .withOpacity(0.4),
+                                                        color: const Color(0xffc62828),
                                                         spreadRadius: 4,
                                                         blurRadius: 8,
                                                         offset:
@@ -8931,11 +8932,11 @@ class _ChatScreenState extends State<ChatScreen>
         children: [
           CircleAvatar(
             radius: 16,
-            backgroundColor: AppColors.primary.withOpacity(0.1),
+            backgroundColor: const Color(0xffffebee),
             child: Text(
               widget.contact.initials,
               style: const TextStyle(
-                color: AppColors.primary,
+                color: Color(0xffc62828),
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
@@ -9005,7 +9006,7 @@ class _ChatScreenState extends State<ChatScreen>
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: const BoxDecoration(
-                  color: Colors.red,
+                  color: Color(0xffc62828),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -9059,7 +9060,7 @@ class _ChatScreenState extends State<ChatScreen>
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: const BoxDecoration(
-                      color: Colors.green,
+                      color: Color(0xffc62828),
                       shape: BoxShape.circle,
                     ),
                     child: GestureDetector(
@@ -9220,14 +9221,14 @@ class _ChatScreenState extends State<ChatScreen>
           children: [
             Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.1),
+                color: Color(0xffffebee),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.chat_bubble_outline,
                 size: 28,
-                color: AppColors.primary,
+                color: Color(0xffc62828),
               ),
             ),
             const SizedBox(height: 16),
@@ -9555,10 +9556,10 @@ class _ChatScreenState extends State<ChatScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: const Color(0xffffebee),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: AppColors.primary, size: 28),
+            child: Icon(icon, color: const Color(0xffc62828), size: 28),
           ),
           const SizedBox(height: 8),
           Text(
@@ -9734,7 +9735,7 @@ class _ChatScreenState extends State<ChatScreen>
                         icon: const Icon(Icons.send),
                         label: const Text('Send'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: const Color(0xffc62828),
                           foregroundColor: Colors.white,
                         ),
                       ),
@@ -10833,7 +10834,7 @@ class _ChatScreenState extends State<ChatScreen>
                         color: AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.mic, color: AppColors.primary),
+                  child: const Icon(Icons.mic, color: Color(0xffc62828)),
                     ),
                     title: const Text('Voice Note'),
                     subtitle: const Text('Hold the mic button to record'),
