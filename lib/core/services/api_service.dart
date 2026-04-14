@@ -1,5 +1,5 @@
-import '../../src/config/intercom_module_config.dart';
-import '../../src/runtime/intercom_runtime_cache.dart';
+import 'package:neigbours_intercom_service/src/config/intercom_module_config.dart';
+import 'package:neigbours_intercom_service/src/runtime/intercom_runtime_cache.dart';
 
 class ApiService {
   ApiService._();

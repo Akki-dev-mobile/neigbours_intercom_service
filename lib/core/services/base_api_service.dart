@@ -2,9 +2,9 @@ import 'dart:developer';
 
 import 'package:dio/dio.dart';
 
-import '../models/api_response.dart';
-import '../network/network_interceptors.dart';
-import 'auth_token_manager.dart';
+import 'package:neigbours_intercom_service/core/models/api_response.dart';
+import 'package:neigbours_intercom_service/core/network/network_interceptors.dart';
+import 'package:neigbours_intercom_service/core/services/auth_token_manager.dart';
 
 abstract class BaseApiService {
   late final Dio _dio;

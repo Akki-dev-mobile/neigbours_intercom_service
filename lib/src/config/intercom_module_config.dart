@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-import '../ports/intercom_ports.dart';
+import 'package:neigbours_intercom_service/src/ports/intercom_ports.dart';
 
 /// Global configuration used by the extracted (legacy) module code.
 ///
@@ -25,6 +25,26 @@ class IntercomModuleConfig {
     this.appPackageName,
   });
 
+  /// Host supplies explicit API base URLs (recommended for production).
+  factory IntercomModuleConfig.withEndpoints({
+    required IntercomAuthPort authPort,
+    required IntercomContextPort contextPort,
+    required IntercomEndpoints endpoints,
+    IntercomUploadPort? uploadPort,
+    http.Client? httpClient,
+    String? appPackageName,
+  }) {
+    return IntercomModuleConfig(
+      authPort: authPort,
+      contextPort: contextPort,
+      uploadPort: uploadPort,
+      endpoints: endpoints,
+      httpClient: httpClient,
+      appPackageName: appPackageName,
+    );
+  }
+
+  /// Preset endpoints for the legacy CubeOne stack; prefer [withEndpoints] in new apps.
   factory IntercomModuleConfig.cubeOne({
     required IntercomAuthPort authPort,
     required IntercomContextPort contextPort,

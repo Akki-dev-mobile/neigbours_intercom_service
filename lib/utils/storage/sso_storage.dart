@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../src/config/intercom_module_config.dart';
+import 'package:neigbours_intercom_service/src/config/intercom_module_config.dart';
 
 class SsoStorage {
   static const String _keyUserProfile = 'sso_user_profile_v1';

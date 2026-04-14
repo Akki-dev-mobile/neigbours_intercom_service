@@ -2,7 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:jwt_decoder/jwt_decoder.dart';
 
-import '../../src/config/intercom_module_config.dart';
+import 'package:neigbours_intercom_service/src/config/intercom_module_config.dart';
 
 class KeycloakService {
   static Future<String?> getAccessToken() async {

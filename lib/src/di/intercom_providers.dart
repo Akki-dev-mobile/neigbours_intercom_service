@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
-import '../ports/intercom_ports.dart';
+import 'package:neigbours_intercom_service/src/ports/intercom_ports.dart';
 
 final intercomAuthPortProvider = Provider<IntercomAuthPort>((ref) {
   throw UnimplementedError(

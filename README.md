@@ -1,56 +1,76 @@
-# intercom_module
+# neigbours_intercom_service
 
-Reusable Intercom/Neighbors module extracted from this app, designed to be **plug-and-play** in other Flutter apps.
+Reusable **Neighbours + Guard Intercom** Flutter package (UI, chat, calls, groups). Host apps inject auth, context, and API base URLs via ports—see `lib/src/ports/intercom_ports.dart`.
 
-Key idea: the module does **not** own auth/session/environment. Host apps inject those through interfaces/providers.
+## Integration
 
-## Integration (host app)
-
-1) Add a path dependency:
+**1. Dependency**
 
 ```yaml
 dependencies:
-  intercom_module:
-    path: packages/intercom_module
+  neigbours_intercom_service:
+    path: ../neigbours_intercom_service # or git URL
 ```
 
-2) Configure the module (minimal required ports):
+**2. Configure before any navigation into the module**
 
 ```dart
-import 'package:intercom_module/intercom_module.dart';
+import 'package:neigbours_intercom_service/intercom_module.dart';
 
 void main() {
-  // If you're using the same CubeOne endpoints across apps:
   IntercomModule.configure(
-    IntercomModuleConfig.cubeOne(
+    IntercomModuleConfig.withEndpoints(
       authPort: MyAuthPort(),
       contextPort: MyContextPort(),
-      // Optional: provide if you want group/post image uploads to work.
-      // uploadPort: MyUploadPort(),
+      endpoints: const IntercomEndpoints(
+        societyBackendBaseUrl: 'https://your.api/society',
+        apiGatewayBaseUrl: 'https://your.api/gateway',
+        gateApiBaseUrl: 'https://your.api/gate',
+        roomServiceBaseUrl: 'https://your.api/rooms',
+        callServiceBaseUrl: 'https://your.api/calls',
+        jitsiServerUrl: 'meet.your.domain',
+      ),
+      uploadPort: MyUploadPort(), // optional, for image uploads
     ),
   );
-
   runApp(const MyApp());
 }
 ```
 
-3) Use the screen:
+For the legacy CubeOne preset only, you can still use `IntercomModuleConfig.cubeOne(...)`.
+
+**3. Open screens**
 
 ```dart
+import 'package:neigbours_intercom_service/intercom_module.dart';
+
+// Intercom (tabs: residents, committee, gatekeepers, …)
 Navigator.of(context).push(
   MaterialPageRoute(
     builder: (_) => const IntercomScreen(fromNeighborsCard: true),
   ),
 );
+
+// Neighbours hub (Groups / Residents / Committee)
+Navigator.of(context).push(
+  MaterialPageRoute(builder: (_) => const NeighbourScreen()),
+);
 ```
 
-## Ports you must implement
+Or use helpers: `pushIntercomScreen`, `pushNeighboursScreen` from `neighbours_api.dart` (exported from `intercom_module.dart`).
 
-- `IntercomAuthPort`: provides access token(s) for API calls.
-- `IntercomContextPort`: provides selected society/company id + current user identifiers.
+## Layout
 
-See `lib/src/ports/intercom_ports.dart`.
+- `lib/intercom/` — Intercom UI (tabs, chat, calls, widgets)
+- `lib/neighbours/` — Neighbours hub screen + config + navigation helpers
+- `lib/models/` — Domain models (calls, rooms, contacts, …)
+- `lib/services/` — API + WebSocket + call managers
+- `lib/core/` — Shared theme, API clients, widgets, utilities
+- `lib/society_feed/` — Post/upload helpers
+- `lib/src/` — `IntercomModule` config, Riverpod stubs, ports
 
-## Notes
+## Manual steps after clone
 
-- The extracted module includes legacy UI + services; some integrations (like post image upload) are app-specific and may require host customization (`lib/modules/household/society_feed/services/post_api_client.dart`).
+- Run `flutter pub get` in this package and in `example/`.
+- Replace demo JWT / society ids in `example/lib/main.dart` with real ports.
+- Optionally add `analysis_options.yaml` rules to tune lint noise on legacy files.

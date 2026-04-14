@@ -2,7 +2,7 @@ import 'dart:developer';
 
 import 'package:dio/dio.dart';
 
-import '../services/auth_token_manager.dart';
+import 'package:neigbours_intercom_service/core/services/auth_token_manager.dart';
 
 class NetworkLoggingInterceptor extends Interceptor {
   final String clientTag;

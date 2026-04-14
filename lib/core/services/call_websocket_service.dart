@@ -7,8 +7,8 @@ import 'dart:io';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-import '../constants.dart';
-import '../services/keycloak_service.dart';
+import 'package:neigbours_intercom_service/core/constants.dart';
+import 'package:neigbours_intercom_service/core/services/keycloak_service.dart';
 
 /// WebSocket service for call events from meet-service.
 ///

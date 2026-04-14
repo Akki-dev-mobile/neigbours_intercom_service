@@ -1,4 +1,4 @@
-import '../src/config/intercom_module_config.dart';
+import 'package:neigbours_intercom_service/src/config/intercom_module_config.dart';
 
 class AppConstants {
   static String get callServiceBaseUrl =>

@@ -3,9 +3,9 @@ import 'dart:developer';
 
 import 'package:http/http.dart' as http;
 
-import '../../src/config/intercom_module_config.dart';
-import '../../utils/storage/sso_storage.dart';
-import 'keycloak_service.dart';
+import 'package:neigbours_intercom_service/src/config/intercom_module_config.dart';
+import 'package:neigbours_intercom_service/utils/storage/sso_storage.dart';
+import 'package:neigbours_intercom_service/core/services/keycloak_service.dart';
 
 class BuildingListResponse {
   final List<Map<String, dynamic>> buildings;

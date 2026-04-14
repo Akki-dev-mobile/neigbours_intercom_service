@@ -57,7 +57,7 @@ class IntercomEndpoints {
     required this.jitsiServerUrl,
   });
 
-  /// Default CubeOne endpoints used by the legacy module.
+  /// Legacy CubeOne preset; inject your own [IntercomEndpoints] for other backends.
   static const IntercomEndpoints cubeOne = IntercomEndpoints(
     societyBackendBaseUrl: 'https://societybackend.cubeone.in/api',
     apiGatewayBaseUrl: 'https://apigw.cubeone.in/api',

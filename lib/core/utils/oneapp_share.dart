@@ -1,5 +1,5 @@
 import 'package:share_plus/share_plus.dart';
-import '../storage/storage_service.dart';
+import 'package:neigbours_intercom_service/core/storage/storage_service.dart';
 
 class OneAppShare {
   static Future<void> shareText(String text) async {

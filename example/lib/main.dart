@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intercom_module/intercom_module.dart';
+import 'package:neigbours_intercom_service/intercom_module.dart';
 
 void main() {
   // Demo configuration. For real apps, supply real tokens + societyId.

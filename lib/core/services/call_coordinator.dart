@@ -2,7 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 
-import '../../modules/household/intercom/models/call_model.dart';
+import 'package:neigbours_intercom_service/models/call_model.dart';
 
 enum CallFlowState {
   idle,

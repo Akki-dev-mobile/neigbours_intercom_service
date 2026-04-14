@@ -1,6 +1,6 @@
 import 'dart:developer';
 
-import 'keycloak_service.dart';
+import 'package:neigbours_intercom_service/core/services/keycloak_service.dart';
 
 class AuthTokenManager {
   static const String _logName = 'AuthTokenManager';
