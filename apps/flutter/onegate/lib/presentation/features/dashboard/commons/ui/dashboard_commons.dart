@@ -82,142 +82,187 @@ class DashboardBlocks extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          stops: [0.0, 1.0],
           colors: [
-            Color(0xffFFE0B2),
-            Color(0xffFFCC80),
+            Color(0xffFFE8C6),
+            Color(0xffFFA726),
           ],
         ),
         borderRadius: BorderRadius.circular(isTablet ? 24 : 20),
         border: Border.all(
-          color: const Color(0xFFFFFFFF).withOpacity(0.35),
-          width: 1,
+          color: const Color(0xffFFCC80).withOpacity(0.45),
+          width: 0.30,
         ),
-        boxShadow: const [],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: isTablet ? 18 : 14,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: const Color(0xffFFCC80).withOpacity(0.22),
+            blurRadius: isTablet ? 10 : 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        elevation: isTablet ? 5 : 4,
-        shadowColor: Colors.black.withOpacity(0.15),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(isTablet ? 24 : 20),
-          onTap: () {
-            HapticFeedback.lightImpact();
-            if (bloc is GatekeeperDashboardBloc) {
-              bloc.add(GDInAndOutButtonPressedEvent());
-            } else if (bloc is AdminDashboardBloc) {
-              bloc.add(ADInAndOutButtonPressedEvent());
-            }
-          },
-          child: Padding(
-            padding: EdgeInsets.all(isTablet ? 16 : 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // Enhanced icon container with better shadows
-                Container(
-                  padding: EdgeInsets.all(isTablet ? 16 : 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: isTablet ? 12 : 8,
-                        offset: const Offset(0, 4),
-                      ),
-                      BoxShadow(
-                        color: const Color(0xffFFCC80).withOpacity(0.25),
-                        blurRadius: isTablet ? 6 : 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(isTablet ? 24 : 20),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _CardTexturePainter(
+                    accentColor: const Color(0xffFB8C00),
                   ),
-                  child: CachedNetworkImage(
-                    height: isTablet ? 64 : 48,
-                    width: isTablet ? 64 : 48,
-                    fit: BoxFit.contain,
-                    imageUrl:
-                        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z',
-                    placeholder: (context, url) => Container(
-                      height: isTablet ? 64 : 48,
-                      width: isTablet ? 64 : 48,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child: SizedBox(
-                          width: isTablet ? 24 : 20,
-                          height: isTablet ? 24 : 20,
-                          child: const DashboardLoaderIcon(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xffFFCC80),
+                ),
+              ),
+            ),
+            Material(
+              color: Colors.transparent,
+              elevation: isTablet ? 5 : 4,
+              shadowColor: Colors.black.withOpacity(0.15),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(isTablet ? 24 : 20),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  if (bloc is GatekeeperDashboardBloc) {
+                    bloc.add(GDInAndOutButtonPressedEvent());
+                  } else if (bloc is AdminDashboardBloc) {
+                    bloc.add(ADInAndOutButtonPressedEvent());
+                  }
+                },
+                child: Padding(
+                  padding: EdgeInsets.all(isTablet ? 16 : 12),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Enhanced icon container with better shadows
+                      Align(
+                        alignment: Alignment.center,
+                        child: Container(
+                          padding: EdgeInsets.all(isTablet ? 16 : 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius:
+                                BorderRadius.circular(isTablet ? 20 : 16),
+                            border: Border.all(
+                              color: const Color(0xffFFCC80).withOpacity(0.45),
+                              width: 0.30,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: isTablet ? 12 : 8,
+                                offset: const Offset(0, 4),
+                              ),
+                              BoxShadow(
+                                color:
+                                    const Color(0xffFFCC80).withOpacity(0.25),
+                                blurRadius: isTablet ? 6 : 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: CachedNetworkImage(
+                            height: isTablet ? 64 : 48,
+                            width: isTablet ? 64 : 48,
+                            fit: BoxFit.contain,
+                            imageUrl:
+                                'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_book_31e76df597.gif?updated_at=2023-08-23T06:26:37.400Z',
+                            placeholder: (context, url) => Container(
+                              height: isTablet ? 64 : 48,
+                              width: isTablet ? 64 : 48,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Center(
+                                child: SizedBox(
+                                  width: isTablet ? 24 : 20,
+                                  height: isTablet ? 24 : 20,
+                                  child: const DashboardLoaderIcon(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Color(0xffFFCC80),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              height: isTablet ? 64 : 48,
+                              width: isTablet ? 64 : 48,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.book_rounded,
+                                color: const Color(0xffFFCC80),
+                                size: isTablet ? 32 : 24,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      height: isTablet ? 64 : 48,
-                      width: isTablet ? 64 : 48,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.book_rounded,
-                        color: const Color(0xffFFCC80),
-                        size: isTablet ? 32 : 24,
-                      ),
-                    ),
-                  ),
-                ),
 
-                // Enhanced title
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    'In - Out Book',
-                    maxLines: 1,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: const Color(0xff212427),
-                      fontSize: isTablet ? 20 : 18,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ),
+                      // Enhanced title
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'In - Out Book',
+                          maxLines: 1,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: const Color(0xff212427),
+                            fontSize: isTablet ? 20 : 18,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
 
-                // Enhanced count
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isTablet ? 16 : 12,
-                    vertical: isTablet ? 8 : 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.5),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    "${(outBook ?? 0) + (inBook ?? 0)}",
-                    style: TextStyle(
-                      color: const Color(0xff212427),
-                      fontSize: isTablet ? 28 : 24,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
+                      // Enhanced count
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isTablet ? 16 : 12,
+                          vertical: isTablet ? 8 : 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius:
+                              BorderRadius.circular(isTablet ? 16 : 12),
+                          border: Border.all(
+                            color: const Color(0xffFFCC80).withOpacity(0.45),
+                            width: 0.10,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: isTablet ? 8 : 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          "${(outBook ?? 0) + (inBook ?? 0)}",
+                          style: TextStyle(
+                            color: const Color(0xff212427),
+                            fontSize: isTablet ? 28 : 24,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -234,144 +279,192 @@ class DashboardBlocks extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          stops: [0.0, 1.0],
           colors: [
-            Color(0xffC8E6C9),
-            Color(0xff81C784),
+            Color(0xffD8F0D9),
+            Color(0xff66BB6A),
           ],
         ),
         borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
         border: Border.all(
-          color: const Color(0xff81C784).withOpacity(0.35),
-          width: 1,
+          color: const Color(0xff81C784).withOpacity(0.45),
+          width: 0.30,
         ),
-        boxShadow: const [],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: isTablet ? 18 : 14,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: const Color(0xff81C784).withOpacity(0.22),
+            blurRadius: isTablet ? 10 : 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        elevation: isTablet ? 4 : 3,
-        shadowColor: Colors.black.withOpacity(0.12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
-          onTap: () {
-            HapticFeedback.lightImpact();
-            bloc is GatekeeperDashboardBloc
-                ? bloc.add(GDVisitorsInButtonPressedEvent())
-                : bloc.add(ADVisitorsInButtonPressedEvent());
-          },
-          child: Padding(
-            padding: EdgeInsets.all(isTablet ? 16 : 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  padding: EdgeInsets.all(isTablet ? 16 : 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: isTablet ? 8 : 6,
-                        offset: const Offset(0, 3),
-                      ),
-                      BoxShadow(
-                        color: const Color(0xff81C784).withOpacity(0.25),
-                        blurRadius: isTablet ? 4 : 3,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _CardTexturePainter(
+                    accentColor: const Color(0xff2E7D32),
                   ),
-                  child: Transform(
-                    transform: Matrix4.rotationY(math.pi),
-                    alignment: Alignment.center,
-                    child: Image(
-                      image: const CachedNetworkImageProvider(
-                        'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z',
-                      ),
-                      height: isTablet ? 64 : 48,
-                      width: isTablet ? 64 : 48,
-                      fit: BoxFit.contain,
-                      gaplessPlayback: true,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          height: isTablet ? 40 : 32,
-                          width: isTablet ? 40 : 32,
+                ),
+              ),
+            ),
+            Material(
+              color: Colors.transparent,
+              elevation: isTablet ? 4 : 3,
+              shadowColor: Colors.black.withOpacity(0.12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  bloc is GatekeeperDashboardBloc
+                      ? bloc.add(GDVisitorsInButtonPressedEvent())
+                      : bloc.add(ADVisitorsInButtonPressedEvent());
+                },
+                child: Padding(
+                  padding: EdgeInsets.all(isTablet ? 16 : 12),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Align(
+                        alignment: Alignment.center,
+                        child: Container(
+                          padding: EdgeInsets.all(isTablet ? 16 : 12),
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(6),
+                            color: Colors.white,
+                            borderRadius:
+                                BorderRadius.circular(isTablet ? 16 : 12),
+                            border: Border.all(
+                              color: const Color(0xff81C784).withOpacity(0.45),
+                              width: 0.30,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: isTablet ? 8 : 6,
+                                offset: const Offset(0, 3),
+                              ),
+                              BoxShadow(
+                                color:
+                                    const Color(0xff81C784).withOpacity(0.25),
+                                blurRadius: isTablet ? 4 : 3,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
                           ),
-                          child: Center(
-                            child: SizedBox(
-                              width: isTablet ? 16 : 12,
-                              height: isTablet ? 16 : 12,
-                              child: const DashboardLoaderIcon(
-                                strokeWidth: 1.5,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Color(0xff81C784),
+                          child: Transform(
+                            transform: Matrix4.rotationY(math.pi),
+                            alignment: Alignment.center,
+                            child: Image(
+                              image: const CachedNetworkImageProvider(
+                                'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_in_01b37e79e9.gif?updated_at=2023-08-23T06:26:37.878Z',
+                              ),
+                              height: isTablet ? 64 : 48,
+                              width: isTablet ? 64 : 48,
+                              fit: BoxFit.contain,
+                              gaplessPlayback: true,
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  height: isTablet ? 40 : 32,
+                                  width: isTablet ? 40 : 32,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: isTablet ? 16 : 12,
+                                      height: isTablet ? 16 : 12,
+                                      child: const DashboardLoaderIcon(
+                                        strokeWidth: 1.5,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          Color(0xff81C784),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                height: isTablet ? 40 : 32,
+                                width: isTablet ? 40 : 32,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Icon(
+                                  Icons.person_add_rounded,
+                                  color: const Color(0xff81C784),
+                                  size: isTablet ? 24 : 20,
                                 ),
                               ),
                             ),
                           ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        height: isTablet ? 40 : 32,
-                        width: isTablet ? 40 : 32,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Icon(
-                          Icons.person_add_rounded,
-                          color: const Color(0xff81C784),
-                          size: isTablet ? 24 : 20,
                         ),
                       ),
-                    ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'Visitor-In',
+                          maxLines: 1,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: isTablet ? 20 : 18,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isTablet ? 16 : 12,
+                          vertical: isTablet ? 8 : 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius:
+                              BorderRadius.circular(isTablet ? 16 : 12),
+                          border: Border.all(
+                            color: const Color(0xff81C784).withOpacity(0.45),
+                            width: 0.10,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: isTablet ? 8 : 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          inBook.toString(),
+                          style: TextStyle(
+                            color: const Color(0xff212427),
+                            fontSize: isTablet ? 28 : 24,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    'Visitor-In',
-                    maxLines: 1,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: isTablet ? 20 : 18,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isTablet ? 16 : 12,
-                    vertical: isTablet ? 8 : 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.5),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    inBook.toString(),
-                    style: TextStyle(
-                      color: const Color(0xff212427),
-                      fontSize: isTablet ? 28 : 24,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -388,143 +481,255 @@ class DashboardBlocks extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          stops: [0.0, 1.0],
           colors: [
+            Color(0xffFFE1E4),
             Color(0xffEF9A9A),
-            Color(0xffFFAB91),
           ],
         ),
         borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
         border: Border.all(
-          color: const Color(0xffFFAB91).withOpacity(0.35),
-          width: 1,
+          color: const Color(0xffFFAB91).withOpacity(0.45),
+          width: 0.30,
         ),
-        boxShadow: const [],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: isTablet ? 18 : 14,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: const Color(0xffFFAB91).withOpacity(0.22),
+            blurRadius: isTablet ? 10 : 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        elevation: isTablet ? 4 : 3,
-        shadowColor: Colors.black.withOpacity(0.12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
-          onTap: () {
-            HapticFeedback.lightImpact();
-            bloc is GatekeeperDashboardBloc
-                ? bloc.add(GDVisitorsOutButtonPressedEvent())
-                : bloc.add(ADVisitorsOutButtonPressedEvent());
-          },
-          child: Padding(
-            padding: EdgeInsets.all(isTablet ? 16 : 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  padding: EdgeInsets.all(isTablet ? 16 : 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: isTablet ? 8 : 6,
-                        offset: const Offset(0, 3),
-                      ),
-                      BoxShadow(
-                        color: const Color(0xffFFE5E0).withOpacity(0.3),
-                        blurRadius: isTablet ? 4 : 3,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _CardTexturePainter(
+                    accentColor: const Color(0xffD95D5D),
                   ),
-                  child: Image(
-                    image: const CachedNetworkImageProvider(
-                      'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z',
-                    ),
-                    height: isTablet ? 64 : 48,
-                    width: isTablet ? 64 : 48,
-                    fit: BoxFit.contain,
-                    gaplessPlayback: true,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        height: isTablet ? 40 : 32,
-                        width: isTablet ? 40 : 32,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Center(
-                          child: SizedBox(
-                            width: isTablet ? 16 : 12,
-                            height: isTablet ? 16 : 12,
-                            child: const DashboardLoaderIcon(
-                              strokeWidth: 1.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xffFFAB91),
+                ),
+              ),
+            ),
+            Material(
+              color: Colors.transparent,
+              elevation: isTablet ? 4 : 3,
+              shadowColor: Colors.black.withOpacity(0.12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  bloc is GatekeeperDashboardBloc
+                      ? bloc.add(GDVisitorsOutButtonPressedEvent())
+                      : bloc.add(ADVisitorsOutButtonPressedEvent());
+                },
+                child: Padding(
+                  padding: EdgeInsets.all(isTablet ? 16 : 12),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Align(
+                        alignment: Alignment.center,
+                        child: Container(
+                          padding: EdgeInsets.all(isTablet ? 16 : 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius:
+                                BorderRadius.circular(isTablet ? 16 : 12),
+                            border: Border.all(
+                              color: const Color(0xffFFAB91).withOpacity(0.45),
+                              width: 0.30,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: isTablet ? 8 : 6,
+                                offset: const Offset(0, 3),
+                              ),
+                              BoxShadow(
+                                color: const Color(0xffFFE5E0).withOpacity(0.3),
+                                blurRadius: isTablet ? 4 : 3,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: Image(
+                            image: const CachedNetworkImageProvider(
+                              'https://fsadvt-bucket.s3.ap-south-1.amazonaws.com/visitor_out_c9f84ddb97.gif?updated_at=2023-08-23T06:26:37.786Z',
+                            ),
+                            height: isTablet ? 64 : 48,
+                            width: isTablet ? 64 : 48,
+                            fit: BoxFit.contain,
+                            gaplessPlayback: true,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                height: isTablet ? 40 : 32,
+                                width: isTablet ? 40 : 32,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: isTablet ? 16 : 12,
+                                    height: isTablet ? 16 : 12,
+                                    child: const DashboardLoaderIcon(
+                                      strokeWidth: 1.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Color(0xffFFAB91),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                              height: isTablet ? 40 : 32,
+                              width: isTablet ? 40 : 32,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Icon(
+                                Icons.person_remove_rounded,
+                                color: const Color(0xffFFAB91),
+                                size: isTablet ? 24 : 20,
                               ),
                             ),
                           ),
                         ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: isTablet ? 40 : 32,
-                      width: isTablet ? 40 : 32,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Icon(
-                        Icons.person_remove_rounded,
-                        color: const Color(0xffFFAB91),
-                        size: isTablet ? 24 : 20,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'Visitor-Out',
+                          maxLines: 1,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: isTablet ? 20 : 18,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
                       ),
-                    ),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isTablet ? 16 : 12,
+                          vertical: isTablet ? 8 : 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius:
+                              BorderRadius.circular(isTablet ? 16 : 12),
+                          border: Border.all(
+                            color: const Color(0xffFFAB91).withOpacity(0.45),
+                            width: 0.10,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: isTablet ? 8 : 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          outBook.toString(),
+                          style: TextStyle(
+                            color: const Color(0xff212427),
+                            fontSize: isTablet ? 28 : 24,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    'Visitor-Out',
-                    maxLines: 1,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: isTablet ? 20 : 18,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isTablet ? 16 : 12,
-                    vertical: isTablet ? 8 : 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.5),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    outBook.toString(),
-                    style: TextStyle(
-                      color: const Color(0xff212427),
-                      fontSize: isTablet ? 28 : 24,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
+  }
+}
+
+class _CardTexturePainter extends CustomPainter {
+  final Color accentColor;
+
+  const _CardTexturePainter({required this.accentColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stripePaint = Paint()
+      ..color = Colors.white.withOpacity(0.09)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.1;
+
+    for (double x = -size.height; x < size.width; x += 14) {
+      canvas.drawLine(
+          Offset(x, 0), Offset(x + size.height, size.height), stripePaint);
+    }
+
+    final accentStripePaint = Paint()
+      ..color = accentColor.withOpacity(0.07)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.1;
+
+    for (double x = -size.height + 7; x < size.width; x += 18) {
+      canvas.drawLine(Offset(x, 0), Offset(x + size.height, size.height),
+          accentStripePaint);
+    }
+
+    final dotPaint = Paint()
+      ..color = Colors.white.withOpacity(0.10)
+      ..style = PaintingStyle.fill;
+
+    for (double y = 10; y < size.height; y += 24) {
+      for (double x = 10; x < size.width; x += 24) {
+        if (((x + y) ~/ 24) % 2 == 0) {
+          canvas.drawCircle(Offset(x, y), 1.2, dotPaint);
+        }
+      }
+    }
+
+    // Subtle grain particles overlay for tactile card texture.
+    // Deterministic distribution keeps visual stable across rebuilds.
+    final baseParticles = (size.width * size.height / 95).round();
+    final int particleCount = baseParticles.clamp(120, 420).toInt();
+    final whiteGrainPaint = Paint()..style = PaintingStyle.fill;
+    final accentGrainPaint = Paint()..style = PaintingStyle.fill;
+
+    for (int i = 0; i < particleCount; i++) {
+      final double px = ((i * 37) % 1000) / 1000 * size.width;
+      final double py = ((i * 91) % 1000) / 1000 * size.height;
+      final bool accent = i % 9 == 0;
+
+      if (accent) {
+        accentGrainPaint.color = accentColor.withOpacity(0.075);
+        canvas.drawCircle(Offset(px, py), 0.75, accentGrainPaint);
+      } else {
+        whiteGrainPaint.color = Colors.white.withOpacity(0.09);
+        canvas.drawCircle(Offset(px, py), 0.60, whiteGrainPaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CardTexturePainter oldDelegate) {
+    return oldDelegate.accentColor != accentColor;
   }
 }
 

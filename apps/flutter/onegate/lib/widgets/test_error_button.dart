@@ -9,7 +9,7 @@ import 'dart:developer' as dev;
 class TestErrorButton extends StatefulWidget {
   final String? screenName;
   final VoidCallback? onTestComplete;
-  
+
   const TestErrorButton({
     Key? key,
     this.screenName,
@@ -38,11 +38,11 @@ class _TestErrorButtonState extends State<TestErrorButton> {
         children: [
           ElevatedButton.icon(
             onPressed: _isLoading ? null : _sendTestError,
-            icon: _isLoading 
+            icon: _isLoading
                 ? const SizedBox(
                     width: 16,
                     height: 16,
-                    child: DashboardLoaderIcon(strokeWidth: 2),
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.bug_report, color: Colors.white),
             label: Text(
@@ -86,10 +86,11 @@ class _TestErrorButtonState extends State<TestErrorButton> {
     try {
       final screenName = widget.screenName ?? 'unknown_screen';
       final timestamp = DateTime.now();
-      
+
       // Send test error to PostHog
       await PostHogErrorTrackingService.instance.captureError(
-        error: Exception('🧪 TEST ERROR: Manual PostHog verification from $screenName'),
+        error: Exception(
+            '🧪 TEST ERROR: Manual PostHog verification from $screenName'),
         stackTrace: StackTrace.current,
         context: 'manual_test_button',
         errorType: 'ManualTestError',
@@ -106,7 +107,8 @@ class _TestErrorButtonState extends State<TestErrorButton> {
 
       // Also send a user action error test
       await PostHogErrorTrackingService.instance.captureUserActionError(
-        error: Exception('🧪 TEST USER ACTION ERROR: Button test from $screenName'),
+        error: Exception(
+            '🧪 TEST USER ACTION ERROR: Button test from $screenName'),
         action: 'test_error_button_click',
         screen: screenName,
         actionContext: {
@@ -116,11 +118,13 @@ class _TestErrorButtonState extends State<TestErrorButton> {
       );
 
       setState(() {
-        _lastResult = '✅ Test errors sent successfully!\nCheck PostHog dashboard in 1-2 minutes.';
+        _lastResult =
+            '✅ Test errors sent successfully!\nCheck PostHog dashboard in 1-2 minutes.';
       });
 
       dev.log('🧪 Manual test errors sent to PostHog from $screenName');
-      dev.log('📊 Dashboard: https://us.posthog.com/project/170509/error_tracking');
+      dev.log(
+          '📊 Dashboard: https://us.posthog.com/project/170509/error_tracking');
 
       // Show success snackbar
       if (mounted) {
@@ -132,7 +136,8 @@ class _TestErrorButtonState extends State<TestErrorButton> {
               label: 'View Dashboard',
               textColor: Colors.white,
               onPressed: () {
-                dev.log('📊 Open: https://us.posthog.com/project/170509/error_tracking');
+                dev.log(
+                    '📊 Open: https://us.posthog.com/project/170509/error_tracking');
               },
             ),
           ),
@@ -141,7 +146,6 @@ class _TestErrorButtonState extends State<TestErrorButton> {
 
       // Call completion callback
       widget.onTestComplete?.call();
-
     } catch (e) {
       setState(() {
         _lastResult = '❌ Test failed: $e';
@@ -198,7 +202,7 @@ class PostHogTestHelper {
   /// Send multiple test errors of different types
   static Future<void> sendMultipleTestErrors({String? context}) async {
     final testContext = context ?? 'multiple_test';
-    
+
     try {
       // Test 1: General error
       await PostHogErrorTrackingService.instance.captureError(

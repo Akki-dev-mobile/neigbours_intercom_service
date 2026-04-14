@@ -1985,8 +1985,10 @@ class _VisitorLogViewState extends State<VisitorLogView>
 
                                             // Add is_checkout based on the initiating card
                                             if (widget.id == 'Visitor In') {
-                                              visitorData['is_checkout'] = false;
-                                            } else if (widget.id == 'Visitor Out') {
+                                              visitorData['is_checkout'] =
+                                                  false;
+                                            } else if (widget.id ==
+                                                'Visitor Out') {
                                               visitorData['is_checkout'] = true;
                                             }
 
@@ -2010,7 +2012,8 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                               );
                                             } catch (e) {
                                               final msg = e.toString();
-                                              if (msg.contains('No data found')) {
+                                              if (msg
+                                                  .contains('No data found')) {
                                                 _showNoDataFoundDialog();
                                               } else {
                                                 _showExportErrorDialog(
@@ -2952,19 +2955,19 @@ class _VisitorLogViewState extends State<VisitorLogView>
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                         colors: [
-                          Color(0xFF4CAF50), // Green
-                          Color(0xFF2E7D32), // Darker green
+                          Color(0xff2C2C2C), // OneGate black
+                          Color(0xff6E6E6E), // OneGate grey
                         ],
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF4CAF50).withOpacity(0.3),
+                          color: const Color(0xff2C2C2C).withOpacity(0.25),
                           blurRadius: 12,
                           offset: const Offset(0, 6),
                         ),
                         BoxShadow(
-                          color: const Color(0xFF4CAF50).withOpacity(0.1),
+                          color: const Color(0xff6E6E6E).withOpacity(0.12),
                           blurRadius: 6,
                           offset: const Offset(0, 3),
                         ),
@@ -3157,8 +3160,8 @@ class _VisitorLogViewState extends State<VisitorLogView>
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                         colors: [
-                          Color(0xff2C2C2C), // Black
-                          Color(0xff6E6E6E), // Grey
+                          Color(0xffF44336), // OneGate red
+                          Color(0xffD32F2F), // OneGate dark red
                         ],
                       ),
                       borderRadius: BorderRadius.circular(16),

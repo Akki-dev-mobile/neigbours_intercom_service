@@ -8,6 +8,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:common_widgets/loading_view.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/common/environment.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:flutter_onegate/presentation/features/request_gate_access/ui/request_gate_access_view.dart';
@@ -1190,10 +1191,11 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       };
 
       log("📨 Sending FCM Notification with Data: $requestData");
+      final headers = await Environment.getHeaders();
 
       final response = await Dio().post(
         '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
-        options: Options(headers: {"Content-Type": "application/json"}),
+        options: Options(headers: headers),
         data: requestData,
       );
 

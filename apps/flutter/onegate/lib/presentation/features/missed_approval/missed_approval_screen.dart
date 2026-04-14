@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/common/environment.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/ui/request_permission_view.dart';
@@ -1171,12 +1172,13 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       };
 
       log("📨 Sending FCM Notification (800 bytes) with Data: $requestData");
+      final headers = await Environment.getHeaders();
 
       final response = await Dio().post(
         '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
         options: Options(headers: {
-          "Content-Type": "application/json",
-          "Content-Length": "800"
+          ...headers,
+          "Content-Length": "800",
         }),
         data: requestData,
       );

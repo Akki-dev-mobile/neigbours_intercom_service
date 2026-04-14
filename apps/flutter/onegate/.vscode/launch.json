@@ -5,44 +5,22 @@
             "name": "onegate (Flutter Debug)",
             "request": "launch",
             "type": "dart",
-            "program": "lib/main.dart",
-            "args": [
-                "--flavor",
-                "development"
-            ]
+            "flutterMode": "debug",
+            "program": "lib/main.dart"
         },
         {
             "name": "onegate (Flutter Profile)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile",
-            "program": "lib/main.dart",
-            "args": [
-                "--flavor",
-                "development"
-            ]
+            "program": "lib/main.dart"
         },
         {
             "name": "onegate (Flutter Release)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release",
-            "program": "lib/main.dart",
-            "args": [
-                "--flavor",
-                "production"
-            ]
-        },
-        {
-            "name": "onegate (Flutter M2101K7AI)",
-            "request": "launch",
-            "type": "dart",
-            "program": "lib/main.dart",
-            "deviceId": "b440bc86",
-            "args": [
-                "--flavor",
-                "development"
-            ]
+            "program": "lib/main.dart"
         }
     ]
 }

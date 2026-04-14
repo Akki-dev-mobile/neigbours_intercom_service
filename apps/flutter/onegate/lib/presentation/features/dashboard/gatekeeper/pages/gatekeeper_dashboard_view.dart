@@ -13,7 +13,6 @@ import 'package:flutter_onegate/presentation/features/license_plate_detection/ui
 import 'package:flutter_onegate/presentation/features/self_entry/ui/qr_scanner_self.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
 import 'package:vibration/vibration.dart';
-import 'dart:math' as math;
 
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:badges/badges.dart' as badges;
@@ -498,181 +497,219 @@ class _GateDashboardViewState extends State<GateDashboardView>
 
   // Enhanced Shortcuts with better layout
   Widget _buildEnhancedShortcuts(BuildContext context, bool isTablet) {
+    final showCardsShortcut = _visitorCardNumber == true;
+    final horizontalPadding = isTablet ? 16.0 : 12.0;
+
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isTablet ? 16 : 12,
+        horizontal: horizontalPadding,
         vertical: isTablet ? 8 : 6,
       ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceEvenly,
-        runAlignment: WrapAlignment.center,
-        spacing: isTablet ? 16 : 12,
-        runSpacing: isTablet ? 12 : 10,
-        children: [
-          _buildEnhancedShortcut(
-            context,
-            isTablet,
-            icon: Icons.dialer_sip_rounded,
-            title: 'Intercom',
-            onTap: () {
-              IntercomServicesLauncher.open(context);
-            },
-          ),
-          _buildEnhancedShortcut(
-            context,
-            isTablet,
-            icon: Icons.inventory_2_rounded,
-            title: context.l10n.parcel,
-            hasNotification: hasPendingParcels,
-            onTap: () async {
-              setState(() => hasPendingParcels = false);
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => ParcelList()),
-              );
-            },
-          ),
-          _buildEnhancedShortcut(
-            context,
-            isTablet,
-            icon: Icons.qr_code_scanner_rounded,
-            title: context.l10n.scan,
-            onTap: () async {
-              final scannedResult = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => QRScannerScreen(
-                    status: 1,
-                    isGatekeeperQRPasscodeEntry: true,
-                  ),
-                ),
-              );
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final shortcutsCount = showCardsShortcut ? 4 : 3;
+          final preferredGap = isTablet ? 16.0 : 12.0;
+          final maxShortcutWidth = isTablet ? 120.0 : 96.0;
 
-              if (scannedResult != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Container(
-                      padding: EdgeInsets.symmetric(
-                          vertical: isTablet ? 12 : 10, horizontal: 4),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(isTablet ? 12 : 10),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.white.withOpacity(0.3),
-                                  Colors.white.withOpacity(0.1),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.white.withOpacity(0.2),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.qr_code_scanner_rounded,
-                              color: Colors.white,
-                              size: isTablet ? 28 : 24,
-                            ),
-                          ),
-                          SizedBox(width: isTablet ? 16 : 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.check_circle_rounded,
-                                      color: Colors.white,
-                                      size: isTablet ? 18 : 16,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      "QR Code Verified",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: isTablet ? 16 : 14,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.5,
-                                      ),
+          double shortcutWidth =
+              (constraints.maxWidth - (preferredGap * (shortcutsCount + 1))) /
+                  shortcutsCount;
+          shortcutWidth = shortcutWidth.clamp(48.0, maxShortcutWidth);
+
+          double equalGap =
+              (constraints.maxWidth - (shortcutWidth * shortcutsCount)) /
+                  (shortcutsCount + 1);
+
+          if (equalGap < 8.0) {
+            shortcutWidth =
+                ((constraints.maxWidth - (8.0 * (shortcutsCount + 1))) /
+                        shortcutsCount)
+                    .clamp(48.0, maxShortcutWidth);
+            equalGap =
+                (constraints.maxWidth - (shortcutWidth * shortcutsCount)) /
+                    (shortcutsCount + 1);
+          }
+
+          final gapWidth = equalGap.clamp(0.0, 100.0);
+
+          return Row(
+            children: [
+              SizedBox(width: gapWidth),
+              _buildEnhancedShortcut(
+                context,
+                isTablet,
+                width: shortcutWidth,
+                icon: Icons.dialer_sip_rounded,
+                title: 'Intercom',
+                onTap: () {
+                  IntercomServicesLauncher.open(context);
+                },
+              ),
+              SizedBox(width: gapWidth),
+              _buildEnhancedShortcut(
+                context,
+                isTablet,
+                width: shortcutWidth,
+                icon: Icons.inventory_2_rounded,
+                title: context.l10n.parcel,
+                hasNotification: hasPendingParcels,
+                onTap: () async {
+                  setState(() => hasPendingParcels = false);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => ParcelList()),
+                  );
+                },
+              ),
+              SizedBox(width: gapWidth),
+              _buildEnhancedShortcut(
+                context,
+                isTablet,
+                width: shortcutWidth,
+                icon: Icons.qr_code_scanner_rounded,
+                title: context.l10n.scan,
+                onTap: () async {
+                  final scannedResult = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => QRScannerScreen(
+                        status: 1,
+                        isGatekeeperQRPasscodeEntry: true,
+                      ),
+                    ),
+                  );
+
+                  if (scannedResult != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Container(
+                          padding: EdgeInsets.symmetric(
+                              vertical: isTablet ? 12 : 10, horizontal: 4),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(isTablet ? 12 : 10),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.white.withOpacity(0.3),
+                                      Colors.white.withOpacity(0.1),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.white.withOpacity(0.2),
+                                      blurRadius: 8,
+                                      offset: Offset(0, 2),
                                     ),
                                   ],
                                 ),
-                                SizedBox(height: 4),
-                                Text(
-                                  scannedResult,
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.95),
-                                    fontSize: isTablet ? 14 : 12,
-                                    fontWeight: FontWeight.w500,
-                                    letterSpacing: 0.2,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                                child: Icon(
+                                  Icons.qr_code_scanner_rounded,
+                                  color: Colors.white,
+                                  size: isTablet ? 28 : 24,
                                 ),
-                              ],
-                            ),
+                              ),
+                              SizedBox(width: isTablet ? 16 : 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.check_circle_rounded,
+                                          color: Colors.white,
+                                          size: isTablet ? 18 : 16,
+                                        ),
+                                        SizedBox(width: 6),
+                                        Text(
+                                          "QR Code Verified",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: isTablet ? 16 : 14,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      scannedResult,
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.95),
+                                        fontSize: isTablet ? 14 : 12,
+                                        fontWeight: FontWeight.w500,
+                                        letterSpacing: 0.2,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  color: Colors.white,
+                                  size: isTablet ? 16 : 14,
+                                ),
+                              ),
+                            ],
                           ),
-                          Container(
-                            padding: EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: Colors.white,
-                              size: isTablet ? 16 : 14,
-                            ),
-                          ),
-                        ],
+                        ),
+                        backgroundColor: Color(0xFF2E7D32), // Rich green color
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        margin: EdgeInsets.all(isTablet ? 20 : 16),
+                        duration: const Duration(seconds: 4),
+                        elevation: 8,
                       ),
-                    ),
-                    backgroundColor: Color(0xFF2E7D32), // Rich green color
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    margin: EdgeInsets.all(isTablet ? 20 : 16),
-                    duration: const Duration(seconds: 4),
-                    elevation: 8,
-                  ),
-                );
-              }
-            },
-          ),
-          if (_visitorCardNumber == true)
-            _buildEnhancedShortcut(
-              context,
-              isTablet,
-              icon: Icons.badge_rounded,
-              title: context.l10n.cards,
-              onTap: () {
-                Navigator.push(
+                    );
+                  }
+                },
+              ),
+              if (showCardsShortcut) ...[
+                SizedBox(width: gapWidth),
+                _buildEnhancedShortcut(
                   context,
-                  PageTransition(
-                    type: PageTransitionType.leftToRight,
-                    child: VisitorLogView(
-                      id: 'Cards',
-                      logList: const [
-                        "In Out Book",
-                        "Visitor In",
-                        "Visitor Out",
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-        ],
+                  isTablet,
+                  width: shortcutWidth,
+                  icon: Icons.badge_rounded,
+                  title: context.l10n.cards,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      PageTransition(
+                        type: PageTransitionType.leftToRight,
+                        child: VisitorLogView(
+                          id: 'Cards',
+                          logList: const [
+                            "In Out Book",
+                            "Visitor In",
+                            "Visitor Out",
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+              SizedBox(width: gapWidth),
+            ],
+          );
+        },
       ),
     );
   }
@@ -681,6 +718,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
   Widget _buildEnhancedShortcut(
     BuildContext context,
     bool isTablet, {
+    double? width,
     IconData? icon,
     required String title,
     required VoidCallback onTap,
@@ -689,7 +727,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
     bool isClickable = true, // New parameter to control clickability
   }) {
     return SizedBox(
-      width: isTablet ? 100 : 80,
+      width: width ?? (isTablet ? 100 : 80),
       child: Column(
         children: [
           // Enhanced icon container with visitor details styling
@@ -702,6 +740,10 @@ class _GateDashboardViewState extends State<GateDashboardView>
                   ? const Color(0xffF44336).withOpacity(0.1)
                   : Colors.grey.shade200.withOpacity(0.5),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFE5E7EB),
+                width: 1,
+              ),
             ),
             child: Material(
               color: Colors.transparent,
@@ -844,6 +886,10 @@ class _GateDashboardViewState extends State<GateDashboardView>
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFFE5E7EB),
+              width: 1,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.10),

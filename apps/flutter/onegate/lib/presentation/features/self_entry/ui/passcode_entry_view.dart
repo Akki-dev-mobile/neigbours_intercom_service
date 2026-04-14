@@ -320,9 +320,10 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                               );
 
                               // Extract visitor_count from API response, checking both visitor_count and guest_count fields
-                              final int visitorCount = visitorData['visitor_count'] ?? 
-                                                       visitorData['guest_count'] ?? 
-                                                       1;
+                              final int visitorCount =
+                                  visitorData['visitor_count'] ??
+                                      visitorData['guest_count'] ??
+                                      1;
 
                               // Create VisitorLog object with unit details
                               VisitorLog visitorLog = VisitorLog(
@@ -421,7 +422,8 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                   ),
                   child: Center(
                     child: isLoading
-                        ? const DashboardLoaderIcon(
+                        ? const CircularProgressIndicator(
+                            strokeWidth: 2,
                             valueColor:
                                 AlwaysStoppedAnimation<Color>(Colors.white),
                           )

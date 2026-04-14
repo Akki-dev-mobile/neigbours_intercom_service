@@ -1,5 +1,7 @@
 import 'package:common_widgets/common_widgets.dart';
+import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/presentation/features/auth/bloc/login_bloc.dart';
 import 'package:flutter_onegate/presentation/features/forgot_password/ui/forgot_password_view.dart';
@@ -10,7 +12,7 @@ String _mapErrorMessage(String? raw) {
   if (raw == null || raw.isEmpty) return 'Something went wrong. Please try again.';
   final lower = raw.toLowerCase();
   if (lower.contains('invalid') && (lower.contains('credential') || lower.contains('password'))) {
-    return 'Incorrect mobile/email or password.';
+    return 'Incorrect mobile or password.';
   }
   if (lower.contains('locked') || lower.contains('disabled')) {
     return 'Your account is locked. Contact your administrator.';
@@ -19,7 +21,7 @@ String _mapErrorMessage(String? raw) {
     return "We're having trouble connecting. Please retry.";
   }
   if (lower.contains('401') || lower.contains('unauthorized')) {
-    return 'Incorrect mobile/email or password.';
+    return 'Incorrect mobile or password.';
   }
   return raw.length > 120 ? '${raw.substring(0, 120)}…' : raw;
 }
@@ -37,6 +39,7 @@ class _NativeLoginFormState extends State<NativeLoginForm> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  String _selectedDialCode = '+91';
 
   static const _minPasswordLength = 1;
 
@@ -69,12 +72,25 @@ class _NativeLoginFormState extends State<NativeLoginForm> {
 
   void _submit() {
     if (!_isFormValid) return;
+    final normalizedMobile =
+        _normalizeMobileWithCountryCode(_usernameController.text, _selectedDialCode);
     context.read<LoginBloc>().add(
           LoginButtonPressedEvent(
-            _usernameController.text.trim(),
+            normalizedMobile,
             _passwordController.text,
           ),
         );
+  }
+
+  String _normalizeMobileWithCountryCode(String raw, String dialCode) {
+    final digitsOnly = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    final countryDigits = dialCode.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digitsOnly.isEmpty || countryDigits.isEmpty) return digitsOnly;
+
+    if (digitsOnly.startsWith(countryDigits)) {
+      return digitsOnly;
+    }
+    return '$countryDigits$digitsOnly';
   }
 
   @override
@@ -135,6 +151,10 @@ class _NativeLoginFormState extends State<NativeLoginForm> {
                         showLoader: showLoader,
                         isFormValid: _isFormValid,
                         onSubmit: _submit,
+                        selectedDialCode: _selectedDialCode,
+                        onCountryCodeChanged: (dialCode) {
+                          setState(() => _selectedDialCode = dialCode);
+                        },
                         onSignUpPressed: () {
                           Navigator.push(
                             context,
@@ -217,6 +237,8 @@ class _LoginFormCard extends StatelessWidget {
   final bool showLoader;
   final bool isFormValid;
   final VoidCallback onSubmit;
+  final String selectedDialCode;
+  final ValueChanged<String> onCountryCodeChanged;
   final VoidCallback onSignUpPressed;
 
   const _LoginFormCard({
@@ -230,6 +252,8 @@ class _LoginFormCard extends StatelessWidget {
     required this.showLoader,
     required this.isFormValid,
     required this.onSubmit,
+    required this.selectedDialCode,
+    required this.onCountryCodeChanged,
     required this.onSignUpPressed,
   });
 
@@ -241,6 +265,10 @@ class _LoginFormCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.grey.withOpacity(0.28),
+          width: 0.8,
+        ),
         boxShadow: [
           BoxShadow(
             color: (errorMessage != null ? const Color(0xffF44336) : Colors.grey).withOpacity(0.12),
@@ -274,6 +302,10 @@ class _LoginFormCard extends StatelessWidget {
                   ],
                 ),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border.all(
+                  color: Colors.grey.withOpacity(0.25),
+                  width: 0.8,
+                ),
               ),
               child: Row(
                 children: [
@@ -313,7 +345,7 @@ class _LoginFormCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Sign in with your mobile or email',
+                          'Sign in with your mobile number',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: const Color(0xff57636C),
                                 fontSize: 14,
@@ -336,32 +368,53 @@ class _LoginFormCard extends StatelessWidget {
                     const SizedBox(height: 16),
                   ] else
                     const SizedBox(height: 4),
-                  CustomForm.textField(
-                    'Mobile / Email',
-                    textController: usernameController,
-                    hintText: 'Enter mobile or email',
-                    keyboardType: TextInputType.emailAddress,
+                  _buildThinBorderField(
+                    context,
+                    title: 'Mobile',
+                    controller: usernameController,
+                    hintText: 'Enter mobile number',
+                    keyboardType: TextInputType.phone,
                     textInputAction: TextInputAction.next,
-                    titleColor: Theme.of(context).colorScheme.onBackground,
-                    hintColor: Theme.of(context).colorScheme.onPrimary,
+                    maxLength: 10,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    prefixWidget: CountryCodePicker(
+                      initialSelection: selectedDialCode,
+                      favorite: const ['IN'],
+                      showFlagMain: true,
+                      showFlagDialog: true,
+                      alignLeft: false,
+                      textStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.onBackground,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      onChanged: (code) {
+                        onCountryCodeChanged(code.dialCode ?? '+91');
+                      },
+                    ),
                     validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Enter mobile or email';
+                      if (v == null || v.trim().isEmpty) {
+                        return 'Enter mobile number';
+                      }
+                      if (v.trim().length != 10) {
+                        return 'Enter valid mobile number';
+                      }
                       return null;
                     },
                     onChanged: (_) => (context as Element).markNeedsBuild(),
                   ),
                   const SizedBox(height: 16),
-                  CustomForm.textField(
-                    'Password',
-                    textController: passwordController,
+                  _buildThinBorderField(
+                    context,
+                    title: 'Password',
+                    controller: passwordController,
                     hintText: 'Enter password',
                     isObscureText: obscurePassword,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _trySubmit(),
-                    titleColor: Theme.of(context).colorScheme.onBackground,
-                    hintColor: Theme.of(context).colorScheme.onPrimary,
                     suffixIcon: IconButton(
-                      icon: Icon(obscurePassword ? Icons.visibility_off : Icons.visibility),
+                      icon:
+                          Icon(obscurePassword ? Icons.visibility_off : Icons.visibility),
                       onPressed: onToggleObscure,
                     ),
                     validator: (v) {
@@ -396,7 +449,7 @@ class _LoginFormCard extends StatelessWidget {
                   Semantics(
                     button: true,
                     enabled: isFormValid && !isLoading,
-                    label: showLoader ? 'Signing in' : 'Sign in with mobile or email',
+                    label: showLoader ? 'Signing in' : 'Sign in with mobile number',
                     child: IgnorePointer(
                       ignoring: !isFormValid || isLoading,
                       child: Opacity(
@@ -487,6 +540,107 @@ class _LoginFormCard extends StatelessWidget {
       onSubmit();
     }
   }
+
+  Widget _buildThinBorderField(
+    BuildContext context, {
+    required String title,
+    required TextEditingController controller,
+    required String hintText,
+    bool isObscureText = false,
+    TextInputType? keyboardType,
+    TextInputAction? textInputAction,
+    Widget? suffixIcon,
+    FormFieldValidator<String>? validator,
+    ValueChanged<String>? onChanged,
+    ValueChanged<String>? onFieldSubmitted,
+    int maxLength = 499,
+    List<TextInputFormatter>? inputFormatters,
+    Widget? prefixWidget,
+  }) {
+    final titleColor = Theme.of(context).colorScheme.onBackground;
+    final hintColor = Theme.of(context).colorScheme.onPrimary;
+    final borderColor = Colors.grey.withOpacity(0.45);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 10),
+        Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            color: titleColor,
+          ),
+        ),
+        const SizedBox(height: 5),
+        TextFormField(
+          controller: controller,
+          cursorColor: const Color(0xffF44336),
+          keyboardType: keyboardType ?? TextInputType.text,
+          obscureText: isObscureText,
+          textInputAction: textInputAction ?? TextInputAction.next,
+          style: TextStyle(
+            color: titleColor,
+            fontSize: 18,
+          ),
+          maxLength: maxLength,
+          validator: validator,
+          onChanged: onChanged,
+          onFieldSubmitted: onFieldSubmitted,
+          inputFormatters: inputFormatters,
+          decoration: InputDecoration(
+            counterText: '',
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 20,
+              horizontal: 15,
+            ),
+            hintText: hintText,
+            hintStyle: TextStyle(color: hintColor),
+            prefixIcon: prefixWidget,
+            suffixIcon: suffixIcon,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide(
+                color: borderColor,
+                width: 0.8,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide(
+                color: borderColor,
+                width: 0.8,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: const BorderSide(
+                color: Color(0xffF44336),
+                width: 1.0,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: const BorderSide(
+                color: Color(0xffF44336),
+                width: 0.8,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: const BorderSide(
+                color: Color(0xffF44336),
+                width: 1.0,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
 }
 
 class _ErrorBanner extends StatelessWidget {

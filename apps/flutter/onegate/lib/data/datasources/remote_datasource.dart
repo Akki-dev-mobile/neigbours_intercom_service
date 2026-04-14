@@ -3696,7 +3696,7 @@ class RemoteDataSource {
     if (companyId == null) throw Exception('Company ID not found.');
 
     final String url =
-        'https://socbackend.cubeone.in/api/admin/staffs/settings?company_id=$companyId&per_page=100';
+        'https://societybackend.cubeone.in/api/admin/staffs/settings?company_id=$companyId&per_page=100';
 
     try {
       final accessToken = await _getAccessToken();
@@ -3734,7 +3734,7 @@ class RemoteDataSource {
     }
 
     final String addStaffUrl =
-        'https://socbackend.cubeone.in/api/admin/staffs/addStaff?company_id=$companyId';
+        'https://societybackend.cubeone.in/api/admin/staffs/addStaff?company_id=$companyId';
 
     try {
       log('Incoming staffData: $staffData');
@@ -3907,7 +3907,7 @@ class RemoteDataSource {
   Future<Map<String, dynamic>?> uploadStaffImages(
       File file, int companyId) async {
     final String uploadUrl =
-        'https://socbackend.cubeone.in/api/admin/file-upload?company_id=$companyId';
+        'https://societybackend.cubeone.in/api/admin/file-upload?company_id=$companyId';
 
     try {
       FormData formData = FormData.fromMap({

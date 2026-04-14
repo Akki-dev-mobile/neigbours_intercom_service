@@ -15,6 +15,7 @@ import 'package:flutter_onegate/presentation/features/self_entry/self_home_view.
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
 import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
+import 'package:flutter_onegate/common/environment.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -1264,10 +1265,11 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
         // _showErrorSnackBar("Invalid visitor log ID.");
         return;
       }
+      final headers = await Environment.getHeaders();
 
       final response = await Dio().patch(
         '${ApiUrls.gateBaseUrl}/visitor/visitorLog/${widget.visitor.id}',
-        options: Options(headers: {"Content-Type": "application/json"}),
+        options: Options(headers: headers),
         data: jsonEncode({"allow_status": "allowed_by_gatekeeper"}),
       );
 
@@ -1674,10 +1676,11 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       };
       log("📩 FCM Request Data: $requestData");
       log("📡 Sending FCM Request: ${jsonEncode(requestData)}");
+      final headers = await Environment.getHeaders();
 
       final response = await Dio().post(
         '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
-        options: Options(headers: {"Content-Type": "application/json"}),
+        options: Options(headers: headers),
         data: requestData,
       );
 

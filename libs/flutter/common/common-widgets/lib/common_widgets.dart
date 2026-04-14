@@ -203,21 +203,23 @@ class CustomForm {
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide(
                   style: BorderStyle.solid,
-                  color: titleColor,
+                  color: titleColor.withOpacity(0.55),
+                  width: 0.8,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide(
-                  color: titleColor,
+                  color: titleColor.withOpacity(0.55),
                   style: BorderStyle.solid,
+                  width: 0.8,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide(
                   style: BorderStyle.solid,
-                  width: 2,
+                  width: 1.0,
                   color: const Color(0xffF44336),
                 ),
               ),
@@ -371,21 +373,25 @@ class CustomDropdown extends StatelessWidget {
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide(
                   style: BorderStyle.solid,
-                  color: titleColor ?? Theme.of(context).colorScheme.onSurface,
+                  color: (titleColor ?? Theme.of(context).colorScheme.onSurface)
+                      .withOpacity(0.55),
+                  width: 0.8,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide(
-                  color: titleColor ?? Theme.of(context).colorScheme.onSurface,
+                  color: (titleColor ?? Theme.of(context).colorScheme.onSurface)
+                      .withOpacity(0.55),
                   style: BorderStyle.solid,
+                  width: 0.8,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
                 borderSide: const BorderSide(
                   style: BorderStyle.solid,
-                  width: 2,
+                  width: 1.0,
                   color: Color(0xffF44336),
                 ),
               ),
@@ -395,6 +401,7 @@ class CustomDropdown extends StatelessWidget {
                   color: hintColor ??
                       Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                   style: BorderStyle.solid,
+                  width: 0.8,
                 ),
               ),
             ),

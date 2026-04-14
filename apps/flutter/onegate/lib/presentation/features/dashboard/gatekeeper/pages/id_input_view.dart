@@ -555,6 +555,11 @@ class _IdInputViewState extends State<IdInputView> {
                                           color: Colors.white,
                                           borderRadius:
                                               BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: const Color(0xff212427)
+                                                .withOpacity(0.12),
+                                            width: 0.9,
+                                          ),
                                           boxShadow: [
                                             BoxShadow(
                                               color: Colors.black
@@ -768,7 +773,7 @@ class _IdInputViewState extends State<IdInputView> {
                                                     borderSide:
                                                         const BorderSide(
                                                       color: Color(0xffF44336),
-                                                      width: 2,
+                                                      width: 1.0,
                                                     ),
                                                   ),
                                                   counterText: '',
@@ -889,7 +894,7 @@ class _IdInputViewState extends State<IdInputView> {
                                                             const BorderSide(
                                                           color:
                                                               Color(0xffF44336),
-                                                          width: 2,
+                                                          width: 1.0,
                                                         ),
                                                       ),
                                                       enabledBorder:
@@ -1019,13 +1024,12 @@ class _IdInputViewState extends State<IdInputView> {
                                                 width: 24,
                                                 height: 24,
                                                 child:
-                                                    DashboardLoaderIcon(
+                                                    CircularProgressIndicator(
                                                   strokeWidth: 2.5,
                                                   valueColor:
-                                                      AlwaysStoppedAnimation<
-                                                          Color>(
-                                                    Colors.green,
-                                                  ),
+                                                      const AlwaysStoppedAnimation<
+                                                              Color>(
+                                                          Colors.green),
                                                 ),
                                               ),
                                               const SizedBox(width: 12),
@@ -1058,23 +1062,6 @@ class _IdInputViewState extends State<IdInputView> {
                                                   ],
                                                 ),
                                               ),
-                                              // Animated Dots Loader
-                                              Row(
-                                                children: [
-                                                  for (int i = 0; i < 3; i++)
-                                                    Container(
-                                                      margin:
-                                                          EdgeInsets.symmetric(
-                                                              horizontal: 2),
-                                                      width: 6,
-                                                      height: 6,
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.green,
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
                                             ],
                                           ),
                                         ),
@@ -1093,6 +1080,11 @@ class _IdInputViewState extends State<IdInputView> {
                                           color: Colors.white,
                                           borderRadius:
                                               BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: const Color(0xff212427)
+                                                .withOpacity(0.12),
+                                            width: 0.9,
+                                          ),
                                           boxShadow: [
                                             BoxShadow(
                                               color: Colors.black
@@ -1274,7 +1266,7 @@ class _IdInputViewState extends State<IdInputView> {
                                                           const BorderSide(
                                                         color:
                                                             Color(0xffF44336),
-                                                        width: 2,
+                                                        width: 1.0,
                                                       ),
                                                     ),
                                                     counterText: '',

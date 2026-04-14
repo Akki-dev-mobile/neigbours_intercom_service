@@ -6,102 +6,95 @@
     "configurations": [
         {
             "name": "onegate",
-            "cwd": "apps/flutter/onegate",
+            "cwd": "${workspaceFolder}/apps/flutter/onegate",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "flutterMode": "debug",
+            "program": "lib/main.dart"
         },
         {
             "name": "onegate (profile mode)",
-            "cwd": "apps/flutter/onegate",
+            "cwd": "${workspaceFolder}/apps/flutter/onegate",
             "request": "launch",
             "type": "dart",
+            "program": "lib/main.dart",
             "flutterMode": "profile"
         },
         {
             "name": "onegate (release mode)",
-            "cwd": "apps/flutter/onegate",
+            "cwd": "${workspaceFolder}/apps/flutter/onegate",
             "request": "launch",
             "type": "dart",
+            "program": "lib/main.dart",
             "flutterMode": "release"
         },
         {
             "name": "auth",
-            "cwd": "libs/flutter/auth",
+            "cwd": "${workspaceFolder}/libs/flutter/auth",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "program": "lib/auth.dart"
         },
         {
             "name": "auth (profile mode)",
-            "cwd": "libs/flutter/auth",
+            "cwd": "${workspaceFolder}/libs/flutter/auth",
             "request": "launch",
             "type": "dart",
+            "program": "lib/auth.dart",
             "flutterMode": "profile"
         },
         {
             "name": "auth (release mode)",
-            "cwd": "libs/flutter/auth",
+            "cwd": "${workspaceFolder}/libs/flutter/auth",
             "request": "launch",
             "type": "dart",
+            "program": "lib/auth.dart",
             "flutterMode": "release"
         },
         {
             "name": "common-widgets",
-            "cwd": "libs/flutter/common/common-widgets",
+            "cwd": "${workspaceFolder}/libs/flutter/common/common-widgets",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "program": "lib/common_widgets.dart"
         },
         {
             "name": "common-widgets (profile mode)",
-            "cwd": "libs/flutter/common/common-widgets",
+            "cwd": "${workspaceFolder}/libs/flutter/common/common-widgets",
             "request": "launch",
             "type": "dart",
+            "program": "lib/common_widgets.dart",
             "flutterMode": "profile"
         },
         {
             "name": "common-widgets (release mode)",
-            "cwd": "libs/flutter/common/common-widgets",
+            "cwd": "${workspaceFolder}/libs/flutter/common/common-widgets",
             "request": "launch",
             "type": "dart",
+            "program": "lib/common_widgets.dart",
             "flutterMode": "release"
         },
         {
             "name": "one-theme",
-            "cwd": "libs/flutter/common/one-theme",
+            "cwd": "${workspaceFolder}/libs/flutter/common/one-theme",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "program": "lib/theme.dart"
         },
         {
             "name": "one-theme (profile mode)",
-            "cwd": "libs/flutter/common/one-theme",
+            "cwd": "${workspaceFolder}/libs/flutter/common/one-theme",
             "request": "launch",
             "type": "dart",
+            "program": "lib/theme.dart",
             "flutterMode": "profile"
         },
         {
             "name": "one-theme (release mode)",
-            "cwd": "libs/flutter/common/one-theme",
+            "cwd": "${workspaceFolder}/libs/flutter/common/one-theme",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "release"
-        },
-        {
-            "name": "retrofit",
-            "cwd": "libs/flutter/common/retrofit",
-            "request": "launch",
-            "type": "dart"
-        },
-        {
-            "name": "retrofit (profile mode)",
-            "cwd": "libs/flutter/common/retrofit",
-            "request": "launch",
-            "type": "dart",
-            "flutterMode": "profile"
-        },
-        {
-            "name": "retrofit (release mode)",
-            "cwd": "libs/flutter/common/retrofit",
-            "request": "launch",
-            "type": "dart",
+            "program": "lib/theme.dart",
             "flutterMode": "release"
         }
     ]

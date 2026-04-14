@@ -123,20 +123,23 @@ class _CombinedInputFieldState extends State<CombinedInputField> {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         style: BorderStyle.solid,
+                        width: 0.8,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         style: BorderStyle.solid,
+                        width: 0.8,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         style: BorderStyle.solid,
+                        width: 1.0,
                         color: const Color(0xffF44336),
                       ),
                     ),

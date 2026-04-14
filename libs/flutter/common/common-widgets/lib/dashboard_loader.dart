@@ -76,6 +76,10 @@ class _DashboardLoaderState extends State<DashboardLoader>
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xff212427).withOpacity(0.12),
+                    width: 0.9,
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.05),
@@ -428,6 +432,10 @@ class OneGateGateAnimation extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
+            border: Border.all(
+              color: const Color(0xff212427).withOpacity(0.12),
+              width: 0.8,
+            ),
           ),
           child: Stack(
             children: [

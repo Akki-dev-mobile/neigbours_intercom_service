@@ -21,7 +21,11 @@ class LoginScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: provider.isLoading ? null : () => provider.login(),
                   child: provider.isLoading
-                      ? DashboardLoaderIcon()
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : Text(AppLocalizations.of(context).login),
                 ),
                 if (provider.error != null)

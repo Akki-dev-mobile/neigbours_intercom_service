@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/common/environment.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
@@ -776,10 +777,11 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
         _showSnackBar("Invalid visitor log ID", isError: true);
         return;
       }
+      final headers = await Environment.getHeaders();
 
       final response = await Dio().patch(
         '${ApiUrls.gateBaseUrl}/visitor/visitorLog/${widget.visitorLog.visitorId}',
-        options: Options(headers: {"Content-Type": "application/json"}),
+        options: Options(headers: headers),
         data: jsonEncode({"allow_status": "allowed_by_gatekeeper"}),
       );
 
@@ -833,10 +835,11 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
         "company_name": widget.visitorLog.companyName,
         "file": widget.visitorLog.visitorImage
       };
+      final headers = await Environment.getHeaders();
 
       final response = await Dio().post(
         '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
-        options: Options(headers: {"Content-Type": "application/json"}),
+        options: Options(headers: headers),
         data: requestData,
       );
 

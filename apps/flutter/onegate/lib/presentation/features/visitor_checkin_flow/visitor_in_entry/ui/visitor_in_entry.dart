@@ -1026,6 +1026,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: const Color(0xff212427).withOpacity(0.12),
+                  width: 0.9,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
@@ -1161,7 +1165,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(
                                 color: Color(0xffF44336),
-                                width: 2,
+                                width: 1.0,
                               ),
                             ),
                             suffixIcon: Container(
@@ -1248,7 +1252,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(
                                 color: Color(0xffF44336),
-                                width: 2,
+                                width: 1.0,
                               ),
                             ),
                             suffixIcon: Container(
@@ -1299,6 +1303,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xff212427).withOpacity(0.12),
+              width: 0.9,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -1432,7 +1440,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(
                             color: Color(0xffF44336),
-                            width: 2,
+                            width: 1.0,
                           ),
                         ),
                         suffixIcon: Container(
@@ -1531,7 +1539,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(
                             color: Color(0xffF44336),
-                            width: 2,
+                            width: 1.0,
                           ),
                         ),
                         counterText: '', // Hide character counter
@@ -1606,6 +1614,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xff212427).withOpacity(0.12),
+              width: 0.9,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -1728,7 +1740,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
                         color: Color(0xffF44336),
-                        width: 2,
+                        width: 1.0,
                       ),
                     ),
                     suffixIcon: Container(
@@ -1948,6 +1960,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xff212427).withOpacity(0.12),
+              width: 0.9,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -2067,7 +2083,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
                         color: Color(0xffF44336),
-                        width: 2,
+                        width: 1.0,
                       ),
                     ),
                     suffixIcon: Container(
@@ -2261,6 +2277,10 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xff212427).withOpacity(0.12),
+              width: 0.9,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -2393,7 +2413,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(
                             color: Color(0xffF44336),
-                            width: 2,
+                            width: 1.0,
                           ),
                         ),
                         suffixIcon: Container(
@@ -2493,7 +2513,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(
                             color: Color(0xffF44336),
-                            width: 2,
+                            width: 1.0,
                           ),
                         ),
                         suffixIcon: Container(
@@ -2596,7 +2616,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
                               color: Color(0xffF44336),
-                              width: 2,
+                              width: 1.0,
                             ),
                           ),
                           counterText: '', // Hide character counter
@@ -2691,7 +2711,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(
                             color: Color(0xffF44336),
-                            width: 2,
+                            width: 1.0,
                           ),
                         ),
                         counterText: '', // Hide character counter

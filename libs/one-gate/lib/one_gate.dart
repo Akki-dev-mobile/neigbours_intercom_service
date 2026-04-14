@@ -3,12 +3,23 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class OneGate {
-  static const String baseUrl = 'https://socbackend.cubeone.in/api/admin';
+  static const String baseUrl = 'https://societybackend.cubeone.in/api/admin';
   static const String companyId = '412';
+  final String? accessToken;
+
+  OneGate({this.accessToken});
+
+  Map<String, String> _headers() {
+    return {
+      'Content-Type': 'application/json',
+      if (accessToken != null && accessToken!.isNotEmpty)
+        'Authorization': 'Bearer $accessToken',
+    };
+  }
 
   Future<void> getUnitsList() async {
     final url = Uri.parse('$baseUrl/units/list?company_id=$companyId');
-    final response = await http.get(url);
+    final response = await http.get(url, headers: _headers());
     if (response.statusCode == 200) {
       // Process the JSON response
       final data = json.decode(response.body);
@@ -20,7 +31,7 @@ class OneGate {
 
   Future<void> getBuildingsList() async {
     final url = Uri.parse('$baseUrl/building/list?company_id=$companyId');
-    final response = await http.get(url);
+    final response = await http.get(url, headers: _headers());
     if (response.statusCode == 200) {
       // Process the JSON response
       final data = json.decode(response.body);
@@ -32,7 +43,7 @@ class OneGate {
 
   Future<void> getMembersList() async {
     final url = Uri.parse('$baseUrl/member/list?company_id=$companyId');
-    final response = await http.get(url);
+    final response = await http.get(url, headers: _headers());
     if (response.statusCode == 200) {
       // Process the JSON response
       final data = json.decode(response.body);

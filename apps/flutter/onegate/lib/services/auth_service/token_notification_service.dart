@@ -284,7 +284,7 @@ class TokenNotificationService {
               const SizedBox(
                 width: 16,
                 height: 16,
-                child: DashboardLoaderIcon(
+                child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),

@@ -376,7 +376,7 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
                         SizedBox(
                           width: 20,
                           height: 20,
-                          child: DashboardLoaderIcon(
+                          child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
                               Colors.white.withValues(alpha: 0.8),

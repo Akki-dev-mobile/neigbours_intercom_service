@@ -43,6 +43,19 @@ class EnhancedTokenRefreshManager {
   // Dynamic refresh buffer (calculated per token)
   Duration? _dynamicRefreshBuffer;
 
+  String _tokenPreview(String? token) {
+    if (token == null || token.isEmpty) return 'null';
+    if (token.length <= 14)
+      return '${token.substring(0, token.length)}(len=${token.length})';
+    return '${token.substring(0, 8)}...${token.substring(token.length - 6)}(len=${token.length})';
+  }
+
+  String _jwtExpiryPreview(String? token) {
+    if (token == null || token.isEmpty) return 'none';
+    final expiry = JwtTokenUtility.getTokenExpirationTime(token);
+    return expiry?.toIso8601String() ?? 'opaque-or-no-exp';
+  }
+
   /// Initialize the token refresh manager
   Future<void> initialize(GateStorage gateStorage) async {
     _gateStorage = gateStorage;
@@ -147,28 +160,25 @@ class EnhancedTokenRefreshManager {
         final gatAccessToken = await gateStorage.getAccessToken();
         final gatRefreshToken = await gateStorage.getRefreshToken();
 
-        if (gatAccessToken != null && gatAccessToken.isNotEmpty) {
-          final isJwt = JwtTokenUtility.parseJwtToken(gatAccessToken) != null;
-          if (isJwt && gatRefreshToken != null && gatRefreshToken.isNotEmpty) {
-            // JWT tokens - migrate and refresh if needed
-            log("🔄 Migrating JWT tokens from GateStorage to secure storage (persistence recovery)");
-            await _secureStorage.write(key: _accessTokenKey, value: gatAccessToken);
-            await _secureStorage.write(key: _refreshTokenKey, value: gatRefreshToken);
-            accessToken = gatAccessToken;
-          } else if (!isJwt) {
-            // Opaque tokens (old_sso) - migrate, cannot refresh via Keycloak
-            log("🔄 Migrating opaque tokens from GateStorage (hybrid-auth)");
-            await _secureStorage.write(key: _accessTokenKey, value: gatAccessToken);
-            if (gatRefreshToken != null && gatRefreshToken.isNotEmpty) {
-              await _secureStorage.write(key: _refreshTokenKey, value: gatRefreshToken);
-            }
-            accessToken = gatAccessToken;
-          } else if (gatRefreshToken != null && gatRefreshToken.isNotEmpty) {
-            log("🔄 No valid access token in GateStorage but refresh token present – migrating refresh token");
-            await _secureStorage.write(key: _refreshTokenKey, value: gatRefreshToken);
-          } else {
-            log("❌ GateStorage has no usable tokens");
-          }
+        if (gatAccessToken != null &&
+            gatAccessToken.isNotEmpty &&
+            gatRefreshToken != null &&
+            gatRefreshToken.isNotEmpty &&
+            JwtTokenUtility.parseJwtToken(gatAccessToken) != null) {
+          // Access token is a valid JWT structure (may be expired – refresh handles that)
+          log("🔄 Migrating tokens from GateStorage to secure storage (persistence recovery)");
+          await _secureStorage.write(
+              key: _accessTokenKey, value: gatAccessToken);
+          await _secureStorage.write(
+              key: _refreshTokenKey, value: gatRefreshToken);
+          accessToken = gatAccessToken;
+        } else if (gatRefreshToken != null && gatRefreshToken.isNotEmpty) {
+          // We have a refresh token but no usable access token – store refresh token
+          // and attempt a refresh below which will produce a new access token.
+          log("🔄 No valid access token in GateStorage but refresh token present – migrating refresh token");
+          await _secureStorage.write(
+              key: _refreshTokenKey, value: gatRefreshToken);
+          // Force expiry path by keeping accessToken null so refresh is triggered
         } else {
           log("❌ GateStorage has no usable tokens");
         }
@@ -325,9 +335,28 @@ class EnhancedTokenRefreshManager {
           return false;
         }
 
+        log(
+          "🔍 [REFRESH-DIAG] BEFORE request: "
+          "refresh=${_tokenPreview(refreshToken)} "
+          "refreshExp=${_jwtExpiryPreview(refreshToken)}",
+        );
+
         // Use flutter_appauth for token refresh
         final tokenResponse = await _appAuth.token(
           AppAuthConfigManager.getRefreshTokenRequest(refreshToken),
+        );
+        final dynamic additionalParams =
+            (tokenResponse as dynamic).tokenAdditionalParameters;
+        final dynamic refreshExpiresIn = additionalParams is Map
+            ? additionalParams['refresh_expires_in']
+            : null;
+
+        log(
+          "🔍 [REFRESH-DIAG] RESPONSE: "
+          "hasAccess=${tokenResponse.accessToken != null} "
+          "hasRefresh=${tokenResponse.refreshToken != null} "
+          "accessExp=${tokenResponse.accessTokenExpirationDateTime?.toIso8601String() ?? 'null'} "
+          "refresh_expires_in=${refreshExpiresIn ?? 'not-provided'}",
         );
 
         if (tokenResponse.accessToken == null) {
@@ -356,9 +385,10 @@ class EnhancedTokenRefreshManager {
         return true;
       } catch (e) {
         log("❌ Token refresh attempt $attempt failed: $e");
+        final failureType = _analyzeRefreshFailure(e);
+        log("🔍 [REFRESH-DIAG] FAILURE CLASSIFICATION: $failureType");
 
         // Analyze and handle the specific failure
-        final failureType = _analyzeRefreshFailure(e);
         await _handleRefreshTokenFailure(e, attempt, failureType);
 
         if (attempt < _maxRetryAttempts && _shouldRetryFailure(failureType)) {
@@ -379,6 +409,14 @@ class EnhancedTokenRefreshManager {
   Future<void> _storeTokens(TokenResponse tokenResponse) async {
     try {
       log("💾 Storing tokens with dynamic duration calculation...");
+      final previousSecureRefresh =
+          await _secureStorage.read(key: _refreshTokenKey);
+      final previousGateRefresh = await _gateStorage?.getRefreshToken();
+      log(
+        "🔍 [REFRESH-DIAG] BEFORE save: "
+        "secureRefresh=${_tokenPreview(previousSecureRefresh)} "
+        "gateRefresh=${_tokenPreview(previousGateRefresh)}",
+      );
 
       // Store access token and analyze its duration
       if (tokenResponse.accessToken != null) {
@@ -466,6 +504,22 @@ class EnhancedTokenRefreshManager {
       }
 
       log("✅ Tokens stored successfully with JWT-based duration calculation");
+
+      final currentSecureRefresh =
+          await _secureStorage.read(key: _refreshTokenKey);
+      final currentGateRefresh = await _gateStorage?.getRefreshToken();
+      final serverRefresh = tokenResponse.refreshToken;
+      final rotated = serverRefresh != null &&
+          previousSecureRefresh != null &&
+          serverRefresh != previousSecureRefresh;
+      log(
+        "🔍 [REFRESH-DIAG] AFTER save: "
+        "serverRefresh=${_tokenPreview(serverRefresh)} "
+        "secureRefresh=${_tokenPreview(currentSecureRefresh)} "
+        "gateRefresh=${_tokenPreview(currentGateRefresh)} "
+        "rotated=$rotated "
+        "refreshExp(server)=${_jwtExpiryPreview(serverRefresh)}",
+      );
     } catch (e) {
       log("❌ Error storing tokens: $e");
       throw Exception('Failed to store tokens: $e');

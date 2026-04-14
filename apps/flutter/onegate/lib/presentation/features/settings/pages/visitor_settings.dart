@@ -40,6 +40,30 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
     });
   }
 
+  Future<void> _handleBackNavigation() async {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final role = (prefs.getString('selected_role') ?? '').toLowerCase();
+
+    Widget destination;
+    if (role.contains('admin')) {
+      destination = const AdminDashboardView();
+    } else if ((selectedGateName ?? '').isNotEmpty) {
+      destination = const GateDashboardView();
+    } else {
+      destination = GateSelectionView();
+    }
+
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => destination),
+    );
+  }
+
   // Helper method to get setting icons
   IconData _getSettingIcon(String settingType) {
     switch (settingType) {
@@ -242,10 +266,14 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
           final hasChanges = visitorProvider.hasChanges();
 
           return PopScope(
-            canPop: widget.comingfrom == true ? false : true,
+            canPop: false,
+            onPopInvokedWithResult: (didPop, result) {
+              if (didPop) return;
+              _handleBackNavigation();
+            },
             child: MyScrollView(
               hasBackButton: widget.comingfrom == true ? false : true,
-              backButtonPressed: () => Navigator.pop(context),
+              backButtonPressed: _handleBackNavigation,
               pageTitle: 'Visitor Settings',
               pageBody: Padding(
                 padding: EdgeInsets.symmetric(
@@ -397,8 +425,8 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.grey.withOpacity(0.1),
-          width: 1,
+          color: Colors.grey.withOpacity(0.28),
+          width: 1.2,
         ),
       ),
       child: Row(
@@ -654,8 +682,8 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
           border: Border.all(
             color: purpose.isSelected
                 ? const Color(0xffF44336)
-                : Colors.grey.withOpacity(0.2),
-            width: purpose.isSelected ? 2 : 1,
+                : Colors.grey.withOpacity(0.35),
+            width: purpose.isSelected ? 2 : 1.2,
           ),
           boxShadow: [
             BoxShadow(
@@ -881,10 +909,10 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                       SizedBox(
                         width: 20,
                         height: 20,
-                        child: DashboardLoaderIcon(
+                        child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white.withOpacity(0.8),
+                            Colors.white.withOpacity(0.9),
                           ),
                         ),
                       ),

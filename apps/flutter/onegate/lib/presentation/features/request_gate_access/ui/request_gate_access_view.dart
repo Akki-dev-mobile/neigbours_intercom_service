@@ -107,6 +107,85 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
 
   final RequestGateAccessBloc requestGateAccessBloc = RequestGateAccessBloc();
 
+  Widget _buildThinBorderField({
+    required String title,
+    required TextEditingController controller,
+    required String hintText,
+    required Color titleColor,
+    required Color hintColor,
+    FocusNode? focusNode,
+    TextInputType? keyboardType,
+    int? maxLength,
+    TextCapitalization textCapitalization = TextCapitalization.none,
+    FormFieldValidator<String>? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 10),
+        Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            color: titleColor,
+          ),
+        ),
+        const SizedBox(height: 5),
+        TextFormField(
+          focusNode: focusNode,
+          controller: controller,
+          keyboardType: keyboardType ?? TextInputType.text,
+          maxLength: maxLength ?? 499,
+          textCapitalization: textCapitalization,
+          cursorColor: const Color(0xffF44336),
+          style: TextStyle(
+            color: titleColor,
+            fontSize: 18,
+          ),
+          validator: validator ??
+              (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return '$title is required';
+                }
+                return null;
+              },
+          decoration: InputDecoration(
+            counterText: '',
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 20,
+              horizontal: 15,
+            ),
+            hintText: hintText,
+            hintStyle: TextStyle(color: hintColor),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide(
+                color: titleColor.withOpacity(0.45),
+                width: 0.8,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide(
+                color: titleColor.withOpacity(0.45),
+                width: 0.8,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: const BorderSide(
+                color: Color(0xffF44336),
+                width: 1.0,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<RequestGateAccessBloc, RequestGateAccessState>(
@@ -358,6 +437,85 @@ class SignUpContent extends StatelessWidget {
     required this.societyNameFocusNode,
   }) : super(key: key);
 
+  Widget _buildThinBorderField({
+    required String title,
+    required TextEditingController controller,
+    required String hintText,
+    required Color titleColor,
+    required Color hintColor,
+    FocusNode? focusNode,
+    TextInputType? keyboardType,
+    int? maxLength,
+    TextCapitalization textCapitalization = TextCapitalization.none,
+    FormFieldValidator<String>? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 10),
+        Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            color: titleColor,
+          ),
+        ),
+        const SizedBox(height: 5),
+        TextFormField(
+          focusNode: focusNode,
+          controller: controller,
+          keyboardType: keyboardType ?? TextInputType.text,
+          maxLength: maxLength ?? 499,
+          textCapitalization: textCapitalization,
+          cursorColor: const Color(0xffF44336),
+          style: TextStyle(
+            color: titleColor,
+            fontSize: 18,
+          ),
+          validator: validator ??
+              (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return '$title is required';
+                }
+                return null;
+              },
+          decoration: InputDecoration(
+            counterText: '',
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 20,
+              horizontal: 15,
+            ),
+            hintText: hintText,
+            hintStyle: TextStyle(color: hintColor),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide(
+                color: titleColor.withOpacity(0.45),
+                width: 0.8,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide(
+                color: titleColor.withOpacity(0.45),
+                width: 0.8,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: const BorderSide(
+                color: Color(0xffF44336),
+                width: 1.0,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
@@ -371,6 +529,10 @@ class SignUpContent extends StatelessWidget {
     final isSmallScreen = viewportHeight < 600;
     final double logoSize = isSmallScreen ? 96 : 120;
     final bottomPadding = viewInsets.bottom + 16;
+    final double loginSectionBottomSpacing =
+        (viewportHeight * (isTablet ? 0.04 : 0.03))
+            .clamp(isTablet ? 20.0 : 16.0, isTablet ? 36.0 : 28.0)
+            .toDouble();
     // Content minHeight must subtract bottom padding so total scroll height never exceeds viewport
     final contentMinHeight = (viewportHeight - bottomPadding).clamp(0.0, double.infinity);
 
@@ -479,12 +641,16 @@ class SignUpContent extends StatelessWidget {
                             horizontal: isTablet ? 0 : 0,
                           ),
                           padding: EdgeInsets.symmetric(
-                            horizontal: isTablet ? 32 : 20,
-                            vertical: isSmallScreen ? 16 : (isTablet ? 32 : 20),
+                            horizontal: 0,
+                            vertical: 0,
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: Colors.grey.withOpacity(0.28),
+                              width: 0.8,
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.grey.withOpacity(0.15),
@@ -503,30 +669,90 @@ class SignUpContent extends StatelessWidget {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                                Padding(
-                                  padding: EdgeInsets.fromLTRB(20, isSmallScreen ? 16 : 24, 20, 0),
-                                  child: Column(
+                                Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.fromLTRB(
+                                    20,
+                                    isSmallScreen ? 16 : 20,
+                                    20,
+                                    isSmallScreen ? 14 : 16,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        const Color(0xffF44336).withOpacity(0.08),
+                                        const Color(0xffff5722).withOpacity(0.03),
+                                      ],
+                                    ),
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(24),
+                                    ),
+                                    border: Border.all(
+                                      color: Colors.grey.withOpacity(0.25),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Row(
                                     children: [
-                                      Text(
-                                        'Ready to Roll?',
-                                        textAlign: TextAlign.center,
-                                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                                              fontSize: isTablet ? 30 : 28,
-                                              fontWeight: FontWeight.w700,
-                                              color: const Color(0xff212427),
-                                              height: 1.2,
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xffF44336)
+                                              .withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(12),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(0xffF44336)
+                                                  .withOpacity(0.1),
+                                              spreadRadius: 1,
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 1),
                                             ),
+                                          ],
+                                        ),
+                                        child: const Icon(
+                                          Icons.rocket_launch_rounded,
+                                          color: Color(0xffF44336),
+                                          size: 24,
+                                        ),
                                       ),
-                                      SizedBox(height: isTablet ? 10 : 8),
-                                      Text(
-                                        'Request now & hear from us in 24-48 hours!',
-                                        textAlign: TextAlign.center,
-                                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                              fontSize: isTablet ? 16 : 14,
-                                              color: const Color(0xff57636C),
-                                              fontWeight: FontWeight.w400,
-                                              height: 1.3,
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              'Ready to Roll?',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .headlineSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    color:
+                                                        const Color(0xff212427),
+                                                    fontSize: isTablet ? 22 : 20,
+                                                  ),
                                             ),
+                                            SizedBox(
+                                                height: isTablet ? 6 : 4),
+                                            Text(
+                                              'Request now & hear from us in 24-48 hours!',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium
+                                                  ?.copyWith(
+                                                    color:
+                                                        const Color(0xff57636C),
+                                                    fontSize: isTablet ? 15 : 14,
+                                                    fontWeight: FontWeight.w400,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -535,39 +761,43 @@ class SignUpContent extends StatelessWidget {
                                 SizedBox(height: isTablet ? 28 : 20),
 
                                 // Form Section - Responsive
-              Form(
+              Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: isTablet ? 32 : 20,
+                                  ),
+                                  child: Form(
                                   key: requestAccessFormKey,
                 child: Column(
                                     mainAxisSize: MainAxisSize.min,
                   children: [
-                    CustomForm.textField(
+                    _buildThinBorderField(
+                                        titleColor: Theme.of(context)
+                                            .colorScheme
+                                            .onBackground,
+                                        hintColor: Theme.of(context)
+                                            .colorScheme
+                                            .onPrimary,
                                         focusNode: userNameFocusNode,
-                      'Your Name',
-                      textController: clientNameTextCtrl,
+                      title: 'Your Name',
+                      controller: clientNameTextCtrl!,
                       hintText: 'Enter your name',
                                         textCapitalization:
                                             TextCapitalization.words,
-                                        titleColor: Theme.of(context)
-                                            .colorScheme
-                                            .onBackground,
-                                        hintColor: Theme.of(context)
-                                            .colorScheme
-                                            .onPrimary,
                                       ),
                                       SizedBox(height: isTablet ? 16 : 12),
-                    CustomForm.textField(
-                                        focusNode: mobileNumberFocusNode,
-                      'Mobile',
-                      textController: mobileNumberTextCtrl,
-                      hintText: 'Mobile',
-                      keyboardType: TextInputType.number,
+                    _buildThinBorderField(
                                         titleColor: Theme.of(context)
                                             .colorScheme
                                             .onBackground,
                                         hintColor: Theme.of(context)
                                             .colorScheme
                                             .onPrimary,
-                      length: 10,
+                                        focusNode: mobileNumberFocusNode,
+                      title: 'Mobile',
+                      controller: mobileNumberTextCtrl!,
+                      hintText: 'Mobile',
+                      keyboardType: TextInputType.number,
+                                        maxLength: 10,
                       validator: (value) {
                         if (value!.isEmpty) {
                           return 'Please enter mobile number';
@@ -578,28 +808,33 @@ class SignUpContent extends StatelessWidget {
                       },
                     ),
                                       SizedBox(height: isTablet ? 16 : 12),
-                    CustomForm.textField(
-                      'Society Name',
-                      textController: clientSocietyTextCtrl,
-                                        focusNode: societyNameFocusNode,
-                      hintText: 'Society Name',
-                                        textCapitalization:
-                                            TextCapitalization.words,
+                    _buildThinBorderField(
                                         titleColor: Theme.of(context)
                                             .colorScheme
                                             .onBackground,
                                         hintColor: Theme.of(context)
                                             .colorScheme
                                             .onPrimary,
+                                        focusNode: societyNameFocusNode,
+                      title: 'Society Name',
+                      controller: clientSocietyTextCtrl!,
+                      hintText: 'Society Name',
+                                        textCapitalization:
+                                            TextCapitalization.words,
                     ),
                   ],
                 ),
               ),
+                                ),
 
                                 SizedBox(height: isTablet ? 40 : 24),
 
                                 // Enhanced Submit Button - Responsive
-              Container(
+                                Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: isTablet ? 32 : 20,
+                                  ),
+                                  child: Container(
                                   width: double.infinity,
                                   height: isTablet ? 56 : 50,
                                   decoration: BoxDecoration(
@@ -640,6 +875,7 @@ class SignUpContent extends StatelessWidget {
                                       ),
                                     ),
                                   ),
+                                ),
                                 ),
 
                                 SizedBox(height: isTablet ? 24 : 16),
@@ -688,6 +924,7 @@ class SignUpContent extends StatelessWidget {
                                     ),
                                   ],
                                 ),
+                                SizedBox(height: loginSectionBottomSpacing),
                             ],
                           ),
                         ),

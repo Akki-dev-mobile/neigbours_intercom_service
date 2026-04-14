@@ -7,6 +7,7 @@ import 'package:dart_amqp/dart_amqp.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_onegate/common/environment.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
@@ -1271,8 +1272,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     ? SizedBox(
                         width: isTablet ? 22 : 18,
                         height: isTablet ? 22 : 18,
-                        child: const DashboardLoaderIcon(
-                          color: Colors.black,
+                        child: const CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.black),
                           strokeWidth: 2,
                         ),
                       )
@@ -1515,8 +1517,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                             SizedBox(
                               width: isTablet ? 24 : 20,
                               height: isTablet ? 24 : 20,
-                              child: const DashboardLoaderIcon(
-                                color: Colors.white,
+                              child: const CircularProgressIndicator(
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                                 strokeWidth: 2,
                               ),
                             ),
@@ -1781,9 +1784,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Future<void> _allowByGatekeeper(VisitorLog visitorLogData) async {
     try {
+      final headers = await Environment.getHeaders();
       final response = await Dio().patch(
         '${ApiUrls.gateBaseUrl}/visitor/visitorLog/${widget.visitor.id}',
-        options: Options(headers: {"Content-Type": "application/json"}),
+        options: Options(headers: headers),
         data: jsonEncode({
           "allow_status": "allowed_by_gatekeeper",
         }),
@@ -1858,9 +1862,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       }
 
       // Send FCM API request
+      final headers = await Environment.getHeaders();
       final apiResponse = Dio().post(
         '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
-        options: Options(headers: {"Content-Type": "application/json"}),
+        options: Options(headers: headers),
         data: requestData,
       );
       log("requestData: $requestData");

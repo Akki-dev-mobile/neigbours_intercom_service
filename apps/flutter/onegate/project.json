@@ -49,7 +49,7 @@
     "attach": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "fvm flutter attach",
+        "command": "if command -v fvm >/dev/null 2>&1; then fvm flutter attach; else flutter attach; fi",
         "cwd": "apps/flutter/onegate"
       }
     },
@@ -77,7 +77,7 @@
     "run": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "fvm flutter run",
+        "command": "if command -v fvm >/dev/null 2>&1; then fvm flutter run; else flutter run; fi",
         "cwd": "apps/flutter/onegate"
       }
     },
