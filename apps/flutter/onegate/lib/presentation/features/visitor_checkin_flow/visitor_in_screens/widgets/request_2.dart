@@ -428,6 +428,10 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 0.8,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),

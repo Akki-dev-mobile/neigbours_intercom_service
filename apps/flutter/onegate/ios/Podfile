@@ -33,9 +33,6 @@ target 'Runner' do
   use_frameworks!
   use_modular_headers!
 
-  # Ensure correct AppAuth dependency for Flutter AppAuth
-  pod 'AppAuth', '1.7.6'
-
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 
   target 'RunnerTests' do

@@ -1297,6 +1297,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xff212427).withOpacity(0.12),
+          width: 0.9,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -1414,6 +1418,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xff212427).withOpacity(0.12),
+              width: 0.9,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
@@ -1486,8 +1494,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.black,
-                      Colors.grey,
+                      Color(0xff212427),
+                      Color(0xff57636C),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
@@ -1970,6 +1978,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             return Dialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: const Color(0xff212427).withOpacity(0.12),
+                  width: 0.9,
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -2241,7 +2253,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                         color: isSelected
                             ? const Color(0xffF44336).withOpacity(0.25)
                             : Colors.grey.shade300,
-                        width: 1.5,
+                        width: 0.9,
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -2403,65 +2415,96 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Widget _buildNoResultsState(bool isTablet) {
-    return Center(
+    return Align(
+      alignment: Alignment.topCenter,
       child: Padding(
-        padding: EdgeInsets.all(isTablet ? 40 : 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: isTablet ? 80 : 64,
-              height: isTablet ? 80 : 64,
-              decoration: BoxDecoration(
-                color: const Color(0xffF44336).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
+        padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 40 : 24,
+          vertical: isTablet ? 24 : 16,
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final cardMaxWidth = isTablet ? 560.0 : constraints.maxWidth;
+            final cardMinWidth = isTablet ? 460.0 : 300.0;
+
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: cardMaxWidth,
+                minWidth: cardMinWidth.clamp(0, cardMaxWidth).toDouble(),
               ),
-              child: Icon(
-                Icons.search_off,
-                size: isTablet ? 40 : 32,
-                color: const Color(0xffF44336),
-              ),
-            ),
-            SizedBox(height: isTablet ? 24 : 16),
-            Text(
-              'No members found',
-              style: TextStyle(
-                fontSize: isTablet ? 20 : 18,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xff212427),
-              ),
-            ),
-            SizedBox(height: isTablet ? 12 : 8),
-            Text(
-              'Try searching with different keywords:\n• Member name (first or last)\n• Unit number\n• Building name',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: isTablet ? 16 : 14,
-                color: Colors.grey[600],
-                height: 1.4,
-              ),
-            ),
-            SizedBox(height: isTablet ? 24 : 16),
-            TextButton.icon(
-              onPressed: () {
-                _searchController.clear();
-                _filteredMembersNotifier.value = _allMembers;
-                _debounceTimer?.cancel();
-                setState(() {
-                  _isSearching = false;
-                });
-              },
-              icon: const Icon(Icons.clear_all),
-              label: Text(AppLocalizations.of(context).clearSearch),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xffF44336),
-                padding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 24 : 16,
-                  vertical: isTablet ? 12 : 8,
+              child: Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Colors.grey.shade200),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 44 : 32,
+                    vertical: isTablet ? 40 : 30,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: isTablet ? 100 : 80,
+                        height: isTablet ? 100 : 80,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffF44336).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          Icons.search_off_rounded,
+                          color: const Color(0xffF44336),
+                          size: isTablet ? 42 : 34,
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 28 : 22),
+                      Text(
+                        'No Members Found',
+                        style: TextStyle(
+                          fontSize: isTablet ? 24 : 21,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xff212427),
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 14 : 10),
+                      Text(
+                        'No members match your search. Try a different keyword.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: isTablet ? 16 : 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 28 : 22),
+                      TextButton.icon(
+                        onPressed: () {
+                          _searchController.clear();
+                          _filteredMembersNotifier.value = _allMembers;
+                          _debounceTimer?.cancel();
+                          setState(() {
+                            _isSearching = false;
+                          });
+                        },
+                        icon: const Icon(Icons.clear_all),
+                        label: Text(AppLocalizations.of(context).clearSearch),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xffF44336),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isTablet ? 24 : 16,
+                            vertical: isTablet ? 12 : 8,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -2508,9 +2551,13 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       child: Material(
         elevation: 0,
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        // Remove any border from Material
-        // No border property set
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: const Color(0xff212427).withOpacity(0.12),
+            width: 0.9,
+          ),
+        ),
         child: Theme(
           data: Theme.of(context).copyWith(
             dividerColor: Colors.transparent, // Remove all dividers
@@ -2592,6 +2639,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         itemBuilder: (context, index) => _buildEnhancedMemberDetailsItem(
             memberDetails[index], member, isTablet),
       ),
+      SizedBox(height: isTablet ? 14 : 10),
     ];
   }
 
@@ -2630,11 +2678,14 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             decoration: BoxDecoration(
               color: isSelected
                   ? const Color(0xffF44336).withOpacity(0.1)
-                  : Colors.transparent,
+                  : Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: isSelected
-                  ? Border.all(color: const Color(0xffF44336).withOpacity(0.3))
-                  : null,
+              border: Border.all(
+                color: isSelected
+                    ? const Color(0xffF44336).withOpacity(0.3)
+                    : const Color(0xff212427).withOpacity(0.12),
+                width: 0.9,
+              ),
             ),
             child: Row(
               children: [
@@ -2783,11 +2834,42 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 SizedBox(height: isTablet ? 4 : 2),
-                                Text(
-                                  "Tap to view details",
-                                  style: TextStyle(
-                                    fontSize: isTablet ? 12 : 10,
-                                    color: Colors.white.withOpacity(0.8),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: isTablet ? 12 : 10,
+                                    vertical: isTablet ? 6 : 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xff212427),
+                                        Color(0xff57636C),
+                                      ],
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    "Tap to view details",
+                                    style: TextStyle(
+                                      fontSize: isTablet ? 12 : 10,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.3,
+                                    ),
                                   ),
                                 ),
                               ],

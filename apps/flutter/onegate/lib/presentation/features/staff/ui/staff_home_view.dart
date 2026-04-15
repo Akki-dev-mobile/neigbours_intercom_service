@@ -301,6 +301,10 @@ class _StaffScreenState extends State<StaffScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.grey.shade200,
+                  width: 1,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
@@ -472,117 +476,135 @@ class _StaffScreenState extends State<StaffScreen> {
   Widget _buildNoStaffWidget() {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
+    final isSearching = _searchController.text.trim().isNotEmpty;
 
-    return Center(
+    return Align(
+      alignment: Alignment.topCenter,
       child: Padding(
-        padding: EdgeInsets.only(top: isTablet ? 100 : 80),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Enhanced icon container
-            Container(
-              padding: EdgeInsets.all(isTablet ? 40 : 32),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.red.shade50,
-                    Colors.red.shade100.withOpacity(0.3),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(
-                  color: Colors.red.shade200.withOpacity(0.3),
-                  width: 2,
-                ),
-              ),
-              child: Icon(
-                Icons.groups_outlined,
-                size: isTablet ? 80 : 64,
-                color: Colors.red.shade300,
-              ),
-            ),
-            SizedBox(height: isTablet ? 32 : 24),
+        padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 40 : 24,
+          vertical: isTablet ? 24 : 16,
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final cardMaxWidth = isTablet ? 560.0 : constraints.maxWidth;
+            final cardMinWidth = isTablet ? 460.0 : 300.0;
 
-            // Enhanced title
-            Text(
-              'No Staff Available',
-              style: TextStyle(
-                color: const Color(0xff212427),
-                fontSize: isTablet ? 24 : 20,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.3,
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: cardMaxWidth,
+                minWidth: cardMinWidth.clamp(0, cardMaxWidth).toDouble(),
               ),
-            ),
-            SizedBox(height: isTablet ? 12 : 8),
-
-            // Enhanced subtitle
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: isTablet ? 60 : 40),
-              child: Text(
-                'There are currently no staff members registered in the system.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: isTablet ? 16 : 14,
-                  height: 1.4,
+              child: Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Colors.grey.shade200),
                 ),
-              ),
-            ),
-            SizedBox(height: isTablet ? 40 : 32),
-
-            // Enhanced action button (optional)
-            Container(
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    Color(0xff212427),
-                    Color(0xff57636C),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // Refresh staff list
-                  _initializeSocietyId();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
+                child: Padding(
                   padding: EdgeInsets.symmetric(
-                    horizontal: isTablet ? 32 : 24,
-                    vertical: isTablet ? 16 : 12,
+                    horizontal: isTablet ? 44 : 32,
+                    vertical: isTablet ? 40 : 30,
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                icon: const Icon(
-                  Icons.refresh_rounded,
-                  color: Colors.white,
-                ),
-                label: Text(
-                  'Refresh',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: isTablet ? 16 : 14,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: isTablet ? 100 : 80,
+                        height: isTablet ? 100 : 80,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffF44336).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          Icons.groups_outlined,
+                          color: const Color(0xffF44336),
+                          size: isTablet ? 42 : 34,
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 28 : 22),
+                      Text(
+                        isSearching ? 'No Staff Found' : 'No Staff Available',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: isTablet ? 24 : 21,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xff212427),
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 14 : 10),
+                      Text(
+                        isSearching
+                            ? 'No staff members match your search. Try a different keyword.'
+                            : 'There are currently no staff members registered in the system.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: isTablet ? 16 : 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 28 : 22),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              Color(0xff212427),
+                              Color(0xff57636C),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton.icon(
+                          onPressed: isSearching
+                              ? () {
+                                  _searchController.clear();
+                                  _filteredStaffList =
+                                      List.from(_staffListFull);
+                                  setState(() {});
+                                }
+                              : _initializeSocietyId,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isTablet ? 32 : 24,
+                              vertical: isTablet ? 16 : 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(
+                            Icons.refresh_rounded,
+                            color: Colors.white,
+                          ),
+                          label: Text(
+                            isSearching ? 'Clear Search' : 'Refresh',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: isTablet ? 16 : 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );

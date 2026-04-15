@@ -1028,8 +1028,7 @@ class _IdInputViewState extends State<IdInputView> {
                                                   strokeWidth: 2.5,
                                                   valueColor:
                                                       const AlwaysStoppedAnimation<
-                                                              Color>(
-                                                          Colors.green),
+                                                          Color>(Colors.green),
                                                 ),
                                               ),
                                               const SizedBox(width: 12),
@@ -1539,9 +1538,8 @@ class _IdInputViewState extends State<IdInputView> {
       );
 
       // Extract visitor_count from API response, checking both visitor_count and guest_count fields
-      final int visitorCount = visitorData['visitor_count'] ?? 
-                               visitorData['guest_count'] ?? 
-                               1;
+      final int visitorCount =
+          visitorData['visitor_count'] ?? visitorData['guest_count'] ?? 1;
 
       VisitorLog visitorLog = VisitorLog(
         visitor: visitor,
@@ -1678,9 +1676,8 @@ class _IdInputViewState extends State<IdInputView> {
         );
 
         // Extract visitor_count from API response, checking both visitor_count and guest_count fields
-        final int visitorCount = visitorData['visitor_count'] ?? 
-                                 visitorData['guest_count'] ?? 
-                                 1;
+        final int visitorCount =
+            visitorData['visitor_count'] ?? visitorData['guest_count'] ?? 1;
 
         VisitorLog visitorLog = VisitorLog(
           visitor: visitor,
@@ -2260,7 +2257,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                 color: isSelected
                                     ? const Color(0xffF44336)
                                     : Colors.grey.withOpacity(0.2),
-                                width: isSelected ? 2 : 1,
+                                width: isSelected ? 1 : 0.8,
                               ),
                               boxShadow: [
                                 BoxShadow(
@@ -2388,7 +2385,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                 color: isSelected
                                     ? const Color(0xffF44336)
                                     : Colors.grey.withOpacity(0.2),
-                                width: isSelected ? 2 : 1,
+                                width: isSelected ? 1 : 0.8,
                               ),
                               boxShadow: [
                                 BoxShadow(

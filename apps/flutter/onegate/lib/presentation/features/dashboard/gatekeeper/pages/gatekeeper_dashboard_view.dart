@@ -539,7 +539,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                 context,
                 isTablet,
                 width: shortcutWidth,
-                icon: Icons.dialer_sip_rounded,
+                icon: Symbols.deskphone,
                 title: 'Intercom',
                 onTap: () {
                   IntercomServicesLauncher.open(context);

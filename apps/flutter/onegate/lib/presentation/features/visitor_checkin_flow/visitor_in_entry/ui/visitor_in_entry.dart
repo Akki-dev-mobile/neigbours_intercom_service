@@ -831,7 +831,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           }
           // Gatekeeper QR must go through unit selection - entry only after all details submitted.
           // Self-checkin QR can skip unit selection (express entry flow).
-          if (widget.isFromQRScan && widget.isGatekeeperQRPasscodeEntry != true) {
+          if (widget.isFromQRScan &&
+              widget.isGatekeeperQRPasscodeEntry != true) {
             // Trigger camera navigation by dispatching the camera event
             _bloc.add(VIENavigateToCameraEvent(
               purposeCategory: state.purposeCategory,
@@ -917,8 +918,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       builder: (context, state) {
         if (state is VisitorInEntryLoadingState) {
           return const DashboardLoader(
-            title: 'Loading Purpose Entry',
-            subtitle: 'Please wait while we prepare the form...',
+            title: 'Processing Visitor Details',
+            subtitle: 'Please wait while we continue...',
           );
         }
 
@@ -1006,7 +1007,16 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       future: SharedPreferences.getInstance(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const DashboardLoaderIcon();
+          return const Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: Color(0xffF44336),
+              ),
+            ),
+          );
         }
 
         // final prefs = snapshot.data!;
@@ -1837,7 +1847,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                     color: isSelected
                         ? const Color(0xffF44336)
                         : Colors.grey.withOpacity(0.2),
-                    width: isSelected ? 2 : 1,
+                    width: isSelected ? 1 : 0.8,
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -2180,7 +2190,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                     color: isSelected
                         ? const Color(0xffF44336)
                         : Colors.grey.withOpacity(0.2),
-                    width: isSelected ? 2 : 1,
+                    width: isSelected ? 1 : 0.8,
                   ),
                   boxShadow: [
                     BoxShadow(

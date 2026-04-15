@@ -156,7 +156,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
                         onPressed: () {
                           IntercomServicesLauncher.open(context);
                         },
-                        icon: const Icon(Icons.miscellaneous_services_rounded),
+                        icon: const Icon(Symbols.deskphone),
                         label: const Text('Intercom'),
                       ),
                     ],

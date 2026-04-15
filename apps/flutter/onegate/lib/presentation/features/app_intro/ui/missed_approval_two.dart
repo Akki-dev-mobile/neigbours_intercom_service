@@ -841,24 +841,81 @@ class ApprovalsList extends StatelessWidget {
       ..sort((a, b) => b.key.compareTo(a.key));
 
     if (filteredApprovals.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.person_off_outlined,
-              size: 48,
-              color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              searchQuery.isNotEmpty
-                  ? "No results found for '$searchQuery'"
-                  : "No approvals found for $towerName",
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-          ],
+      final isTablet = MediaQuery.of(context).size.width > 600;
+      return Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: isTablet ? 40 : 24,
+            vertical: isTablet ? 24 : 16,
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final cardMaxWidth = isTablet ? 560.0 : constraints.maxWidth;
+              final cardMinWidth = isTablet ? 460.0 : 300.0;
+
+              return ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: cardMaxWidth,
+                  minWidth: cardMinWidth.clamp(0, cardMaxWidth).toDouble(),
+                ),
+                child: Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(color: Colors.grey.shade200),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 44 : 32,
+                      vertical: isTablet ? 40 : 30,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: isTablet ? 100 : 80,
+                          height: isTablet ? 100 : 80,
+                          decoration: BoxDecoration(
+                            color: const Color(0xffF44336).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Icon(
+                            Icons.search_off_rounded,
+                            color: const Color(0xffF44336),
+                            size: isTablet ? 42 : 34,
+                          ),
+                        ),
+                        SizedBox(height: isTablet ? 28 : 22),
+                        Text(
+                          'No Results Found',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: isTablet ? 24 : 21,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xff212427),
+                          ),
+                        ),
+                        SizedBox(height: isTablet ? 14 : 10),
+                        Text(
+                          searchQuery.isNotEmpty
+                              ? 'No approvals match "$searchQuery". Try a different keyword.'
+                              : 'No approvals found for $towerName.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: isTablet ? 16 : 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       );
     }

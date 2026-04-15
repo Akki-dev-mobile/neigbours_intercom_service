@@ -53,10 +53,10 @@ class _StaffListWidgetState extends State<StaffListWidget> {
         ? _buildNoStaffFoundWidget(context)
         : Column(
             children: List.generate(_filteredList.length, (index) {
-                    final staff = _filteredList[index];
-                    return _buildStaffCard(context, staff);
+              final staff = _filteredList[index];
+              return _buildStaffCard(context, staff);
             }),
-    );
+          );
   }
 
   Widget _buildStaffCard(BuildContext context, StaffModel staff) {
@@ -77,21 +77,21 @@ class _StaffListWidgetState extends State<StaffListWidget> {
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
-      ),
+          ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          log("Selected staff: ${staff.name}");
-          _showStaffDetails(context, staff);
-        },
+        child: InkWell(
+          onTap: () {
+            log("Selected staff: ${staff.name}");
+            _showStaffDetails(context, staff);
+          },
           borderRadius: BorderRadius.circular(20),
-        child: Padding(
+          child: Padding(
             padding: EdgeInsets.all(isTablet ? 20 : 16),
-          child: Row(
-            children: [
+            child: Row(
+              children: [
                 // Enhanced avatar with gradient background
                 Container(
                   width: isTablet ? 70 : 60,
@@ -115,11 +115,11 @@ class _StaffListWidgetState extends State<StaffListWidget> {
                     ],
                   ),
                   child: Center(
-                child: Text(
-                  staff.name.isNotEmpty ? staff.name[0].toUpperCase() : "?",
+                    child: Text(
+                      staff.name.isNotEmpty ? staff.name[0].toUpperCase() : "?",
                       style: TextStyle(
                         fontSize: isTablet ? 28 : 24,
-                    fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                         color: Colors.white,
                         letterSpacing: 0.5,
                       ),
@@ -129,19 +129,19 @@ class _StaffListWidgetState extends State<StaffListWidget> {
                 SizedBox(width: isTablet ? 20 : 16),
 
                 // Enhanced staff info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      staff.name,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        staff.name,
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: isTablet ? 18 : 16,
                           color: const Color(0xff212427),
                           letterSpacing: 0.3,
+                        ),
                       ),
-                    ),
                       SizedBox(height: isTablet ? 8 : 6),
 
                       // Category with icon
@@ -155,14 +155,14 @@ class _StaffListWidgetState extends State<StaffListWidget> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                      staff.category,
-                      style: TextStyle(
+                              staff.category,
+                              style: TextStyle(
                                 color: Colors.grey.shade700,
                                 fontSize: isTablet ? 15 : 14,
                                 fontWeight: FontWeight.w500,
                               ),
-                      ),
-                    ),
+                            ),
+                          ),
                         ],
                       ),
                       SizedBox(height: isTablet ? 6 : 4),
@@ -178,30 +178,30 @@ class _StaffListWidgetState extends State<StaffListWidget> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                      staff.staffContactNumber,
-                      style: TextStyle(
+                              staff.staffContactNumber,
+                              style: TextStyle(
                                 color: Colors.grey.shade700,
                                 fontSize: isTablet ? 15 : 14,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                      ),
+                          ),
                         ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
                 // Enhanced call button
-              IconButton(
-                onPressed: () => _launchCaller(staff.staffContactNumber),
+                IconButton(
+                  onPressed: () => _launchCaller(staff.staffContactNumber),
                   icon: Icon(
                     Icons.call_rounded,
                     color: Colors.green.shade600,
                     size: isTablet ? 28 : 24,
                   ),
-              ),
-            ],
+                ),
+              ],
             ),
           ),
         ),
@@ -222,64 +222,77 @@ class _StaffListWidgetState extends State<StaffListWidget> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
 
-    return Center(
+    return Align(
+      alignment: Alignment.topCenter,
       child: Padding(
-        padding: EdgeInsets.only(top: isTablet ? 80 : 60),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Enhanced icon container
-            Container(
-              padding: EdgeInsets.all(isTablet ? 32 : 24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.red.shade50,
-                    Colors.red.shade100.withOpacity(0.3),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(
-                  color: Colors.red.shade200.withOpacity(0.3),
-                  width: 2,
-                ),
-              ),
-              child: Icon(
-                Icons.search_off_rounded,
-                size: isTablet ? 64 : 48,
-                color: Colors.red.shade300,
-              ),
-            ),
-            SizedBox(height: isTablet ? 24 : 20),
+        padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 40 : 24,
+          vertical: isTablet ? 24 : 16,
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final cardMaxWidth = isTablet ? 560.0 : constraints.maxWidth;
+            final cardMinWidth = isTablet ? 460.0 : 300.0;
 
-            // Enhanced title
-            Text(
-              'No Staff Found',
-              style: TextStyle(
-                color: const Color(0xff212427),
-                fontSize: isTablet ? 20 : 18,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.3,
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: cardMaxWidth,
+                minWidth: cardMinWidth.clamp(0, cardMaxWidth).toDouble(),
               ),
-            ),
-            SizedBox(height: isTablet ? 8 : 6),
-
-            // Enhanced subtitle
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: isTablet ? 50 : 32),
-              child: Text(
-                'No staff members match your search criteria. Try adjusting your search terms.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: isTablet ? 14 : 12,
-                  height: 1.4,
+              child: Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Colors.grey.shade200),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 44 : 32,
+                    vertical: isTablet ? 40 : 30,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: isTablet ? 100 : 80,
+                        height: isTablet ? 100 : 80,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffF44336).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          Icons.search_off_rounded,
+                          color: const Color(0xffF44336),
+                          size: isTablet ? 42 : 34,
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 28 : 22),
+                      Text(
+                        'No Staff Found',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: const Color(0xff212427),
+                          fontSize: isTablet ? 24 : 21,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 14 : 10),
+                      Text(
+                        'No staff members match your search criteria. Try a different keyword.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: isTablet ? 16 : 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );

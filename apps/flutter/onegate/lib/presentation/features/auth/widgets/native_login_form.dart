@@ -14,6 +14,9 @@ String _mapErrorMessage(String? raw) {
   if (lower.contains('invalid') && (lower.contains('credential') || lower.contains('password'))) {
     return 'Incorrect mobile or password.';
   }
+  if (lower.contains('user credentials were incorrect')) {
+    return 'The user credentials were incorrect.';
+  }
   if (lower.contains('locked') || lower.contains('disabled')) {
     return 'Your account is locked. Contact your administrator.';
   }

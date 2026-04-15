@@ -1,4 +1,5 @@
-// {
-//   "dart.flutterSdkPath": ".fvm/versions/3.29.3",
-//   "java.configuration.updateBuildConfiguration": "interactive"
-// }
+{
+  "dart.flutterSdkPath": "/Users/futurescape-neeraj/flutter",
+  "java.configuration.updateBuildConfiguration": "interactive",
+  "dart.projectSearchDepth": 5
+}

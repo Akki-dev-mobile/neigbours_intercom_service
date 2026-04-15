@@ -252,7 +252,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                                       color: isSelected
                                           ? const Color(0xffF44336)
                                           : Colors.grey[200]!,
-                                      width: isSelected ? 2 : 1,
+                                      width: isSelected ? 1.0 : 0.8,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
@@ -678,7 +678,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                                       color: isSelected
                                           ? const Color(0xffF44336)
                                           : Colors.grey[200]!,
-                                      width: isSelected ? 2 : 1,
+                                      width: isSelected ? 1.0 : 0.8,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
@@ -1027,7 +1027,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                                       color: isSelected
                                           ? const Color(0xffF44336)
                                           : Colors.grey[200]!,
-                                      width: isSelected ? 2 : 1,
+                                      width: isSelected ? 1.0 : 0.8,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
@@ -1554,7 +1554,7 @@ class _SettingsHomeState extends State<SettingsHome> {
               ),
             if (role == "admin" || role == "master")
               PrimarySettingsTile(
-                icon: Ionicons.person_outline,
+                icon: Icons.settings_accessibility,
                 title: AppLocalizations.of(context)!.visitorSettings,
                 subtitle: "Mark mandatory fields for visitors",
                 onTap: () {
@@ -1569,7 +1569,7 @@ class _SettingsHomeState extends State<SettingsHome> {
 
             // if (role == "admin" || role == "master")
             PrimarySettingsTile(
-              icon: Ionicons.people_outline,
+              icon: Icons.settings_accessibility,
               title: AppLocalizations.of(context)!.visitorSettings,
               subtitle: "Mark mandatory fields for visitors",
               onTap: () {

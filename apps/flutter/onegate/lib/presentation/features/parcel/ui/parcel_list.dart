@@ -8,7 +8,6 @@ import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages
 import 'package:flutter_onegate/presentation/features/parcel/bloc/parcel_bloc.dart';
 import 'package:flutter_onegate/presentation/features/parcel/ui/parcel_details.dart';
 import 'package:intl/intl.dart';
-import 'package:ionicons/ionicons.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../bloc/parcel_state.dart';
 import 'package:common_widgets/dashboard_loader.dart';
@@ -66,66 +65,67 @@ class _ParcelListState extends State<ParcelList> {
   }
 
   Widget _buildSearchField() {
-    return Column(
-      children: [
-        // Search field
-        CustomForm.textField(
-          "",
-          hintText: AppLocalizations.of(context).searchMembers,
-          titleColor: Theme.of(context).colorScheme.onSurface,
-          hintColor: Theme.of(context).colorScheme.onSurface,
-          focusNode: _searchFocusNode,
-          prefixIcon: const Icon(Ionicons.search_outline),
+    final isTablet = MediaQuery.of(context).size.width > 600;
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+        cursorColor: const Color(0xffF44336),
+        decoration: InputDecoration(
+          hintText: 'Search parcel by member, unit, or category...',
+          hintStyle: TextStyle(
+            color: Colors.grey.shade500,
+            fontSize: isTablet ? 16 : 14,
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: Colors.red.shade400,
+            size: isTablet ? 22 : 20,
+          ),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear),
+                  icon: Icon(
+                    Icons.clear_rounded,
+                    color: Colors.grey.shade600,
+                  ),
                   onPressed: () {
                     _searchController.clear();
                     setState(() => _searchQuery = '');
                   },
                 )
               : null,
-          textController: _searchController,
-          onChanged: (value) {
-            setState(() {
-              _searchQuery = value;
-            });
-          },
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: isTablet ? 20 : 16,
+            vertical: isTablet ? 16 : 14,
+          ),
         ),
-
-        // Building selection dropdown
-        // BlocBuilder<ParcelBloc, ParcelState>(
-        //   builder: (context, state) {
-        //     // Extract building names from parcels using the helper method
-        //     Set<String> buildingNames = {"All Buildings"};
-        //
-        //     if (state is ParcelLoaded) {
-        //       buildingNames = BuildingDropdown.extractBuildingNames(
-        //         state.parcels,
-        //         getUnitName: (dynamic parcel) {
-        //           if (parcel['unit_name'] != null &&
-        //               parcel['unit_name'].toString().isNotEmpty) {
-        //             return parcel['unit_name'].toString();
-        //           }
-        //           return "";
-        //         },
-        //       );
-        //     }
-        //
-        //     List<String> sortedBuildingNames = buildingNames.toList();
-        //
-        //     return BuildingDropdown(
-        //       selectedBuilding: selectedBuilding,
-        //       onBuildingSelected: (String? value) {
-        //         setState(() {
-        //           selectedBuilding = value;
-        //         });
-        //       },
-        //       buildingNames: sortedBuildingNames,
-        //     );
-        //   },
-        // ),
-      ],
+        style: TextStyle(
+          fontSize: isTablet ? 16 : 14,
+          fontWeight: FontWeight.w500,
+          color: const Color(0xff212427),
+        ),
+      ),
     );
   }
 
@@ -135,7 +135,9 @@ class _ParcelListState extends State<ParcelList> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
-        elevation: 0,
+        elevation: 5,
+        shadowColor: Colors.black.withOpacity(0.24),
+        surfaceTintColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(
@@ -555,124 +557,133 @@ class _ParcelListState extends State<ParcelList> {
       BuildContext context, String searchQuery) {
     final isTablet = MediaQuery.of(context).size.width > 600;
 
-    return Center(
+    return Align(
+      alignment: Alignment.topCenter,
       child: Padding(
-        padding: EdgeInsets.only(top: isTablet ? 80 : 60),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Enhanced icon container (staff style)
-            Container(
-              padding: EdgeInsets.all(isTablet ? 32 : 24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.red.shade50,
-                    Colors.red.shade100.withOpacity(0.3),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(
-                  color: Colors.red.shade200.withOpacity(0.3),
-                  width: 2,
-                ),
-              ),
-              child: Icon(
-                searchQuery.isEmpty
-                    ? Symbols.package_2
-                    : Icons.search_off_rounded,
-                size: isTablet ? 64 : 48,
-                color: Colors.red.shade300,
-              ),
-            ),
-            SizedBox(height: isTablet ? 24 : 20),
+        padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 40 : 24,
+          vertical: isTablet ? 24 : 16,
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final cardMaxWidth = isTablet ? 560.0 : constraints.maxWidth;
+            final cardMinWidth = isTablet ? 460.0 : 300.0;
 
-            // Enhanced title (staff style)
-            Text(
-              searchQuery.isEmpty ? 'No Parcels Available' : 'No Parcel Found',
-              style: TextStyle(
-                color: const Color(0xff212427),
-                fontSize: isTablet ? 20 : 18,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.3,
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: cardMaxWidth,
+                minWidth: cardMinWidth.clamp(0, cardMaxWidth).toDouble(),
               ),
-            ),
-            SizedBox(height: isTablet ? 8 : 6),
-
-            // Enhanced subtitle (staff style)
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: isTablet ? 50 : 32),
-              child: Text(
-                searchQuery.isEmpty
-                    ? 'There are currently no parcels registered in the system.'
-                    : 'No parcels match your search criteria. Try adjusting your search terms.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: isTablet ? 14 : 12,
-                  height: 1.4,
+              child: Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Colors.grey.shade200),
                 ),
-              ),
-            ),
-
-            // Clear search button for search results (staff style)
-            if (searchQuery.isNotEmpty) ...[
-              SizedBox(height: isTablet ? 32 : 24),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      Color(0xff212427),
-                      Color(0xff57636C),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 44 : 32,
+                    vertical: isTablet ? 40 : 30,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: isTablet ? 100 : 80,
+                        height: isTablet ? 100 : 80,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffF44336).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          Icons.search_off_rounded,
+                          color: const Color(0xffF44336),
+                          size: isTablet ? 42 : 34,
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 28 : 22),
+                      Text(
+                        'No Parcel Found',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: isTablet ? 24 : 21,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xff212427),
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 14 : 10),
+                      Text(
+                        searchQuery.trim().isNotEmpty
+                            ? 'No parcels match "$searchQuery". Try a different keyword.'
+                            : 'No parcels match the selected filters.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: isTablet ? 16 : 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      if (searchQuery.trim().isNotEmpty) ...[
+                        SizedBox(height: isTablet ? 28 : 22),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [
+                                Color(0xff212427),
+                                Color(0xff57636C),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _searchQuery = '';
+                                _searchController.clear();
+                              });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isTablet ? 32 : 24,
+                                vertical: isTablet ? 16 : 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            icon: const Icon(
+                              Icons.clear_all,
+                              color: Colors.white,
+                            ),
+                            label: Text(
+                              'Clear Search',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: isTablet ? 16 : 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _searchQuery = '';
-                      _searchController.clear();
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isTablet ? 32 : 24,
-                      vertical: isTablet ? 16 : 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  icon: const Icon(
-                    Icons.clear_all,
-                    color: Colors.white,
-                  ),
-                  label: Text(
-                    'Clear Search',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: isTablet ? 16 : 14,
-                    ),
-                  ),
                 ),
               ),
-            ],
-          ],
+            );
+          },
         ),
       ),
     );
@@ -680,89 +691,78 @@ class _ParcelListState extends State<ParcelList> {
 
   Widget _buildEnhancedEmptyState(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final availableHeight = screenHeight - keyboardHeight;
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 40 : 24,
+          vertical: isTablet ? 24 : 16,
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final cardMaxWidth = isTablet ? 560.0 : constraints.maxWidth;
+            final cardMinWidth = isTablet ? 460.0 : 300.0;
 
-    return Container(
-      height: availableHeight,
-      padding: EdgeInsets.symmetric(
-        horizontal: isTablet ? 32 : 24,
-        vertical: isTablet ? 60 : 40,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          // Enhanced animated icon
-          TweenAnimationBuilder<double>(
-            duration: const Duration(milliseconds: 1500),
-            tween: Tween<double>(begin: 0, end: 1),
-            builder: (context, value, child) {
-              return Transform.translate(
-                offset: Offset(0, -10 + (10 * value)),
-                child: Container(
-                  width: isTablet ? 160 : 140,
-                  height: isTablet ? 160 : 140,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xffF44336).withOpacity(0.08),
-                        const Color(0xffff5722).withOpacity(0.03),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(isTablet ? 80 : 70),
-                  ),
-                  child: Icon(
-                    Symbols.package_2,
-                    size: isTablet ? 64 : 56,
-                    color: const Color(0xffF44336).withOpacity(0.6),
-                  ),
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: cardMaxWidth,
+                minWidth: cardMinWidth.clamp(0, cardMaxWidth).toDouble(),
+              ),
+              child: Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Colors.grey.shade200),
                 ),
-              );
-            },
-          ),
-
-          SizedBox(height: isTablet ? 40 : 32),
-
-          // Enhanced title with animation
-          TweenAnimationBuilder<double>(
-            duration: const Duration(milliseconds: 800),
-            tween: Tween<double>(begin: 0, end: 1),
-            builder: (context, value, child) {
-              return Opacity(
-                opacity: value,
-                child: Text(
-                  'No Parcels Today',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xff212427),
-                        fontSize: isTablet ? 30 : 26,
-                        letterSpacing: -0.5,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 44 : 32,
+                    vertical: isTablet ? 40 : 30,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: isTablet ? 100 : 80,
+                        height: isTablet ? 100 : 80,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffF44336).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          Symbols.package_2,
+                          color: const Color(0xffF44336),
+                          size: isTablet ? 42 : 34,
+                        ),
                       ),
-                ),
-              );
-            },
-          ),
-
-          SizedBox(height: isTablet ? 20 : 16),
-
-          // Enhanced description
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: isTablet ? 40 : 20),
-            child: Text(
-              'No parcels found today.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: const Color(0xff57636C),
-                    fontSize: isTablet ? 18 : 16,
-                    height: 1.6,
-                    fontWeight: FontWeight.w400,
+                      SizedBox(height: isTablet ? 28 : 22),
+                      Text(
+                        'No Parcels Today',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: isTablet ? 24 : 21,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xff212427),
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 14 : 10),
+                      Text(
+                        'No parcels found today.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: isTablet ? 16 : 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
                   ),
-            ),
-          ),
-        ],
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

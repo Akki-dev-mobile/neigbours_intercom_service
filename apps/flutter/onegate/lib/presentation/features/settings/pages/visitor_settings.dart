@@ -683,7 +683,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
             color: purpose.isSelected
                 ? const Color(0xffF44336)
                 : Colors.grey.withOpacity(0.35),
-            width: purpose.isSelected ? 2 : 1.2,
+            width: purpose.isSelected ? 1.0 : 1.2,
           ),
           boxShadow: [
             BoxShadow(

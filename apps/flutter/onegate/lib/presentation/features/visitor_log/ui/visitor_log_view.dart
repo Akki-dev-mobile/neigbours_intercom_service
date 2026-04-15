@@ -896,100 +896,118 @@ class _VisitorLogViewState extends State<VisitorLogView>
                           // ),
                         ],
                       ),
-                      if (_searchText!.isNotEmpty && filteredVisitors.isEmpty)
-                        _buildEnhancedEmptySearchState(),
-                      if (filteredVisitors.isEmpty && _searchText!.isEmpty)
-                        _buildEnhancedEmptyVisitorsState(),
                       Expanded(
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          padding: EdgeInsets.only(bottom: 100),
-                          physics: BouncingScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: groupedLogsList.length +
-                              ((_isLoadingMore &&
-                                          successState.hasMoreData == true) ||
-                                      (successState.hasMoreData == false &&
-                                          groupedLogsList.isNotEmpty)
-                                  ? 1
-                                  : 0),
-                          itemBuilder: (context, index) {
-                            // Show "no more visitor to load" message when pagination is complete
-                            if (index == groupedLogsList.length &&
-                                successState.hasMoreData == false &&
-                                groupedLogsList.isNotEmpty) {
-                              return _buildNoMoreVisitorsMessage();
-                            }
-
-                            // Show loading indicator at the bottom when loading more (only if there are more visitors to load)
-                            if (index == groupedLogsList.length &&
-                                _isLoadingMore &&
-                                successState.hasMoreData == true) {
-                              return _buildPaginationLoadingIndicator();
-                            }
-                            final dateKey = groupedLogsList[index].key;
-                            final logsForDate = groupedLogsList[index].value;
-
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16.0, vertical: 8.0),
-                                  child: Chip(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(
-                                          25), // Adjust the radius as needed
-                                      side: BorderSide.none, // No border
-                                    ),
-                                    side: BorderSide.none,
-                                    label: Text(
-                                      DateFormat('MMM dd, yyyy')
-                                          .format(DateTime.parse(dateKey)),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelSmall,
-                                    ),
-                                    backgroundColor:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                                ),
-                                Builder(builder: (context) {
-                                  // No sorting - display logs as they come from the API response
-
-                                  return ListView.builder(
-                                    padding: EdgeInsets.zero,
-                                    physics: NeverScrollableScrollPhysics(),
+                        child: _searchText!.isNotEmpty &&
+                                filteredVisitors.isEmpty
+                            ? _buildEnhancedEmptySearchState()
+                            : filteredVisitors.isEmpty && _searchText!.isEmpty
+                                ? _buildEnhancedEmptyVisitorsState()
+                                : ListView.builder(
+                                    controller: _scrollController,
+                                    padding: EdgeInsets.only(bottom: 100),
+                                    physics: BouncingScrollPhysics(),
                                     shrinkWrap: true,
-                                    itemCount: logsForDate.length,
-                                    itemBuilder: (context, logIndex) {
-                                      return VisitorLogItem(
-                                        visitorLog: logsForDate[logIndex],
-                                        visitorCardEntryEnabled:
-                                            _visitorCardEntryEnabled,
-                                        onCardAssigned: _refreshVisitorLogList,
-                                        onCheckOut: () {
-                                          setState(() {
-                                            logsForDate[logIndex]
-                                                    .visitor_check_out =
-                                                Utils.getCurrentTime();
-                                            logsForDate[logIndex]
-                                                .is_checked_out = true;
-                                          });
-                                          // Use add instead of emit
-                                          _visitorLogBloc.add(CheckOutEvent(
-                                            logsForDate[logIndex],
-                                            widget.id,
-                                          ));
-                                        },
+                                    itemCount: groupedLogsList.length +
+                                        ((_isLoadingMore &&
+                                                    successState.hasMoreData ==
+                                                        true) ||
+                                                (successState.hasMoreData ==
+                                                        false &&
+                                                    groupedLogsList.isNotEmpty)
+                                            ? 1
+                                            : 0),
+                                    itemBuilder: (context, index) {
+                                      // Show "no more visitor to load" message when pagination is complete
+                                      if (index == groupedLogsList.length &&
+                                          successState.hasMoreData == false &&
+                                          groupedLogsList.isNotEmpty) {
+                                        return _buildNoMoreVisitorsMessage();
+                                      }
+
+                                      // Show loading indicator at the bottom when loading more (only if there are more visitors to load)
+                                      if (index == groupedLogsList.length &&
+                                          _isLoadingMore &&
+                                          successState.hasMoreData == true) {
+                                        return _buildPaginationLoadingIndicator();
+                                      }
+                                      final dateKey =
+                                          groupedLogsList[index].key;
+                                      final logsForDate =
+                                          groupedLogsList[index].value;
+
+                                      return Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 16.0,
+                                                vertical: 8.0),
+                                            child: Chip(
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(
+                                                    25), // Adjust the radius as needed
+                                                side: BorderSide
+                                                    .none, // No border
+                                              ),
+                                              side: BorderSide.none,
+                                              label: Text(
+                                                DateFormat('MMM dd, yyyy')
+                                                    .format(DateTime.parse(
+                                                        dateKey)),
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .labelSmall,
+                                              ),
+                                              backgroundColor: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
+                                            ),
+                                          ),
+                                          Builder(builder: (context) {
+                                            // No sorting - display logs as they come from the API response
+
+                                            return ListView.builder(
+                                              padding: EdgeInsets.zero,
+                                              physics:
+                                                  NeverScrollableScrollPhysics(),
+                                              shrinkWrap: true,
+                                              itemCount: logsForDate.length,
+                                              itemBuilder: (context, logIndex) {
+                                                return VisitorLogItem(
+                                                  visitorLog:
+                                                      logsForDate[logIndex],
+                                                  isVisitorCardsView:
+                                                      widget.id == "Cards",
+                                                  visitorCardEntryEnabled:
+                                                      _visitorCardEntryEnabled,
+                                                  onCardAssigned:
+                                                      _refreshVisitorLogList,
+                                                  onCheckOut: () {
+                                                    setState(() {
+                                                      logsForDate[logIndex]
+                                                              .visitor_check_out =
+                                                          Utils
+                                                              .getCurrentTime();
+                                                      logsForDate[logIndex]
+                                                              .is_checked_out =
+                                                          true;
+                                                    });
+                                                    // Use add instead of emit
+                                                    _visitorLogBloc
+                                                        .add(CheckOutEvent(
+                                                      logsForDate[logIndex],
+                                                      widget.id,
+                                                    ));
+                                                  },
+                                                );
+                                              },
+                                            );
+                                          }),
+                                        ],
                                       );
                                     },
-                                  );
-                                }),
-                              ],
-                            );
-                          },
-                        ),
+                                  ),
                       ),
                     ],
                   ),
@@ -1007,51 +1025,31 @@ class _VisitorLogViewState extends State<VisitorLogView>
 
   // Build pagination loading indicator widget
   Widget _buildPaginationLoadingIndicator() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      alignment: Alignment.center,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Center(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: Color(0xffF44336),
+              ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: DashboardLoaderIcon(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      const Color(0xffF44336),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  context.l10n.loadingMoreVisitors,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: const Color(0xff57636C),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+            const SizedBox(width: 10),
+            Text(
+              context.l10n.loadingMoreVisitors,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xff57636C),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1063,6 +1061,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
     DateTime? startDate;
     DateTime? endDate;
     String? exportErrorMessage;
+    bool isEmailFieldFocused = false;
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final storedEmail = prefs.getString('email') ?? '';
@@ -1277,64 +1276,74 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                     ),
                                   ),
                                 ),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.grey[300]!,
-                                      width: 1.5,
+                                Focus(
+                                  onFocusChange: (hasFocus) {
+                                    setState(() {
+                                      isEmailFieldFocused = hasFocus;
+                                    });
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 120),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: isEmailFieldFocused
+                                            ? const Color(0xffF44336)
+                                            : Colors.grey[300]!,
+                                        width: isEmailFieldFocused ? 1 : 1.5,
+                                      ),
                                     ),
-                                  ),
-                                  child: TextFormField(
-                                    controller: emailController,
-                                    keyboardType: TextInputType.emailAddress,
-                                    cursorColor: const Color(0xffF44336),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black87,
-                                    ),
-                                    decoration: InputDecoration(
-                                      hintText:
-                                          context.l10n.enterEmailForExport,
-                                      hintStyle: TextStyle(
-                                        color: Colors.grey[400],
+                                    child: TextFormField(
+                                      controller: emailController,
+                                      keyboardType: TextInputType.emailAddress,
+                                      cursorColor: const Color(0xffF44336),
+                                      style: const TextStyle(
                                         fontSize: 16,
-                                        fontWeight: FontWeight.w400,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black87,
                                       ),
-                                      prefixIcon: Container(
-                                        margin: const EdgeInsets.all(8),
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xffF44336)
-                                              .withOpacity(0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
+                                      decoration: InputDecoration(
+                                        hintText:
+                                            context.l10n.enterEmailForExport,
+                                        hintStyle: TextStyle(
+                                          color: Colors.grey[400],
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w400,
                                         ),
-                                        child: const Icon(
-                                          Icons.email_outlined,
-                                          color: Color(0xffF44336),
-                                          size: 20,
+                                        prefixIcon: Container(
+                                          margin: const EdgeInsets.all(8),
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xffF44336)
+                                                .withOpacity(0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: const Icon(
+                                            Icons.email_outlined,
+                                            color: Color(0xffF44336),
+                                            size: 20,
+                                          ),
+                                        ),
+                                        border: InputBorder.none,
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 16,
                                         ),
                                       ),
-                                      border: InputBorder.none,
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 16,
-                                      ),
+                                      validator: (value) {
+                                        if (value!.isEmpty) {
+                                          return context.l10n.pleaseEnterEmail;
+                                        }
+                                        if (!value.contains('@')) {
+                                          return context
+                                              .l10n.pleaseEnterValidEmail;
+                                        }
+                                        return null;
+                                      },
                                     ),
-                                    validator: (value) {
-                                      if (value!.isEmpty) {
-                                        return context.l10n.pleaseEnterEmail;
-                                      }
-                                      if (!value.contains('@')) {
-                                        return context
-                                            .l10n.pleaseEnterValidEmail;
-                                      }
-                                      return null;
-                                    },
                                   ),
                                 ),
                               ],
@@ -2524,7 +2533,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                       color: isSelected
                                           ? const Color(0xffF44336)
                                           : Colors.grey[200]!,
-                                      width: isSelected ? 2 : 1,
+                                      width: isSelected ? 1 : 0.8,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
@@ -3306,136 +3315,79 @@ class _VisitorLogViewState extends State<VisitorLogView>
 
   /// Enhanced empty state for search results
   Widget _buildEnhancedEmptySearchState() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Enhanced icon container
-          TweenAnimationBuilder<double>(
-            duration: const Duration(milliseconds: 1200),
-            tween: Tween<double>(begin: 0, end: 1),
-            builder: (context, value, child) {
-              return Transform.scale(
-                scale: 0.8 + (0.2 * value),
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xffF44336).withOpacity(0.1),
-                        const Color(0xffff5722).withOpacity(0.05),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(60),
-                    border: Border.all(
-                      color: const Color(0xffF44336).withOpacity(0.2),
-                      width: 2,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.search_off_rounded,
-                    size: 48,
-                    color: const Color(0xffF44336).withOpacity(0.7),
-                  ),
-                ),
-              );
-            },
-          ),
+    final isTablet = MediaQuery.of(context).size.width > 600;
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 40 : 24,
+          vertical: isTablet ? 24 : 16,
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final cardMaxWidth = isTablet ? 560.0 : constraints.maxWidth;
+            final cardMinWidth = isTablet ? 460.0 : 300.0;
 
-          const SizedBox(height: 32),
-
-          // Enhanced title
-          Text(
-            'No Visitors Found',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xff212427),
-                  fontSize: 24,
-                  letterSpacing: -0.5,
-                ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Enhanced description
-          Text(
-            'We couldn\'t find any visitors matching "$_searchText"',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: const Color(0xff57636C),
-                  fontSize: 16,
-                  height: 1.5,
-                  fontWeight: FontWeight.w400,
-                ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Additional helper text
-          Text(
-            'Try adjusting your search terms or check for typos',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xff57636C).withOpacity(0.8),
-                  fontSize: 14,
-                  height: 1.4,
-                ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Enhanced search suggestions
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.grey[200]!,
-                width: 1,
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: cardMaxWidth,
+                minWidth: cardMinWidth.clamp(0, cardMaxWidth).toDouble(),
               ),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xffF44336).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.lightbulb_outline_rounded,
-                        color: Color(0xffF44336),
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Search Tips',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                  ],
+              child: Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Colors.grey.shade200),
                 ),
-                const SizedBox(height: 16),
-                _buildSearchTip('Try searching by visitor name'),
-                const SizedBox(height: 8),
-                _buildSearchTip('Check phone number or unit number'),
-                const SizedBox(height: 8),
-                _buildSearchTip('Use fewer keywords for broader results'),
-              ],
-            ),
-          ),
-        ],
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 44 : 32,
+                    vertical: isTablet ? 40 : 30,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: isTablet ? 100 : 80,
+                        height: isTablet ? 100 : 80,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffF44336).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          Icons.search_off_rounded,
+                          color: const Color(0xffF44336),
+                          size: isTablet ? 42 : 34,
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 28 : 22),
+                      const Text(
+                        'No Visitors Found',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 21,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff212427),
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 14 : 10),
+                      Text(
+                        'No visitors match "$_searchText". Try a different keyword.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: isTablet ? 16 : 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -3443,89 +3395,74 @@ class _VisitorLogViewState extends State<VisitorLogView>
   /// Enhanced empty state for no visitors today
   Widget _buildEnhancedEmptyVisitorsState() {
     final isTablet = MediaQuery.of(context).size.width > 600;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final availableHeight = screenHeight - keyboardHeight;
-
-    return Container(
-      height: availableHeight,
-      padding: EdgeInsets.symmetric(
-        horizontal: isTablet ? 32 : 24,
-        vertical: isTablet ? 60 : 40,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          // Enhanced animated icon
-          TweenAnimationBuilder<double>(
-            duration: const Duration(milliseconds: 1500),
-            tween: Tween<double>(begin: 0, end: 1),
-            builder: (context, value, child) {
-              return Transform.translate(
-                offset: Offset(0, -10 + (10 * value)),
-                child: Container(
-                  width: isTablet ? 160 : 140,
-                  height: isTablet ? 160 : 140,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xffF44336).withOpacity(0.08),
-                        const Color(0xffff5722).withOpacity(0.03),
-                      ],
+    final descriptionText = widget.id == 'Visitor Out'
+        ? 'Looks quiet right now. Visitor exits will appear here as soon as someone checks out.'
+        : 'Looks quiet right now. Visitor entries will appear here as soon as someone checks in.';
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 40 : 24,
+          vertical: isTablet ? 24 : 16,
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: isTablet ? 560 : 420,
+            minWidth: isTablet ? 460 : 300,
+          ),
+          child: Card(
+            elevation: 3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: Colors.grey.shade200),
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: isTablet ? 44 : 32,
+                vertical: isTablet ? 40 : 30,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: isTablet ? 100 : 80,
+                    height: isTablet ? 100 : 80,
+                    decoration: BoxDecoration(
+                      color: const Color(0xffF44336).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    borderRadius: BorderRadius.circular(isTablet ? 80 : 70),
+                    child: Icon(
+                      Icons.groups_outlined,
+                      color: const Color(0xffF44336),
+                      size: isTablet ? 42 : 34,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.groups_outlined,
-                    size: isTablet ? 64 : 56,
-                    color: const Color(0xffF44336).withOpacity(0.6),
+                  SizedBox(height: isTablet ? 28 : 22),
+                  Text(
+                    'No visitors yet today',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: isTablet ? 24 : 21,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xff212427),
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
-
-          SizedBox(height: isTablet ? 40 : 32),
-
-          // Enhanced title with animation
-          TweenAnimationBuilder<double>(
-            duration: const Duration(milliseconds: 800),
-            tween: Tween<double>(begin: 0, end: 1),
-            builder: (context, value, child) {
-              return Opacity(
-                opacity: value,
-                child: Text(
-                  'No Visitors Today',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xff212427),
-                        fontSize: isTablet ? 30 : 26,
-                        letterSpacing: -0.5,
-                      ),
-                ),
-              );
-            },
-          ),
-
-          SizedBox(height: isTablet ? 20 : 16),
-
-          // Enhanced description
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: isTablet ? 40 : 20),
-            child: Text(
-              'No visitors found today.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: const Color(0xff57636C),
-                    fontSize: isTablet ? 18 : 16,
-                    height: 1.6,
-                    fontWeight: FontWeight.w400,
+                  SizedBox(height: isTablet ? 14 : 10),
+                  Text(
+                    descriptionText,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: isTablet ? 16 : 14,
+                      color: Colors.grey[600],
+                    ),
                   ),
+                ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -3608,6 +3545,7 @@ class VisitorLogItem extends StatefulWidget {
   final VisitorLog visitorLog;
   final Function onCheckOut;
   final bool visitorCardEntryEnabled;
+  final bool isVisitorCardsView;
   final VoidCallback? onCardAssigned;
 
   const VisitorLogItem({
@@ -3615,6 +3553,7 @@ class VisitorLogItem extends StatefulWidget {
     required this.visitorLog,
     required this.onCheckOut,
     required this.visitorCardEntryEnabled,
+    this.isVisitorCardsView = false,
     this.onCardAssigned,
   }) : super(key: key);
 
@@ -3665,7 +3604,11 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
       child: Stack(
         children: [
           Card(
-            elevation: 0,
+            elevation: widget.isVisitorCardsView ? 0 : 5,
+            shadowColor: widget.isVisitorCardsView
+                ? Colors.transparent
+                : Colors.black.withOpacity(0.24),
+            surfaceTintColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
