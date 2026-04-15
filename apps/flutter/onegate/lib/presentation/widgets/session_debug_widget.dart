@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/services/session_manager/session_debug_tool.dart';
 import 'package:flutter_onegate/services/session_manager/five_minute_token_fix.dart';
 import 'package:flutter_onegate/utils/session_expiry_debug.dart';
@@ -81,7 +82,9 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                success ? 'Token refresh successful' : 'Token refresh failed'),
+                success
+                    ? context.tr('Token refresh successful')
+                    : context.tr('Token refresh failed')),
             backgroundColor: success ? Colors.green : Colors.red,
           ),
         );
@@ -91,7 +94,8 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content:
+                Text(context.tr('Error: {error}', params: {'error': '$e'})),
             backgroundColor: Colors.red,
           ),
         );
@@ -105,8 +109,8 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
       await Clipboard.setData(ClipboardData(text: summary));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Debug info copied to clipboard'),
+          SnackBar(
+            content: Text(context.tr('Debug info copied to clipboard')),
             backgroundColor: Colors.green,
           ),
         );
@@ -115,7 +119,9 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error copying debug info: $e'),
+            content: Text(
+              context.tr('Error copying debug info: {error}', params: {'error': '$e'}),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -128,9 +134,12 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
       await SessionExpiryDebug.quickFixSessionExpiry();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-                'Session Expiry Fix applied successfully! Check console logs for details.'),
+              context.tr(
+                'Session Expiry Fix applied successfully! Check console logs for details.',
+              ),
+            ),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 3),
           ),
@@ -141,7 +150,9 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error applying Session Expiry Fix: $e'),
+            content: Text(
+              context.tr('Error applying Session Expiry Fix: {error}', params: {'error': '$e'}),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -154,9 +165,12 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
       await ElevenMinuteSessionDebug.analyzeElevenMinuteSessionExpiry();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-                '11-Minute Session Expiry Analysis completed! Check console logs for detailed analysis.'),
+              context.tr(
+                '11-Minute Session Expiry Analysis completed! Check console logs for detailed analysis.',
+              ),
+            ),
             backgroundColor: Colors.blue,
             duration: Duration(seconds: 3),
           ),
@@ -167,7 +181,9 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error during 11-minute expiry debug: $e'),
+            content: Text(
+              context.tr('Error during 11-minute expiry debug: {error}', params: {'error': '$e'}),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -179,7 +195,7 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Session Debug Tool'),
+        title: Text(context.tr('Session Debug Tool')),
         backgroundColor: Colors.blue.shade700,
         foregroundColor: Colors.white,
         actions: [
@@ -194,12 +210,12 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
           IconButton(
             icon: const Icon(Icons.healing),
             onPressed: _applySessionExpiryFix,
-            tooltip: 'Apply Session Expiry Fix',
+            tooltip: context.tr('Apply Session Expiry Fix'),
           ),
           IconButton(
             icon: const Icon(Icons.warning),
             onPressed: _debug11MinuteExpiry,
-            tooltip: 'Debug 11-Minute Expiry',
+            tooltip: context.tr('Debug 11-Minute Expiry'),
           ),
           IconButton(
             icon: const Icon(Icons.copy),
@@ -260,14 +276,26 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Debug Status',
+                  context.tr('Debug Status'),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Text('Status: ${_isDebugging ? "Active" : "Paused"}'),
-            Text('Last Update: ${DateTime.parse(timestamp).toLocal()}'),
+            Text(
+              context.tr(
+                'Status: {status}',
+                params: {
+                  'status': _isDebugging ? context.tr('Active') : context.tr('Paused'),
+                },
+              ),
+            ),
+            Text(
+              context.tr(
+                'Last Update: {time}',
+                params: {'time': '${DateTime.parse(timestamp).toLocal()}'},
+              ),
+            ),
           ],
         ),
       ),
@@ -295,27 +323,27 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Token Status',
+                  context.tr('Token Status'),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            _buildStatusRow('Has Access Token', hasToken),
-            _buildStatusRow('Is Expired', isExpired),
+            _buildStatusRow(context.tr('Has Access Token'), hasToken),
+            _buildStatusRow(context.tr('Is Expired'), isExpired),
             if (analysis != null) ...[
               const Divider(),
-              Text('Token Analysis:',
+              Text(context.tr('Token Analysis:'),
                   style: Theme.of(context).textTheme.titleMedium),
               _buildStatusRow(
-                  'Lifespan', '${analysis['lifespanMinutes']} minutes'),
-              _buildStatusRow('Time Until Expiry',
+                  context.tr('Lifespan'), '${analysis['lifespanMinutes']} ${context.tr('minutes')}'),
+              _buildStatusRow(context.tr('Time Until Expiry'),
                   '${analysis['timeUntilExpiryMinutes']} minutes'),
               _buildStatusRow(
-                  'Should Refresh Now', analysis['shouldRefreshNow']),
+                  context.tr('Should Refresh Now'), analysis['shouldRefreshNow']),
               if (analysis['refreshTime'] != null)
                 _buildStatusRow(
-                    'Refresh Time',
+                    context.tr('Refresh Time'),
                     DateTime.parse(analysis['refreshTime'])
                         .toLocal()
                         .toString()),
@@ -349,15 +377,15 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Session Overrides',
+                  context.tr('Session Overrides'),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            _buildStatusRow('Token Logout Disabled', tokenLogoutDisabled),
-            _buildStatusRow('Auto Logout Disabled', autoLogoutDisabled),
-            _buildStatusRow('Session Timeout Disabled', sessionTimeoutDisabled),
+            _buildStatusRow(context.tr('Token Logout Disabled'), tokenLogoutDisabled),
+            _buildStatusRow(context.tr('Auto Logout Disabled'), autoLogoutDisabled),
+            _buildStatusRow(context.tr('Session Timeout Disabled'), sessionTimeoutDisabled),
           ],
         ),
       ),
@@ -381,14 +409,14 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Potential 10-min Timeouts',
+                  context.tr('Potential 10-min Timeouts'),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ],
             ),
             const SizedBox(height: 8),
             if (timeoutSources.isEmpty)
-              const Text('No 10-minute timeouts found in SharedPreferences')
+              Text(context.tr('No 10-minute timeouts found in SharedPreferences'))
             else
               ...timeoutSources.entries.map((entry) {
                 final value = entry.value as Map<String, dynamic>;
@@ -423,15 +451,15 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '5-Minute Token Fix',
+                  context.tr('5-Minute Token Fix'),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            _buildStatusRow('Initialized', isInitialized),
-            _buildStatusRow('Timeout Override Active', timeoutOverrideActive),
-            _buildStatusRow('Aggressive Refresh',
+            _buildStatusRow(context.tr('Initialized'), isInitialized),
+            _buildStatusRow(context.tr('Timeout Override Active'), timeoutOverrideActive),
+            _buildStatusRow(context.tr('Aggressive Refresh'),
                 fixStatus['aggressiveRefreshEnabled'] ?? false),
           ],
         ),
@@ -453,14 +481,14 @@ class _SessionDebugWidgetState extends State<SessionDebugWidget> {
                 const Icon(Icons.person, color: Colors.blue),
                 const SizedBox(width: 8),
                 Text(
-                  'Session Manager',
+                  context.tr('Session Manager'),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ],
             ),
             const SizedBox(height: 8),
             _buildStatusRow(
-                'Current State', sessionManager['currentState'] ?? 'Unknown'),
+                context.tr('Current State'), sessionManager['currentState'] ?? context.tr('Unknown')),
             if (sessionManager['sessionDurationMinutes'] != null)
               _buildStatusRow('Session Duration',
                   '${sessionManager['sessionDurationMinutes']} minutes'),

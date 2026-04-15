@@ -3,6 +3,7 @@ import 'dart:developer' as dev;
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/utils/network_log/network_log_manager.dart';
 import 'package:flutter_onegate/utils/network_log/services/network_log_service.dart';
 import 'package:flutter_onegate/utils/network_log/ui/network_log_screen.dart';
@@ -19,7 +20,7 @@ class _TestNetworkLogCaptureState extends State<TestNetworkLogCapture> {
   final NetworkLogService _logService = NetworkLogService();
   final Dio _dio = Dio();
   bool _isLoading = false;
-  String _status = 'Ready';
+  String _status = '';
   int _logCount = 0;
 
   @override
@@ -30,7 +31,7 @@ class _TestNetworkLogCaptureState extends State<TestNetworkLogCapture> {
 
   Future<void> _initializeNetworkLogger() async {
     setState(() {
-      _status = 'Initializing...';
+      _status = context.tr('Initializing...');
     });
 
     try {
@@ -47,7 +48,7 @@ class _TestNetworkLogCaptureState extends State<TestNetworkLogCapture> {
       _updateLogCount();
       
       setState(() {
-        _status = 'Initialized';
+        _status = context.tr('Initialized');
       });
       
       if (kDebugMode) {
@@ -55,7 +56,7 @@ class _TestNetworkLogCaptureState extends State<TestNetworkLogCapture> {
       }
     } catch (e) {
       setState(() {
-        _status = 'Error: $e';
+        _status = context.tr('Error: {error}', params: {'error': '$e'});
       });
       if (kDebugMode) {
         dev.log('Error initializing NetworkLogManager: $e');
@@ -74,21 +75,27 @@ class _TestNetworkLogCaptureState extends State<TestNetworkLogCapture> {
     
     setState(() {
       _isLoading = true;
-      _status = 'Making GET request...';
+      _status = context.tr('Making GET request...');
     });
     
     try {
       final response = await _dio.get('https://jsonplaceholder.typicode.com/posts/1');
       
       setState(() {
-        _status = 'GET request successful: ${response.statusCode}';
+        _status = context.tr(
+          'GET request successful: {status}',
+          params: {'status': '${response.statusCode}'},
+        );
       });
       
       // Update log count
       _updateLogCount();
     } catch (e) {
       setState(() {
-        _status = 'Error making GET request: $e';
+        _status = context.tr(
+          'Error making GET request: {error}',
+          params: {'error': '$e'},
+        );
       });
     } finally {
       setState(() {
@@ -102,7 +109,7 @@ class _TestNetworkLogCaptureState extends State<TestNetworkLogCapture> {
     
     setState(() {
       _isLoading = true;
-      _status = 'Making POST request...';
+      _status = context.tr('Making POST request...');
     });
     
     try {
@@ -116,14 +123,20 @@ class _TestNetworkLogCaptureState extends State<TestNetworkLogCapture> {
       );
       
       setState(() {
-        _status = 'POST request successful: ${response.statusCode}';
+        _status = context.tr(
+          'POST request successful: {status}',
+          params: {'status': '${response.statusCode}'},
+        );
       });
       
       // Update log count
       _updateLogCount();
     } catch (e) {
       setState(() {
-        _status = 'Error making POST request: $e';
+        _status = context.tr(
+          'Error making POST request: {error}',
+          params: {'error': '$e'},
+        );
       });
     } finally {
       setState(() {
@@ -137,14 +150,17 @@ class _TestNetworkLogCaptureState extends State<TestNetworkLogCapture> {
     
     setState(() {
       _isLoading = true;
-      _status = 'Making failed request...';
+      _status = context.tr('Making failed request...');
     });
     
     try {
       await _dio.get('https://nonexistent-domain-12345.com');
     } catch (e) {
       setState(() {
-        _status = 'Expected error making failed request: ${e.runtimeType}';
+        _status = context.tr(
+          'Expected error making failed request: {error}',
+          params: {'error': '${e.runtimeType}'},
+        );
       });
       
       // Update log count
@@ -160,7 +176,7 @@ class _TestNetworkLogCaptureState extends State<TestNetworkLogCapture> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Test Network Log Capture'),
+        title: Text(context.tr('Test Network Log Capture')),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -168,7 +184,7 @@ class _TestNetworkLogCaptureState extends State<TestNetworkLogCapture> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Status: $_status',
+              context.tr('Status: {status}', params: {'status': _status}),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -176,7 +192,7 @@ class _TestNetworkLogCaptureState extends State<TestNetworkLogCapture> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Log Count: $_logCount',
+              context.tr('Log Count: {count}', params: {'count': '$_logCount'}),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -184,19 +200,19 @@ class _TestNetworkLogCaptureState extends State<TestNetworkLogCapture> {
             ),
             const SizedBox(height: 24),
             _buildButton(
-              'Make GET Request',
+              context.tr('Make GET Request'),
               _makeGetRequest,
             ),
             _buildButton(
-              'Make POST Request',
+              context.tr('Make POST Request'),
               _makePostRequest,
             ),
             _buildButton(
-              'Make Failed Request',
+              context.tr('Make Failed Request'),
               _makeFailedRequest,
             ),
             _buildButton(
-              'View Network Logs',
+              context.tr('View Network Logs'),
               () {
                 Navigator.push(
                   context,

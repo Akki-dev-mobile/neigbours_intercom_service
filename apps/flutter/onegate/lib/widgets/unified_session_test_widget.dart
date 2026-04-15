@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/utils/session_debug_utility.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/services/session_manager/user_session_manager.dart';
 import 'package:get_it/get_it.dart';
 import 'dart:developer';
@@ -57,11 +58,15 @@ class _UnifiedSessionTestWidgetState extends State<UnifiedSessionTestWidget> {
       final shouldShow = await SessionDebugUtility.shouldShowSessionExpiredModal();
       
       setState(() {
-        _lastDebugResult = 'Debug completed successfully.\nShould show session expired modal: $shouldShow';
+        _lastDebugResult = context.tr(
+          'Debug completed successfully.\nShould show session expired modal: {value}',
+          params: {'value': '$shouldShow'},
+        );
       });
     } catch (e) {
       setState(() {
-        _lastDebugResult = 'Debug failed: $e';
+        _lastDebugResult =
+            context.tr('Debug failed: {error}', params: {'error': '$e'});
       });
     }
   }
@@ -72,11 +77,15 @@ class _UnifiedSessionTestWidgetState extends State<UnifiedSessionTestWidget> {
       await SessionDebugUtility.testTokenRefresh();
       
       setState(() {
-        _lastDebugResult = 'Token refresh test completed successfully';
+        _lastDebugResult =
+            context.tr('Token refresh test completed successfully');
       });
     } catch (e) {
       setState(() {
-        _lastDebugResult = 'Token refresh test failed: $e';
+        _lastDebugResult = context.tr(
+          'Token refresh test failed: {error}',
+          params: {'error': '$e'},
+        );
       });
     }
   }
@@ -108,7 +117,7 @@ class _UnifiedSessionTestWidgetState extends State<UnifiedSessionTestWidget> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Unified Session Management Test',
+              context.tr('Unified Session Management Test'),
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -118,7 +127,7 @@ class _UnifiedSessionTestWidgetState extends State<UnifiedSessionTestWidget> {
             // Session State Display
             Row(
               children: [
-                const Text('Current State: '),
+                Text(context.tr('Current State: ')),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -126,7 +135,8 @@ class _UnifiedSessionTestWidgetState extends State<UnifiedSessionTestWidget> {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    _currentSessionState?.toString().split('.').last ?? 'Unknown',
+                    _currentSessionState?.toString().split('.').last ??
+                        context.tr('Unknown'),
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -146,7 +156,15 @@ class _UnifiedSessionTestWidgetState extends State<UnifiedSessionTestWidget> {
                   size: 16,
                 ),
                 const SizedBox(width: 8),
-                Text('Session State Listener: ${_isListening ? 'Active' : 'Inactive'}'),
+                Text(
+                  context.tr(
+                    'Session State Listener: {status}',
+                    params: {
+                      'status':
+                          _isListening ? context.tr('Active') : context.tr('Inactive'),
+                    },
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -159,7 +177,7 @@ class _UnifiedSessionTestWidgetState extends State<UnifiedSessionTestWidget> {
                 ElevatedButton.icon(
                   onPressed: _runDebugCheck,
                   icon: const Icon(Icons.bug_report, size: 16),
-                  label: const Text('Debug Check'),
+                  label: Text(context.tr('Debug Check')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
@@ -168,7 +186,7 @@ class _UnifiedSessionTestWidgetState extends State<UnifiedSessionTestWidget> {
                 ElevatedButton.icon(
                   onPressed: _testTokenRefresh,
                   icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text('Test Refresh'),
+                  label: Text(context.tr('Test Refresh')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
@@ -191,7 +209,7 @@ class _UnifiedSessionTestWidgetState extends State<UnifiedSessionTestWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Last Debug Result:',
+                    context.tr('Last Debug Result:'),
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -224,7 +242,7 @@ class _UnifiedSessionTestWidgetState extends State<UnifiedSessionTestWidget> {
                       Icon(Icons.info, color: Colors.blue.shade700, size: 16),
                       const SizedBox(width: 8),
                       Text(
-                        'Expected Behavior:',
+                        context.tr('Expected Behavior:'),
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.blue.shade700,
@@ -234,10 +252,9 @@ class _UnifiedSessionTestWidgetState extends State<UnifiedSessionTestWidget> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '• Session state should be "authenticated" when logged in\n'
-                    '• Session expired modal should NOT appear\n'
-                    '• Tokens should refresh automatically in background\n'
-                    '• All unified session flags should be true',
+                    context.tr(
+                      '• Session state should be "authenticated" when logged in\n• Session expired modal should NOT appear\n• Tokens should refresh automatically in background\n• All unified session flags should be true',
+                    ),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Colors.blue.shade700,
                     ),

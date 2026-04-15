@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/services/auth_service/unified_auth_service.dart';
 import 'package:flutter_onegate/services/auth_service/secure_auth_interceptor.dart';
 
@@ -180,7 +181,7 @@ class AuthenticatedHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Authenticated Home'),
+        title: Text(context.tr('Authenticated Home')),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -192,21 +193,21 @@ class AuthenticatedHomeScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('Welcome! You are authenticated.'),
+            Text(context.tr('Welcome! You are authenticated.')),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => AuthIntegrationExample.makeAuthenticatedApiCall('/api/user/profile'),
-              child: const Text('Make API Call'),
+              child: Text(context.tr('Make API Call')),
             ),
             const SizedBox(height: 10),
             ElevatedButton(
               onPressed: () => AuthIntegrationExample.getCurrentUserInfo(),
-              child: const Text('Get User Info'),
+              child: Text(context.tr('Get User Info')),
             ),
             const SizedBox(height: 10),
             ElevatedButton(
               onPressed: () => AuthIntegrationExample.refreshTokensManually(),
-              child: const Text('Refresh Tokens'),
+              child: Text(context.tr('Refresh Tokens')),
             ),
           ],
         ),
@@ -222,16 +223,16 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(title: Text(context.tr('Login'))),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('Please log in to continue'),
+            Text(context.tr('Please log in to continue')),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => AuthIntegrationExample.performLogin(),
-              child: const Text('Login with Keycloak'),
+              child: Text(context.tr('Login with Keycloak')),
             ),
           ],
         ),

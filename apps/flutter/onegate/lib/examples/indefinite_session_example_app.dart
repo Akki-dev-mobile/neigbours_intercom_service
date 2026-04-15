@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/services/auth_service/indefinite_session_manager.dart';
-import 'package:flutter_onegate/services/auth_service/secure_auth_interceptor.dart';
-import 'package:dio/dio.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 /// Complete example app demonstrating indefinite session management
 /// This shows how to implement "login once, stay logged in forever" functionality
@@ -60,7 +59,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
             children: [
               DashboardLoaderIcon(),
               SizedBox(height: 16),
-              Text('Initializing secure authentication...'),
+              Text(context.tr('Initializing secure authentication...')),
             ],
           ),
         ),
@@ -105,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('OneGate Login'),
+        title: Text(context.tr('OneGate Login')),
         backgroundColor: Colors.blue[700],
       ),
       body: Padding(
@@ -121,13 +120,15 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             SizedBox(height: 32),
             Text(
-              'Secure Authentication',
+              context.tr('Secure Authentication'),
               style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 16),
             Text(
-              'Login once and stay authenticated indefinitely with automatic token refresh.',
+              context.tr(
+                'Login once and stay authenticated indefinitely with automatic token refresh.',
+              ),
               style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
@@ -151,11 +152,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         SizedBox(width: 12),
-                        Text('Logging in...'),
+                        Text(context.tr('Logging in...')),
                       ],
                     )
                   : Text(
-                      'Login with Keycloak',
+                      context.tr('Login with Keycloak'),
                       style: TextStyle(fontSize: 16),
                     ),
             ),
@@ -167,14 +168,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Features:',
+                      context.tr('Features:'),
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 8),
-                    _buildFeatureItem('🔄 Automatic token refresh every 2-3 minutes'),
-                    _buildFeatureItem('🛡️ Secure token storage with encryption'),
-                    _buildFeatureItem('⏰ No session timeouts or expiry modals'),
-                    _buildFeatureItem('📱 Persistent sessions across app restarts'),
+                    _buildFeatureItem(
+                      context.tr('Automatic token refresh every 2-3 minutes'),
+                    ),
+                    _buildFeatureItem(
+                      context.tr('Secure token storage with encryption'),
+                    ),
+                    _buildFeatureItem(
+                      context.tr('No session timeouts or expiry modals'),
+                    ),
+                    _buildFeatureItem(
+                      context.tr('Persistent sessions across app restarts'),
+                    ),
                   ],
                 ),
               ),
@@ -207,7 +216,9 @@ class _LoginScreenState extends State<LoginScreen> {
       print('❌ Login failed: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Login failed: ${e.toString()}'),
+          content: Text(
+            context.tr('Login failed: {error}', params: {'error': e.toString()}),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -232,7 +243,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _userInfo;
   Map<String, dynamic>? _sessionStatus;
-  final Dio _dio = SecureDioFactory.createAuthenticatedDio();
 
   @override
   void initState() {
@@ -266,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('OneGate Home'),
+        title: Text(context.tr('OneGate Home')),
         backgroundColor: Colors.green[700],
         actions: [
           IconButton(
@@ -311,18 +321,33 @@ class _HomeScreenState extends State<HomeScreen> {
                 Icon(Icons.person, color: Colors.green[700]),
                 SizedBox(width: 8),
                 Text(
-                  'Welcome!',
+                  context.tr('Welcome!'),
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             SizedBox(height: 12),
             if (_userInfo != null) ...[
-              Text('Name: ${_userInfo!['name'] ?? 'N/A'}'),
-              Text('Email: ${_userInfo!['email'] ?? 'N/A'}'),
-              Text('Username: ${_userInfo!['preferred_username'] ?? 'N/A'}'),
+              Text(
+                context.tr(
+                  'Name: {value}',
+                  params: {'value': '${_userInfo!['name'] ?? 'N/A'}'},
+                ),
+              ),
+              Text(
+                context.tr(
+                  'Email: {value}',
+                  params: {'value': '${_userInfo!['email'] ?? 'N/A'}'},
+                ),
+              ),
+              Text(
+                context.tr(
+                  'Username: {value}',
+                  params: {'value': '${_userInfo!['preferred_username'] ?? 'N/A'}'},
+                ),
+              ),
             ] else
-              Text('Loading user information...'),
+              Text(context.tr('Loading user information...')),
           ],
         ),
       ),
@@ -341,7 +366,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Icon(Icons.timer, color: Colors.blue[700]),
                 SizedBox(width: 8),
                 Text(
-                  'Session Status',
+                  context.tr('Session Status'),
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -349,22 +374,26 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(height: 12),
             if (_sessionStatus != null) ...[
               _buildStatusItem(
-                'Indefinite Sessions',
-                _sessionStatus!['indefinite_sessions_enabled'] ? 'Enabled ✅' : 'Disabled ❌',
+                context.tr('Indefinite Sessions'),
+                _sessionStatus!['indefinite_sessions_enabled']
+                    ? context.tr('Enabled')
+                    : context.tr('Disabled'),
                 _sessionStatus!['indefinite_sessions_enabled'] ? Colors.green : Colors.red,
               ),
               _buildStatusItem(
-                'Background Refresh',
-                _sessionStatus!['background_refresh_active'] ? 'Active 🔄' : 'Inactive ⏸️',
+                context.tr('Background Refresh'),
+                _sessionStatus!['background_refresh_active']
+                    ? context.tr('Active')
+                    : context.tr('Inactive'),
                 _sessionStatus!['background_refresh_active'] ? Colors.green : Colors.orange,
               ),
               _buildStatusItem(
-                'Consecutive Failures',
+                context.tr('Consecutive Failures'),
                 '${_sessionStatus!['consecutive_failures']}',
                 _sessionStatus!['consecutive_failures'] == 0 ? Colors.green : Colors.red,
               ),
             ] else
-              Text('Loading session status...'),
+              Text(context.tr('Loading session status...')),
           ],
         ),
       ),
@@ -399,7 +428,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Icon(Icons.settings, color: Colors.purple[700]),
                 SizedBox(width: 8),
                 Text(
-                  'Actions',
+                  context.tr('Actions'),
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -407,17 +436,17 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(height: 12),
             ElevatedButton(
               onPressed: _testApiCall,
-              child: Text('Test API Call'),
+              child: Text(context.tr('Test API Call')),
             ),
             SizedBox(height: 8),
             ElevatedButton(
               onPressed: _forceTokenRefresh,
-              child: Text('Force Token Refresh'),
+              child: Text(context.tr('Force Token Refresh')),
             ),
             SizedBox(height: 8),
             ElevatedButton(
               onPressed: _showSessionDetails,
-              child: Text('Show Session Details'),
+              child: Text(context.tr('Show Session Details')),
             ),
           ],
         ),
@@ -432,14 +461,14 @@ class _HomeScreenState extends State<HomeScreen> {
       if (token != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Valid token available'),
+            content: Text(context.tr('Valid token available')),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ No valid token available'),
+            content: Text(context.tr('No valid token available')),
             backgroundColor: Colors.red,
           ),
         );
@@ -447,7 +476,9 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ API test failed: $e'),
+          content: Text(
+            context.tr('API test failed: {error}', params: {'error': '$e'}),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -459,7 +490,11 @@ class _HomeScreenState extends State<HomeScreen> {
       final success = await widget.authService.forceTokenRefresh();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success ? '✅ Token refresh successful' : '❌ Token refresh failed'),
+          content: Text(
+            success
+                ? context.tr('Token refresh successful')
+                : context.tr('Token refresh failed'),
+          ),
           backgroundColor: success ? Colors.green : Colors.red,
         ),
       );
@@ -467,7 +502,9 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Force refresh error: $e'),
+          content: Text(
+            context.tr('Force refresh error: {error}', params: {'error': '$e'}),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -478,25 +515,43 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Session Details'),
+        title: Text(context.tr('Session Details')),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('🔄 Automatic token refresh every 2-3 minutes'),
+              Text(context.tr('Automatic token refresh every 2-3 minutes')),
               SizedBox(height: 8),
-              Text('🛡️ Secure token storage with encryption'),
+              Text(context.tr('Secure token storage with encryption')),
               SizedBox(height: 8),
-              Text('⏰ No session timeouts or expiry modals'),
+              Text(context.tr('No session timeouts or expiry modals')),
               SizedBox(height: 8),
-              Text('📱 Persistent sessions across app restarts'),
+              Text(context.tr('Persistent sessions across app restarts')),
               SizedBox(height: 16),
               if (_sessionStatus != null) ...[
-                Text('Current Status:', style: TextStyle(fontWeight: FontWeight.bold)),
-                Text('Indefinite Sessions: ${_sessionStatus!['indefinite_sessions_enabled']}'),
-                Text('Background Refresh: ${_sessionStatus!['background_refresh_active']}'),
-                Text('Consecutive Failures: ${_sessionStatus!['consecutive_failures']}'),
+                Text(
+                  context.tr('Current Status:'),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  context.tr(
+                    'Indefinite Sessions: {value}',
+                    params: {'value': '${_sessionStatus!['indefinite_sessions_enabled']}'},
+                  ),
+                ),
+                Text(
+                  context.tr(
+                    'Background Refresh: {value}',
+                    params: {'value': '${_sessionStatus!['background_refresh_active']}'},
+                  ),
+                ),
+                Text(
+                  context.tr(
+                    'Consecutive Failures: {value}',
+                    params: {'value': '${_sessionStatus!['consecutive_failures']}'},
+                  ),
+                ),
               ],
             ],
           ),
@@ -504,7 +559,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('OK'),
+            child: Text(context.tr('OK')),
           ),
         ],
       ),
@@ -518,7 +573,9 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Logout failed: $e'),
+          content: Text(
+            context.tr('Logout failed: {error}', params: {'error': '$e'}),
+          ),
           backgroundColor: Colors.red,
         ),
       );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_onegate/services/auth_service/auth_token_debug_manager.dart';
 import 'package:flutter_onegate/services/auth_service/auth_token_debug_models.dart';
@@ -55,7 +56,7 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
                     color: _getStatusColor(debugManager.currentState.healthStatus),
                   ),
                   const SizedBox(width: 8),
-                  const Text('Auth Token Debug'),
+                  Text(context.tr('Auth Token Debug')),
                   const Spacer(),
                   Text(
                     debugManager.currentState.healthStatus.emoji,
@@ -120,7 +121,7 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
           Row(
             children: [
               Text(
-                'Status: ${state.healthStatus.description}',
+                context.tr('Status: {status}', params: {'status': state.healthStatus.description}),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: _getStatusColor(state.healthStatus),
@@ -136,17 +137,20 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
           const SizedBox(height: 8),
           Row(
             children: [
-              _buildStatusChip('Authenticated', state.isAuthenticated),
+              _buildStatusChip(context.tr('Authenticated'), state.isAuthenticated),
               const SizedBox(width: 8),
-              _buildStatusChip('Logged In', state.isLoggedIn),
+              _buildStatusChip(context.tr('Logged In'), state.isLoggedIn),
               const SizedBox(width: 8),
-              _buildStatusChip('Has Tokens', state.hasAnyTokens),
+              _buildStatusChip(context.tr('Has Tokens'), state.hasAnyTokens),
             ],
           ),
           if (state.accessTokenAnalysis != null) ...[
             const SizedBox(height: 8),
             Text(
-              'Token expires in: ${state.accessTokenAnalysis!.timeUntilExpiryMinutes ?? 'Unknown'} minutes',
+              context.tr(
+                'Token expires in: {minutes} minutes',
+                params: {'minutes': '${state.accessTokenAnalysis!.timeUntilExpiryMinutes ?? 'Unknown'}'},
+              ),
               style: TextStyle(
                 fontSize: 12,
                 color: state.accessTokenAnalysis!.isExpiringSoon 
@@ -182,16 +186,16 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Token Presence',
+        Text(
+          context.tr('Token Presence'),
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         const SizedBox(height: 8),
-        _buildTokenRow('Secure Access Token', state.secureAccessToken != null),
-        _buildTokenRow('Secure Refresh Token', state.secureRefreshToken != null),
-        _buildTokenRow('Gate Access Token', state.gateAccessToken != null),
-        _buildTokenRow('Gate Refresh Token', state.gateRefreshToken != null),
-        _buildTokenRow('Valid Access Token', state.validAccessToken != null),
+        _buildTokenRow(context.tr('Secure Access Token'), state.secureAccessToken != null),
+        _buildTokenRow(context.tr('Secure Refresh Token'), state.secureRefreshToken != null),
+        _buildTokenRow(context.tr('Gate Access Token'), state.gateAccessToken != null),
+        _buildTokenRow(context.tr('Gate Refresh Token'), state.gateRefreshToken != null),
+        _buildTokenRow(context.tr('Valid Access Token'), state.validAccessToken != null),
       ],
     );
   }
@@ -210,7 +214,7 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
           Text(label, style: const TextStyle(fontSize: 14)),
           const Spacer(),
           Text(
-            present ? 'Present' : 'Missing',
+            present ? context.tr('Present') : context.tr('Missing'),
             style: TextStyle(
               fontSize: 12,
               color: present ? Colors.green : Colors.red,
@@ -231,20 +235,20 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Access Token Analysis',
+        Text(
+          context.tr('Access Token Analysis'),
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         const SizedBox(height: 8),
-        _buildAnalysisRow('Valid', analysis.isValid.toString()),
-        _buildAnalysisRow('Expires At', analysis.expiresAt ?? 'Unknown'),
-        _buildAnalysisRow('Time Until Expiry', '${analysis.timeUntilExpiryMinutes ?? 'Unknown'} minutes'),
-        _buildAnalysisRow('Should Refresh', analysis.shouldRefreshNow?.toString() ?? 'Unknown'),
-        _buildAnalysisRow('Lifespan', '${analysis.lifespanMinutes ?? 'Unknown'} minutes'),
+        _buildAnalysisRow(context.tr('Valid'), analysis.isValid.toString()),
+        _buildAnalysisRow(context.tr('Expires At'), analysis.expiresAt ?? context.tr('Unknown')),
+        _buildAnalysisRow(context.tr('Time Until Expiry'), '${analysis.timeUntilExpiryMinutes ?? 'Unknown'} ${context.tr('minutes')}'),
+        _buildAnalysisRow(context.tr('Should Refresh'), analysis.shouldRefreshNow?.toString() ?? context.tr('Unknown')),
+        _buildAnalysisRow(context.tr('Lifespan'), '${analysis.lifespanMinutes ?? 'Unknown'} ${context.tr('minutes')}'),
         if (analysis.userDisplayName != null)
-          _buildAnalysisRow('User', analysis.userDisplayName!),
+          _buildAnalysisRow(context.tr('User'), analysis.userDisplayName!),
         if (analysis.userEmail != null)
-          _buildAnalysisRow('Email', analysis.userEmail!),
+          _buildAnalysisRow(context.tr('Email'), analysis.userEmail!),
       ],
     );
   }
@@ -282,18 +286,18 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Storage Consistency',
+        Text(
+          context.tr('Storage Consistency'),
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         const SizedBox(height: 8),
-        _buildConsistencyRow('Access Token Match', consistency.accessTokenMatch),
-        _buildConsistencyRow('Refresh Token Match', consistency.refreshTokenMatch),
-        _buildConsistencyRow('Both Storages Populated', consistency.bothStoragesPopulated),
+        _buildConsistencyRow(context.tr('Access Token Match'), consistency.accessTokenMatch),
+        _buildConsistencyRow(context.tr('Refresh Token Match'), consistency.refreshTokenMatch),
+        _buildConsistencyRow(context.tr('Both Storages Populated'), consistency.bothStoragesPopulated),
         if (consistency.issues.isNotEmpty) ...[
           const SizedBox(height: 8),
-          const Text(
-            'Issues:',
+          Text(
+            context.tr('Issues:'),
             style: TextStyle(fontWeight: FontWeight.w500, color: Colors.red),
           ),
           ...consistency.issues.map((issue) => Padding(
@@ -329,8 +333,8 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Debug Actions',
+        Text(
+          context.tr('Debug Actions'),
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         const SizedBox(height: 8),
@@ -341,7 +345,7 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
             ElevatedButton.icon(
               onPressed: () => _forceRefresh(debugManager),
               icon: const Icon(Icons.refresh, size: 16),
-              label: const Text('Force Refresh'),
+              label: Text(context.tr('Force Refresh')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
@@ -350,7 +354,7 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
             ElevatedButton.icon(
               onPressed: () => _clearTokens(debugManager),
               icon: const Icon(Icons.clear, size: 16),
-              label: const Text('Clear Tokens'),
+              label: Text(context.tr('Clear Tokens')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
@@ -359,7 +363,7 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
             ElevatedButton.icon(
               onPressed: () => _copyReport(debugManager),
               icon: const Icon(Icons.copy, size: 16),
-              label: const Text('Copy Report'),
+              label: Text(context.tr('Copy Report')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 foregroundColor: Colors.white,
@@ -377,7 +381,7 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result ? 'Token refresh successful' : 'Token refresh failed'),
+            content: Text(result ? context.tr('Token refresh successful') : context.tr('Token refresh failed')),
             backgroundColor: result ? Colors.green : Colors.red,
           ),
         );
@@ -386,7 +390,7 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text(context.tr('Error: {error}', params: {'error': '$e'})),
             backgroundColor: Colors.red,
           ),
         );
@@ -398,16 +402,16 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear All Tokens'),
-        content: const Text('This will clear all authentication tokens. You will need to log in again.'),
+        title: Text(context.tr('Clear All Tokens')),
+        content: Text(context.tr('This will clear all authentication tokens. You will need to log in again.')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('Cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Clear'),
+            child: Text(context.tr('Clear')),
           ),
         ],
       ),
@@ -418,8 +422,8 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
         await debugManager.clearAllTokens();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('All tokens cleared'),
+            SnackBar(
+              content: Text(context.tr('All tokens cleared')),
               backgroundColor: Colors.green,
             ),
           );
@@ -428,7 +432,7 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error clearing tokens: $e'),
+              content: Text(context.tr('Error clearing tokens: {error}', params: {'error': '$e'})),
               backgroundColor: Colors.red,
             ),
           );
@@ -443,8 +447,8 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
       await Clipboard.setData(ClipboardData(text: report));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Debug report copied to clipboard'),
+          SnackBar(
+            content: Text(context.tr('Debug report copied to clipboard')),
             backgroundColor: Colors.green,
           ),
         );
@@ -453,7 +457,7 @@ class _AuthTokenDebugWidgetState extends State<AuthTokenDebugWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error copying report: $e'),
+            content: Text(context.tr('Error copying report: {error}', params: {'error': '$e'})),
             backgroundColor: Colors.red,
           ),
         );

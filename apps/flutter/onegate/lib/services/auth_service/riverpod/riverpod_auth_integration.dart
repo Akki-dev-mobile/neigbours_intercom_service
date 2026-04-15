@@ -3,9 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'auth_controller.dart';
 import 'auth_interceptor.dart';
-import 'auth_state.dart';
 
 /// Provider for Dio instance with authentication interceptor
 final dioProvider = Provider<Dio>((ref) {
@@ -97,13 +97,13 @@ class LoginScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(title: Text(context.tr('Login'))),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Please log in to continue',
+            Text(
+              context.tr('Please log in to continue'),
               style: TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 20),
@@ -115,14 +115,14 @@ class LoginScreen extends ConsumerWidget {
 
                 if (!success && context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Login failed. Please try again.'),
+                    SnackBar(
+                      content: Text(context.tr('Login failed. Please try again.')),
                       backgroundColor: Colors.red,
                     ),
                   );
                 }
               },
-              child: const Text('Login with Keycloak'),
+              child: Text(context.tr('Login with Keycloak')),
             ),
           ],
         ),
@@ -137,14 +137,14 @@ class LoadingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             DashboardLoaderIcon(),
             SizedBox(height: 16),
-            Text('Authenticating...'),
+            Text(context.tr('Authenticating...')),
           ],
         ),
       ),
@@ -161,7 +161,7 @@ class ErrorScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Error')),
+      appBar: AppBar(title: Text(context.tr('Error'))),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -173,7 +173,7 @@ class ErrorScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Authentication Error',
+              context.tr('Authentication Error'),
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
@@ -189,7 +189,7 @@ class ErrorScreen extends ConsumerWidget {
                     ref.read(authControllerProvider.notifier);
                 await authController.login();
               },
-              child: const Text('Retry Login'),
+              child: Text(context.tr('Retry Login')),
             ),
           ],
         ),
@@ -215,12 +215,27 @@ class UserProfileWidget extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Welcome, ${userInfo['name'] ?? 'User'}!',
+                  context.tr(
+                    'Welcome, {name}!',
+                    params: {'name': '${userInfo['name'] ?? 'User'}'},
+                  ),
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 8),
-                Text('Email: ${userInfo['email'] ?? 'N/A'}'),
-                Text('Username: ${userInfo['preferred_username'] ?? 'N/A'}'),
+                Text(
+                  context.tr(
+                    'Email: {value}',
+                    params: {'value': '${userInfo['email'] ?? 'N/A'}'},
+                  ),
+                ),
+                Text(
+                  context.tr(
+                    'Username: {value}',
+                    params: {
+                      'value': '${userInfo['preferred_username'] ?? 'N/A'}',
+                    },
+                  ),
+                ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
@@ -234,7 +249,7 @@ class UserProfileWidget extends ConsumerWidget {
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
                       ),
-                      child: const Text('Logout'),
+                      child: Text(context.tr('Logout')),
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton(
@@ -245,14 +260,16 @@ class UserProfileWidget extends ConsumerWidget {
 
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Token refreshed successfully'),
+                            SnackBar(
+                              content: Text(
+                                context.tr('Token refreshed successfully'),
+                              ),
                               backgroundColor: Colors.green,
                             ),
                           );
                         }
                       },
-                      child: const Text('Refresh Token'),
+                      child: Text(context.tr('Refresh Token')),
                     ),
                   ],
                 ),
@@ -273,7 +290,7 @@ class AuthenticatedApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'OneGate Authenticated App',
+      title: context.tr('OneGate Authenticated App'),
       theme: ThemeData(
         primarySwatch: Colors.blue,
         useMaterial3: true,
@@ -281,7 +298,7 @@ class AuthenticatedApp extends ConsumerWidget {
       home: AuthStateWidget(
         child: Scaffold(
           appBar: AppBar(
-            title: const Text('OneGate Dashboard'),
+            title: Text(context.tr('OneGate Dashboard')),
             actions: [
               IconButton(
                 icon: const Icon(Icons.refresh),
@@ -293,14 +310,14 @@ class AuthenticatedApp extends ConsumerWidget {
               ),
             ],
           ),
-          body: const SingleChildScrollView(
+          body: SingleChildScrollView(
             padding: EdgeInsets.all(16),
             child: Column(
               children: [
                 UserProfileWidget(),
                 SizedBox(height: 20),
                 // Add your other widgets here
-                Text('Your authenticated content goes here...'),
+                Text(context.tr('Your authenticated content goes here...')),
               ],
             ),
           ),

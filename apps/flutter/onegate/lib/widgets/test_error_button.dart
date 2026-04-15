@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/services/error_tracking/posthog_error_tracking_service.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'dart:developer' as dev;
 
 /// Simple test error button widget for PostHog Error Tracking verification
@@ -46,7 +46,9 @@ class _TestErrorButtonState extends State<TestErrorButton> {
                   )
                 : const Icon(Icons.bug_report, color: Colors.white),
             label: Text(
-              _isLoading ? 'Sending...' : '🧪 Test PostHog Error',
+              _isLoading
+                  ? context.tr('Sending...')
+                  : context.tr('Test PostHog Error'),
               style: const TextStyle(color: Colors.white),
             ),
             style: ElevatedButton.styleFrom(
@@ -118,8 +120,9 @@ class _TestErrorButtonState extends State<TestErrorButton> {
       );
 
       setState(() {
-        _lastResult =
-            '✅ Test errors sent successfully!\nCheck PostHog dashboard in 1-2 minutes.';
+        _lastResult = context.tr(
+          'Test errors sent successfully!\nCheck PostHog dashboard in 1-2 minutes.',
+        );
       });
 
       dev.log('🧪 Manual test errors sent to PostHog from $screenName');
@@ -130,10 +133,10 @@ class _TestErrorButtonState extends State<TestErrorButton> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('🧪 Test errors sent to PostHog!'),
+            content: Text(context.tr('Test errors sent to PostHog!')),
             backgroundColor: Colors.green,
             action: SnackBarAction(
-              label: 'View Dashboard',
+              label: context.tr('View Dashboard'),
               textColor: Colors.white,
               onPressed: () {
                 dev.log(
@@ -148,7 +151,10 @@ class _TestErrorButtonState extends State<TestErrorButton> {
       widget.onTestComplete?.call();
     } catch (e) {
       setState(() {
-        _lastResult = '❌ Test failed: $e';
+        _lastResult = context.tr(
+          'Test failed: {error}',
+          params: {'error': '$e'},
+        );
       });
 
       dev.log('❌ Failed to send manual test error: $e');
@@ -157,7 +163,9 @@ class _TestErrorButtonState extends State<TestErrorButton> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Test failed: $e'),
+            content: Text(
+              context.tr('Test failed: {error}', params: {'error': '$e'}),
+            ),
             backgroundColor: Colors.red,
           ),
         );

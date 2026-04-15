@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_onegate/services/auth_service/auth_token_debug_manager.dart';
 import 'package:flutter_onegate/services/auth_service/auth_token_debug_models.dart';
@@ -43,7 +44,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Authentication Debug'),
+        title: Text(context.tr('Authentication Debug')),
         backgroundColor: Colors.blue[700],
         foregroundColor: Colors.white,
         bottom: TabBar(
@@ -51,23 +52,23 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           indicatorColor: Colors.white,
-          tabs: const [
-            Tab(icon: Icon(Icons.dashboard), text: 'Overview'),
-            Tab(icon: Icon(Icons.token), text: 'Tokens'),
-            Tab(icon: Icon(Icons.storage), text: 'Storage'),
-            Tab(icon: Icon(Icons.analytics), text: 'Analytics'),
+          tabs: [
+            Tab(icon: const Icon(Icons.dashboard), text: context.tr('Overview')),
+            Tab(icon: const Icon(Icons.token), text: context.tr('Tokens')),
+            Tab(icon: const Icon(Icons.storage), text: context.tr('Storage')),
+            Tab(icon: const Icon(Icons.analytics), text: context.tr('Analytics')),
           ],
         ),
         actions: [
           IconButton(
             onPressed: _isInitialized ? () => _refreshDebugData() : null,
             icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh Debug Data',
+            tooltip: context.tr('Refresh Debug Data'),
           ),
           IconButton(
             onPressed: _isInitialized ? () => _exportDebugReport() : null,
             icon: const Icon(Icons.download),
-            tooltip: 'Export Debug Report',
+            tooltip: context.tr('Export Debug Report'),
           ),
         ],
       ),
@@ -197,7 +198,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
             Row(
               children: [
                 Text(
-                  'Authentication Status',
+                  context.tr('Authentication Status'),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const Spacer(),
@@ -234,13 +235,13 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
             Row(
               children: [
                 Expanded(
-                  child: _buildStatusItem('Authenticated', state.isAuthenticated),
+                  child: _buildStatusItem(context.tr('Authenticated'), state.isAuthenticated),
                 ),
                 Expanded(
-                  child: _buildStatusItem('Logged In', state.isLoggedIn),
+                  child: _buildStatusItem(context.tr('Logged In'), state.isLoggedIn),
                 ),
                 Expanded(
-                  child: _buildStatusItem('Has Tokens', state.hasAnyTokens),
+                  child: _buildStatusItem(context.tr('Has Tokens'), state.hasAnyTokens),
                 ),
               ],
             ),
@@ -249,7 +250,10 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
               const Divider(),
               const SizedBox(height: 8),
               Text(
-                'Token expires in: ${state.accessTokenAnalysis!.timeUntilExpiryMinutes ?? 'Unknown'} minutes',
+                context.tr(
+                  'Token expires in: {minutes} minutes',
+                  params: {'minutes': '${state.accessTokenAnalysis!.timeUntilExpiryMinutes ?? 'Unknown'}'},
+                ),
                 style: TextStyle(
                   color: state.accessTokenAnalysis!.isExpiringSoon 
                       ? Colors.orange 
@@ -279,7 +283,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
           textAlign: TextAlign.center,
         ),
         Text(
-          status ? 'Yes' : 'No',
+          status ? context.tr('Yes') : context.tr('No'),
           style: TextStyle(
             fontSize: 10,
             color: status ? Colors.green : Colors.red,
@@ -297,7 +301,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Quick Actions',
+              context.tr('Quick Actions'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
@@ -308,7 +312,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
                 ElevatedButton.icon(
                   onPressed: () => _forceTokenRefresh(),
                   icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text('Force Refresh'),
+                  label: Text(context.tr('Force Refresh')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
@@ -317,7 +321,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
                 ElevatedButton.icon(
                   onPressed: () => _validateTokens(),
                   icon: const Icon(Icons.verified, size: 16),
-                  label: const Text('Validate Tokens'),
+                  label: Text(context.tr('Validate Tokens')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
@@ -326,7 +330,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
                 ElevatedButton.icon(
                   onPressed: () => _clearAllTokens(),
                   icon: const Icon(Icons.clear_all, size: 16),
-                  label: const Text('Clear All'),
+                  label: Text(context.tr('Clear All')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
@@ -348,15 +352,15 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Token Presence',
+              context.tr('Token Presence'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            _buildTokenPresenceRow('Secure Access Token', state.secureAccessToken != null),
-            _buildTokenPresenceRow('Secure Refresh Token', state.secureRefreshToken != null),
-            _buildTokenPresenceRow('Gate Access Token', state.gateAccessToken != null),
-            _buildTokenPresenceRow('Gate Refresh Token', state.gateRefreshToken != null),
-            _buildTokenPresenceRow('Valid Access Token', state.validAccessToken != null),
+            _buildTokenPresenceRow(context.tr('Secure Access Token'), state.secureAccessToken != null),
+            _buildTokenPresenceRow(context.tr('Secure Refresh Token'), state.secureRefreshToken != null),
+            _buildTokenPresenceRow(context.tr('Gate Access Token'), state.gateAccessToken != null),
+            _buildTokenPresenceRow(context.tr('Gate Refresh Token'), state.gateRefreshToken != null),
+            _buildTokenPresenceRow(context.tr('Valid Access Token'), state.validAccessToken != null),
           ],
         ),
       ),
@@ -384,7 +388,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              present ? 'Present' : 'Missing',
+              present ? context.tr('Present') : context.tr('Missing'),
               style: TextStyle(
                 fontSize: 12,
                 color: present ? Colors.green[700] : Colors.red[700],
@@ -405,7 +409,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '$title Analysis',
+              context.tr('{title} Analysis', params: {'title': title}),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
@@ -423,7 +427,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Error: ${analysis.error}',
+                        context.tr('Error: {error}', params: {'error': '${analysis.error}'}),
                         style: const TextStyle(color: Colors.red),
                       ),
                     ),
@@ -431,18 +435,18 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
                 ),
               ),
             ] else ...[
-              _buildAnalysisRow('Valid', analysis.isValid.toString()),
-              _buildAnalysisRow('Issued At', analysis.issuedAt ?? 'Unknown'),
-              _buildAnalysisRow('Expires At', analysis.expiresAt ?? 'Unknown'),
-              _buildAnalysisRow('Lifespan', '${analysis.lifespanMinutes ?? 'Unknown'} minutes'),
-              _buildAnalysisRow('Time Until Expiry', '${analysis.timeUntilExpiryMinutes ?? 'Unknown'} minutes'),
-              _buildAnalysisRow('Should Refresh', analysis.shouldRefreshNow?.toString() ?? 'Unknown'),
+              _buildAnalysisRow(context.tr('Valid'), analysis.isValid.toString()),
+              _buildAnalysisRow(context.tr('Issued At'), analysis.issuedAt ?? context.tr('Unknown')),
+              _buildAnalysisRow(context.tr('Expires At'), analysis.expiresAt ?? context.tr('Unknown')),
+              _buildAnalysisRow(context.tr('Lifespan'), '${analysis.lifespanMinutes ?? 'Unknown'} ${context.tr('minutes')}'),
+              _buildAnalysisRow(context.tr('Time Until Expiry'), '${analysis.timeUntilExpiryMinutes ?? 'Unknown'} ${context.tr('minutes')}'),
+              _buildAnalysisRow(context.tr('Should Refresh'), analysis.shouldRefreshNow?.toString() ?? context.tr('Unknown')),
               if (analysis.userDisplayName != null)
-                _buildAnalysisRow('User', analysis.userDisplayName!),
+                _buildAnalysisRow(context.tr('User'), analysis.userDisplayName!),
               if (analysis.userEmail != null)
-                _buildAnalysisRow('Email', analysis.userEmail!),
+                _buildAnalysisRow(context.tr('Email'), analysis.userEmail!),
               if (analysis.userRoles.isNotEmpty)
-                _buildAnalysisRow('Roles', analysis.userRoles.join(', ')),
+                _buildAnalysisRow(context.tr('Roles'), analysis.userRoles.join(', ')),
             ],
           ],
         ),
@@ -484,19 +488,19 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Storage Consistency',
+              context.tr('Storage Consistency'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            _buildConsistencyRow('Access Token Match', consistency.accessTokenMatch),
-            _buildConsistencyRow('Refresh Token Match', consistency.refreshTokenMatch),
-            _buildConsistencyRow('Both Storages Populated', consistency.bothStoragesPopulated),
+            _buildConsistencyRow(context.tr('Access Token Match'), consistency.accessTokenMatch),
+            _buildConsistencyRow(context.tr('Refresh Token Match'), consistency.refreshTokenMatch),
+            _buildConsistencyRow(context.tr('Both Storages Populated'), consistency.bothStoragesPopulated),
             if (consistency.issues.isNotEmpty) ...[
               const SizedBox(height: 12),
               const Divider(),
               const SizedBox(height: 8),
               Text(
-                'Issues Found:',
+                context.tr('Issues Found:'),
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
                   color: Colors.red[700],
@@ -552,11 +556,11 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Storage Details',
+              context.tr('Storage Details'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            const Text('Detailed storage information would be displayed here.'),
+            Text(context.tr('Detailed storage information would be displayed here.')),
           ],
         ),
       ),
@@ -571,11 +575,11 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Storage Actions',
+              context.tr('Storage Actions'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            const Text('Storage management actions would be available here.'),
+            Text(context.tr('Storage management actions would be available here.')),
           ],
         ),
       ),
@@ -590,7 +594,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Refresh Statistics',
+              context.tr('Refresh Statistics'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
@@ -598,7 +602,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
               ...state.refreshStats.entries.map((entry) => 
                 _buildAnalysisRow(entry.key, entry.value.toString())),
             ] else ...[
-              const Text('No refresh statistics available.'),
+              Text(context.tr('No refresh statistics available.')),
             ],
           ],
         ),
@@ -614,11 +618,11 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Health Trends',
+              context.tr('Health Trends'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            const Text('Health trend analysis would be displayed here.'),
+            Text(context.tr('Health trend analysis would be displayed here.')),
           ],
         ),
       ),
@@ -633,11 +637,11 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Debug Log',
+              context.tr('Debug Log'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            const Text('Recent debug log entries would be shown here.'),
+            Text(context.tr('Recent debug log entries would be shown here.')),
           ],
         ),
       ),
@@ -652,12 +656,12 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Recent Activity',
+              context.tr('Recent Activity'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
             Text(
-              'Last updated: ${state.timestamp.toString()}',
+              context.tr('Last updated: {time}', params: {'time': state.timestamp.toString()}),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -674,11 +678,11 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Token Actions',
+              context.tr('Token Actions'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            const Text('Token management actions would be available here.'),
+            Text(context.tr('Token management actions would be available here.')),
           ],
         ),
       ),
@@ -712,8 +716,8 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
       await Clipboard.setData(ClipboardData(text: report));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Debug report copied to clipboard'),
+          SnackBar(
+            content: Text(context.tr('Debug report copied to clipboard')),
             backgroundColor: Colors.green,
           ),
         );
@@ -722,7 +726,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error exporting report: $e'),
+            content: Text(context.tr('Error exporting report: {error}', params: {'error': '$e'})),
             backgroundColor: Colors.red,
           ),
         );
@@ -736,7 +740,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result ? 'Token refresh successful' : 'Token refresh failed'),
+            content: Text(result ? context.tr('Token refresh successful') : context.tr('Token refresh failed')),
             backgroundColor: result ? Colors.green : Colors.red,
           ),
         );
@@ -745,7 +749,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text(context.tr('Error: {error}', params: {'error': '$e'})),
             backgroundColor: Colors.red,
           ),
         );
@@ -757,8 +761,8 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
     // Implement token validation logic
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Token validation completed'),
+        SnackBar(
+          content: Text(context.tr('Token validation completed')),
           backgroundColor: Colors.blue,
         ),
       );
@@ -769,16 +773,16 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear All Tokens'),
-        content: const Text('This will clear all authentication tokens. You will need to log in again.'),
+        title: Text(context.tr('Clear All Tokens')),
+        content: Text(context.tr('This will clear all authentication tokens. You will need to log in again.')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('Cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Clear'),
+            child: Text(context.tr('Clear')),
           ),
         ],
       ),
@@ -789,8 +793,8 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
         await _debugManager.clearAllTokens();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('All tokens cleared'),
+            SnackBar(
+              content: Text(context.tr('All tokens cleared')),
               backgroundColor: Colors.green,
             ),
           );
@@ -799,7 +803,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> with TickerProviderSt
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error clearing tokens: $e'),
+              content: Text(context.tr('Error clearing tokens: {error}', params: {'error': '$e'})),
               backgroundColor: Colors.red,
             ),
           );

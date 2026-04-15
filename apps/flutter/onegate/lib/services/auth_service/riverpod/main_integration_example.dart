@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart' as provider;
@@ -166,7 +167,7 @@ class OneGateLoginScreen extends ConsumerWidget {
                 
                 // Welcome text
                 Text(
-                  'Welcome to OneGate',
+                  context.tr('Welcome to OneGate'),
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.blue.shade800,
@@ -174,7 +175,7 @@ class OneGateLoginScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Secure Visitor Management System',
+                  context.tr('Secure Visitor Management System'),
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Colors.grey.shade600,
                   ),
@@ -193,7 +194,9 @@ class OneGateLoginScreen extends ConsumerWidget {
                       if (!success && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: const Text('Login failed. Please try again.'),
+                            content: Text(
+                              context.tr('Login failed. Please try again.'),
+                            ),
                             backgroundColor: Colors.red.shade600,
                             behavior: SnackBarBehavior.floating,
                           ),
@@ -207,8 +210,8 @@ class OneGateLoginScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Login with Keycloak SSO',
+                    child: Text(
+                      context.tr('Login with Keycloak SSO'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -220,7 +223,7 @@ class OneGateLoginScreen extends ConsumerWidget {
                 
                 // Additional info
                 Text(
-                  'Secure authentication powered by Keycloak',
+                  context.tr('Secure authentication powered by Keycloak'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey.shade500,
                   ),
@@ -242,14 +245,14 @@ class OneGateLoadingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.blue.shade50,
-      body: const Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             DashboardLoaderIcon(),
             SizedBox(height: 16),
             Text(
-              'Authenticating...',
+              context.tr('Authenticating...'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -286,7 +289,7 @@ class OneGateErrorScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Authentication Error',
+                  context.tr('Authentication Error'),
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.red.shade800,
@@ -316,7 +319,7 @@ class OneGateErrorScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Retry Login'),
+                    child: Text(context.tr('Retry Login')),
                   ),
                 ),
               ],
@@ -338,7 +341,7 @@ class OneGateMainScreen extends ConsumerWidget {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('OneGate Dashboard'),
+        title: Text(context.tr('OneGate Dashboard')),
         backgroundColor: Colors.blue.shade600,
         foregroundColor: Colors.white,
         actions: [
@@ -351,8 +354,8 @@ class OneGateMainScreen extends ConsumerWidget {
               
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Token refreshed'),
+                  SnackBar(
+                    content: Text(context.tr('Token refreshed')),
                     backgroundColor: Colors.green,
                   ),
                 );
@@ -384,12 +387,27 @@ class OneGateMainScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Welcome, ${userInfo['name'] ?? 'User'}!',
+                        context.tr(
+                          'Welcome, {name}!',
+                          params: {'name': '${userInfo['name'] ?? 'User'}'},
+                        ),
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 8),
-                      Text('Email: ${userInfo['email'] ?? 'N/A'}'),
-                      Text('Username: ${userInfo['preferred_username'] ?? 'N/A'}'),
+                      Text(
+                        context.tr(
+                          'Email: {value}',
+                          params: {'value': '${userInfo['email'] ?? 'N/A'}'},
+                        ),
+                      ),
+                      Text(
+                        context.tr(
+                          'Username: {value}',
+                          params: {
+                            'value': '${userInfo['preferred_username'] ?? 'N/A'}',
+                          },
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         'Token expires: ${tokens.timeUntilExpiration?.inMinutes ?? 0} minutes',
@@ -408,18 +426,18 @@ class OneGateMainScreen extends ConsumerWidget {
             const SizedBox(height: 20),
             
             // Your existing OneGate content goes here
-            const Text(
-              'OneGate Dashboard Content',
+            Text(
+              context.tr('OneGate Dashboard Content'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Replace this with your actual OneGate dashboard widgets. '
-              'All API calls will automatically include authentication headers '
-              'and handle token refresh transparently.',
+            Text(
+              context.tr(
+                'Replace this with your actual OneGate dashboard widgets. All API calls will automatically include authentication headers and handle token refresh transparently.',
+              ),
             ),
             
             // Example of using the authenticated API service
@@ -433,7 +451,12 @@ class OneGateMainScreen extends ConsumerWidget {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('API call successful: ${profile.toString()}'),
+                        content: Text(
+                          context.tr(
+                            'API call successful: {value}',
+                            params: {'value': profile.toString()},
+                          ),
+                        ),
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -442,14 +465,19 @@ class OneGateMainScreen extends ConsumerWidget {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('API call failed: $e'),
+                        content: Text(
+                          context.tr(
+                            'API call failed: {error}',
+                            params: {'error': '$e'},
+                          ),
+                        ),
                         backgroundColor: Colors.red,
                       ),
                     );
                   }
                 }
               },
-              child: const Text('Test Authenticated API Call'),
+              child: Text(context.tr('Test Authenticated API Call')),
             ),
           ],
         ),

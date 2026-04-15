@@ -3,6 +3,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/data/datasources/enhanced_keycloak_config.dart';
 import 'package:flutter_onegate/services/auth_service/enhanced_auth_service.dart';
 import 'package:flutter_onegate/utils/auth_debug_tool.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:get_it/get_it.dart';
@@ -48,7 +49,7 @@ class _AuthDebugWidgetState extends State<AuthDebugWidget> {
       });
     } catch (e) {
       setState(() {
-        _logs += 'Error running diagnostics: $e\n';
+        _logs += '${context.tr('Error running diagnostics: {error}', params: {'error': '$e'})}\n';
       });
     } finally {
       setState(() {
@@ -69,18 +70,24 @@ class _AuthDebugWidgetState extends State<AuthDebugWidget> {
       final result = await _authService.login();
       
       setState(() {
-        _authTestResult = result != null ? 'SUCCESS' : 'FAILED';
-        _logs += 'Authentication test completed: $_authTestResult\n';
+        _authTestResult =
+            result != null ? context.tr('SUCCESS') : context.tr('FAILED');
+        _logs +=
+            '${context.tr('Authentication test completed: {result}', params: {'result': '$_authTestResult'})}\n';
         if (result != null) {
-          _logs += 'User ID: ${result['sub']}\n';
-          _logs += 'Username: ${result['preferred_username']}\n';
-          _logs += 'Email: ${result['email']}\n';
+          _logs +=
+              '${context.tr('User ID: {value}', params: {'value': '${result['sub']}'})}\n';
+          _logs +=
+              '${context.tr('Username: {value}', params: {'value': '${result['preferred_username']}'})}\n';
+          _logs +=
+              '${context.tr('Email: {value}', params: {'value': '${result['email']}'})}\n';
         }
       });
     } catch (e) {
       setState(() {
-        _authTestResult = 'ERROR';
-        _logs += 'Authentication test failed: $e\n';
+        _authTestResult = context.tr('ERROR');
+        _logs +=
+            '${context.tr('Authentication test failed: {error}', params: {'error': '$e'})}\n';
       });
     } finally {
       setState(() {
@@ -95,27 +102,31 @@ class _AuthDebugWidgetState extends State<AuthDebugWidget> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Configuration Details'),
+        title: Text(context.tr('Configuration Details')),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildConfigItem('Client ID', EnhancedKeycloakConfig.clientId),
-              _buildConfigItem('Frontend URL', EnhancedKeycloakConfig.frontendUrl),
-              _buildConfigItem('Realm', EnhancedKeycloakConfig.realm),
-              _buildConfigItem('Bundle ID', EnhancedKeycloakConfig.bundleIdentifier),
-              _buildConfigItem('Redirect URI', EnhancedKeycloakConfig.redirectUrl),
-              _buildConfigItem('Client Type', 
-                  EnhancedKeycloakConfig.isConfidentialClient ? 'CONFIDENTIAL' : 'PUBLIC'),
-              _buildConfigItem('Scopes', EnhancedKeycloakConfig.scopes.join(', ')),
+              _buildConfigItem(context.tr('Client ID'), EnhancedKeycloakConfig.clientId),
+              _buildConfigItem(context.tr('Frontend URL'), EnhancedKeycloakConfig.frontendUrl),
+              _buildConfigItem(context.tr('Realm'), EnhancedKeycloakConfig.realm),
+              _buildConfigItem(context.tr('Bundle ID'), EnhancedKeycloakConfig.bundleIdentifier),
+              _buildConfigItem(context.tr('Redirect URI'), EnhancedKeycloakConfig.redirectUrl),
+              _buildConfigItem(
+                context.tr('Client Type'),
+                EnhancedKeycloakConfig.isConfidentialClient
+                    ? context.tr('CONFIDENTIAL')
+                    : context.tr('PUBLIC'),
+              ),
+              _buildConfigItem(context.tr('Scopes'), EnhancedKeycloakConfig.scopes.join(', ')),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: Text(context.tr('Close')),
           ),
         ],
       ),
@@ -182,7 +193,7 @@ class _AuthDebugWidgetState extends State<AuthDebugWidget> {
                 Icon(statusIcon, color: statusColor),
                 const SizedBox(width: 8),
                 Text(
-                  'Status: $overallStatus',
+                  context.tr('Status: {status}', params: {'status': overallStatus}),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: statusColor,
@@ -192,24 +203,30 @@ class _AuthDebugWidgetState extends State<AuthDebugWidget> {
             ),
             const SizedBox(height: 16),
             if (issues.isNotEmpty) ...[
-              const Text(
-                'Issues:',
+              Text(
+                context.tr('Issues:'),
                 style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
               ),
               ...issues.map((issue) => Padding(
                     padding: const EdgeInsets.only(left: 16, top: 4),
-                    child: Text('• $issue', style: const TextStyle(color: Colors.red)),
+                    child: Text(
+                      context.tr('• {item}', params: {'item': issue}),
+                      style: const TextStyle(color: Colors.red),
+                    ),
                   )),
               const SizedBox(height: 8),
             ],
             if (warnings.isNotEmpty) ...[
-              const Text(
-                'Warnings:',
+              Text(
+                context.tr('Warnings:'),
                 style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
               ),
               ...warnings.map((warning) => Padding(
                     padding: const EdgeInsets.only(left: 16, top: 4),
-                    child: Text('• $warning', style: const TextStyle(color: Colors.orange)),
+                    child: Text(
+                      context.tr('• {item}', params: {'item': warning}),
+                      style: const TextStyle(color: Colors.orange),
+                    ),
                   )),
             ],
           ],
@@ -222,7 +239,7 @@ class _AuthDebugWidgetState extends State<AuthDebugWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Authentication Debug Tool'),
+        title: Text(context.tr('Authentication Debug Tool')),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
@@ -238,15 +255,15 @@ class _AuthDebugWidgetState extends State<AuthDebugWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Configuration',
+                    Text(
+                      context.tr('Configuration'),
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: _showConfigurationDetails,
                       icon: const Icon(Icons.settings),
-                      label: const Text('View Configuration'),
+                      label: Text(context.tr('View Configuration')),
                     ),
                   ],
                 ),
@@ -262,8 +279,8 @@ class _AuthDebugWidgetState extends State<AuthDebugWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Diagnostics',
+                    Text(
+                      context.tr('Diagnostics'),
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
@@ -276,7 +293,11 @@ class _AuthDebugWidgetState extends State<AuthDebugWidget> {
                               child: DashboardLoaderIcon(strokeWidth: 2),
                             )
                           : const Icon(Icons.bug_report),
-                      label: Text(_isRunningDiagnostics ? 'Running...' : 'Run Diagnostics'),
+                      label: Text(
+                        _isRunningDiagnostics
+                            ? context.tr('Running...')
+                            : context.tr('Run Diagnostics'),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     _buildDiagnosticsResults(),
@@ -294,8 +315,8 @@ class _AuthDebugWidgetState extends State<AuthDebugWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Authentication Test',
+                    Text(
+                      context.tr('Authentication Test'),
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
@@ -308,18 +329,22 @@ class _AuthDebugWidgetState extends State<AuthDebugWidget> {
                               child: DashboardLoaderIcon(strokeWidth: 2),
                             )
                           : const Icon(Icons.login),
-                      label: Text(_isTestingAuth ? 'Testing...' : 'Test Authentication'),
+                      label: Text(
+                        _isTestingAuth
+                            ? context.tr('Testing...')
+                            : context.tr('Test Authentication'),
+                      ),
                     ),
                     if (_authTestResult != null) ...[
                       const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: _authTestResult == 'SUCCESS' 
+                          color: _authTestResult == context.tr('SUCCESS')
                               ? Colors.green.withOpacity(0.1)
                               : Colors.red.withOpacity(0.1),
                           border: Border.all(
-                            color: _authTestResult == 'SUCCESS' 
+                            color: _authTestResult == context.tr('SUCCESS')
                                 ? Colors.green 
                                 : Colors.red,
                           ),
@@ -328,19 +353,22 @@ class _AuthDebugWidgetState extends State<AuthDebugWidget> {
                         child: Row(
                           children: [
                             Icon(
-                              _authTestResult == 'SUCCESS' 
+                              _authTestResult == context.tr('SUCCESS')
                                   ? Icons.check_circle 
                                   : Icons.error,
-                              color: _authTestResult == 'SUCCESS' 
+                              color: _authTestResult == context.tr('SUCCESS')
                                   ? Colors.green 
                                   : Colors.red,
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Authentication: $_authTestResult',
+                              context.tr(
+                                'Authentication: {result}',
+                                params: {'result': '$_authTestResult'},
+                              ),
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: _authTestResult == 'SUCCESS' 
+                                color: _authTestResult == context.tr('SUCCESS')
                                     ? Colors.green 
                                     : Colors.red,
                               ),
@@ -364,8 +392,8 @@ class _AuthDebugWidgetState extends State<AuthDebugWidget> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Logs',
+                      Text(
+                        context.tr('Logs'),
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 16),

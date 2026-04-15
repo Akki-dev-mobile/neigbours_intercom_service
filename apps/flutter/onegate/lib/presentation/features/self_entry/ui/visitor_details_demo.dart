@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'visitor_details_screen.dart';
 
 class VisitorDetailsDemo extends StatelessWidget {
@@ -11,7 +12,7 @@ class VisitorDetailsDemo extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('Visitor Details Demo'),
+        title: Text(context.tr('Visitor Details Demo')),
         backgroundColor: const Color(0xffF44336),
         foregroundColor: Colors.white,
       ),
@@ -19,8 +20,8 @@ class VisitorDetailsDemo extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Tap to view Visitor Details Screen',
+            Text(
+              context.tr('Tap to view Visitor Details Screen'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -56,8 +57,8 @@ class VisitorDetailsDemo extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'View Visitor Details',
+              child: Text(
+                context.tr('View Visitor Details'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -94,8 +95,8 @@ class VisitorDetailsDemo extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'View Approved Visitor',
+              child: Text(
+                context.tr('View Approved Visitor'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,

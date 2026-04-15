@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'dart:developer';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/services/auth_service/enhanced_token_refresh_manager.dart';
 import 'package:flutter_onegate/services/auth_service/token_notification_service.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
@@ -69,8 +70,8 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
                 children: [
                   const Icon(Icons.security, color: Colors.blue),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Debug Token Manager',
+                  Text(
+                    context.tr('Debug Token Manager'),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -87,7 +88,7 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
               const SizedBox(height: 16),
 
               // Token Information Section
-              _buildSectionTitle('Token Information'),
+              _buildSectionTitle(context.tr('Token Information')),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -95,7 +96,7 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
                     child: ElevatedButton.icon(
                       onPressed: _showCurrentTokenInfo,
                       icon: const Icon(Icons.info_outline),
-                      label: const Text('Show Token Info'),
+                      label: Text(context.tr('Show Token Info')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
@@ -107,7 +108,7 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
                     child: ElevatedButton.icon(
                       onPressed: _checkTokenValidity,
                       icon: const Icon(Icons.verified_user),
-                      label: const Text('Check Validity'),
+                      label: Text(context.tr('Check Validity')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
@@ -120,7 +121,7 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
               const SizedBox(height: 16),
 
               // Token Refresh Section
-              _buildSectionTitle('Token Refresh'),
+              _buildSectionTitle(context.tr('Token Refresh')),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -128,7 +129,7 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
                     child: ElevatedButton.icon(
                       onPressed: _manualTokenRefresh,
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Manual Refresh'),
+                      label: Text(context.tr('Manual Refresh')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
                         foregroundColor: Colors.white,
@@ -140,7 +141,7 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
                     child: ElevatedButton.icon(
                       onPressed: _testTokenExpiration,
                       icon: const Icon(Icons.warning),
-                      label: const Text('Test Expiration'),
+                      label: Text(context.tr('Test Expiration')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.amber,
                         foregroundColor: Colors.white,
@@ -153,7 +154,7 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
               const SizedBox(height: 16),
 
               // Notification Testing Section
-              _buildSectionTitle('Notification Testing'),
+              _buildSectionTitle(context.tr('Notification Testing')),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -161,7 +162,7 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
                     child: ElevatedButton.icon(
                       onPressed: _testRefreshNotification,
                       icon: const Icon(Icons.notifications),
-                      label: const Text('Test Refresh'),
+                      label: Text(context.tr('Test Refresh')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.purple,
                         foregroundColor: Colors.white,
@@ -173,7 +174,7 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
                     child: ElevatedButton.icon(
                       onPressed: _testErrorNotification,
                       icon: const Icon(Icons.error),
-                      label: const Text('Test Error'),
+                      label: Text(context.tr('Test Error')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
@@ -186,14 +187,14 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
               const SizedBox(height: 16),
 
               // Clear Section
-              _buildSectionTitle('Token Management'),
+              _buildSectionTitle(context.tr('Token Management')),
               const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: _clearAllTokens,
                   icon: const Icon(Icons.clear_all),
-                  label: const Text('Clear All Tokens'),
+                  label: Text(context.tr('Clear All Tokens')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red.shade700,
                     foregroundColor: Colors.white,
@@ -211,7 +212,7 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    'Last Error: $_lastError',
+                    context.tr('Last Error: {error}', params: {'error': '$_lastError'}),
                     style: TextStyle(color: Colors.red.shade700, fontSize: 12),
                   ),
                 ),
@@ -235,20 +236,20 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
             children: [
               const Icon(Icons.error, color: Colors.red, size: 48),
               const SizedBox(height: 16),
-              const Text(
-                'Debug Token Widget Error',
+              Text(
+                context.tr('Debug Token Widget Error'),
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
-                _lastError ?? 'Failed to initialize token services',
+                _lastError ?? context.tr('Failed to initialize token services'),
                 style: const TextStyle(color: Colors.red),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Close'),
+                child: Text(context.tr('Close')),
               ),
             ],
           ),
@@ -275,7 +276,8 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
     } catch (e) {
       _setError(e.toString());
       _notificationService.showAuthenticationError(
-          errorMessage: "Error showing token info: $e");
+          errorMessage:
+              context.tr('Error showing token info: {error}', params: {'error': '$e'}));
     }
   }
 
@@ -284,15 +286,16 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
       final token = await _tokenManager.getValidAccessToken();
       if (token != null) {
         _notificationService.showTokenInfo(token,
-            tokenType: "Valid Access Token");
+            tokenType: context.tr('Valid Access Token'));
       } else {
         _notificationService.showAuthenticationError(
-            errorMessage: "No valid access token available");
+            errorMessage: context.tr('No valid access token available'));
       }
     } catch (e) {
       _setError(e.toString());
       _notificationService.showAuthenticationError(
-          errorMessage: "Error checking token validity: $e");
+          errorMessage:
+              context.tr('Error checking token validity: {error}', params: {'error': '$e'}));
     }
   }
 
@@ -301,12 +304,13 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
       final success = await _tokenManager.refreshTokenIfNeeded();
       if (!success) {
         _notificationService.showTokenRefreshFailure(
-            errorMessage: "Manual refresh failed");
+            errorMessage: context.tr('Manual refresh failed'));
       }
     } catch (e) {
       _setError(e.toString());
       _notificationService.showTokenRefreshFailure(
-          errorMessage: "Manual refresh error: $e");
+          errorMessage:
+              context.tr('Manual refresh error: {error}', params: {'error': '$e'}));
     }
   }
 
@@ -316,7 +320,7 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
 
   void _testRefreshNotification() {
     _notificationService.showTokenRefreshProgress(
-        message: "🧪 Testing refresh notification...");
+        message: context.tr('Testing refresh notification...'));
 
     // Simulate refresh completion after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
@@ -326,18 +330,19 @@ class _DebugTokenWidgetState extends State<DebugTokenWidget> {
 
   void _testErrorNotification() {
     _notificationService.showAuthenticationError(
-        errorMessage: "🧪 This is a test authentication error");
+        errorMessage: context.tr('This is a test authentication error'));
   }
 
   Future<void> _clearAllTokens() async {
     try {
       await _tokenManager.clearTokens();
       _notificationService.showAuthenticationError(
-          errorMessage: "All tokens cleared. Please login again.");
+          errorMessage: context.tr('All tokens cleared. Please login again.'));
     } catch (e) {
       _setError(e.toString());
       _notificationService.showAuthenticationError(
-          errorMessage: "Error clearing tokens: $e");
+          errorMessage:
+              context.tr('Error clearing tokens: {error}', params: {'error': '$e'}));
     }
   }
 

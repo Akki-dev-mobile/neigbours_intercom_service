@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/utils/network_log/test_network_log.dart';
 import 'package:flutter_onegate/utils/network_log/ui/network_log_screen.dart';
 import 'package:flutter_onegate/utils/network_log/ui/network_log_sync_settings.dart';
@@ -24,13 +25,13 @@ class _NetworkLogTestPageState extends State<NetworkLogTestPage> {
 
   Future<void> _initializeTester() async {
     setState(() {
-      _status = 'Initializing...';
+      _status = context.tr('Initializing...');
     });
 
     await _tester.initialize();
 
     setState(() {
-      _status = 'Ready';
+      _status = context.tr('Ready');
     });
   }
 
@@ -39,17 +40,17 @@ class _NetworkLogTestPageState extends State<NetworkLogTestPage> {
 
     setState(() {
       _isRunningTests = true;
-      _status = 'Running tests...';
+      _status = context.tr('Running tests...');
     });
 
     try {
       await _tester.runAllTests();
       setState(() {
-        _status = 'Tests completed';
+        _status = context.tr('Tests completed');
       });
     } catch (e) {
       setState(() {
-        _status = 'Error: $e';
+        _status = context.tr('Error: {error}', params: {'error': '$e'});
       });
     } finally {
       setState(() {
@@ -62,7 +63,7 @@ class _NetworkLogTestPageState extends State<NetworkLogTestPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Network Log Test'),
+        title: Text(context.tr('Network Log Test')),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -70,15 +71,15 @@ class _NetworkLogTestPageState extends State<NetworkLogTestPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Status: $_status',
+              context.tr('Status: {status}', params: {'status': _status}),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Test Actions',
+            Text(
+              context.tr('Test Actions'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -86,29 +87,29 @@ class _NetworkLogTestPageState extends State<NetworkLogTestPage> {
             ),
             const SizedBox(height: 16),
             _buildTestButton(
-              'Make GET Request',
+              context.tr('Make GET Request'),
               _tester.makeTestGetRequest,
             ),
             _buildTestButton(
-              'Make POST Request',
+              context.tr('Make POST Request'),
               _tester.makeTestPostRequest,
             ),
             _buildTestButton(
-              'Make Failed Request',
+              context.tr('Make Failed Request'),
               _tester.makeTestFailedRequest,
             ),
             _buildTestButton(
-              'Trigger Manual Sync',
+              context.tr('Trigger Manual Sync'),
               _tester.triggerManualSync,
             ),
             _buildTestButton(
-              'Run All Tests',
+              context.tr('Run All Tests'),
               _runAllTests,
               isLoading: _isRunningTests,
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Navigation',
+            Text(
+              context.tr('Navigation'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -116,7 +117,7 @@ class _NetworkLogTestPageState extends State<NetworkLogTestPage> {
             ),
             const SizedBox(height: 16),
             _buildNavigationButton(
-              'View Network Logs',
+              context.tr('View Network Logs'),
               () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -125,7 +126,7 @@ class _NetworkLogTestPageState extends State<NetworkLogTestPage> {
               ),
             ),
             _buildNavigationButton(
-              'Sync Settings',
+              context.tr('Sync Settings'),
               () => Navigator.push(
                 context,
                 MaterialPageRoute(

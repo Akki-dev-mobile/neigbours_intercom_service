@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/services/api_service/onegate_api_service.dart';
 import 'package:flutter_onegate/services/session_manager/user_session_manager.dart';
@@ -67,7 +68,6 @@ class _AuthenticatedWidgetExampleState extends State<AuthenticatedWidgetExample>
     try {
       // Get current user session
       final session = await _sessionManager.getCurrentUserSession();
-      final roles = await _sessionManager.getUserPermissions();
       final permissions = await _sessionManager.getUserPermissions();
 
       setState(() {
@@ -99,7 +99,7 @@ class _AuthenticatedWidgetExampleState extends State<AuthenticatedWidgetExample>
       });
     } catch (e) {
       setState(() {
-        _error = 'Failed to load visitor logs: $e';
+        _error = context.tr('Failed to load visitor logs: {error}', params: {'error': '$e'});
       });
     }
   }
@@ -114,11 +114,11 @@ class _AuthenticatedWidgetExampleState extends State<AuthenticatedWidgetExample>
       final success = await _authService.refreshToken();
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Token refreshed successfully')),
+          SnackBar(content: Text(context.tr('Token refreshed successfully'))),
         );
         await _loadUserSession();
       } else {
-        throw Exception('Token refresh failed');
+        throw Exception(context.tr('Token refresh failed'));
       }
     } catch (e) {
       setState(() {
@@ -135,11 +135,11 @@ class _AuthenticatedWidgetExampleState extends State<AuthenticatedWidgetExample>
     try {
       await _sessionManager.logout();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Logged out successfully')),
+        SnackBar(content: Text(context.tr('Logged out successfully'))),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Logout failed: $e')),
+        SnackBar(content: Text(context.tr('Logout failed: {error}', params: {'error': '$e'}))),
       );
     }
   }
@@ -148,7 +148,7 @@ class _AuthenticatedWidgetExampleState extends State<AuthenticatedWidgetExample>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Authentication Example'),
+        title: Text(context.tr('Authentication Example')),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -167,10 +167,10 @@ class _AuthenticatedWidgetExampleState extends State<AuthenticatedWidgetExample>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('Error: $_error'),
+                      Text(context.tr('Error: {error}', params: {'error': '$_error'})),
                       ElevatedButton(
                         onPressed: _loadUserSession,
-                        child: const Text('Retry'),
+                        child: Text(context.tr('Retry')),
                       ),
                     ],
                   ),
@@ -201,20 +201,20 @@ class _AuthenticatedWidgetExampleState extends State<AuthenticatedWidgetExample>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'User Session',
+            Text(
+              context.tr('User Session'),
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             if (_userSession != null) ...[
-              Text('User ID: ${_userSession!['userId'] ?? 'N/A'}'),
-              Text('Username: ${_userSession!['username'] ?? 'N/A'}'),
-              Text('Email: ${_userSession!['email'] ?? 'N/A'}'),
-              Text('Full Name: ${_userSession!['fullName'] ?? 'N/A'}'),
-              Text('Authenticated: ${_userSession!['isAuthenticated'] ?? false}'),
-              Text('Session Time: ${_userSession!['sessionTimestamp'] ?? 'N/A'}'),
+              Text(context.tr('User ID: {value}', params: {'value': '${_userSession!['userId'] ?? 'N/A'}'})),
+              Text(context.tr('Username: {value}', params: {'value': '${_userSession!['username'] ?? 'N/A'}'})),
+              Text(context.tr('Email: {value}', params: {'value': '${_userSession!['email'] ?? 'N/A'}'})),
+              Text(context.tr('Full Name: {value}', params: {'value': '${_userSession!['fullName'] ?? 'N/A'}'})),
+              Text(context.tr('Authenticated: {value}', params: {'value': '${_userSession!['isAuthenticated'] ?? false}'})),
+              Text(context.tr('Session Time: {value}', params: {'value': '${_userSession!['sessionTimestamp'] ?? 'N/A'}'})),
             ] else
-              const Text('No active session'),
+              Text(context.tr('No active session')),
           ],
         ),
       ),
@@ -228,8 +228,8 @@ class _AuthenticatedWidgetExampleState extends State<AuthenticatedWidgetExample>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'User Roles',
+            Text(
+              context.tr('User Roles'),
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -244,7 +244,7 @@ class _AuthenticatedWidgetExampleState extends State<AuthenticatedWidgetExample>
                     .toList(),
               )
             else
-              const Text('No roles assigned'),
+              Text(context.tr('No roles assigned')),
           ],
         ),
       ),
@@ -258,8 +258,8 @@ class _AuthenticatedWidgetExampleState extends State<AuthenticatedWidgetExample>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'User Permissions',
+            Text(
+              context.tr('User Permissions'),
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -274,7 +274,7 @@ class _AuthenticatedWidgetExampleState extends State<AuthenticatedWidgetExample>
                     .toList(),
               )
             else
-              const Text('No permissions granted'),
+              Text(context.tr('No permissions granted')),
           ],
         ),
       ),
@@ -291,8 +291,8 @@ class _AuthenticatedWidgetExampleState extends State<AuthenticatedWidgetExample>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Recent Visitor Logs',
+                Text(
+                  context.tr('Recent Visitor Logs'),
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 IconButton(
@@ -310,14 +310,14 @@ class _AuthenticatedWidgetExampleState extends State<AuthenticatedWidgetExample>
                 itemBuilder: (context, index) {
                   final log = _visitorLogs[index];
                   return ListTile(
-                    title: Text(log['visitor_name'] ?? 'Unknown'),
-                    subtitle: Text(log['status'] ?? 'Unknown'),
+                    title: Text(log['visitor_name'] ?? context.tr('Unknown')),
+                    subtitle: Text(log['status'] ?? context.tr('Unknown')),
                     trailing: Text(log['created_at'] ?? ''),
                   );
                 },
               )
             else
-              const Text('No visitor logs available'),
+              Text(context.tr('No visitor logs available')),
           ],
         ),
       ),
