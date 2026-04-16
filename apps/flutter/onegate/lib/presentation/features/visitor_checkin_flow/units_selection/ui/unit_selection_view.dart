@@ -31,6 +31,7 @@ import '../../../self_entry/self_home_view.dart';
 import 'package:flutter_onegate/utils/route_tracker.dart';
 import '../widgets/selectmember_bottomsheet.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class UnitSelectionView extends StatefulWidget {
   final int? from;
@@ -1476,7 +1477,9 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               ),
               SizedBox(height: isTablet ? 12 : 8),
               Text(
-                "Check-in directly with society office for administrative purposes",
+                context.tr(
+                  'Check-in directly with society office for administrative purposes',
+                ),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: isTablet ? 14 : 12,
@@ -1890,11 +1893,12 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
         log("✅ API Response Received: ${response.data}");
         await _handleFcmResponse(response.data, visitorLogData);
       } else {
-        _showErrorSnackbar("Failed to send notification. Try again.");
+        _showErrorSnackbar(
+            context.tr("Failed to send notification. Try again."));
       }
     } catch (e) {
       log("❌ Error in _handleSingleMemberFlow: $e");
-      _showErrorSnackbar("Error sending FCM notification.");
+      _showErrorSnackbar(context.tr("Error sending FCM notification."));
     }
   }
 
@@ -2084,7 +2088,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   color: const Color(0xff212427),
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Search by name, unit number, or building...',
+                  hintText:
+                      context.tr('Search by name, unit number, or building...'),
                   hintStyle: TextStyle(
                     fontSize: isTablet ? 16 : 14,
                     color: const Color(0xff57636C),
@@ -2307,16 +2312,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           valueListenable: _filteredMembersNotifier,
           builder: (context, filteredMembers, child) {
             if (_isLoading) {
-              return const DashboardLoader(
-                title: 'Loading Units',
-                subtitle: 'Please wait while we fetch available units...',
+              return DashboardLoader(
+                title: context.tr('Loading Units'),
+                subtitle:
+                    context.tr('Please wait while we fetch available units...'),
               );
             }
 
             if (_isSearching) {
-              return const DashboardLoader(
-                title: 'Loading Units',
-                subtitle: 'Please wait while we fetch available units...',
+              return DashboardLoader(
+                title: context.tr('Loading Units'),
+                subtitle:
+                    context.tr('Please wait while we fetch available units...'),
               );
             }
 
@@ -2863,7 +2870,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                     ],
                                   ),
                                   child: Text(
-                                    "Tap to view details",
+                                    AppLocalizations.of(context)
+                                        .tapToViewDetails,
                                     style: TextStyle(
                                       fontSize: isTablet ? 12 : 10,
                                       color: Colors.white,

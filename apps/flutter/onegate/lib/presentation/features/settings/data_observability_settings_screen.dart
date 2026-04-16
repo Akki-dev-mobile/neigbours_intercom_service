@@ -15,6 +15,7 @@ import 'package:flutter_onegate/presentation/features/settings/analytics_dashboa
 import 'package:flutter_onegate/presentation/features/settings/observatory_dashboard_screen.dart';
 import 'package:flutter_onegate/services/observatory/observatory_dashboard_service.dart';
 import 'package:flutter_onegate/presentation/widgets/debug_token_widget.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:ionicons/ionicons.dart';
 
 /// Settings screen for data observability and network monitoring
@@ -98,7 +99,11 @@ class _DataObservabilitySettingsScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                'Health check completed: ${result.overallStatus.displayName}'),
+              context.tr(
+                'Health check completed: {status}',
+                params: {'status': result.overallStatus.displayName},
+              ),
+            ),
             backgroundColor: _getStatusColor(result.overallStatus),
           ),
         );
@@ -107,7 +112,12 @@ class _DataObservabilitySettingsScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Health check failed: $e'),
+            content: Text(
+              context.tr(
+                'Health check failed: {error}',
+                params: {'error': '$e'},
+              ),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -124,8 +134,8 @@ class _DataObservabilitySettingsScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(success
-                ? 'Test notification sent successfully'
-                : 'Failed to send test notification'),
+                ? context.tr('Test notification sent successfully')
+                : context.tr('Failed to send test notification')),
             backgroundColor: success ? Colors.green : Colors.red,
           ),
         );
@@ -134,7 +144,12 @@ class _DataObservabilitySettingsScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error sending test notification: $e'),
+            content: Text(
+              context.tr(
+                'Error sending test notification: {error}',
+                params: {'error': '$e'},
+              ),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -160,7 +175,10 @@ class _DataObservabilitySettingsScreenState
             await MeilisearchConfigHelper.initializeWithDefaults();
         if (!initialized) {
           throw Exception(
-              'Failed to initialize Meilisearch with default configuration');
+            context.tr(
+              'Failed to initialize Meilisearch with default configuration',
+            ),
+          );
         }
       }
 
@@ -170,7 +188,8 @@ class _DataObservabilitySettingsScreenState
       setState(() {
         _meilisearchHealthy = success;
         if (!success) {
-          _lastSyncError = 'Index sync failed - check logs for details';
+          _lastSyncError =
+              context.tr('Index sync failed - check logs for details');
         }
       });
 
@@ -178,13 +197,13 @@ class _DataObservabilitySettingsScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(success
-                ? 'Index sync completed successfully'
-                : 'Index sync failed - check configuration'),
+                ? context.tr('Index sync completed successfully')
+                : context.tr('Index sync failed - check configuration')),
             backgroundColor: success ? Colors.green : Colors.red,
             duration: const Duration(seconds: 4),
             action: !success
                 ? SnackBarAction(
-                    label: 'Details',
+                    label: context.tr('Details'),
                     onPressed: () => _showSyncErrorDialog(),
                   )
                 : null,
@@ -198,11 +217,19 @@ class _DataObservabilitySettingsScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                'Error syncing index: ${e.toString().length > 50 ? '${e.toString().substring(0, 50)}...' : e.toString()}'),
+              context.tr(
+                'Error syncing index: {error}',
+                params: {
+                  'error': e.toString().length > 50
+                      ? '${e.toString().substring(0, 50)}...'
+                      : e.toString(),
+                },
+              ),
+            ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
             action: SnackBarAction(
-              label: 'Details',
+              label: context.tr('Details'),
               onPressed: () => _showSyncErrorDialog(),
             ),
           ),
@@ -232,58 +259,69 @@ class _DataObservabilitySettingsScreenState
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Meilisearch Sync Error'),
+        title: Text(context.tr('Meilisearch Sync Error')),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               if (_lastSyncError != null) ...[
-                const Text('Error:',
+                Text(context.tr('Error:'),
                     style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Text(_lastSyncError!),
                 const SizedBox(height: 16),
               ],
               if (_meilisearchStatus != null) ...[
-                const Text('Configuration Status:',
+                Text(context.tr('Configuration Status:'),
                     style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 ...(_meilisearchStatus!.entries.map((entry) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Text('${entry.key}: ${entry.value}'),
+                      child: Text(
+                        context.tr(
+                          '{key}: {value}',
+                          params: {
+                            'key': '${entry.key}',
+                            'value': '${entry.value}',
+                          },
+                        ),
+                      ),
                     ))),
                 const SizedBox(height: 16),
               ],
-              const Text('Troubleshooting:',
+              Text(context.tr('Troubleshooting:'),
                   style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              const Text(
-                  '1. Ensure Meilisearch server is running on localhost:7700'),
-              const Text('2. Check network connectivity'),
-              const Text('3. Verify API key configuration'),
-              const Text('4. Check app logs for detailed error messages'),
+              Text(
+                context.tr(
+                  '1. Ensure Meilisearch server is running on localhost:7700',
+                ),
+              ),
+              Text(context.tr('2. Check network connectivity')),
+              Text(context.tr('3. Verify API key configuration')),
+              Text(context.tr('4. Check app logs for detailed error messages')),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: Text(context.tr('Close')),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               _navigateToMeilisearchConfig();
             },
-            child: const Text('Configure'),
+            child: Text(context.tr('Configure')),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               _syncMeilisearchIndex(); // Retry
             },
-            child: const Text('Retry'),
+            child: Text(context.tr('Retry')),
           ),
         ],
       ),
@@ -317,7 +355,7 @@ class _DataObservabilitySettingsScreenState
     final isTablet = MediaQuery.of(context).size.width > 600;
 
     return MyScrollView(
-      pageTitle: 'Data Observability',
+      pageTitle: context.tr('Data Observability'),
       pageBody: _isLoading
           ? Center(
               child: Container(
@@ -348,7 +386,7 @@ class _DataObservabilitySettingsScreenState
 
                     const SizedBox(height: 20),
                     Text(
-                      'Loading Data',
+                      context.tr('Loading Data'),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: const Color(0xff212427),
                             fontSize: 18,
@@ -357,7 +395,8 @@ class _DataObservabilitySettingsScreenState
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Please wait while we fetch observability data',
+                      context
+                          .tr('Please wait while we fetch observability data'),
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.grey[600],
@@ -431,7 +470,7 @@ class _DataObservabilitySettingsScreenState
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
-              children: [
+                children: [
                   Container(
                     padding: EdgeInsets.all(isTablet ? 12 : 10),
                     decoration: BoxDecoration(
@@ -457,8 +496,8 @@ class _DataObservabilitySettingsScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                Text(
-                  'System Health',
+                        Text(
+                          'System Health',
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.w700,
@@ -473,10 +512,10 @@ class _DataObservabilitySettingsScreenState
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: const Color(0xff57636C),
                                     fontSize: isTablet ? 15 : 14,
-                      ),
-                ),
-              ],
-            ),
+                                  ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -498,8 +537,8 @@ class _DataObservabilitySettingsScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-              Row(
-                children: [
+                    Row(
+                      children: [
                         Container(
                           padding: EdgeInsets.all(isTablet ? 10 : 8),
                           decoration: BoxDecoration(
@@ -509,7 +548,7 @@ class _DataObservabilitySettingsScreenState
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
-                    _getStatusIcon(_lastHealthCheck!.overallStatus),
+                            _getStatusIcon(_lastHealthCheck!.overallStatus),
                             color: _getStatusColor(
                                 _lastHealthCheck!.overallStatus),
                             size: isTablet ? 24 : 20,
@@ -520,7 +559,7 @@ class _DataObservabilitySettingsScreenState
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                  Text(
+                              Text(
                                 'Overall Status',
                                 style: Theme.of(context)
                                     .textTheme
@@ -541,10 +580,10 @@ class _DataObservabilitySettingsScreenState
                                           _lastHealthCheck!.overallStatus),
                                       fontWeight: FontWeight.w700,
                                       fontSize: isTablet ? 18 : 16,
-                    ),
-                  ),
-                ],
-              ),
+                                    ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -566,8 +605,8 @@ class _DataObservabilitySettingsScreenState
                             color: const Color(0xff57636C),
                           ),
                           SizedBox(width: isTablet ? 10 : 8),
-              Text(
-                'Last Check: ${_lastHealthCheck!.timestamp?.toString().split('.')[0] ?? 'Unknown'}',
+                          Text(
+                            'Last Check: ${_lastHealthCheck!.timestamp?.toString().split('.')[0] ?? 'Unknown'}',
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: const Color(0xff57636C),
@@ -635,7 +674,7 @@ class _DataObservabilitySettingsScreenState
       ('Resident Data', _lastHealthCheck!.residentDataCheck),
       ('Visitor Data', _lastHealthCheck!.visitorDataCheck),
       ('API Health', _lastHealthCheck!.apiHealthCheck),
-      ('Meilisearch', _lastHealthCheck!.meilisearchHealthCheck),
+      (context.tr('Meilisearch'), _lastHealthCheck!.meilisearchHealthCheck),
     ];
 
     return Container(
@@ -660,7 +699,7 @@ class _DataObservabilitySettingsScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Detailed Health Checks',
+            context.tr('Detailed Health Checks'),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: const Color(0xff212427),
@@ -669,8 +708,8 @@ class _DataObservabilitySettingsScreenState
           ),
           SizedBox(height: isTablet ? 16 : 12),
           ...checks.map((check) {
-        final (name, result) = check;
-        if (result == null) return const SizedBox.shrink();
+            final (name, result) = check;
+            if (result == null) return const SizedBox.shrink();
 
             return Container(
               margin: EdgeInsets.only(bottom: isTablet ? 12 : 8),
@@ -683,8 +722,8 @@ class _DataObservabilitySettingsScreenState
                   width: 1,
                 ),
               ),
-          child: Row(
-            children: [
+              child: Row(
+                children: [
                   Container(
                     padding: EdgeInsets.all(isTablet ? 8 : 6),
                     decoration: BoxDecoration(
@@ -692,10 +731,10 @@ class _DataObservabilitySettingsScreenState
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                _getStatusIcon(result.status),
+                      _getStatusIcon(result.status),
                       size: isTablet ? 18 : 16,
-                color: _getStatusColor(result.status),
-              ),
+                      color: _getStatusColor(result.status),
+                    ),
                   ),
                   SizedBox(width: isTablet ? 14 : 12),
                   Expanded(
@@ -718,18 +757,18 @@ class _DataObservabilitySettingsScreenState
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                result.status.displayName,
-                style: TextStyle(
+                      result.status.displayName,
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: isTablet ? 13 : 12,
                         fontWeight: FontWeight.w600,
                       ),
-                ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        );
-      }).toList(),
+            );
+          }).toList(),
         ],
       ),
     );
@@ -777,7 +816,7 @@ class _DataObservabilitySettingsScreenState
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
-              children: [
+                children: [
                   Container(
                     padding: EdgeInsets.all(isTablet ? 12 : 10),
                     decoration: BoxDecoration(
@@ -793,7 +832,7 @@ class _DataObservabilitySettingsScreenState
                       ],
                     ),
                     child: Icon(
-                  Ionicons.telescope_outline,
+                      Ionicons.telescope_outline,
                       color: const Color(0xffF44336),
                       size: isTablet ? 28 : 24,
                     ),
@@ -803,8 +842,8 @@ class _DataObservabilitySettingsScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                Text(
-                  'Observatory Dashboard',
+                        Text(
+                          'Observatory Dashboard',
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.w700,
@@ -814,7 +853,7 @@ class _DataObservabilitySettingsScreenState
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Centralized monitoring & analytics',
+                          context.tr('Centralized monitoring & analytics'),
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: const Color(0xff57636C),
@@ -824,7 +863,7 @@ class _DataObservabilitySettingsScreenState
                       ],
                     ),
                   ),
-                Container(
+                  Container(
                     padding: EdgeInsets.all(isTablet ? 8 : 6),
                     decoration: BoxDecoration(
                       color: isActive
@@ -838,29 +877,31 @@ class _DataObservabilitySettingsScreenState
                         Container(
                           width: isTablet ? 10 : 8,
                           height: isTablet ? 10 : 8,
-                  decoration: BoxDecoration(
-                    color: isActive ? Colors.green : Colors.grey,
-                    shape: BoxShape.circle,
-                  ),
-                ),
+                          decoration: BoxDecoration(
+                            color: isActive ? Colors.green : Colors.grey,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                         SizedBox(width: isTablet ? 8 : 6),
                         Text(
-                          isActive ? 'Active' : 'Inactive',
+                          isActive ? context.tr('Active') : context.tr('Inactive'),
                           style: TextStyle(
                             color: isActive ? Colors.green : Colors.grey,
                             fontSize: isTablet ? 13 : 12,
                             fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
             SizedBox(height: isTablet ? 20 : 16),
             Text(
-              'Comprehensive monitoring with SigNoz, Grafana, PostHog, and advanced analytics tools for real-time insights.',
+              context.tr(
+                'Comprehensive monitoring with SigNoz, Grafana, PostHog, and advanced analytics tools for real-time insights.',
+              ),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: const Color(0xff57636C),
                     fontSize: isTablet ? 15 : 14,
@@ -892,16 +933,16 @@ class _DataObservabilitySettingsScreenState
                         ),
                       ],
                     ),
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const ObservatoryDashboardScreen(),
-                        ),
-                      );
-                    },
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const ObservatoryDashboardScreen(),
+                          ),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
@@ -915,7 +956,7 @@ class _DataObservabilitySettingsScreenState
                         color: Colors.white,
                       ),
                       label: Text(
-                        'Open Dashboard',
+                        context.tr('Open Dashboard'),
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -941,7 +982,7 @@ class _DataObservabilitySettingsScreenState
                     ),
                   ),
                   child: ElevatedButton.icon(
-                  onPressed: isActive ? null : _initializeObservatory,
+                    onPressed: isActive ? null : _initializeObservatory,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
@@ -951,13 +992,13 @@ class _DataObservabilitySettingsScreenState
                     ),
                     icon: Icon(
                       isActive
-                      ? Ionicons.checkmark_outline
+                          ? Ionicons.checkmark_outline
                           : Ionicons.play_outline,
                       size: isTablet ? 22 : 20,
                       color: isActive ? Colors.green : const Color(0xffF44336),
                     ),
                     label: Text(
-                      isActive ? 'Active' : 'Start',
+                      isActive ? context.tr('Active') : context.tr('Start'),
                       style: TextStyle(
                         color:
                             isActive ? Colors.green : const Color(0xffF44336),
@@ -982,14 +1023,19 @@ class _DataObservabilitySettingsScreenState
         setState(() {});
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Observatory Dashboard initialized successfully')),
+          SnackBar(
+              content: Text(
+            context.tr('Observatory Dashboard initialized successfully'),
+          )),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to initialize Observatory: $e')),
+          SnackBar(
+              content: Text(context.tr(
+                  'Failed to initialize Observatory: {error}',
+                  params: {'error': '$e'}))),
         );
       }
     }
@@ -1022,14 +1068,14 @@ class _DataObservabilitySettingsScreenState
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const NetworkLogScreen(),
-            ),
-          );
-        },
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NetworkLogScreen(),
+              ),
+            );
+          },
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: EdgeInsets.all(isTablet ? 20 : 16),
@@ -1060,7 +1106,7 @@ class _DataObservabilitySettingsScreenState
                 ),
                 SizedBox(height: isTablet ? 16 : 12),
                 Text(
-                  'Network Logs',
+                  context.tr('Network Logs'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: const Color(0xff212427),
@@ -1069,7 +1115,7 @@ class _DataObservabilitySettingsScreenState
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'API monitoring & requests',
+                  context.tr('API monitoring & requests'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: const Color(0xff57636C),
                         fontSize: isTablet ? 14 : 13,
@@ -1100,14 +1146,14 @@ class _DataObservabilitySettingsScreenState
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CrashReportsScreen(),
-            ),
-          );
-        },
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const CrashReportsScreen(),
+              ),
+            );
+          },
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: EdgeInsets.all(isTablet ? 20 : 16),
@@ -1138,7 +1184,7 @@ class _DataObservabilitySettingsScreenState
                 ),
                 SizedBox(height: isTablet ? 16 : 12),
                 Text(
-                  'Crash Reports',
+                  context.tr('Crash Reports'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: const Color(0xff212427),
@@ -1147,7 +1193,7 @@ class _DataObservabilitySettingsScreenState
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Error tracking & analysis',
+                  context.tr('Error tracking & analysis'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: const Color(0xff57636C),
                         fontSize: isTablet ? 14 : 13,
@@ -1200,7 +1246,7 @@ class _DataObservabilitySettingsScreenState
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
-              children: [
+                children: [
                   Container(
                     padding: EdgeInsets.all(isTablet ? 12 : 10),
                     decoration: BoxDecoration(
@@ -1226,8 +1272,8 @@ class _DataObservabilitySettingsScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                Text(
-                  'Meilisearch',
+                        Text(
+                          context.tr('Meilisearch'),
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.w700,
@@ -1237,15 +1283,15 @@ class _DataObservabilitySettingsScreenState
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Search engine & indexing',
+                          context.tr('Search engine & indexing'),
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: const Color(0xff57636C),
                                     fontSize: isTablet ? 15 : 14,
-                      ),
-                ),
-              ],
-            ),
+                                  ),
+                        ),
+                      ],
+                    ),
                   ),
                   Container(
                     padding: EdgeInsets.symmetric(
@@ -1260,19 +1306,21 @@ class _DataObservabilitySettingsScreenState
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _meilisearchHealthy
-                      ? Ionicons.checkmark_circle
-                      : Ionicons.close_circle,
+                      children: [
+                        Icon(
+                          _meilisearchHealthy
+                              ? Ionicons.checkmark_circle
+                              : Ionicons.close_circle,
                           color:
                               _meilisearchHealthy ? Colors.green : Colors.red,
                           size: isTablet ? 18 : 16,
-                ),
+                        ),
                         SizedBox(width: isTablet ? 8 : 6),
-                Text(
-                  _meilisearchHealthy ? 'Healthy' : 'Unhealthy',
-                  style: TextStyle(
+                        Text(
+                          _meilisearchHealthy
+                              ? context.tr('Healthy')
+                              : context.tr('Unhealthy'),
+                          style: TextStyle(
                             color:
                                 _meilisearchHealthy ? Colors.green : Colors.red,
                             fontSize: isTablet ? 13 : 12,
@@ -1300,7 +1348,7 @@ class _DataObservabilitySettingsScreenState
                       ),
                     ),
                     child: TextButton.icon(
-                  onPressed: () => _navigateToMeilisearchConfig(),
+                      onPressed: () => _navigateToMeilisearchConfig(),
                       style: TextButton.styleFrom(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1312,7 +1360,7 @@ class _DataObservabilitySettingsScreenState
                         color: const Color(0xffF44336),
                       ),
                       label: Text(
-                        'Configure',
+                        context.tr('Configure'),
                         style: TextStyle(
                           color: const Color(0xffF44336),
                           fontWeight: FontWeight.w600,
@@ -1346,7 +1394,7 @@ class _DataObservabilitySettingsScreenState
                       ],
                     ),
                     child: TextButton(
-                  onPressed: _syncMeilisearchIndex,
+                      onPressed: _syncMeilisearchIndex,
                       style: TextButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
@@ -1354,7 +1402,7 @@ class _DataObservabilitySettingsScreenState
                         ),
                       ),
                       child: Text(
-                        'Sync Index',
+                        context.tr('Sync Index'),
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -1411,7 +1459,7 @@ class _DataObservabilitySettingsScreenState
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
-              children: [
+                children: [
                   Container(
                     padding: EdgeInsets.all(isTablet ? 12 : 10),
                     decoration: BoxDecoration(
@@ -1437,8 +1485,8 @@ class _DataObservabilitySettingsScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                Text(
-                  'Custom Notifications',
+                        Text(
+                          context.tr('Custom Notifications'),
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.w700,
@@ -1448,15 +1496,15 @@ class _DataObservabilitySettingsScreenState
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Push notifications & alerts',
+                          context.tr('Push notifications & alerts'),
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: const Color(0xff57636C),
                                     fontSize: isTablet ? 15 : 14,
-                      ),
-                ),
-              ],
-            ),
+                                  ),
+                        ),
+                      ],
+                    ),
                   ),
                   Container(
                     padding: EdgeInsets.symmetric(
@@ -1471,19 +1519,21 @@ class _DataObservabilitySettingsScreenState
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _notificationsEnabled
-                      ? Ionicons.checkmark_circle
-                      : Ionicons.close_circle,
+                      children: [
+                        Icon(
+                          _notificationsEnabled
+                              ? Ionicons.checkmark_circle
+                              : Ionicons.close_circle,
                           color:
                               _notificationsEnabled ? Colors.green : Colors.red,
                           size: isTablet ? 18 : 16,
-                ),
+                        ),
                         SizedBox(width: isTablet ? 8 : 6),
-                Text(
-                  _notificationsEnabled ? 'Enabled' : 'Disabled',
-                  style: TextStyle(
+                        Text(
+                          _notificationsEnabled
+                              ? context.tr('Enabled')
+                              : context.tr('Disabled'),
+                          style: TextStyle(
                             color: _notificationsEnabled
                                 ? Colors.green
                                 : Colors.red,
@@ -1499,7 +1549,7 @@ class _DataObservabilitySettingsScreenState
             ),
             SizedBox(height: isTablet ? 20 : 16),
             Row(
-                  children: [
+              children: [
                 Expanded(
                   child: Container(
                     height: isTablet ? 48 : 44,
@@ -1519,7 +1569,7 @@ class _DataObservabilitySettingsScreenState
                         ),
                       ),
                       child: Text(
-                        'Test Notification',
+                        context.tr('Test Notification'),
                         style: TextStyle(
                           color: const Color(0xffF44336),
                           fontWeight: FontWeight.w600,
@@ -1569,7 +1619,7 @@ class _DataObservabilitySettingsScreenState
                         ),
                       ),
                       child: Text(
-                        'View All',
+                        context.tr('View All'),
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -1626,7 +1676,7 @@ class _DataObservabilitySettingsScreenState
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
-              children: [
+                children: [
                   Container(
                     padding: EdgeInsets.all(isTablet ? 12 : 10),
                     decoration: BoxDecoration(
@@ -1652,8 +1702,8 @@ class _DataObservabilitySettingsScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                Text(
-                  'Background Tasks',
+                        Text(
+                          context.tr('Background Tasks'),
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.w700,
@@ -1663,15 +1713,15 @@ class _DataObservabilitySettingsScreenState
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Automated background processes',
+                          context.tr('Automated background processes'),
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: const Color(0xff57636C),
                                     fontSize: isTablet ? 15 : 14,
-                      ),
-                ),
-              ],
-            ),
+                                  ),
+                        ),
+                      ],
+                    ),
                   ),
                   Container(
                     padding: EdgeInsets.symmetric(
@@ -1686,28 +1736,30 @@ class _DataObservabilitySettingsScreenState
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _backgroundTasksEnabled
-                      ? Ionicons.checkmark_circle
-                      : Ionicons.close_circle,
+                      children: [
+                        Icon(
+                          _backgroundTasksEnabled
+                              ? Ionicons.checkmark_circle
+                              : Ionicons.close_circle,
                           color: _backgroundTasksEnabled
                               ? Colors.green
                               : Colors.red,
                           size: isTablet ? 18 : 16,
                         ),
                         SizedBox(width: isTablet ? 8 : 6),
-                Text(
-                  _backgroundTasksEnabled ? 'Active' : 'Inactive',
-                  style: TextStyle(
+                        Text(
+                          _backgroundTasksEnabled
+                              ? context.tr('Active')
+                              : context.tr('Inactive'),
+                          style: TextStyle(
                             color: _backgroundTasksEnabled
                                 ? Colors.green
                                 : Colors.red,
                             fontSize: isTablet ? 13 : 12,
                             fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -1736,7 +1788,9 @@ class _DataObservabilitySettingsScreenState
                     SizedBox(width: isTablet ? 12 : 10),
                     Expanded(
                       child: Text(
-                        'Background tasks are only available in debug mode',
+                        context.tr(
+                          'Background tasks are only available in debug mode',
+                        ),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Colors.orange.shade700,
                               fontSize: isTablet ? 15 : 14,
@@ -1745,7 +1799,7 @@ class _DataObservabilitySettingsScreenState
                       ),
                     ),
                   ],
-                    ),
+                ),
               ),
             ],
           ],
@@ -1793,7 +1847,7 @@ class _DataObservabilitySettingsScreenState
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
-              children: [
+                children: [
                   Container(
                     padding: EdgeInsets.all(isTablet ? 12 : 10),
                     decoration: BoxDecoration(
@@ -1819,8 +1873,8 @@ class _DataObservabilitySettingsScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                Text(
-                  'Debug Token Manager',
+                        Text(
+                          context.tr('Debug Token Manager'),
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.w700,
@@ -1830,7 +1884,7 @@ class _DataObservabilitySettingsScreenState
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Authentication & token management',
+                          context.tr('Authentication & token management'),
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: const Color(0xff57636C),
@@ -1840,27 +1894,27 @@ class _DataObservabilitySettingsScreenState
                       ],
                     ),
                   ),
-                Container(
+                  Container(
                     padding: EdgeInsets.symmetric(
                       horizontal: isTablet ? 10 : 8,
                       vertical: isTablet ? 6 : 4,
                     ),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orange.shade300),
-                  ),
-                  child: Text(
-                    'DEBUG ONLY',
-                    style: TextStyle(
-                      color: Colors.orange.shade700,
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orange.shade300),
+                    ),
+                    child: Text(
+                      'DEBUG ONLY',
+                      style: TextStyle(
+                        color: Colors.orange.shade700,
                         fontSize: isTablet ? 11 : 10,
-                      fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
             ),
             SizedBox(height: isTablet ? 20 : 16),
             Container(
@@ -1870,7 +1924,9 @@ class _DataObservabilitySettingsScreenState
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                'View token information, test refresh notifications, and manage authentication state for debugging purposes.',
+                context.tr(
+                  'View token information, test refresh notifications, and manage authentication state for debugging purposes.',
+                ),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: const Color(0xff57636C),
                       fontSize: isTablet ? 15 : 14,
@@ -1916,7 +1972,7 @@ class _DataObservabilitySettingsScreenState
                   color: Colors.white,
                 ),
                 label: Text(
-                  'Open Token Manager',
+                  context.tr('Open Token Manager'),
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -1997,11 +2053,11 @@ class _DataObservabilitySettingsScreenState
                       ),
                       SizedBox(width: isTablet ? 16 : 12),
                       Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                              'Quick Actions',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              context.tr('Quick Actions'),
                               style: Theme.of(context)
                                   .textTheme
                                   .titleLarge
@@ -2013,7 +2069,7 @@ class _DataObservabilitySettingsScreenState
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'System maintenance & checks',
+                              context.tr('System maintenance & checks'),
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium
@@ -2053,8 +2109,8 @@ class _DataObservabilitySettingsScreenState
                             ),
                           ],
                         ),
-                      child: ElevatedButton.icon(
-                        onPressed: _runHealthCheck,
+                        child: ElevatedButton.icon(
+                          onPressed: _runHealthCheck,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -2090,8 +2146,8 @@ class _DataObservabilitySettingsScreenState
                             width: 1,
                           ),
                         ),
-                      child: OutlinedButton.icon(
-                        onPressed: _loadCurrentStatus,
+                        child: OutlinedButton.icon(
+                          onPressed: _loadCurrentStatus,
                           style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             side: BorderSide.none,
@@ -2143,14 +2199,14 @@ class _DataObservabilitySettingsScreenState
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AnalyticsDashboardScreen(),
-            ),
-          );
-        },
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AnalyticsDashboardScreen(),
+              ),
+            );
+          },
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: EdgeInsets.all(isTablet ? 20 : 16),
@@ -2184,7 +2240,7 @@ class _DataObservabilitySettingsScreenState
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'User behavior and performance metrics',
+                        context.tr('User behavior and performance metrics'),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: const Color(0xff57636C),
                               fontSize: isTablet ? 14 : 13,

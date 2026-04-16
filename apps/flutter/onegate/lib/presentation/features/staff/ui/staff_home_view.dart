@@ -527,7 +527,9 @@ class _StaffScreenState extends State<StaffScreen> {
                       ),
                       SizedBox(height: isTablet ? 28 : 22),
                       Text(
-                        isSearching ? 'No Staff Found' : 'No Staff Available',
+                        isSearching
+                            ? context.tr('No Staff Found')
+                            : context.tr('No Staff Available'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: isTablet ? 24 : 21,
@@ -538,8 +540,12 @@ class _StaffScreenState extends State<StaffScreen> {
                       SizedBox(height: isTablet ? 14 : 10),
                       Text(
                         isSearching
-                            ? 'No staff members match your search. Try a different keyword.'
-                            : 'There are currently no staff members registered in the system.',
+                            ? context.tr(
+                                'No staff members match your search. Try a different keyword.',
+                              )
+                            : context.tr(
+                                'There are currently no staff members registered in the system.',
+                              ),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: isTablet ? 16 : 14,
@@ -591,7 +597,9 @@ class _StaffScreenState extends State<StaffScreen> {
                             color: Colors.white,
                           ),
                           label: Text(
-                            isSearching ? 'Clear Search' : 'Refresh',
+                            isSearching
+                                ? context.tr('Clear Search')
+                                : context.tr('Refresh'),
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,

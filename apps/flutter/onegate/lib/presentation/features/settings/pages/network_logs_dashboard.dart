@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -186,7 +187,7 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      statusCode != null ? '$statusCode' : 'Error',
+                      statusCode != null ? '$statusCode' : context.tr('Error'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -287,10 +288,10 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
                       children: [
                         TabBar(
                           controller: _tabController,
-                          tabs: const [
-                            Tab(text: 'Request'),
-                            Tab(text: 'Response'),
-                            Tab(text: 'Overview'),
+                          tabs: [
+                            Tab(text: context.tr('Request')),
+                            Tab(text: context.tr('Response')),
+                            Tab(text: context.tr('Overview')),
                           ],
                         ),
                         Expanded(
@@ -321,17 +322,17 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('URL'),
-          _buildCopyableText(log['url'] ?? 'N/A'),
+          _buildSectionTitle(context.tr('URL')),
+          _buildCopyableText(log['url'] ?? context.tr('N/A')),
           const SizedBox(height: 16),
-          _buildSectionTitle('Method'),
-          Text(log['method'] ?? 'N/A'),
+          _buildSectionTitle(context.tr('Method')),
+          Text(log['method'] ?? context.tr('N/A')),
           const SizedBox(height: 16),
-          _buildSectionTitle('Headers'),
+          _buildSectionTitle(context.tr('Headers')),
           _buildJsonViewer(log['headers']),
           if (log['requestBody'] != null) ...[
             const SizedBox(height: 16),
-            _buildSectionTitle('Body'),
+            _buildSectionTitle(context.tr('Body')),
             _buildJsonViewer(log['requestBody']),
           ],
         ],
@@ -346,7 +347,7 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle('Error'),
+            _buildSectionTitle(context.tr('Error')),
             Text(
               log['error'],
               style: const TextStyle(color: Colors.red),
@@ -361,9 +362,9 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('Status'),
+          _buildSectionTitle(context.tr('Status')),
           Text(
-            '${log['statusCode'] ?? 'N/A'}',
+            '${log['statusCode'] ?? context.tr('N/A')}',
             style: TextStyle(
               color: log['statusCode'] != null && log['statusCode'] >= 400
                   ? Colors.red
@@ -372,7 +373,7 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
             ),
           ),
           const SizedBox(height: 16),
-          _buildSectionTitle('Body'),
+          _buildSectionTitle(context.tr('Body')),
           _buildJsonViewer(log['responseBody']),
         ],
       ),
@@ -385,23 +386,29 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('Time'),
+          _buildSectionTitle(context.tr('Time')),
           Text(log['timestamp'] != null
               ? DateTime.parse(log['timestamp']).toString()
-              : 'N/A'),
+              : context.tr('N/A')),
           const SizedBox(height: 16),
-          _buildSectionTitle('Duration'),
-          Text('${log['duration'] ?? 'N/A'} ms'),
-          const SizedBox(height: 16),
-          _buildSectionTitle('Method'),
-          Text(log['method'] ?? 'N/A'),
-          const SizedBox(height: 16),
-          _buildSectionTitle('URL'),
-          _buildCopyableText(log['url'] ?? 'N/A'),
-          const SizedBox(height: 16),
-          _buildSectionTitle('Status'),
+          _buildSectionTitle(context.tr('Duration')),
           Text(
-            log['statusCode'] != null ? '${log['statusCode']}' : 'Error',
+            log['duration'] != null
+                ? '${log['duration']} ms'
+                : context.tr('N/A'),
+          ),
+          const SizedBox(height: 16),
+          _buildSectionTitle(context.tr('Method')),
+          Text(log['method'] ?? context.tr('N/A')),
+          const SizedBox(height: 16),
+          _buildSectionTitle(context.tr('URL')),
+          _buildCopyableText(log['url'] ?? context.tr('N/A')),
+          const SizedBox(height: 16),
+          _buildSectionTitle(context.tr('Status')),
+          Text(
+            log['statusCode'] != null
+                ? '${log['statusCode']}'
+                : context.tr('Error'),
             style: TextStyle(
               color: log['statusCode'] == null ||
                       (log['statusCode'] != null && log['statusCode'] >= 400)
@@ -411,15 +418,15 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
             ),
           ),
           const SizedBox(height: 16),
-          _buildSectionTitle('Gate ID'),
+          _buildSectionTitle(context.tr('Gate ID')),
           Text(log['gateId'] != null && log['gateId'].isNotEmpty
               ? log['gateId']
-              : 'Not specified'),
+              : context.tr('Not specified')),
           const SizedBox(height: 16),
-          _buildSectionTitle('Environment'),
+          _buildSectionTitle(context.tr('Environment')),
           Text(log['environment'] != null && log['environment'].isNotEmpty
               ? log['environment']
-              : 'Not specified'),
+              : context.tr('Not specified')),
         ],
       ),
     );
@@ -461,7 +468,7 @@ class _NetworkLogsDashboardState extends State<NetworkLogsDashboard>
 
   Widget _buildJsonViewer(dynamic content) {
     if (content == null) {
-      return const Text('No content');
+      return Text(context.tr('No content'));
     }
 
     try {

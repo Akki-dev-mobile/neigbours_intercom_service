@@ -3338,7 +3338,9 @@ class ListeningDialogState extends State<ListeningDialog>
                           ),
                         ),
                         child: Text(
-                          _hasRecognizedText ? 'Done' : 'Cancel',
+                          _hasRecognizedText
+                              ? context.tr('Done')
+                              : context.tr('Cancel'),
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,

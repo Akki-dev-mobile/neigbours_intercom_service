@@ -14,6 +14,7 @@ import 'package:flutter_onegate/presentation/features/missed_approval/widget/tim
 import 'package:flutter_onegate/presentation/features/visitor_log/ui/visitor_detail_@.dart';
 import 'package:flutter_onegate/services/app_calling/app_to_app.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -256,7 +257,7 @@ class RetryButton extends StatelessWidget {
               width: 5,
             ),
             Text(
-              isLoading ? 'Sending...' : 'Retry',
+              isLoading ? context.tr('Sending...') : context.tr('Retry'),
               style: Theme.of(context).textTheme.labelLarge,
             ),
           ],
@@ -533,7 +534,7 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
         },
         cursorColor: const Color(0xffF44336),
         decoration: InputDecoration(
-          hintText: 'Search by visitor, member, or gate...',
+          hintText: context.tr('Search by visitor, member, or gate...'),
           hintStyle: TextStyle(
             color: Colors.grey.shade500,
             fontSize: isTablet ? 16 : 14,
@@ -605,8 +606,8 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            const Text(
-              'Missed Approvals',
+            Text(
+              context.tr('Missed Approvals'),
               style: TextStyle(
                 color: Color(0xff212427),
                 fontSize: 20,
@@ -673,10 +674,10 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting &&
                       !_isRefreshing) {
-                    return const DashboardLoader(
-                      title: 'Loading Missed Approvals',
-                      subtitle:
-                          'Please wait while we fetch pending approvals...',
+                    return DashboardLoader(
+                      title: context.tr('Loading Missed Approvals'),
+                      subtitle: context.tr(
+                          'Please wait while we fetch pending approvals...'),
                     );
                   }
 
@@ -686,14 +687,15 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Error: ${snapshot.error}',
+                            context.tr('Error: {error}',
+                                params: {'error': '${snapshot.error}'}),
                             style: const TextStyle(color: Colors.red),
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
                             onPressed: _refreshData,
                             icon: const Icon(Icons.refresh),
-                            label: const Text('Retry'),
+                            label: Text(context.tr('Retry')),
                           ),
                         ],
                       ),
@@ -1016,7 +1018,8 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
     final visitorLogId = widget.visitorInfo.visitorLogId ?? 0;
 
     if (timerService.hasRetried(visitorLogId)) {
-      _showSnackBar('Retry already attempted for this visitor', isError: true);
+      _showSnackBar(context.tr('Retry already attempted for this visitor'),
+          isError: true);
       return;
     }
 
@@ -1027,7 +1030,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
 
     if (requestType == RequestType.approved ||
         requestType == RequestType.allowByGatekeeper) {
-      _showSnackBar('Visitor is already allowed', isError: false);
+      _showSnackBar(context.tr('Visitor is already allowed'), isError: false);
 
       if (mounted) {
         await timerService.startTimer(visitorLogId, context);
@@ -1035,13 +1038,14 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       }
       return;
     } else if (requestType == RequestType.rejected) {
-      _showSnackBar('Visitor has been denied entry', isError: true);
+      _showSnackBar(context.tr('Visitor has been denied entry'), isError: true);
       return;
     } else if (requestType == RequestType.leaveAtGate) {
-      _showSnackBar('Visitor is waiting at the gate', isError: false);
+      _showSnackBar(context.tr('Visitor is waiting at the gate'),
+          isError: false);
       return;
     } else if (requestType == RequestType.notRecheable) {
-      _showSnackBar('Visitor is not reachable', isError: true);
+      _showSnackBar(context.tr('Visitor is not reachable'), isError: true);
       return;
     }
 
@@ -1060,7 +1064,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       }
     } catch (e) {
       log("❌ Error in _handleRetry: $e");
-      _showSnackBar('Failed to resend notification', isError: true);
+      _showSnackBar(context.tr('Failed to resend notification'), isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -1106,7 +1110,8 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       _socketService.socket!.emit("sendFcmNotification", requestData);
 
       // Show a toast to indicate the request is being processed
-      _showSnackBar("Sending notification to member...", isError: false);
+      _showSnackBar(context.tr("Sending notification to member..."),
+          isError: false);
 
       // Set a timeout for socket response
       Timer(const Duration(seconds: 5), () {
@@ -1169,7 +1174,8 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         log("✅ Call initiated successfully via Twilio");
 
         // Show a toast to inform the user
-        _showSnackBar("Call initiated to member successfully", isError: false);
+        _showSnackBar(context.tr("Call initiated to member successfully"),
+            isError: false);
         return;
       }
 
@@ -1178,13 +1184,18 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
       log("📩 FCM Response message: $message");
 
       if (responseData["success"] == true) {
-        _showSnackBar("Notification sent successfully", isError: false);
+        _showSnackBar(context.tr("Notification sent successfully"),
+            isError: false);
       } else {
-        _showSnackBar("Failed to send notification: $message", isError: true);
+        _showSnackBar(
+            context.tr("Failed to send notification: {message}",
+                params: {'message': '$message'}),
+            isError: true);
       }
     } catch (e) {
       log("❌ Error handling FCM response: $e");
-      _showSnackBar("Error processing notification response", isError: true);
+      _showSnackBar(context.tr("Error processing notification response"),
+          isError: true);
     }
   }
 
@@ -1233,12 +1244,13 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         await _handleFcmResponse(response.data);
       } else {
         log("❌ Failed to send notification. Response: ${response.statusCode} - ${response.data}");
-        _showSnackBar("Failed to send notification.", isError: true);
+        _showSnackBar(context.tr("Failed to send notification."),
+            isError: true);
       }
     } catch (e, stackTrace) {
       log("❌ Exception in sending notification: $e");
       log("$stackTrace");
-      _showSnackBar("Error occurred while sending notification.",
+      _showSnackBar(context.tr("Error occurred while sending notification."),
           isError: true);
     }
   }
@@ -1816,7 +1828,7 @@ class TimerActionSectionState extends State<TimerActionSection> {
                         color: Colors.grey, size: 28),
                     const SizedBox(width: 8),
                     Text(
-                      "Visitor is not reachable.",
+                      context.tr("Visitor is not reachable."),
                       style: Theme.of(context).textTheme.bodySmall!.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.grey.shade700,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_onegate/services/observatory/observatory_dashboard_service.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:ionicons/ionicons.dart';
 
 class ObservatoryDashboardScreen extends StatefulWidget {
@@ -76,7 +77,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
     final isTablet = MediaQuery.of(context).size.width > 600;
 
     return MyScrollView(
-      pageTitle: 'Observatory Dashboard',
+      pageTitle: context.tr('Observatory Dashboard'),
       pageBody: _isLoading
           ? Center(
               child: Container(
@@ -118,7 +119,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                     ),
                     const SizedBox(height: 20),
                     Text(
-                      'Loading Observatory...',
+                      context.tr('Loading Observatory...'),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: const Color(0xff212427),
@@ -126,7 +127,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Initializing dashboard components',
+                      context.tr('Initializing dashboard components'),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: const Color(0xff57636C),
                           ),
@@ -182,7 +183,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
             ),
             SizedBox(height: isTablet ? 24 : 16),
             Text(
-              'Observatory Initialization Failed',
+              context.tr('Observatory Initialization Failed'),
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: const Color(0xff212427),
@@ -192,7 +193,9 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
             ),
             SizedBox(height: isTablet ? 12 : 8),
             Text(
-              'Unable to initialize the Observatory Dashboard Service. Please check your configuration and try again.',
+              context.tr(
+                'Unable to initialize the Observatory Dashboard Service. Please check your configuration and try again.',
+              ),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: const Color(0xff57636C),
@@ -233,7 +236,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                   ),
                 ),
                 child: Text(
-                  'Retry Initialization',
+                  context.tr('Retry Initialization'),
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -270,13 +273,15 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Observatory Status',
+                    context.tr('Observatory Status'),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                   ),
                   Text(
-                    isCollecting ? 'Active - Collecting Metrics' : 'Inactive',
+                    isCollecting
+                        ? context.tr('Active - Collecting Metrics')
+                        : context.tr('Inactive'),
                     style: TextStyle(
                       color: isCollecting ? Colors.green : Colors.red,
                       fontWeight: FontWeight.w500,
@@ -288,7 +293,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
             IconButton(
               onPressed: _loadData,
               icon: const Icon(Ionicons.refresh_outline),
-              tooltip: 'Refresh Data',
+              tooltip: context.tr('Refresh Data'),
             ),
           ],
         ),
@@ -315,28 +320,28 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
         controller: _tabController,
         tabs: [
           Tab(
-            text: 'Real-time',
+            text: context.tr('Real-time'),
             icon: Icon(
               Ionicons.pulse_outline,
               size: isTablet ? 22 : 20,
             ),
           ),
           Tab(
-            text: 'Analytics',
+            text: context.tr('Analytics'),
             icon: Icon(
               Ionicons.analytics_outline,
               size: isTablet ? 22 : 20,
             ),
           ),
           Tab(
-            text: 'Platforms',
+            text: context.tr('Platforms'),
             icon: Icon(
               Ionicons.server_outline,
               size: isTablet ? 22 : 20,
             ),
           ),
           Tab(
-            text: 'Config',
+            text: context.tr('Config'),
             icon: Icon(
               Ionicons.settings_outline,
               size: isTablet ? 22 : 20,
@@ -413,8 +418,11 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
   }
 
   Widget _buildAdvanced(bool isTablet) {
-    return const Center(
-        child: Text("Advanced monitoring tools can be added here."));
+    return Center(
+      child: Text(
+        context.tr('Advanced monitoring tools can be added here.'),
+      ),
+    );
   }
 
   Widget _buildRealTimeTab() {
@@ -442,7 +450,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Metrics Overview',
+              context.tr('Metrics Overview'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -498,7 +506,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                 ],
               ),
             ] else
-              const Text('No real-time metrics available'),
+              Text(context.tr('No real-time metrics available')),
           ],
         ),
       ),
@@ -541,8 +549,8 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
         child: Container(
           height: 200,
           padding: const EdgeInsets.all(16),
-          child: const Center(
-            child: Text('No real-time data available'),
+          child: Center(
+            child: Text(context.tr('No real-time data available')),
           ),
         ),
       );
@@ -562,7 +570,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Network Requests (Real-time)',
+              context.tr('Network Requests (Real-time)'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -601,14 +609,14 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Recent Metrics',
+              context.tr('Recent Metrics'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 16),
             if (_realtimeMetrics.isEmpty)
-              const Text('No recent metrics available')
+              Text(context.tr('No recent metrics available'))
             else
               ...(_realtimeMetrics
                   .take(5)
@@ -700,7 +708,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Analytics Summary',
+              context.tr('Analytics Summary'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -789,8 +797,8 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
         child: Container(
           height: 200,
           padding: const EdgeInsets.all(16),
-          child: const Center(
-            child: Text('No analytics data available'),
+          child: Center(
+            child: Text(context.tr('No analytics data available')),
           ),
         ),
       );
@@ -815,7 +823,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Analytics Trends',
+              context.tr('Analytics Trends'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -887,14 +895,14 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Recent Activity',
+              context.tr('Recent Activity'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 16),
             if (_allMetrics.isEmpty)
-              const Text('No activity data available')
+              Text(context.tr('No activity data available'))
             else
               ...(_allMetrics
                   .take(5)
@@ -1000,7 +1008,8 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
           color: Theme.of(context).colorScheme.primary,
         ),
         title: Text(platform['name'] as String),
-        subtitle: Text(platform['url'] as String? ?? 'Not configured'),
+        subtitle:
+            Text(platform['url'] as String? ?? context.tr('Not configured')),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -1043,7 +1052,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Configuration',
+              context.tr('Configuration'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -1089,7 +1098,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Actions',
+              context.tr('Actions'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -1101,7 +1110,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                   child: ElevatedButton.icon(
                     onPressed: _loadData,
                     icon: const Icon(Ionicons.refresh_outline),
-                    label: const Text('Refresh Data'),
+                    label: Text(context.tr('Refresh Data')),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1109,7 +1118,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
                   child: ElevatedButton.icon(
                     onPressed: _exportData,
                     icon: const Icon(Ionicons.download_outline),
-                    label: const Text('Export Data'),
+                    label: Text(context.tr('Export Data')),
                   ),
                 ),
               ],
@@ -1120,7 +1129,7 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
               child: ElevatedButton.icon(
                 onPressed: _openMainDashboard,
                 icon: const Icon(Ionicons.open_outline),
-                label: const Text('Open Main Dashboard'),
+                label: Text(context.tr('Open Main Dashboard')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
@@ -1136,14 +1145,16 @@ class _ObservatoryDashboardScreenState extends State<ObservatoryDashboardScreen>
   void _exportData() {
     // Implement data export functionality
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Data export functionality coming soon')),
+      SnackBar(
+        content: Text(context.tr('Data export functionality coming soon')),
+      ),
     );
   }
 
   void _openMainDashboard() {
     // Implement opening main dashboard in web view
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Opening main dashboard...')),
+      SnackBar(content: Text(context.tr('Opening main dashboard...'))),
     );
   }
 }

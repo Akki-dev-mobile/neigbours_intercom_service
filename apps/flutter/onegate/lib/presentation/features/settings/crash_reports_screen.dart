@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter/services.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/services/crash_reporting/crash_reporter_service.dart';
@@ -17,12 +18,12 @@ class CrashReportsScreen extends StatefulWidget {
 
 class _CrashReportsScreenState extends State<CrashReportsScreen> {
   final CrashReporterService _crashService = CrashReporterService();
-  
+
   bool _isLoading = true;
   List<CrashReport> _crashes = [];
   Map<String, dynamic> _statistics = {};
   String _selectedFilter = 'all';
-  
+
   @override
   void initState() {
     super.initState();
@@ -31,11 +32,11 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
 
   Future<void> _loadCrashData() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final crashes = _crashService.getAllCrashReports();
       final stats = _crashService.getCrashStatistics();
-      
+
       setState(() {
         _crashes = crashes;
         _statistics = stats;
@@ -46,7 +47,8 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error loading crash data: $e'),
+            content: Text(context.tr('Error loading crash data: {error}',
+                params: {'error': '$e'})),
             backgroundColor: Colors.red,
           ),
         );
@@ -226,7 +228,7 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
 
   Widget _buildCrashList() {
     final filteredCrashes = _filteredCrashes;
-    
+
     if (filteredCrashes.isEmpty) {
       return Card(
         child: Padding(
@@ -363,7 +365,9 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
                         AppLocalizations.of(context)!.errorTypeLabel,
                         crash.errorType),
                     _buildDetailRow(AppLocalizations.of(context)!.fatalLabel,
-                        crash.isFatal ? 'Yes' : 'No'),
+                        crash.isFatal
+                            ? AppLocalizations.of(context)!.yes
+                            : AppLocalizations.of(context)!.no),
                     _buildDetailRow(
                         AppLocalizations.of(context)!.timestampLabel,
                         crash.timestamp.toString()),
@@ -458,7 +462,7 @@ class _CrashReportsScreenState extends State<CrashReportsScreen> {
     final details = '''
 Crash Report Details:
 Error Type: ${crash.errorType}
-Fatal: ${crash.isFatal ? 'Yes' : 'No'}
+Fatal: ${crash.isFatal ? AppLocalizations.of(context)!.yes : AppLocalizations.of(context)!.no}
 Timestamp: ${crash.timestamp}
 App Version: ${crash.appVersion}
 Platform: ${crash.platform} ${crash.osVersion}
@@ -473,8 +477,8 @@ ${crash.stackTrace}
 
     Clipboard.setData(ClipboardData(text: details));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Crash details copied to clipboard'),
+      SnackBar(
+        content: Text(context.tr('Crash details copied to clipboard')),
         backgroundColor: Colors.green,
       ),
     );

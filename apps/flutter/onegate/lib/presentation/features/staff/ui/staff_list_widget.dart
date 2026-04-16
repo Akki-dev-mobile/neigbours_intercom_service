@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/models/staff_model.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/settings_home.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -270,7 +271,7 @@ class _StaffListWidgetState extends State<StaffListWidget> {
                       ),
                       SizedBox(height: isTablet ? 28 : 22),
                       Text(
-                        'No Staff Found',
+                        context.tr('No Staff Found'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: const Color(0xff212427),
@@ -280,7 +281,9 @@ class _StaffListWidgetState extends State<StaffListWidget> {
                       ),
                       SizedBox(height: isTablet ? 14 : 10),
                       Text(
-                        'No staff members match your search criteria. Try a different keyword.',
+                        context.tr(
+                          'No staff members match your search criteria. Try a different keyword.',
+                        ),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.grey.shade600,

@@ -6,6 +6,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
@@ -366,7 +367,8 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
     } catch (e) {
       print('❌ Error capturing image: $e');
       if (mounted) {
-        _showErrorSnackBar('Failed to capture image. Please try again.');
+        _showErrorSnackBar(
+            context.tr('Failed to capture image. Please try again.'));
         // Reset state to allow retry
         setState(() {
           _isCapturing = false;
@@ -392,7 +394,8 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
     if (widget.isExpressEntry) {
       print(
           '📷 Express Entry: Camera switching disabled - maintaining front camera');
-      _showErrorSnackBar('Camera switching is disabled for face verification');
+      _showErrorSnackBar(
+          context.tr('Camera switching is disabled for face verification'));
       return;
     }
 
@@ -503,7 +506,9 @@ class _FaceLivenessCameraScreenState extends State<FaceLivenessCameraScreen>
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            widget.isExpressEntry ? 'Face Verification' : 'Take Photo',
+            widget.isExpressEntry
+                ? context.tr('Face Verification')
+                : context.tr('Take Photo'),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 16,

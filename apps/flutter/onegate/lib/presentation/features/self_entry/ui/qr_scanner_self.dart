@@ -26,6 +26,7 @@ import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:flutter_onegate/utils/route_tracker.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 import '../../../../data/datasources/gate_storage.dart';
@@ -250,12 +251,11 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             mobile: staffData['mobile'],
             // visitor_image: visitorData['qr_code'],
           );
-          
+
           // Extract visitor_count from API response, checking both visitor_count and guest_count fields
-          final int staffVisitorCount = staffData['visitor_count'] ?? 
-                                       staffData['guest_count'] ?? 
-                                       1;
-          
+          final int staffVisitorCount =
+              staffData['visitor_count'] ?? staffData['guest_count'] ?? 1;
+
           VisitorLog visitorLog = VisitorLog(
             visitor: visitor,
             visitor_coming_from: staffData['coming_from'],
@@ -298,9 +298,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           );
 
           // Extract visitor_count from API response, checking both visitor_count and guest_count fields
-          final int visitorCount = visitorData['visitor_count'] ?? 
-                                   visitorData['guest_count'] ?? 
-                                   1;
+          final int visitorCount =
+              visitorData['visitor_count'] ?? visitorData['guest_count'] ?? 1;
 
           VisitorLog visitorLog = VisitorLog(
             visitor: visitor,
@@ -701,7 +700,9 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                       ),
                 const SizedBox(width: 12),
                 Text(
-                  _isVerifying ? 'Verifying...' : 'Scan QR Code',
+                  _isVerifying
+                      ? context.tr('Verifying...')
+                      : context.tr('Scan QR Code'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -735,8 +736,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Position the QR code inside the frame',
+                Text(
+                  context.tr('Position the QR code inside the frame'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
@@ -746,7 +747,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Scanning will happen automatically',
+                  context.tr('Scanning will happen automatically'),
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.7),
                     fontSize: 13,
@@ -767,21 +768,24 @@ class _QRScannerScreenState extends State<QRScannerScreen>
               _buildRoundButton(
                 onPressed: _toggleFlash,
                 iconData: _isFlashOn ? Icons.flash_on : Icons.flash_off,
-                label: _isFlashOn ? 'Flash On' : 'Flash Off',
+                label: _isFlashOn
+                    ? context.tr('Flash On')
+                    : context.tr('Flash Off'),
               ),
               const SizedBox(width: 24),
               // Flip camera button
               _buildRoundButton(
                 onPressed: _toggleCamera,
                 iconData: Icons.cameraswitch,
-                label: _isFrontCamera ? 'Front' : 'Back',
+                label:
+                    _isFrontCamera ? context.tr('Front') : context.tr('Back'),
               ),
               const SizedBox(width: 24),
               // Help button
               _buildRoundButton(
                 onPressed: _showHelpDialog,
                 iconData: Icons.help_outline,
-                label: 'Help',
+                label: context.tr('Help'),
               ),
             ],
           ),
@@ -897,8 +901,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                           Color(0xFF2E7D32), // Green accent color
                         ],
                       ).createShader(bounds),
-                      child: const Text(
-                        'Verifying QR Code',
+                      child: Text(
+                        context.tr('Verifying QR Code'),
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
@@ -923,8 +927,9 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                           width: 1,
                         ),
                       ),
-                      child: const Text(
-                        'Please wait while we process the information',
+                      child: Text(
+                        context
+                            .tr('Please wait while we process the information'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color:
@@ -1010,8 +1015,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
-        title: const Text(
-          'Scan QR Code',
+        title: Text(
+          context.tr('Scan QR Code'),
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
@@ -1061,16 +1066,16 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Visitor Allowed',
+              Text(
+                context.tr('Visitor Allowed'),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'The visitor has been successfully verified',
+              Text(
+                context.tr('The visitor has been successfully verified'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey,
@@ -1083,7 +1088,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                   Navigator.of(context).pop();
                   Navigator.of(context).pop(code);
                 },
-                text: 'Done',
+                text: context.tr('Done'),
               )
             ],
           ),
@@ -1129,8 +1134,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
               const SizedBox(height: 20),
 
               // Title
-              const Text(
-                "QR Code Verification Failed",
+              Text(
+                context.tr('QR Code Verification Failed'),
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
@@ -1141,8 +1146,10 @@ class _QRScannerScreenState extends State<QRScannerScreen>
               const SizedBox(height: 12),
 
               // Message
-              const Text(
-                "The QR code could not be verified. It may be invalid or expired. Please try again or contact support.",
+              Text(
+                context.tr(
+                  'The QR code could not be verified. It may be invalid or expired. Please try again or contact support.',
+                ),
                 style: TextStyle(
                   fontSize: 16,
                   color: Color(0xFF6B7280),
@@ -1329,16 +1336,18 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Verification Failed',
+              Text(
+                context.tr('Verification Failed'),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'The QR code could not be verified. It may be invalid or expired.',
+              Text(
+                context.tr(
+                  'The QR code could not be verified. It may be invalid or expired.',
+                ),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey,
@@ -1362,8 +1371,8 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                     _isDialogOpen = false; // Reset the flag when closed
                   });
                 },
-                child: const Text(
-                  'Try Again',
+                child: Text(
+                  context.tr('Try Again'),
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
@@ -1457,7 +1466,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'How to Scan QR Codes',
+                          context.tr('How to Scan QR Codes'),
                           style: Theme.of(context)
                               .textTheme
                               .headlineSmall
@@ -1469,7 +1478,9 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Follow these simple steps for successful QR code scanning',
+                          context.tr(
+                            'Follow these simple steps for successful QR code scanning',
+                          ),
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: const Color(0xff57636C),
@@ -1497,7 +1508,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                         context: context,
                         isTablet: isTablet,
                         icon: Icons.center_focus_strong,
-                        title: 'Position the QR code',
+                        title: context.tr('Position the QR code'),
                         description:
                             'Center the QR code within the scanning frame for optimal recognition.',
                         color: const Color(0xff4CAF50),
@@ -1507,7 +1518,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                         context: context,
                         isTablet: isTablet,
                         icon: Icons.light_mode,
-                        title: 'Ensure good lighting',
+                        title: context.tr('Ensure good lighting'),
                         description:
                             'Make sure the QR code is well-lit and clearly visible for better scanning.',
                         color: const Color(0xff2196F3),
@@ -1517,7 +1528,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                         context: context,
                         isTablet: isTablet,
                         icon: Icons.flash_on,
-                        title: 'Use flash if needed',
+                        title: context.tr('Use flash if needed'),
                         description:
                             'Toggle the flash in dark environments for improved scanning results.',
                         color: const Color(0xffFF9800),
@@ -1527,7 +1538,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                         context: context,
                         isTablet: isTablet,
                         icon: Icons.front_hand,
-                        title: 'Hold steady',
+                        title: context.tr('Hold steady'),
                         description:
                             'Keep your phone steady while scanning for the best possible results.',
                         color: const Color(0xff9C27B0),
@@ -1565,7 +1576,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                             child: Container(
                               alignment: Alignment.center,
                               child: Text(
-                                'Got it',
+                                context.tr('Got it'),
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: isTablet ? 18 : 16,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class SelectedMembersBottomSheet extends StatelessWidget {
   final Set<String> selectedMembers;
@@ -205,7 +206,9 @@ class SelectedMembersBottomSheet extends StatelessWidget {
                                 },
                           child: Center(
                             child: Text(
-                              isLoading ? 'Processing...' : 'Confirm',
+                              isLoading
+                                  ? context.tr('Processing...')
+                                  : context.tr('Confirm'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,

@@ -1409,8 +1409,8 @@ class _IdInputViewState extends State<IdInputView> {
                                     child: Center(
                                       child: Text(
                                         checkVisitorLoading
-                                            ? 'Processing...'
-                                            : 'Next',
+                                            ? context.tr('Processing...')
+                                            : context.tr('Next'),
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 18,
