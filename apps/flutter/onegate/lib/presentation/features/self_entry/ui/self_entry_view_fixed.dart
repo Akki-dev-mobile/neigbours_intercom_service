@@ -16,6 +16,7 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -193,7 +194,9 @@ class _SelfEntryViewState extends State<SelfEntryView>
                         Container(
                           margin: const EdgeInsets.symmetric(horizontal: 20),
                           child: CustomLargeBtn(
-                            text: isProcessing ? 'Processing...' : 'Next',
+                            text: isProcessing
+                                ? context.tr('Processing...')
+                                : context.tr('Next'),
                             disabled: isProcessing,
                             onPressed: isProcessing
                                 ? null
@@ -306,7 +309,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
       }
       _captureImageFromCamera();
 
-      myFluttertoast(msg: "OTP verified successfully!");
+      myFluttertoast(msg: context.tr("OTP verified successfully!"));
       // _tabController.animateTo(2);
     } catch (e) {
       log('Error during OTP verification: $e');
@@ -479,14 +482,18 @@ class _SelfEntryViewState extends State<SelfEntryView>
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to upload image: ${response.body}')),
+            SnackBar(
+                content: Text(context.tr('Failed to upload image: {error}',
+                    params: {'error': response.body}))),
           );
         }
       }
     } catch (e) {
       print(e);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+            content:
+                Text(context.tr('Error: {error}', params: {'error': '$e'}))),
       );
     }
   }
@@ -591,7 +598,9 @@ class _SelfEntryViewState extends State<SelfEntryView>
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 20),
                         child: CustomLargeBtn(
-                          text: isProcessing ? 'Processing...' : 'Next',
+                          text: isProcessing
+                              ? context.tr('Processing...')
+                              : context.tr('Next'),
                           disabled: isProcessing,
                           onPressed: isProcessing
                               ? null
@@ -703,14 +712,16 @@ class _SelfEntryViewState extends State<SelfEntryView>
               expandedHeight: MediaQuery.of(context).size.height * 0.3,
               title: RichText(
                 text: TextSpan(
-                  text: 'one',
+                  text: context.tr('selfEntryBrandPartOne'),
                   style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.red),
                   children: <TextSpan>[
                     TextSpan(
-                        text: 'gate', style: TextStyle(color: Colors.black)),
+                      text: context.tr('selfEntryBrandPartGate'),
+                      style: TextStyle(color: Colors.black),
+                    ),
                   ],
                 ),
               ),
@@ -726,22 +737,20 @@ class _SelfEntryViewState extends State<SelfEntryView>
                     SelfEntryAd(
                       bgImage:
                           'https://images.unsplash.com/photo-1631195092568-a1030d926fd3?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-                      title: 'onegate',
-                      subTitle:
-                          'Secure your home and manage visitors, connect with society gate and much more',
+                      title: context.tr('selfEntryAdOneGateTitle'),
+                      subTitle: context.tr('selfEntryAdOneGateSubtitle'),
                     ),
                     SelfEntryAd(
                       bgImage:
                           'https://images.unsplash.com/photo-1496065187959-7f07b8353c55?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-                      title: 'oneapp',
-                      subTitle: 'The ALL in One App',
+                      title: context.tr('selfEntryAdOneAppTitle'),
+                      subTitle: context.tr('selfEntryAdOneAppSubtitle'),
                     ),
                     SelfEntryAd(
                       bgImage:
                           'https://images.unsplash.com/photo-1580041065738-e72023775cdc?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-                      title: 'onesociety',
-                      subTitle:
-                          'Experience the Ease of Community Management with onesociety',
+                      title: context.tr('selfEntryAdOneSocietyTitle'),
+                      subTitle: context.tr('selfEntryAdOneSocietySubtitle'),
                     ),
                   ],
                   options: CarouselOptions(
@@ -829,7 +838,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                   color:
                                       Theme.of(context).colorScheme.onSurface,
                                 ),
-                                hintText: 'Search',
+                                hintText: context.tr('Search'),
                                 hintStyle: TextStyle(
                                   color:
                                       Theme.of(context).colorScheme.onSurface,

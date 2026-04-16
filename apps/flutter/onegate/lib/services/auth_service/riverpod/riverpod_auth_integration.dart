@@ -1,11 +1,23 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'auth_controller.dart';
 import 'auth_interceptor.dart';
+
+final FlutterI18nDelegate _authenticatedAppExampleI18nDelegate =
+    FlutterI18nDelegate(
+  translationLoader: FileTranslationLoader(
+    basePath: 'assets/flutter_i18n',
+    fallbackFile: 'en',
+    useCountryCode: false,
+  ),
+);
 
 /// Provider for Dio instance with authentication interceptor
 final dioProvider = Provider<Dio>((ref) {
@@ -131,6 +143,18 @@ class LoginScreen extends ConsumerWidget {
   }
 }
 
+String _localizedRiverpodAuthErrorBody(
+  BuildContext context,
+  String message,
+) {
+  const prefix = 'Login failed:';
+  if (message.startsWith(prefix)) {
+    final detail = message.substring(prefix.length).trimLeft();
+    return context.tr('Login failed: {error}', params: {'error': detail});
+  }
+  return message;
+}
+
 /// Loading screen widget
 class LoadingScreen extends StatelessWidget {
   const LoadingScreen({super.key});
@@ -178,7 +202,7 @@ class ErrorScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              message,
+              _localizedRiverpodAuthErrorBody(context, message),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
@@ -290,11 +314,23 @@ class AuthenticatedApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: context.tr('OneGate Authenticated App'),
+      onGenerateTitle: (ctx) => ctx.tr('OneGate Authenticated App'),
       theme: ThemeData(
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        _authenticatedAppExampleI18nDelegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'),
+        Locale('hi'),
+        Locale('mr'),
+      ],
       home: AuthStateWidget(
         child: Scaffold(
           appBar: AppBar(

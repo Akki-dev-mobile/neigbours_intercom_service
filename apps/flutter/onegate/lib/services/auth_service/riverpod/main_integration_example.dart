@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -25,6 +28,15 @@ import '../../presentation/features/gate_selection/ui/gate_selection_provider.da
 import '../../presentation/features/settings/pages/camera_provider.dart';
 import '../../approval_Status.dart';
 import '../../common/internet_check_provider.dart';
+
+final FlutterI18nDelegate _riverpodIntegrationExampleI18nDelegate =
+    FlutterI18nDelegate(
+  translationLoader: FileTranslationLoader(
+    basePath: 'assets/flutter_i18n',
+    fallbackFile: 'en',
+    useCountryCode: false,
+  ),
+);
 
 /// Example of how to integrate the new Riverpod authentication system
 /// with the existing OneGate app structure
@@ -96,11 +108,23 @@ class OneGateApp extends ConsumerWidget {
             // Add other BLoC providers as needed
           ],
           child: MaterialApp(
-            title: 'OneGate',
+            onGenerateTitle: (ctx) => ctx.tr('appTitle'),
             theme: ThemeData(
               primarySwatch: Colors.blue,
               useMaterial3: true,
             ),
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              _riverpodIntegrationExampleI18nDelegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('en'),
+              Locale('hi'),
+              Locale('mr'),
+            ],
             // Use the new Riverpod authentication wrapper
             home: const AuthenticatedOneGateHome(),
           ),

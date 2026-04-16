@@ -31,6 +31,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/utils/route_tracker.dart';
 
 import '../../units_selection/ui/unit_selection_view.dart';
@@ -472,7 +473,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
     if (widget.selectedValue?.categoryName == 'DELIVERY' &&
         selectedCompanyIndex == -1) {
-      _showErrorSnackBar("Please select a delivery company.");
+      _showErrorSnackBar(context.tr("Please select a delivery company."));
       setState(() => _isSubmitting = false);
       return;
     }
@@ -496,7 +497,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         isStaff: widget.searchedVisitor?.isStaff,
       ));
     } catch (e) {
-      _showErrorSnackBar('Failed to create visitor: ${e.toString()}');
+      _showErrorSnackBar(context.tr('Failed to create visitor: {error}',
+          params: {'error': e.toString()}));
       setState(() => _isSubmitting = false);
       return;
     }
@@ -523,7 +525,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
 
       await Future.delayed(const Duration(seconds: 2));
     } catch (e) {
-      _showErrorSnackBar('An error occurred: ${e.toString()}');
+      _showErrorSnackBar(context
+          .tr('An error occurred: {error}', params: {'error': e.toString()}));
       if (mounted) {
         setState(() => _isSubmitting = false);
       }
@@ -542,7 +545,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       }
       if (selectedCompanyIndex == -1) {
         _bloc.add(VIEValidationErrorEvent(
-          message: 'Please select a vendor category to proceed',
+          message: context.tr('Please select a vendor category to proceed'),
           field: 'Category Selection Required',
         ));
         return false;
@@ -560,7 +563,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       }
       if ((_carNumberController?.text ?? "").isEmpty) {
         _bloc.add(VIEValidationErrorEvent(
-          message: 'Please enter the vehicle registration number',
+          message: context.tr('Please enter the vehicle registration number'),
           field: 'Cab Number Required',
         ));
         return false;
@@ -578,7 +581,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       }
       if (selectedCompanyIndex == -1) {
         _bloc.add(VIEValidationErrorEvent(
-          message: 'Please select a delivery company to proceed',
+          message: context.tr('Please select a delivery company to proceed'),
           field: 'Company Selection Required',
         ));
         return false;
@@ -597,7 +600,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       if ((_guestComingFromController?.text ?? "").isEmpty &&
           _visitorAddress == true) {
         _bloc.add(VIEValidationErrorEvent(
-          message: 'Please enter where the guest is coming from',
+          message: context.tr('Please enter where the guest is coming from'),
           field: 'Coming From Required',
         ));
         return false;
@@ -607,7 +610,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
           _visitorCardNumber == true &&
           !widget.selfcheckinFlow) {
         _bloc.add(VIEValidationErrorEvent(
-          message: 'Please enter the visitor card number',
+          message: context.tr('Please enter the visitor card number'),
           field: 'Card Number Required',
         ));
         return false;
@@ -627,7 +630,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       if ((_guestComingFromController?.text ?? "").isEmpty &&
           _visitorAddress == true) {
         _bloc.add(VIEValidationErrorEvent(
-          message: 'Please enter where the staff member is coming from',
+          message:
+              context.tr('Please enter where the staff member is coming from'),
           field: 'Coming From Required',
         ));
         return false;
@@ -917,9 +921,9 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
       },
       builder: (context, state) {
         if (state is VisitorInEntryLoadingState) {
-          return const DashboardLoader(
-            title: 'Processing Visitor Details',
-            subtitle: 'Please wait while we continue...',
+          return DashboardLoader(
+            title: context.tr('Processing Visitor Details'),
+            subtitle: context.tr('Please wait while we continue...'),
           );
         }
 
@@ -1519,7 +1523,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         color: Color(0xff212427),
                       ),
                       decoration: InputDecoration(
-                        hintText: 'MH 12 AB 1234',
+                        hintText: context.tr('MH 12 AB 1234'),
                         hintStyle: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
@@ -1591,7 +1595,8 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   Widget _buildDeliveryForm(PurposeCategory1 purpose) {
     final subCategories = purpose.subCategories;
     if (subCategories == null || subCategories.isEmpty) {
-      return const Center(child: Text("No delivery companies available."));
+      return Center(
+          child: Text(context.tr('No delivery companies available.')));
     }
 
     // Reorder subcategories to put "Others" at the end
@@ -1937,7 +1942,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
   Widget _buildVendorForm(PurposeCategory1 purpose) {
     final subCategories = purpose.subCategories;
     if (subCategories == null || subCategories.isEmpty) {
-      return const Center(child: Text("No vendor categories available."));
+      return Center(child: Text(context.tr('No vendor categories available.')));
     }
 
     // Reorder subcategories to put "Others" at the end
@@ -2691,7 +2696,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         });
                       },
                       decoration: InputDecoration(
-                        hintText: 'Guest count',
+                        hintText: context.tr('Guest count'),
                         hintStyle: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
@@ -2883,7 +2888,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         color: const Color(0xffFFEBE6),
         borderRadius: BorderRadius.circular(100),
       ),
-      child: const Center(child: Text("V")),
+      child: Center(child: Text(context.tr('visitorIdBadgeLetter'))),
     );
   }
 

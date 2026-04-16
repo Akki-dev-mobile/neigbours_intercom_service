@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/common/environment.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/data/visitor_info.dart';
 import 'package:flutter_onegate/utils/app_urls.dart';
@@ -133,9 +134,11 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                                 Expanded(
                                   child: Container(
                                     padding: EdgeInsets.only(
-                                      right: (widget.visitorLog.additionalDetails !=
+                                      right: (widget.visitorLog
+                                                      .additionalDetails !=
                                                   null &&
-                                              widget.visitorLog.additionalDetails![
+                                              widget.visitorLog
+                                                          .additionalDetails![
                                                       'invited_guest'] ==
                                                   true)
                                           ? 120 // Add padding when pre-approved badge is present
@@ -198,11 +201,11 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                         _buildBorderedSection(
                           context,
                           isTablet,
-                          title: "Contact Information",
+                          title: context.tr('Contact Information'),
                           children: [
                             _buildInfoTile(
                               icon: Icons.phone,
-                              title: "Phone Number",
+                              title: context.tr('Phone Number'),
                               subtitle: widget.visitorLog.visitorMobile,
                               iconColor:
                                   const Color(0xff43A047), // Green (Scan icon)
@@ -216,11 +219,11 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                         _buildBorderedSection(
                           context,
                           isTablet,
-                          title: "Visit Details",
+                          title: context.tr('Visit Details'),
                           children: [
                             _buildInfoTile(
                               icon: Icons.apartment,
-                              title: "Visiting Unit",
+                              title: context.tr('Visiting Unit'),
                               subtitle:
                                   widget.visitorLog.unitDetails.building_unit ==
                                           "0001"
@@ -242,7 +245,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                             if (widget.visitorLog.inGate.isNotEmpty)
                               _buildInfoTile(
                                 icon: Icons.meeting_room,
-                                title: "In-Gate",
+                                title: context.tr('In-Gate'),
                                 subtitle: widget.visitorLog.inGate,
                                 iconColor: const Color(0xffF44336), // Red
                                 iconBg: const Color(
@@ -257,7 +260,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                                     widget.visitorLog.visitorComingFrom != null)
                               _buildInfoTile(
                                 icon: Icons.location_on,
-                                title: "Coming From",
+                                title: context.tr('Coming From'),
                                 subtitle: widget.visitorLog.visitorComingFrom
                                     .toString(),
                                 iconColor: const Color(0xffF44336), // Red
@@ -268,7 +271,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                                 widget.visitorLog.visitorCardNumber!.isNotEmpty)
                               _buildInfoTile(
                                 icon: Icons.badge,
-                                title: "Card Number",
+                                title: context.tr('Card Number'),
                                 subtitle: widget.visitorLog.visitorCardNumber ??
                                     'N/A',
                                 iconColor:
@@ -289,7 +292,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                           _buildBorderedSection(
                             context,
                             isTablet,
-                            title: "Visitor Timeline",
+                            title: context.tr('Visitor Timeline'),
                             children: _buildTimeline(),
                           )
                         else if (widget.isFromMissedApprovalScreen &&
@@ -298,7 +301,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                           _buildBorderedSection(
                             context,
                             isTablet,
-                            title: "Actions",
+                            title: context.tr('Actions'),
                             children: [
                               Row(
                                 mainAxisAlignment:
@@ -470,7 +473,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                   child: IconButton(
                     icon: const Icon(Icons.close, color: Color(0xffF44336)),
                     onPressed: () => Navigator.of(context).pop(),
-                    tooltip: 'Close',
+                    tooltip: context.tr('Close'),
                   ),
                 ),
               ),
@@ -516,7 +519,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
 
     // Add Check-In
     addTimelineItem(
-      label: "Check In",
+      label: context.tr('checkIn'),
       description: widget.visitorLog.logCreatedAt,
       icon: Icons.login,
       color: Colors.green,
@@ -534,15 +537,16 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
     }
 
     if (isInvitedGuest) {
-      approvedByText = "Guest pre-approved by member";
+      approvedByText = context.tr('guestPreApprovedByMember');
     } else if (widget.unitList == "0001") {
-      approvedByText = "Pre approved Staff";
+      approvedByText = context.tr('preApprovedStaff');
     } else {
-      approvedByText = _getFormattedAllowStatus(widget.visitorLog.allowStatus);
+      approvedByText =
+          _getFormattedAllowStatus(context, widget.visitorLog.allowStatus);
     }
 
     addTimelineItem(
-      label: "Approved By",
+      label: context.tr('approvedBy'),
       description: approvedByText,
       icon: Icons.person,
       color: Colors.brown,
@@ -552,7 +556,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
     // Add Check-Out (if available)
     if (widget.visitorLog.visitor_check_out != null) {
       addTimelineItem(
-        label: "Check Out",
+        label: context.tr('checkOut'),
         description: widget.visitorLog.visitor_check_out!,
         icon: Icons.logout,
         color: Colors.red,
@@ -573,16 +577,16 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
         .join(' '); // Join words back together
   }
 
-  String _getFormattedAllowStatus(String allowStatus) {
+  String _getFormattedAllowStatus(BuildContext context, String allowStatus) {
     switch (allowStatus.toLowerCase()) {
       case "allowed":
-        return "Allowed";
+        return context.tr('visitorAllowStatusAllowed');
       case "always_allowed":
-        return "Always Allowed";
+        return context.tr('alwaysAllowed');
       case "allowed_by_gatekeeper":
-        return "Allowed By Gatekeeper";
+        return context.tr('visitorAllowStatusAllowedByGatekeeper');
       default:
-        return "Gatekeeper";
+        return context.tr('gatekeeper');
     }
   }
 
@@ -774,7 +778,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
   Future<void> _allowByGatekeeper() async {
     try {
       if (widget.visitorLog.visitorLogId == null) {
-        _showSnackBar("Invalid visitor log ID", isError: true);
+        _showSnackBar(context.tr("Invalid visitor log ID"), isError: true);
         return;
       }
       final headers = await Environment.getHeaders();
@@ -787,7 +791,8 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
 
       if (response.statusCode == 200) {
         log("✅ Visitor allowed by Gatekeeper successfully");
-        _showSnackBar("Visitor allowed by Gatekeeper", isError: false);
+        _showSnackBar(context.tr("Visitor allowed by Gatekeeper"),
+            isError: false);
 
         // Refresh the screen or navigate back
         if (mounted) {
@@ -795,11 +800,12 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
         }
       } else {
         log("❌ Failed to allow visitor by Gatekeeper: ${response.statusMessage}");
-        _showSnackBar("Error allowing visitor. Try again.", isError: true);
+        _showSnackBar(context.tr("Error allowing visitor. Try again."),
+            isError: true);
       }
     } catch (e) {
       log("❌ Error in _allowByGatekeeper: $e");
-      _showSnackBar("Failed to allow visitor.", isError: true);
+      _showSnackBar(context.tr("Failed to allow visitor."), isError: true);
     }
   }
 
@@ -807,7 +813,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
   Future<void> _retryPermission() async {
     try {
       if (widget.visitorLog.visitorLogId == null) {
-        _showSnackBar("Invalid visitor log ID", isError: true);
+        _showSnackBar(context.tr("Invalid visitor log ID"), isError: true);
         return;
       }
 
@@ -845,7 +851,8 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
 
       if (response.statusCode == 200) {
         log("✅ Notification sent successfully");
-        _showSnackBar("Notification sent to member", isError: false);
+        _showSnackBar(context.tr("Notification sent to member"),
+            isError: false);
 
         // Reset the timer in SharedPreferences
         await _resetTimer(widget.visitorLog.visitorLogId ?? 0);
@@ -856,11 +863,12 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
         }
       } else {
         log("❌ Failed to send notification: ${response.statusMessage}");
-        _showSnackBar("Failed to send notification", isError: true);
+        _showSnackBar(context.tr("Failed to send notification"), isError: true);
       }
     } catch (e) {
       log("❌ Error in _retryPermission: $e");
-      _showSnackBar("Error occurred while sending notification", isError: true);
+      _showSnackBar(context.tr("Error occurred while sending notification"),
+          isError: true);
     }
   }
 
@@ -885,7 +893,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
     final icon =
         isError ? Icons.error_outline_rounded : Icons.check_circle_rounded;
     final bgColor = isError ? const Color(0xffF44336) : const Color(0xff43A047);
-    final title = isError ? 'Error' : 'Success';
+    final title = isError ? context.tr('Error') : context.tr('Success');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(

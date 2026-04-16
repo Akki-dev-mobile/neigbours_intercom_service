@@ -1,7 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:flutter_onegate/services/auth_service/indefinite_session_manager.dart';
 import 'package:flutter_onegate/utils/localization_helper.dart';
+
+final FlutterI18nDelegate _indefiniteSessionExampleI18nDelegate =
+    FlutterI18nDelegate(
+  translationLoader: FileTranslationLoader(
+    basePath: 'assets/flutter_i18n',
+    fallbackFile: 'en',
+    useCountryCode: false,
+  ),
+);
 
 /// Complete example app demonstrating indefinite session management
 /// This shows how to implement "login once, stay logged in forever" functionality
@@ -9,11 +21,23 @@ class IndefiniteSessionExampleApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'OneGate - Indefinite Sessions',
+      onGenerateTitle: (ctx) => ctx.tr('oneGateIndefiniteSessionsAppTitle'),
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        _indefiniteSessionExampleI18nDelegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'),
+        Locale('hi'),
+        Locale('mr'),
+      ],
       home: AuthWrapper(),
     );
   }

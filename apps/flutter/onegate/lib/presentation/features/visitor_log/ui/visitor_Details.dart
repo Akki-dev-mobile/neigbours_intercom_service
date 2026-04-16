@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/presentation/widgets/assign_card_popup.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class VisitorDetailsScreen extends StatefulWidget {
   final VisitorLog visitorLog;
@@ -67,8 +68,8 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
   void _handleAssignCard() {
     if (widget.visitorLog.visitor_id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error: Visitor ID not found'),
+        SnackBar(
+          content: Text(context.tr('Error: Visitor ID not found')),
           backgroundColor: Colors.red,
         ),
       );
@@ -192,17 +193,21 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                                 Expanded(
                                   child: Container(
                                     padding: EdgeInsets.only(
-                                      right: (widget.visitorLog.initiated_from ==
+                                      right: (widget.visitorLog
+                                                      .initiated_from ==
                                                   "invited_guest" ||
-                                              widget.visitorLog.initiated_from ==
+                                              widget.visitorLog
+                                                      .initiated_from ==
                                                   "qr_code_scan" ||
-                                              widget.visitorLog.initiated_from ==
+                                              widget.visitorLog
+                                                      .initiated_from ==
                                                   "passcode_entry")
                                           ? 120 // Add padding when pre-approved badge is present
                                           : 0,
                                     ),
                                     child: Text(
-                                      widget.visitorLog.visitor?.name ?? "Guest",
+                                      widget.visitorLog.visitor?.name ??
+                                          "Guest",
                                       style: Theme.of(context)
                                           .textTheme
                                           .headlineMedium
@@ -260,13 +265,13 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                         _buildBorderedSection(
                           context,
                           isTablet,
-                          title: "Contact Information",
+                          title: context.tr('Contact Information'),
                           children: [
                             _buildInfoTile(
                               icon: Icons.phone,
-                              title: "Phone Number",
-                              subtitle:
-                                  widget.visitorLog.visitor?.mobile ?? "N/A",
+                              title: context.tr('Phone Number'),
+                              subtitle: widget.visitorLog.visitor?.mobile ??
+                                  context.tr('N/A'),
                               iconColor:
                                   const Color(0xff43A047), // Green (Scan icon)
                               iconBg: const Color(
@@ -279,17 +284,17 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                         _buildBorderedSection(
                           context,
                           isTablet,
-                          title: "Visit Details",
+                          title: context.tr('Visit Details'),
                           children: [
                             _buildInfoTile(
                               icon: Icons.apartment,
-                              title: "Visiting Unit",
+                              title: context.tr('Visiting Unit'),
                               subtitle: widget.unitList == "0001"
-                                  ? "Society Office"
+                                  ? context.tr('Society Office')
                                   : (widget.unitList != null &&
                                           widget.unitList != "")
                                       ? widget.unitList.toString()
-                                      : "N/A",
+                                      : context.tr('N/A'),
                               iconColor: const Color(0xffF44336), // Red
                               iconBg: const Color(
                                   0xffFFEBEE), // Light red background
@@ -304,7 +309,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                                         null)
                               _buildInfoTile(
                                 icon: Icons.location_on,
-                                title: "Coming From",
+                                title: context.tr('Coming From'),
                                 subtitle: widget.visitorLog.visitor_coming_from
                                     .toString(),
                                 iconColor: const Color(0xffF44336), // Red
@@ -402,7 +407,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                                         _visitorCardEntryEnabled
                                     ? _buildInfoTile(
                                         icon: Icons.badge,
-                                        title: "Card Number",
+                                        title: context.tr('Card Number'),
                                         subtitle:
                                             _getCurrentCardNumber() ?? 'N/A',
                                         iconColor: Colors
@@ -417,7 +422,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                         _buildBorderedSection(
                           context,
                           isTablet,
-                          title: "Visitor Timeline",
+                          title: context.tr('Visitor Timeline'),
                           children: _buildTimeline(),
                         ),
                       ],
@@ -526,7 +531,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                   child: IconButton(
                     icon: const Icon(Icons.close, color: Color(0xffF44336)),
                     onPressed: () => Navigator.of(context).pop(),
-                    tooltip: 'Close',
+                    tooltip: context.tr('Close'),
                   ),
                 ),
               ),
@@ -573,7 +578,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
     // Add Check-In
     if (widget.visitorLog.visitor_check_in != null) {
       addTimelineItem(
-        label: "Check In",
+        label: context.tr('checkIn'),
         description: widget.visitorLog.visitor_check_in!,
         icon: Icons.login,
         color: Colors.green,
@@ -584,16 +589,17 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
     // Add Approved By
     String approvedByText;
     if (widget.visitorLog.initiated_from == "invited_guest") {
-      approvedByText = "Guest pre-approved by member";
+      approvedByText = context.tr('guestPreApprovedByMember');
     } else if (widget.unitList == "0001") {
-      approvedByText = "Pre approved Staff";
+      approvedByText = context.tr('preApprovedStaff');
     } else {
-      approvedByText = widget.visitorLog.approved_by ?? "Gatekeeper";
+      approvedByText =
+          widget.visitorLog.approved_by ?? context.tr('gatekeeper');
     }
 
     addTimelineItem(
-      label: "Approved By",
-      description: toBeginningOfSentenceCase(approvedByText) ?? "N/A",
+      label: context.tr('approvedBy'),
+      description: toBeginningOfSentenceCase(approvedByText),
       icon: Icons.person,
       color: Colors.brown,
       index: currentIndex++,
@@ -602,7 +608,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
     // Add Check-Out (if available)
     if (widget.visitorLog.visitor_check_out != null) {
       addTimelineItem(
-        label: "Check Out",
+        label: context.tr('checkOut'),
         description: widget.visitorLog.visitor_check_out!,
         icon: Icons.logout,
         color: Colors.red,
@@ -800,7 +806,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
   Widget _buildCallButton() {
     return ElevatedButton.icon(
       icon: const Icon(Icons.call, size: 16, color: Colors.white),
-      label: const Text('Call',
+      label: Text(context.tr('Call'),
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
       onPressed: () => _makePhoneCall(widget.visitorLog.visitor?.mobile ?? ""),
       style: ElevatedButton.styleFrom(

@@ -14,6 +14,7 @@ import 'package:flutter_onegate/utils/enhanced_toast.dart';
 import 'package:flutter_onegate/utils/route_tracker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_onegate/presentation/widgets/enhanced_video_carousel.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class SelfHomeView extends StatefulWidget {
   final bool isKioskModeEnabled;
@@ -615,13 +616,13 @@ class _SelfHomeViewState extends State<SelfHomeView>
                           context: context,
                           isTablet: isTablet,
                           icon: Icons.qr_code_scanner_rounded,
-                          title: 'Scan QR Code',
-                          description:
-                              'Scan your QR code for instant check-in. Most convenient method for regular visitors.',
+                          title: context.tr('Scan QR Code'),
+                          description: context.tr(
+                              'Scan your QR code for instant check-in. Most convenient method for regular visitors.'),
                           features: [
-                            'Instant check-in',
-                            'No typing required',
-                            'Secure access',
+                            context.tr('Instant check-in'),
+                            context.tr('No typing required'),
+                            context.tr('Secure access'),
                           ],
                           color: const Color(0xffFF9800),
                         ),
@@ -630,13 +631,13 @@ class _SelfHomeViewState extends State<SelfHomeView>
                           context: context,
                           isTablet: isTablet,
                           icon: Icons.lock_outline_rounded,
-                          title: 'Passcode',
-                          description:
-                              'Use your passcode for quick and secure check-in without OTP verification.',
+                          title: context.tr('Passcode'),
+                          description: context.tr(
+                              'Use your passcode for quick and secure check-in without OTP verification.'),
                           features: [
-                            'No OTP required',
-                            'Fast check-in process',
-                            'Secure access',
+                            context.tr('No OTP required'),
+                            context.tr('Fast check-in process'),
+                            context.tr('Secure access'),
                           ],
                           color: const Color(0xff2196F3),
                         ),
@@ -682,7 +683,7 @@ class _SelfHomeViewState extends State<SelfHomeView>
                       ),
                     ),
                     child: Text(
-                      'Got it',
+                      context.tr('Got it'),
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -873,8 +874,8 @@ class _SelfHomeViewState extends State<SelfHomeView>
                 screenWidth: screenWidth,
                 screenHeight: screenHeight,
                 icon: Icons.qr_code_scanner_rounded,
-                title: 'Tap Here To Scan QR Code',
-                subtitle: 'Scan your QR code for quick check-in',
+                title: context.tr('Tap Here To Scan QR Code'),
+                subtitle: context.tr('Scan your QR code for quick check-in'),
                 backgroundColor: const Color(
                   0xFFF6EEDD,
                 ), // Light beige as per requirements
@@ -903,8 +904,9 @@ class _SelfHomeViewState extends State<SelfHomeView>
                 screenWidth: screenWidth,
                 screenHeight: screenHeight,
                 icon: Icons.lock_outline_rounded,
-                title: 'Tap Here To Enter Passcode',
-                subtitle: 'Enter your secure passcode for quick check-in',
+                title: context.tr('Tap Here To Enter Passcode'),
+                subtitle:
+                    context.tr('Enter your secure passcode for quick check-in'),
                 backgroundColor: const Color(
                   0xFFDDE8F7,
                 ), // Pale blue as per requirements
@@ -1467,8 +1469,9 @@ class _SelfHomeViewState extends State<SelfHomeView>
                                       autofocus: true,
                                       maxLength: 10,
                                       cursorColor: const Color(0xffF44336),
-                                      decoration: const InputDecoration(
-                                        hintText: 'Enter admin mobile number',
+                                      decoration: InputDecoration(
+                                        hintText: context
+                                            .tr('Enter admin mobile number'),
                                         hintStyle: TextStyle(
                                           color: Color(0xff57636C),
                                           fontSize: 16,
@@ -1570,19 +1573,22 @@ class _SelfHomeViewState extends State<SelfHomeView>
       log('Full Username: $username');
 
       if (mobileNumber.isEmpty) {
-        EnhancedToast.error(context, 'Mobile number is required');
+        EnhancedToast.error(context, context.tr('mobileNumberIsRequired'));
       } else if (mobileNumber.length != 10) {
-        EnhancedToast.error(context, 'Please enter a 10-digit mobile number');
+        EnhancedToast.error(
+          context,
+          context.tr('pleaseEnterTenDigitMobileNumber'),
+        );
       } else if (!RegExp(r'^[0-9]+$').hasMatch(mobileNumber)) {
         EnhancedToast.error(
           context,
-          'Only numbers are allowed. No spaces or special characters',
+          context.tr('onlyNumbersNoSpacesOrSpecialCharactersMobile'),
         );
       } else if (username == fullMobileNumber) {
         // Valid admin mobile number - show success toast and switch
         EnhancedToast.success(
           context,
-          'Access granted! Switching to Gatekeeper dashboard...',
+          context.tr('accessGrantedSwitchingToGatekeeperDashboard'),
         );
 
         // Delay navigation to show success toast
@@ -1600,14 +1606,14 @@ class _SelfHomeViewState extends State<SelfHomeView>
         // Invalid admin mobile number
         EnhancedToast.error(
           context,
-          'Invalid admin credentials. Please check your mobile number',
+          context.tr('invalidAdminCredentialsCheckMobileNumber'),
         );
       }
     } catch (e) {
       log('Error validating mobile number: $e');
       EnhancedToast.error(
         context,
-        'Unable to verify credentials. Please try again',
+        context.tr('unableToVerifyCredentialsPleaseTryAgain'),
       );
     }
   }
@@ -1803,7 +1809,7 @@ class _SelfHomeViewState extends State<SelfHomeView>
                               appBarScaleFactor,
                         ),
                       ),
-                      tooltip: 'Switch to Gatekeeper Dashboard',
+                      tooltip: context.tr('Switch to Gatekeeper Dashboard'),
                     ),
                   ),
                 ],
