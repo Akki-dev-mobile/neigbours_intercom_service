@@ -1433,5 +1433,20 @@
   "unableToVerifyCredentialsPleaseTryAgain": "Unable to verify credentials. Please try again",
   "visitorAllowStatusAllowed": "Allowed",
   "visitorAllowStatusAllowedByGatekeeper": "Allowed By Gatekeeper",
-  "visitorIdBadgeLetter": "V"
+  "visitorIdBadgeLetter": "V",
+  "expressCheckInSectionTitle": "Express Check-in",
+  "expressCheckInSectionSubtitle": "Choose your preferred check-in method",
+  "expressCheckInOptionsSheetTitle": "Express Check-in Options",
+  "adminAccessTitle": "Admin Access",
+  "adminAccessSubtitle": "Enter admin mobile number to access Gatekeeper dashboard",
+  "switchToGatekeeperCta": "Switch to Gatekeeper",
+  "separatorOr": "OR",
+  "loadingStaffTitle": "Loading Staff",
+  "loadingStaffSubtitle": "Please wait while we fetch the staff list",
+  "purposeCategoryGuest": "Guest",
+  "purposeCategoryDelivery": "Delivery",
+  "purposeCategoryStaff": "Staff",
+  "purposeCategoryMemberStaff": "Member Staff",
+  "purposeCategoryVendor": "Vendor",
+  "purposeCategoryCabs": "Cabs"
 }

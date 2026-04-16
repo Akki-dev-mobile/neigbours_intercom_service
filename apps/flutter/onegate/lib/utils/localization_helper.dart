@@ -1,69 +1,91 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
-/// Helper class to make localization easier to use across the app
 class LocalizationHelper {
-  /// Get the localized string for a given key
-  static AppLocalizations? of(BuildContext context) {
-    return AppLocalizations.of(context);
+  static String translate(
+    BuildContext context,
+    String key, {
+    Map<String, String>? params,
+    String? fallback,
+  }) {
+    final translated = FlutterI18n.translate(
+      context,
+      key,
+      translationParams: params,
+    );
+
+    if (translated == key && fallback != null) {
+      return fallback;
+    }
+
+    return translated;
   }
 
-  /// Get the current locale
-  static Locale? getLocale(BuildContext context) {
-    return Localizations.localeOf(context);
-  }
+  static Locale? getLocale(BuildContext context) =>
+      Localizations.localeOf(context);
 
-  /// Check if the current locale is RTL
   static bool isRTL(BuildContext context) {
     final locale = getLocale(context);
     return locale != null && Directionality.of(context) == TextDirection.rtl;
   }
 
-  /// Get the current language code
   static String getLanguageCode(BuildContext context) {
     final locale = getLocale(context);
     return locale?.languageCode ?? 'en';
   }
 
-  /// Check if the context has localization delegate
-  static bool hasLocalizations(BuildContext context) {
-    return AppLocalizations.of(context) != null;
+  static bool hasLocalizations(BuildContext context) =>
+      getLocale(context) != null;
+
+  /// Localizes known visitor purpose category names from the API (e.g. `GUEST`).
+  static String translatePurposeCategoryName(
+    BuildContext context,
+    String categoryName,
+  ) {
+    final raw = categoryName.trim();
+    switch (raw.toUpperCase()) {
+      case 'GUEST':
+        return translate(context, 'purposeCategoryGuest');
+      case 'DELIVERY':
+        return translate(context, 'purposeCategoryDelivery');
+      case 'STAFF':
+        return translate(context, 'purposeCategoryStaff');
+      case 'MEMBER STAFF':
+        return translate(context, 'purposeCategoryMemberStaff');
+      case 'VENDOR':
+        return translate(context, 'purposeCategoryVendor');
+      case 'CABS':
+        return translate(context, 'purposeCategoryCabs');
+      default:
+        return translate(context, raw, fallback: raw);
+    }
   }
 }
 
-/// Extension to make BuildContext.l10n available
 extension LocalizationExtension on BuildContext {
-  /// Get AppLocalizations instance for this context
-  /// Always returns a valid instance or throws an exception
-  AppLocalizations get l10n {
-    final loc = AppLocalizations.of(this);
-    if (loc == null) {
-      throw Exception('AppLocalizations not found in context. Make sure MaterialApp has localizationsDelegates configured.');
-    }
-    return loc;
+  AppLocalizations get l10n => AppLocalizations.of(this);
+
+  AppLocalizations get localizations => l10n;
+
+  String tr(
+    String key, {
+    Map<String, String>? params,
+    String? fallback,
+  }) {
+    return LocalizationHelper.translate(
+      this,
+      key,
+      params: params,
+      fallback: fallback,
+    );
   }
 
-  /// Get AppLocalizations instance with fallback
-  /// Always returns a valid instance or throws an exception
-  AppLocalizations get localizations {
-    final loc = AppLocalizations.of(this);
-    if (loc == null) {
-      throw Exception(
-          'AppLocalizations not found in context. Make sure MaterialApp has localizationsDelegates configured.');
-    }
-    return loc;
-  }
+  String trPurposeCategory(String categoryName) =>
+      LocalizationHelper.translatePurposeCategoryName(this, categoryName);
 
-  /// Get current language code
   String get currentLanguageCode => Localizations.localeOf(this).languageCode;
-
-  /// Check if current language is English
   bool get isEnglish => currentLanguageCode == 'en';
-
-  /// Check if current language is Hindi
   bool get isHindi => currentLanguageCode == 'hi';
-
-  /// Check if current language is Marathi
   bool get isMarathi => currentLanguageCode == 'mr';
 }
- 

@@ -23,6 +23,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpose/provider/purposeProvider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_screens/widgets/request_2.dart';
@@ -277,7 +278,7 @@ class _IdInputViewState extends State<IdInputView> {
                       "Visitor already checked in error: ${visitorCheckedInErrorState.message}");
 
                   _showEnhancedErrorToast(
-                    title: "Visitor Already Checked In",
+                    title: context.tr('Visitor Already Checked In'),
                     message: visitorCheckedInErrorState.message,
                   );
                   break;
@@ -297,7 +298,7 @@ class _IdInputViewState extends State<IdInputView> {
                       "🎯 UI: Showing snackbar with message: ${apiErrorState.message}");
                   // Show snackbar for API error
                   _showEnhancedErrorToast(
-                    title: "API Error",
+                    title: context.tr('API Error'),
                     message: apiErrorState.message,
                   );
                   break;
@@ -726,7 +727,8 @@ class _IdInputViewState extends State<IdInputView> {
                                                   }
                                                 },
                                                 decoration: InputDecoration(
-                                                  hintText: '0123456789',
+                                                  hintText:
+                                                      context.tr('0123456789'),
                                                   hintStyle: const TextStyle(
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.w400,
@@ -853,8 +855,9 @@ class _IdInputViewState extends State<IdInputView> {
                                                           size: 22,
                                                         ),
                                                       ),
-                                                      hintText:
-                                                          'Search countries...',
+                                                      hintText: context.tr(
+                                                        'Search countries...',
+                                                      ),
                                                       hintStyle:
                                                           const TextStyle(
                                                         color:
@@ -957,8 +960,10 @@ class _IdInputViewState extends State<IdInputView> {
                                                           ),
                                                           const SizedBox(
                                                               height: 16),
-                                                          const Text(
-                                                            'No countries found',
+                                                          Text(
+                                                            context.tr(
+                                                              'No countries found',
+                                                            ),
                                                             style: TextStyle(
                                                               fontSize: 18,
                                                               fontWeight:
@@ -970,8 +975,10 @@ class _IdInputViewState extends State<IdInputView> {
                                                           ),
                                                           const SizedBox(
                                                               height: 8),
-                                                          const Text(
-                                                            'Try searching with a different term',
+                                                          Text(
+                                                            context.tr(
+                                                              'Try searching with a different term',
+                                                            ),
                                                             style: TextStyle(
                                                               fontSize: 14,
                                                               color: Color(
@@ -1051,7 +1058,9 @@ class _IdInputViewState extends State<IdInputView> {
                                                     ),
                                                     const SizedBox(height: 4),
                                                     Text(
-                                                      'Please wait while we check your details',
+                                                      context.tr(
+                                                        'Please wait while we check your details',
+                                                      ),
                                                       style: TextStyle(
                                                         fontSize: 12,
                                                         color: const Color(
@@ -1164,8 +1173,10 @@ class _IdInputViewState extends State<IdInputView> {
                                                         ),
                                                         const SizedBox(
                                                             height: 4),
-                                                        const Text(
-                                                          'Enter your 6-digit passcode to continue',
+                                                        Text(
+                                                          context.tr(
+                                                            'Enter your 6-digit passcode to continue',
+                                                          ),
                                                           style: TextStyle(
                                                             fontSize: 14,
                                                             color: Color(
@@ -1208,15 +1219,18 @@ class _IdInputViewState extends State<IdInputView> {
                                                   validator: (value) {
                                                     if (value == null ||
                                                         value.isEmpty) {
-                                                      return 'Passcode is required';
+                                                      return context.tr(
+                                                          'Passcode is required');
                                                     } else if (value.length !=
                                                         6) {
-                                                      return 'Please enter a 6-digit passcode';
+                                                      return context.tr(
+                                                          'Please enter a 6-digit passcode');
                                                     }
                                                     return null;
                                                   },
                                                   decoration: InputDecoration(
-                                                    hintText: '123456',
+                                                    hintText:
+                                                        context.tr('123456'),
                                                     hintStyle: const TextStyle(
                                                       fontSize: 16,
                                                       fontWeight:
@@ -1419,8 +1433,10 @@ class _IdInputViewState extends State<IdInputView> {
           ),
           if (isLoading)
             DashboardLoader(
-              title: 'Loading Visitor Input',
-              subtitle: 'Please wait while we process your request...',
+              title: context.tr('Loading Visitor Input'),
+              subtitle: context.tr(
+                'Please wait while we process your request...',
+              ),
             ), // DashboardLoader overlay
         ],
       ),
@@ -1480,8 +1496,11 @@ class _IdInputViewState extends State<IdInputView> {
         final int id = visitorData['visitor_id'];
 
         _showEnhancedSuccessToast(
-          title: "Passcode Verified",
-          message: "Welcome $name! Proceeding to guest information.",
+          title: context.tr('Passcode Verified'),
+          message: context.tr(
+            "Welcome {name}! Proceeding to guest information.",
+            params: {'name': name},
+          ),
           icon: Icons.verified_user,
         );
 
@@ -1489,8 +1508,8 @@ class _IdInputViewState extends State<IdInputView> {
         await _navigateToGuestInformationPage(mobileNumber, id.toString());
       } else {
         _showEnhancedErrorToast(
-          title: "Invalid Passcode",
-          message: "Not a valid passcode",
+          title: context.tr('Invalid Passcode'),
+          message: context.tr("Not a valid passcode"),
           icon: Icons.lock_outline,
         );
       }
@@ -1498,14 +1517,16 @@ class _IdInputViewState extends State<IdInputView> {
       stopLoading();
 
       // Provide more specific error messages based on the error type
-      String errorTitle = "Verification Failed";
-      String errorMessage = "Unable to verify passcode. Please try again.";
+      String errorTitle = context.tr("Verification Failed");
+      String errorMessage =
+          context.tr("Unable to verify passcode. Please try again.");
       IconData errorIcon = Icons.error_outline;
 
       if (e.toString().contains('network') ||
           e.toString().contains('connection')) {
-        errorTitle = "Network Error";
-        errorMessage = "Please check your internet connection and try again.";
+        errorTitle = context.tr("Network Error");
+        errorMessage =
+            context.tr("Please check your internet connection and try again.");
         errorIcon = Icons.wifi_off;
       } else if (e.toString().contains('timeout')) {
         errorTitle = "Request Timeout";
@@ -2528,7 +2549,9 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                       selectPurposeLoading ? null : purposeSelectionBottomSheet,
                   child: Center(
                     child: Text(
-                      selectPurposeLoading ? 'Processing...' : 'Select Purpose',
+                      selectPurposeLoading
+                          ? context.tr('Processing...')
+                          : context.tr('Select Purpose'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,

@@ -2858,7 +2858,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             child: Center(
               child: Text(
                 _isSubmitting
-                    ? 'Processing...'
+                    ? context.tr('Processing...')
                     : AppLocalizations.of(context).next,
                 style: TextStyle(
                   color: Colors.white,

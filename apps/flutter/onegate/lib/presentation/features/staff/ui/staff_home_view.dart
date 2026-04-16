@@ -5,6 +5,7 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/models/staff_model.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_list_widget.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class StaffScreen extends StatefulWidget {
   const StaffScreen({Key? key}) : super(key: key);
@@ -71,7 +72,7 @@ class _StaffScreenState extends State<StaffScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Staff"),
+        title: Text(context.tr('Staff')),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -253,7 +254,7 @@ class _StaffScreenState extends State<StaffScreen> {
         onChanged: (query) => _filterStaffList(query),
         cursorColor: const Color(0xffF44336),
         decoration: InputDecoration(
-          hintText: 'Search staff by name, category, or phone...',
+          hintText: context.tr('Search staff by name, category, or phone...'),
           hintStyle: TextStyle(
             color: Colors.grey.shade500,
             fontSize: isTablet ? 16 : 14,
@@ -327,7 +328,7 @@ class _StaffScreenState extends State<StaffScreen> {
                   ),
                   SizedBox(height: isTablet ? 32 : 24),
                   Text(
-                    'Loading Staff',
+                    context.tr('loadingStaffTitle'),
                     style: TextStyle(
                       color: const Color(0xff212427),
                       fontSize: isTablet ? 24 : 20,
@@ -337,7 +338,7 @@ class _StaffScreenState extends State<StaffScreen> {
                   ),
                   SizedBox(height: isTablet ? 12 : 8),
                   Text(
-                    'Please wait while we fetch the staff list',
+                    context.tr('loadingStaffSubtitle'),
                     style: TextStyle(
                       color: const Color(0xff57636C),
                       fontSize: isTablet ? 16 : 14,

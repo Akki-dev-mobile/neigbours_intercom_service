@@ -439,7 +439,7 @@ class _SelfHomeViewState extends State<SelfHomeView>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Express Check-in',
+                  context.tr('expressCheckInSectionTitle'),
                   style: TextStyle(
                     fontSize: titleFontSize,
                     fontWeight: FontWeight.w700,
@@ -449,7 +449,7 @@ class _SelfHomeViewState extends State<SelfHomeView>
                 ),
                 SizedBox(height: spacing * 0.25),
                 Text(
-                  'Choose your preferred check-in method',
+                  context.tr('expressCheckInSectionSubtitle'),
                   style: TextStyle(
                     fontSize: subtitleFontSize,
                     color: const Color(0xff57636C),
@@ -575,7 +575,7 @@ class _SelfHomeViewState extends State<SelfHomeView>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Express Check-in Options',
+                            context.tr('expressCheckInOptionsSheetTitle'),
                             style: Theme.of(context)
                                 .textTheme
                                 .headlineSmall
@@ -587,7 +587,7 @@ class _SelfHomeViewState extends State<SelfHomeView>
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Choose your preferred check-in method',
+                            context.tr('expressCheckInSectionSubtitle'),
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium
@@ -1007,7 +1007,7 @@ class _SelfHomeViewState extends State<SelfHomeView>
               ],
             ),
             child: Text(
-              'OR',
+              context.tr('separatorOr'),
               style: TextStyle(
                 fontSize: fontSize,
                 fontWeight: FontWeight.w600,
@@ -1380,7 +1380,7 @@ class _SelfHomeViewState extends State<SelfHomeView>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Admin Access',
+                            context.tr('adminAccessTitle'),
                             style: Theme.of(context)
                                 .textTheme
                                 .headlineSmall
@@ -1392,7 +1392,7 @@ class _SelfHomeViewState extends State<SelfHomeView>
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Enter admin mobile number to access Gatekeeper dashboard',
+                            context.tr('adminAccessSubtitle'),
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium
@@ -1528,9 +1528,9 @@ class _SelfHomeViewState extends State<SelfHomeView>
                               ),
                               child: Container(
                                 alignment: Alignment.center,
-                                child: const Text(
-                                  'Switch to Gatekeeper',
-                                  style: TextStyle(
+                                child: Text(
+                                  context.tr('switchToGatekeeperCta'),
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,

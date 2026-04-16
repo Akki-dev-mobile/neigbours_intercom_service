@@ -1421,5 +1421,20 @@
   "unableToVerifyCredentialsPleaseTryAgain": "Unable to verify credentials. Please try again",
   "visitorAllowStatusAllowed": "Allowed",
   "visitorAllowStatusAllowedByGatekeeper": "Allowed By Gatekeeper",
-  "visitorIdBadgeLetter": "V"
+  "visitorIdBadgeLetter": "V",
+  "expressCheckInSectionTitle": "एक्सप्रेस चेक-इन",
+  "expressCheckInSectionSubtitle": "तुमची पसंतीची चेक-इन पद्धत निवडा",
+  "expressCheckInOptionsSheetTitle": "एक्सप्रेस चेक-इन पर्याय",
+  "adminAccessTitle": "अॅडमिन प्रवेश",
+  "adminAccessSubtitle": "गेटकीपर डॅशबोर्ड उघडण्यासाठी अॅडमिन मोबाइल क्रमांक टाका",
+  "switchToGatekeeperCta": "गेटकीपरकडे स्विच करा",
+  "separatorOr": "किंवा",
+  "loadingStaffTitle": "कर्मचारी लोड होत आहेत",
+  "loadingStaffSubtitle": "कृपया प्रतीक्षा करा, आम्ही कर्मचारी यादी आणत आहोत",
+  "purposeCategoryGuest": "अतिथी",
+  "purposeCategoryDelivery": "डिलिव्हरी",
+  "purposeCategoryStaff": "कर्मचारी",
+  "purposeCategoryMemberStaff": "सदस्य कर्मचारी",
+  "purposeCategoryVendor": "विक्रेता",
+  "purposeCategoryCabs": "कॅब"
 }

@@ -18,6 +18,7 @@ import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 import 'package:flutter_onegate/presentation/widgets/custom_numpad.dart';
 import 'package:flutter_onegate/presentation/widgets/enhanced_input_field.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/presentation/widgets/enhanced_toast.dart';
 import 'package:flutter_onegate/presentation/widgets/enhanced_video_carousel.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
@@ -81,11 +82,11 @@ class _SelfEntryViewState extends State<SelfEntryView>
   String get _currentPageTitle {
     switch (_tabController.index) {
       case 0:
-        return 'Enter Mobile Number';
+        return context.tr('Enter Mobile Number');
       case 1:
-        return 'Enter OTP';
+        return context.tr('Enter OTP');
       default:
-        return 'Enter Mobile Number';
+        return context.tr('Enter Mobile Number');
     }
   }
 
@@ -119,8 +120,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
         await selfCheckInOtp(mobileNumber);
         showEnhancedToast(
           context,
-          title: "Success",
-          message: "OTP has been resent successfully",
+          title: context.tr('Success'),
+          message: context.tr("OTP has been resent successfully"),
           backgroundColor: Colors.green,
           icon: Icons.check_circle_outline,
         );
@@ -129,8 +130,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
     } catch (e) {
       showEnhancedToast(
         context,
-        title: "Error",
-        message: "Failed to resend OTP. Please try again.",
+        title: context.tr('Error'),
+        message: context.tr("Failed to resend OTP. Please try again."),
         backgroundColor: const Color(0xffF44336),
         icon: Icons.error_outline,
       );
@@ -300,8 +301,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
       // Show OTP success toast only for new visitors (not existing ones)
       showEnhancedToast(
         context,
-        title: "Success",
-        message: "OTP sent successfully",
+        title: context.tr('Success'),
+        message: context.tr("OTP sent successfully"),
         backgroundColor: Colors.green,
         icon: Icons.check_circle_outline,
       );
@@ -350,7 +351,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
       // Show success toast message first
       showEnhancedToast(
         context,
-        title: "Success",
+        title: context.tr('Success'),
         message: AppLocalizations.of(context).otpVerifiedSuccessfully,
         backgroundColor: Colors.green,
         icon: Icons.check_circle_outline,
@@ -366,8 +367,9 @@ class _SelfEntryViewState extends State<SelfEntryView>
       log('Error during OTP verification: $e');
       showEnhancedToast(
         context,
-        title: "Error",
-        message: "Incorrect OTP Entered. Please check and try again",
+        title: context.tr('Error'),
+        message:
+            context.tr("Incorrect OTP Entered. Please check and try again"),
         backgroundColor: const Color(0xffF44336),
         icon: Icons.error_outline,
       );
@@ -676,7 +678,9 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                 },
                           child: Center(
                             child: Text(
-                              isProcessing ? 'Processing...' : 'Select Purpose',
+                              isProcessing
+                                  ? context.tr('Processing...')
+                                  : context.tr('Select Purpose'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -820,7 +824,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Text(
-                    purpose.categoryName,
+                    context.trPurposeCategory(purpose.categoryName),
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -1004,7 +1008,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            'Enter Mobile Number',
+                                            context.tr('Enter Mobile Number'),
                                             style: TextStyle(
                                               fontSize: MediaQuery.of(context)
                                                           .size
@@ -1019,7 +1023,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            'Enter your mobile number',
+                                            context
+                                                .tr('Enter your mobile number'),
                                             style: TextStyle(
                                               fontSize: MediaQuery.of(context)
                                                           .size
@@ -1046,7 +1051,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                   isMobileField: true,
                                   label: AppLocalizations.of(context)
                                       .visitorMobileNumber,
-                                  hint: '0123456789',
+                                  hint: context.tr('0123456789'),
                                   suppressKeyboard:
                                       true, // Suppress mobile keyboard
                                   maxLength: 10,
@@ -1100,7 +1105,8 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                           size: 22,
                                         ),
                                       ),
-                                      hintText: 'Search countries...',
+                                      hintText:
+                                          context.tr('Search countries...'),
                                       hintStyle: const TextStyle(
                                         color: Color(0xff57636C),
                                         fontSize: 16,
@@ -1216,7 +1222,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                 if (mobileNumber.isEmpty) {
                                   showEnhancedToast(
                                     context,
-                                    title: "Error",
+                                    title: context.tr('Error'),
                                     message: AppLocalizations.of(context)
                                         .mobileNumberIsRequired,
                                     backgroundColor: const Color(0xffF44336),
@@ -1225,9 +1231,9 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                 } else if (mobileNumber.length != 10) {
                                   showEnhancedToast(
                                     context,
-                                    title: "Error",
-                                    message:
-                                        "Please enter 10 digit mobile number",
+                                    title: context.tr('Error'),
+                                    message: context.tr(
+                                        "Please enter 10 digit mobile number"),
                                     backgroundColor: const Color(0xffF44336),
                                     icon: Icons.error_outline,
                                   );
@@ -1235,7 +1241,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                     .hasMatch(mobileNumber)) {
                                   showEnhancedToast(
                                     context,
-                                    title: "Error",
+                                    title: context.tr('Error'),
                                     message: AppLocalizations.of(context)
                                         .noSpacesOrSpecialCharactersAllowed,
                                     backgroundColor: const Color(0xffF44336),
@@ -1315,7 +1321,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            'Enter OTP',
+                                            context.tr('Enter OTP'),
                                             style: TextStyle(
                                               fontSize: MediaQuery.of(context)
                                                           .size
@@ -1330,7 +1336,9 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            'Enter the OTP received on your phone',
+                                            context.tr(
+                                              'Enter the OTP received on your phone',
+                                            ),
                                             style: TextStyle(
                                               fontSize: MediaQuery.of(context)
                                                           .size
@@ -1357,7 +1365,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                   isMobileField: false,
                                   label: AppLocalizations.of(context)
                                       .enterOTPSentToYourMobileNumber,
-                                  hint: '123456',
+                                  hint: context.tr('123456'),
                                   maxLength: 6,
                                   suppressKeyboard:
                                       true, // Suppress mobile keyboard
@@ -1388,8 +1396,13 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                     ),
                                     child: Text(
                                       _canResendOtp
-                                          ? 'Resend OTP'
-                                          : 'Resend OTP (${_resendCountdown}s)',
+                                          ? context.tr('Resend OTP')
+                                          : context.tr(
+                                              'Resend OTP ({seconds}s)',
+                                              params: {
+                                                'seconds': '$_resendCountdown',
+                                              },
+                                            ),
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,

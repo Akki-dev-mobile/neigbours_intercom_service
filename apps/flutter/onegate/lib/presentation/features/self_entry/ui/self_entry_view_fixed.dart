@@ -162,7 +162,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                       children: [
                         ListTile(
                           title: Text(
-                            'Select Purpose of visit',
+                            context.tr('selectPurposeOfVisit'),
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium!
@@ -414,7 +414,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          purpose.categoryName,
+                          context.trPurposeCategory(purpose.categoryName),
                           style: TextStyle(
                             color: selectedImageIndex == index
                                 ? const Color(0xffC08261)
@@ -568,7 +568,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                     children: [
                       ListTile(
                         title: Text(
-                          'Select Purpose of visit',
+                          context.tr('selectPurposeOfVisit'),
                           style:
                               Theme.of(context).textTheme.bodyMedium!.copyWith(
                                     fontWeight: FontWeight.w600,
