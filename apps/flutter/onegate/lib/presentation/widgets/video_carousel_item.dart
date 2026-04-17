@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/services.dart';
 
@@ -355,7 +356,7 @@ class _VideoCarouselItemState extends State<VideoCarouselItem>
                         ),
                         SizedBox(height: widget.isTablet ? 16 : 12),
                         Text(
-                          'Loading...',
+                          AppLocalizations.of(context).loading,
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: widget.isTablet ? 16 : 14,
@@ -418,12 +419,8 @@ class _VideoCarouselItemState extends State<VideoCarouselItem>
         return Container(
           color: Colors.black12,
           child: Center(
-            child: DashboardLoaderIcon(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
-                  : null,
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+            child: const DashboardLoaderIcon(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           ),
         );

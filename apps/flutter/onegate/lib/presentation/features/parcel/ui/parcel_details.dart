@@ -11,6 +11,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:pinput/pinput.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class ParcelDetails extends StatefulWidget {
   final Map<String, dynamic> parcel;
@@ -115,7 +116,7 @@ class _ParcelDetailsState extends State<ParcelDetails> {
                   child: IconButton(
                     icon: const Icon(Icons.close, color: Color(0xffF44336)),
                     onPressed: () => Navigator.of(context).pop(),
-                    tooltip: 'Close',
+                    tooltip: context.tr('Close'),
                   ),
                 ),
               ),
@@ -245,13 +246,13 @@ class _ParcelDetailsState extends State<ParcelDetails> {
                       _buildBorderedSection(
                         context,
                         isTablet,
-                        title: "Contact Information",
+                        title: context.tr('Contact Information'),
                         children: [
                           _buildInfoTile(
                             icon: Icons.phone,
-                            title: "Phone Number",
-                            subtitle:
-                                widget.parcel['visitor_mobile'] ?? 'No Number',
+                            title: context.tr('Phone Number'),
+                            subtitle: widget.parcel['visitor_mobile'] ??
+                                context.tr('No Number'),
                             iconColor: const Color(0xff43A047),
                             iconBg: const Color(0xffE8F5E9),
                             trailing: _buildCallButton(),
@@ -262,12 +263,13 @@ class _ParcelDetailsState extends State<ParcelDetails> {
                       _buildBorderedSection(
                         context,
                         isTablet,
-                        title: "Unit Information",
+                        title: context.tr('Unit Information'),
                         children: [
                           _buildInfoTile(
                             icon: Icons.apartment,
-                            title: "Unit Name",
-                            subtitle: widget.parcel['unit_name'] ?? 'N/A',
+                            title: context.tr('Unit Name'),
+                            subtitle:
+                                widget.parcel['unit_name'] ?? context.tr('N/A'),
                             iconColor: const Color(0xffF44336),
                             iconBg: const Color(0xffFFEBEE),
                           ),
@@ -277,7 +279,7 @@ class _ParcelDetailsState extends State<ParcelDetails> {
                       _buildBorderedSection(
                         context,
                         isTablet,
-                        title: "Parcel Timeline",
+                        title: context.tr('Parcel Timeline'),
                         children: _buildTimeline(),
                       ),
                       const SizedBox(height: 150),
@@ -316,28 +318,28 @@ class _ParcelDetailsState extends State<ParcelDetails> {
                     onTap: () {
                       TextEditingController otpController =
                           TextEditingController();
-                  remoteDataSource.getParcelOtp(
-                    widget.parcel['parcel_id'].toString(),
-                    widget.parcel['memb_mobile_number'].toString(),
-                  );
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
+                      remoteDataSource.getParcelOtp(
+                        widget.parcel['parcel_id'].toString(),
+                        widget.parcel['memb_mobile_number'].toString(),
+                      );
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
                         backgroundColor: Colors.transparent,
                         shape: const RoundedRectangleBorder(
                           borderRadius: BorderRadius.vertical(
                             top: Radius.circular(28),
                           ),
                         ),
-                    builder: (BuildContext context) {
-                      return OtpBottomSheet(
-                        remoteDataSource: remoteDataSource,
-                        parcel: widget.parcel,
-                        otpController: otpController,
+                        builder: (BuildContext context) {
+                          return OtpBottomSheet(
+                            remoteDataSource: remoteDataSource,
+                            parcel: widget.parcel,
+                            otpController: otpController,
+                          );
+                        },
                       );
                     },
-                  );
-                },
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -348,7 +350,7 @@ class _ParcelDetailsState extends State<ParcelDetails> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Mark as Picked',
+                          context.tr('Mark as Picked'),
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     color: Colors.white,
@@ -523,7 +525,7 @@ class _ParcelDetailsState extends State<ParcelDetails> {
   Widget _buildCallButton() {
     return ElevatedButton.icon(
       icon: const Icon(Icons.call, size: 16, color: Colors.white),
-      label: const Text('Call',
+      label: Text(context.tr('Call'),
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
       onPressed: () => _makePhoneCall(widget.parcel['visitor_mobile'] ?? ''),
       style: ElevatedButton.styleFrom(
@@ -688,9 +690,9 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
           top: Radius.circular(28),
         ),
       ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
           // Handle bar
           Container(
             margin: const EdgeInsets.only(top: 12, bottom: 8),
@@ -754,9 +756,9 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                       // Text content
                       Expanded(
                         child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
                               'Verification Required',
                               style: Theme.of(context)
                                   .textTheme
@@ -857,7 +859,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-            Text(
+                              Text(
                                 'OTP Sent',
                                 style: Theme.of(context)
                                     .textTheme
@@ -887,8 +889,8 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                   const SizedBox(height: 24),
 
                   // Enhanced OTP Input Section
-            Column(
-              children: [
+                  Column(
+                    children: [
                       Text(
                         'Enter Verification Code',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -911,32 +913,32 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                       // Enhanced Pinput
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
-                  child: Pinput(
-                    key: const Key("otp_field"),
+                        child: Pinput(
+                          key: const Key("otp_field"),
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    length: 6,
-                    onCompleted: validateOTP,
-                    onChanged: (pin) {
-                      if (errorText != null) {
-                        setState(() {
-                          errorText = null;
-                        });
-                      }
-                    },
-                    focusNode: focusNode,
-                    controller: widget.otpController,
-                    errorText: errorText,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          length: 6,
+                          onCompleted: validateOTP,
+                          onChanged: (pin) {
+                            if (errorText != null) {
+                              setState(() {
+                                errorText = null;
+                              });
+                            }
+                          },
+                          focusNode: focusNode,
+                          controller: widget.otpController,
+                          errorText: errorText,
                           animationDuration: const Duration(milliseconds: 300),
-                    defaultPinTheme: PinTheme(
+                          defaultPinTheme: PinTheme(
                             width: 48,
                             height: 56,
-                      textStyle: const TextStyle(
+                            textStyle: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
                               color: Color(0xff212427),
-                      ),
-                      decoration: BoxDecoration(
+                            ),
+                            decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
@@ -950,17 +952,17 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                                   offset: const Offset(0, 2),
                                 ),
                               ],
-                      ),
-                    ),
-                    submittedPinTheme: PinTheme(
+                            ),
+                          ),
+                          submittedPinTheme: PinTheme(
                             width: 48,
                             height: 56,
-                      textStyle: const TextStyle(
+                            textStyle: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
-                      ),
-                      decoration: BoxDecoration(
+                            ),
+                            decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
                                   const Color(0xff43A047),
@@ -982,17 +984,17 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                                   offset: const Offset(0, 4),
                                 ),
                               ],
-                      ),
-                    ),
-                    errorPinTheme: PinTheme(
+                            ),
+                          ),
+                          errorPinTheme: PinTheme(
                             width: 48,
                             height: 56,
-                      textStyle: const TextStyle(
+                            textStyle: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
-                      ),
-                      decoration: BoxDecoration(
+                            ),
+                            decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
                                   const Color(0xffF44336),
@@ -1014,17 +1016,17 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                                   offset: const Offset(0, 4),
                                 ),
                               ],
-                      ),
-                    ),
-                    focusedPinTheme: PinTheme(
+                            ),
+                          ),
+                          focusedPinTheme: PinTheme(
                             width: 48,
                             height: 56,
-                      textStyle: const TextStyle(
+                            textStyle: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
                               color: Color(0xff212427),
-                      ),
-                      decoration: BoxDecoration(
+                            ),
+                            decoration: BoxDecoration(
                               color: Colors.blue.shade50,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
@@ -1038,17 +1040,17 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                                   offset: const Offset(0, 4),
                                 ),
                               ],
-                      ),
-                    ),
-                    followingPinTheme: PinTheme(
+                            ),
+                          ),
+                          followingPinTheme: PinTheme(
                             width: 48,
                             height: 56,
-                      textStyle: const TextStyle(
+                            textStyle: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
                               color: Color(0xff212427),
-                      ),
-                      decoration: BoxDecoration(
+                            ),
+                            decoration: BoxDecoration(
                               color: Colors.grey.shade50,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
@@ -1107,15 +1109,15 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
-                child: Text(
+                                      child: Text(
                                         errorText!,
                                         style: TextStyle(
                                           color: Colors.red.shade700,
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               )
@@ -1148,7 +1150,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+                          children: [
                             Icon(
                               Icons.schedule_rounded,
                               color: _timer == 0
@@ -1189,9 +1191,9 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                                   color: Colors.blue.withOpacity(0.3),
                                   blurRadius: 6,
                                   offset: const Offset(0, 3),
-                ),
-              ],
-            ),
+                                ),
+                              ],
+                            ),
                             child: Material(
                               color: Colors.transparent,
                               child: InkWell(
@@ -1281,9 +1283,9 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                                 ? Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-            const SizedBox(
+                                      const SizedBox(
                                         width: 20,
-              height: 20,
+                                        height: 20,
                                         child: DashboardLoaderIcon(
                                           color: Colors.white,
                                           strokeWidth: 2.5,
@@ -1357,14 +1359,14 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
       );
       _startTimer();
       _showEnhancedSuccessToast(
-        title: 'OTP Resent',
-        message: 'A new OTP has been sent to your mobile number',
+        title: context.tr('OTP Resent'),
+        message: context.tr('A new OTP has been sent to your mobile number'),
         icon: Icons.message,
       );
     } catch (e) {
       _showEnhancedErrorToast(
-        title: 'Resend Failed',
-        message: 'Unable to send OTP. Please try again.',
+        title: context.tr('Resend Failed'),
+        message: context.tr('Unable to send OTP. Please try again.'),
         icon: Icons.error_outline,
       );
       log("Failed to resend OTP: $e");
@@ -1375,7 +1377,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
     String otp = widget.otpController.text;
     if (otp.length != 6) {
       setState(() {
-        errorText = "Please enter a valid 6-digit OTP.";
+        errorText = context.tr('Please enter a valid 6-digit OTP.');
       });
       return;
     }
@@ -1391,8 +1393,8 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
       );
 
       _showEnhancedSuccessToast(
-        title: 'Parcel Picked Successfully!',
-        message: 'The parcel has been marked as picked up',
+        title: context.tr('Parcel Picked Successfully!'),
+        message: context.tr('The parcel has been marked as picked up'),
         icon: Icons.inventory_2,
       );
 
@@ -1405,13 +1407,13 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
       );
     } catch (e) {
       setState(() {
-        errorText = "Invalid OTP. Please try again.";
+        errorText = context.tr('Invalid OTP. Please try again.');
         isSubmitting = false;
       });
 
       _showEnhancedErrorToast(
-        title: 'Verification Failed',
-        message: 'Invalid OTP entered. Please check and try again.',
+        title: context.tr('Verification Failed'),
+        message: context.tr('Invalid OTP entered. Please check and try again.'),
         icon: Icons.lock_outline,
       );
 

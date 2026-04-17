@@ -254,7 +254,7 @@ class _StaffScreenState extends State<StaffScreen> {
         onChanged: (query) => _filterStaffList(query),
         cursorColor: const Color(0xffF44336),
         decoration: InputDecoration(
-          hintText: context.tr('Search staff by name, category, or phone...'),
+          hintText: context.tr('staffSearchHint'),
           hintStyle: TextStyle(
             color: Colors.grey.shade500,
             fontSize: isTablet ? 16 : 14,
@@ -540,9 +540,7 @@ class _StaffScreenState extends State<StaffScreen> {
                       SizedBox(height: isTablet ? 14 : 10),
                       Text(
                         isSearching
-                            ? context.tr(
-                                'No staff members match your search. Try a different keyword.',
-                              )
+                            ? context.tr('staffNoSearchMatch')
                             : context.tr(
                                 'There are currently no staff members registered in the system.',
                               ),

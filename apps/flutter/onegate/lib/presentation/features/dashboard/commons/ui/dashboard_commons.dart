@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/bloc/admin_dashboard_bloc.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/bloc/gatekeeper_dashboard_bloc.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 // import 'package:lottie/lottie.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -212,7 +213,7 @@ class DashboardBlocks extends StatelessWidget {
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          'In - Out Book',
+                          context.tr('In - Out Book'),
                           maxLines: 1,
                           textAlign: TextAlign.center,
                           overflow: TextOverflow.ellipsis,
@@ -417,7 +418,7 @@ class DashboardBlocks extends StatelessWidget {
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          'Visitor-In',
+                          context.tr('Visitor-In'),
                           maxLines: 1,
                           textAlign: TextAlign.center,
                           style: TextStyle(
@@ -612,7 +613,7 @@ class DashboardBlocks extends StatelessWidget {
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          'Visitor-Out',
+                          context.tr('Visitor-Out'),
                           maxLines: 1,
                           textAlign: TextAlign.center,
                           style: TextStyle(

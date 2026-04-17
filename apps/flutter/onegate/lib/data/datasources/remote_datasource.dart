@@ -848,6 +848,7 @@ class RemoteDataSource {
 
   Future<void> sendFcmNotification(Map<String, dynamic> requestData) async {
     try {
+      requestData.putIfAbsent('app_type', () => 'onegate');
       final response = await _getDio().post(
         '${ApiUrls.gateBaseUrl}/visitor/sendFcmNotification',
         options: Options(

@@ -26,6 +26,7 @@ import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/units_selection/ui/unit_selection_view.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 enum RequestType {
   approved,
@@ -557,7 +558,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                 _buildDetailRow(
                   icon: Icons.phone_outlined,
                   iconColor: Colors.green,
-                  label: "Mobile",
+                  label: AppLocalizations.of(context).mobile,
                   value: widget.visitor.mobile ?? "",
                 ),
                 const SizedBox(height: 10),
@@ -568,9 +569,9 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                       _buildDetailRow(
                         icon: Icons.location_on_outlined,
                         iconColor: Colors.orange,
-                        label: "Coming From",
+                        label: AppLocalizations.of(context).comingFrom,
                         value: widget.visitorLog?.visitor_coming_from ??
-                            "Not specified",
+                            AppLocalizations.of(context).notSpecified,
                       ),
                       const SizedBox(height: 10),
                     ],
@@ -579,9 +580,12 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                   icon: _getPurposeIcon(
                       widget.visitorLog?.visitor_purpose_Category_name),
                   iconColor: Colors.orange,
-                  label: "Purpose",
-                  value: widget.visitorLog?.visitor_purpose_Category_name ??
-                      "Not specified",
+                  label: AppLocalizations.of(context).purpose,
+                  value:
+                      widget.visitorLog?.visitor_purpose_Category_name != null
+                          ? context.trPurposeCategory(
+                              widget.visitorLog!.visitor_purpose_Category_name!)
+                          : AppLocalizations.of(context).notSpecified,
                 ),
               ],
             ),
@@ -864,7 +868,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       );
 
       if (image == null) {
-        _showErrorSnackBar('No image captured');
+        _showErrorSnackBar(context.tr('No image captured'));
         return;
       }
 
@@ -902,7 +906,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       );
 
       if (success) {
-        _showSuccessSnackBar('Image uploaded successfully');
+        _showSuccessSnackBar(context.tr('Image uploaded successfully'));
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
@@ -911,14 +915,14 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           (Route<dynamic> route) => false,
         );
       } else {
-        _showErrorSnackBar('Failed to upload image');
+        _showErrorSnackBar(context.tr('Failed to upload image'));
         setState(() {
           _requestType = RequestType.leaveAtGate;
         });
       }
     } catch (e) {
       log('Error handling image capture: $e');
-      _showErrorSnackBar('Error processing image');
+      _showErrorSnackBar(context.tr('Error processing image'));
       setState(() {
         _requestType = RequestType.leaveAtGate;
       });
@@ -1464,9 +1468,9 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Sending notification to member...',
+                    context.tr('Sending notification to member...'),
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -1618,7 +1622,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
       final String visitorId = widget.visitor.id.toString();
 
       if (visitorLogId == null) {
-        _showSnackBar("Visitor Log ID is missing.", isError: true);
+        _showSnackBar(context.tr("Visitor Log ID is missing."), isError: true);
         return;
       }
 
@@ -1627,7 +1631,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
           await _getMemberDetails(int.parse(visitorLogId));
 
       if (selectedMembers.isEmpty) {
-        _showSnackBar("No member details found.", isError: true);
+        _showSnackBar(context.tr("No member details found."), isError: true);
         return;
       }
 
@@ -1676,7 +1680,8 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
             : "false",
         "initiate_call":
             true, // Add flag to initiate call instead of just notification
-        "retry_attempt": true // Indicate this is a retry attempt
+        "retry_attempt": true, // Indicate this is a retry attempt
+        "app_type": "onegate",
       };
       log("📩 FCM Request Data: $requestData");
       log("📡 Sending FCM Request: ${jsonEncode(requestData)}");
@@ -1690,17 +1695,17 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
       if (response.statusCode == 200) {
         log("✅ FCM Notification Sent Successfully: ${response.data}");
-        _showSuccessSnackBar("Notification sent successfully!");
+        _showSuccessSnackBar(context.tr("Notification sent successfully!"));
 
         // Handle the response
         await _handleFcmResponse(response.data);
       } else {
         log("❌ FCM Notification Failed: ${response.statusMessage}");
-        _showErrorSnackBar("Error sending notification.");
+        _showErrorSnackBar(context.tr("Error sending notification."));
       }
     } catch (e) {
       log("❌ Error in _sendFcmNotification: $e");
-      _showErrorSnackBar("Failed to send notification.");
+      _showErrorSnackBar(context.tr("Failed to send notification."));
     }
   }
 
@@ -1741,9 +1746,9 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Call initiated to member successfully',
+                      context.tr('Call initiated to member successfully'),
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -1808,9 +1813,9 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Call initiated to member successfully',
+                      context.tr('Call initiated to member successfully'),
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -1880,7 +1885,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
                     widget.visitorLog?.visitor_purpose_Category_name ?? "",
               ),
             ),
-        text: "Request permission");
+        text: context.tr("Request permission"));
   }
 
 // Helper methods for button styling and navigation

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/services/notifications/notification_manager.dart';
 import 'package:flutter_onegate/services/notifications/models/notification_models.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:ionicons/ionicons.dart';
 
 /// Screen for viewing and managing custom notifications
@@ -15,7 +16,7 @@ class CustomNotificationsScreen extends StatefulWidget {
 
 class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
   final NotificationManager _notificationManager = NotificationManager();
-  
+
   List<NotificationMessage> _notifications = [];
   NotificationStats? _stats;
   String? _selectedTopic;
@@ -48,9 +49,9 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
         isRead: _showUnreadOnly ? false : null,
         limit: 100,
       );
-      
+
       final stats = _notificationManager.getStatistics();
-      
+
       setState(() {
         _notifications = notifications;
         _stats = stats;
@@ -73,7 +74,9 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
       await _loadNotifications();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All notifications marked as read')),
+          SnackBar(
+            content: Text(context.tr('All notifications marked as read')),
+          ),
         );
       }
     }
@@ -86,7 +89,7 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
       await _loadNotifications();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Notification deleted')),
+          SnackBar(content: Text(context.tr('Notification deleted'))),
         );
       }
     }
@@ -96,17 +99,20 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear All Notifications'),
-        content: const Text(
-            'Are you sure you want to delete all notifications? This action cannot be undone.'),
+        title: Text(context.tr('Clear All Notifications')),
+        content: Text(
+          context.tr(
+            'Are you sure you want to delete all notifications? This action cannot be undone.',
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('Cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Clear All'),
+            child: Text(context.tr('Clear All')),
           ),
         ],
       ),
@@ -118,7 +124,7 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
         await _loadNotifications();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('All notifications cleared')),
+            SnackBar(content: Text(context.tr('All notifications cleared'))),
           );
         }
       }
@@ -135,7 +141,7 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          'Custom Notifications',
+          context.tr('Custom Notifications'),
           style: TextStyle(
             color: const Color(0xff212427),
             fontWeight: FontWeight.w700,
@@ -163,14 +169,14 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
                 ),
               ),
               child: TextButton(
-              onPressed: _markAllAsRead,
+                onPressed: _markAllAsRead,
                 style: TextButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: Text(
-                  'Mark All Read',
+                  context.tr('Mark All Read'),
                   style: TextStyle(
                     color: const Color(0xffF44336),
                     fontWeight: FontWeight.w600,
@@ -196,18 +202,18 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'refresh',
                 child: ListTile(
                   leading: Icon(Ionicons.refresh_outline),
-                  title: Text('Refresh'),
+                  title: Text(context.tr('Refresh')),
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'clear_all',
                 child: ListTile(
                   leading: Icon(Ionicons.trash_outline),
-                  title: Text('Clear All'),
+                  title: Text(context.tr('Clear All')),
                 ),
               ),
             ],
@@ -254,7 +260,7 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
             ),
             SizedBox(height: isTablet ? 24 : 20),
             Text(
-              'Loading notifications...',
+              context.tr('Loading notifications...'),
               style: TextStyle(
                 color: const Color(0xff57636C),
                 fontSize: isTablet ? 18 : 16,
@@ -322,7 +328,7 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
                   ),
                   SizedBox(width: isTablet ? 16 : 12),
                   Text(
-                    'Notification Statistics',
+                    context.tr('Notification Statistics'),
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: const Color(0xff212427),
@@ -335,23 +341,23 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
             SizedBox(height: isTablet ? 20 : 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildStatItem(
-              'Total',
-              _stats!.totalNotifications.toString(),
-              Ionicons.notifications_outline,
+              children: [
+                _buildStatItem(
+                  context.tr('Total'),
+                  _stats!.totalNotifications.toString(),
+                  Ionicons.notifications_outline,
                   isTablet,
-            ),
-            _buildStatItem(
-              'Unread',
-              _stats!.unreadNotifications.toString(),
-              Ionicons.mail_unread_outline,
+                ),
+                _buildStatItem(
+                  context.tr('Unread'),
+                  _stats!.unreadNotifications.toString(),
+                  Ionicons.mail_unread_outline,
                   isTablet,
-            ),
-            _buildStatItem(
-              'Subscribers',
-              _stats!.activeSubscribers.toString(),
-              Ionicons.people_outline,
+                ),
+                _buildStatItem(
+                  context.tr('Subscribers'),
+                  _stats!.activeSubscribers.toString(),
+                  Ionicons.people_outline,
                   isTablet,
                 ),
               ],
@@ -372,7 +378,7 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
-      children: [
+          children: [
             Container(
               padding: EdgeInsets.all(isTablet ? 10 : 8),
               decoration: BoxDecoration(
@@ -386,8 +392,8 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
               ),
             ),
             SizedBox(height: isTablet ? 12 : 8),
-        Text(
-          value,
+            Text(
+              value,
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 color: const Color(0xff212427),
@@ -395,8 +401,8 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
               ),
             ),
             SizedBox(height: isTablet ? 4 : 2),
-        Text(
-          label,
+            Text(
+              label,
               style: TextStyle(
                 color: const Color(0xff57636C),
                 fontSize: isTablet ? 14 : 12,
@@ -430,7 +436,7 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Filters',
+              context.tr('Filters'),
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 color: const Color(0xff212427),
@@ -443,7 +449,7 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
               runSpacing: 8,
               children: [
                 FilterChip(
-                  label: const Text('Unread Only'),
+                  label: Text(context.tr('Unread Only')),
                   selected: _showUnreadOnly,
                   onSelected: (selected) {
                     setState(() => _showUnreadOnly = selected);
@@ -452,16 +458,18 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
                 ),
                 DropdownButton<String?>(
                   value: _selectedTopic,
-                  hint: const Text('All Topics'),
+                  hint: Text(context.tr('All Topics')),
                   items: [
-                    const DropdownMenuItem(
-                        value: null, child: Text('All Topics')),
-                    ..._notificationManager.getAvailableTopics().map(
-                      (topic) => DropdownMenuItem(
-                        value: topic,
-                        child: Text(topic.split('/').last),
-                      ),
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text(context.tr('All Topics')),
                     ),
+                    ..._notificationManager.getAvailableTopics().map(
+                          (topic) => DropdownMenuItem(
+                            value: topic,
+                            child: Text(topic.split('/').last),
+                          ),
+                        ),
                   ],
                   onChanged: (value) {
                     setState(() => _selectedTopic = value);
@@ -470,14 +478,16 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
                 ),
                 DropdownButton<AlertPriority?>(
                   value: _selectedPriority,
-                  hint: const Text('All Priorities'),
+                  hint: Text(context.tr('All Priorities')),
                   items: [
-                    const DropdownMenuItem(
-                        value: null, child: Text('All Priorities')),
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text(context.tr('All Priorities')),
+                    ),
                     ...AlertPriority.values.map(
                       (priority) => DropdownMenuItem(
                         value: priority,
-                        child: Text(priority.displayName),
+                        child: Text(_priorityLabel(context, priority)),
                       ),
                     ),
                   ],
@@ -499,9 +509,9 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
       return Center(
         child: Container(
           padding: EdgeInsets.all(isTablet ? 40 : 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
               Container(
                 padding: EdgeInsets.all(isTablet ? 24 : 20),
                 decoration: BoxDecoration(
@@ -509,14 +519,14 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Icon(
-              Ionicons.notifications_off_outline,
+                  Ionicons.notifications_off_outline,
                   size: isTablet ? 80 : 64,
                   color: const Color(0xff57636C),
                 ),
-            ),
+              ),
               SizedBox(height: isTablet ? 24 : 20),
-            Text(
-              'No notifications found',
+              Text(
+                context.tr('No notifications found'),
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   color: const Color(0xff212427),
@@ -527,16 +537,18 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: isTablet ? 40 : 24),
                 child: Text(
-              'Notifications will appear here when they are received',
+                  context.tr(
+                    'Notifications will appear here when they are received',
+                  ),
                   style: TextStyle(
                     color: const Color(0xff57636C),
                     fontSize: isTablet ? 16 : 14,
                     height: 1.4,
                   ),
-              textAlign: TextAlign.center,
+                  textAlign: TextAlign.center,
                 ),
-            ),
-          ],
+              ),
+            ],
           ),
         ),
       );
@@ -655,16 +667,16 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
                             decoration: BoxDecoration(
                               color: priorityColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    priority.displayName,
-                    style: TextStyle(
+                            ),
+                            child: Text(
+                              priority.displayName,
+                              style: TextStyle(
                                 fontSize: isTablet ? 11 : 10,
-                      color: priorityColor,
+                                color: priorityColor,
                                 fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+                              ),
+                            ),
+                          ),
                           if (!notification.isRead) ...[
                             const Spacer(),
                             Container(
@@ -676,10 +688,10 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
                               ),
                             ),
                           ],
-              ],
-            ),
-          ],
-        ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
                 PopupMenuButton<String>(
                   icon: Icon(
@@ -687,34 +699,34 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
                     color: const Color(0xff57636C),
                     size: isTablet ? 20 : 18,
                   ),
-          onSelected: (value) {
-            switch (value) {
-              case 'mark_read':
-                _markAsRead(notification.id);
-                break;
-              case 'delete':
-                _deleteNotification(notification.id);
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            if (!notification.isRead)
-              const PopupMenuItem(
-                value: 'mark_read',
-                child: ListTile(
-                  leading: Icon(Ionicons.checkmark_outline),
-                  title: Text('Mark as Read'),
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'mark_read':
+                        _markAsRead(notification.id);
+                        break;
+                      case 'delete':
+                        _deleteNotification(notification.id);
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    if (!notification.isRead)
+                      PopupMenuItem(
+                        value: 'mark_read',
+                        child: ListTile(
+                          leading: Icon(Ionicons.checkmark_outline),
+                          title: Text(context.tr('Mark as Read')),
+                        ),
+                      ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: ListTile(
+                        leading: Icon(Ionicons.trash_outline),
+                        title: Text(context.tr('Delete')),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            const PopupMenuItem(
-              value: 'delete',
-              child: ListTile(
-                leading: Icon(Ionicons.trash_outline),
-                title: Text('Delete'),
-              ),
-            ),
-          ],
-        ),
               ],
             ),
           ),
@@ -744,7 +756,7 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
               Text(notification.message),
               const SizedBox(height: 16),
               Text(
-                'Details:',
+                context.tr('Details:'),
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -767,10 +779,25 @@ class _CustomNotificationsScreenState extends State<CustomNotificationsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(context.tr('Close')),
           ),
         ],
       ),
     );
+  }
+
+  String _priorityLabel(BuildContext context, AlertPriority priority) {
+    switch (priority) {
+      case AlertPriority.min:
+        return context.tr('Minimal');
+      case AlertPriority.low:
+        return context.tr('Low');
+      case AlertPriority.default_:
+        return context.tr('Default');
+      case AlertPriority.high:
+        return context.tr('High');
+      case AlertPriority.max:
+        return context.tr('Maximum');
+    }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/utils/network_log/models/network_log.dart';
 import 'package:flutter_onegate/utils/network_log/services/network_log_service.dart';
 import 'package:flutter_onegate/utils/network_log/ui/network_log_screen.dart';
@@ -132,8 +133,8 @@ class _NetworkLogOverlayState extends State<NetworkLogOverlay>
               size: 20,
             ),
             const SizedBox(width: 8),
-            const Text(
-              'Network Logs',
+            Text(
+              context.tr('Network Logs'),
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -144,7 +145,8 @@ class _NetworkLogOverlayState extends State<NetworkLogOverlay>
               valueListenable: _logService.logs,
               builder: (context, logs, _) {
                 return Text(
-                  '${logs.length} logs',
+                  context
+                      .tr('{count} logs', params: {'count': '${logs.length}'}),
                   style: const TextStyle(
                     color: Colors.white,
                   ),
@@ -195,9 +197,9 @@ class _NetworkLogOverlayState extends State<NetworkLogOverlay>
       valueListenable: _logService.logs,
       builder: (context, logs, _) {
         if (logs.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
-              'No network logs yet',
+              context.tr('No network logs yet'),
               style: TextStyle(
                 color: Colors.white,
               ),
@@ -223,8 +225,14 @@ class _NetworkLogOverlayState extends State<NetworkLogOverlay>
               ),
               subtitle: Text(
                 log.statusCode != null
-                    ? 'Status: ${log.statusCode} (${log.formattedDuration})'
-                    : 'Error: ${log.error?.split('\n').first ?? 'Unknown'}',
+                    ? context.tr('Status: {status} ({duration})', params: {
+                        'status': '${log.statusCode}',
+                        'duration': log.formattedDuration,
+                      })
+                    : context.tr('Error: {error}', params: {
+                        'error': log.error?.split('\n').first ??
+                            context.tr('Unknown'),
+                      }),
                 style: TextStyle(
                   color:
                       Color(log.statusColor).withAlpha(204), // 0.8 * 255 = 204

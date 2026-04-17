@@ -1,10 +1,12 @@
 import 'dart:developer';
 import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/services/auth_service/token_notification_service.dart';
+import 'package:flutter_onegate/main.dart';
 
 /// Enhanced logout service that properly terminates Keycloak sessions
 /// and clears all authentication state comprehensively
@@ -24,6 +26,12 @@ class EnhancedLogoutService {
   static const String _refreshTokenKey = 'refresh_token_secure';
   static const String _idTokenKey = 'id_token_secure';
 
+  String _tr(String key, {Map<String, String>? params}) {
+    final context = navigatorKey.currentContext;
+    if (context == null) return key;
+    return FlutterI18n.translate(context, key, translationParams: params);
+  }
+
   /// Perform complete logout with Keycloak end session call
   Future<LogoutResult> performCompleteLogout({
     bool showNotifications = true,
@@ -36,7 +44,7 @@ class EnhancedLogoutService {
 
       if (showNotifications) {
         _notificationService.showTokenRefreshProgress(
-            message: "🚪 Logging out, please wait...");
+            message: _tr("🚪 Logging out, please wait..."));
       }
 
       // Step 1: Get current tokens for end session call
@@ -74,7 +82,7 @@ class EnhancedLogoutService {
           _notificationService.showTokenRefreshSuccess(newToken: null);
         } else {
           _notificationService.showTokenRefreshFailure(
-              errorMessage: "⚠️ Logout completed with some issues");
+              errorMessage: _tr("⚠️ Logout completed with some issues"));
         }
       }
 
@@ -89,7 +97,8 @@ class EnhancedLogoutService {
 
       if (showNotifications) {
         _notificationService.showTokenRefreshFailure(
-            errorMessage: "Logout error: ${e.toString()}");
+            errorMessage:
+                _tr("Logout error: {error}", params: {'error': e.toString()}));
       }
 
       return result;

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as dev;
+import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_onegate/main.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_onegate/services/data_health/data_health_service.dart';
 import 'package:flutter_onegate/services/notifications/custom_notification_service.dart';
@@ -8,6 +10,12 @@ import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/domain/entities/society/member.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/services/search/meilisearch_service.dart';
+
+String _tr(String key, {Map<String, String>? params}) {
+  final context = navigatorKey.currentContext;
+  if (context == null) return key;
+  return FlutterI18n.translate(context, key, translationParams: params);
+}
 
 /// Background service for data observability and periodic health checks
 class DataObservabilityService {
@@ -257,9 +265,9 @@ class DataObservabilityService {
       // Send notification if there are issues
       if (result.overallStatus != HealthStatus.healthy) {
         await notificationService.sendHealthCheckAlert(
-          title: 'Scheduled Health Check Alert',
-          message:
-              'Background health check detected issues: ${result.overallStatus.displayName}',
+          title: _tr('Scheduled Health Check Alert'),
+          message: _tr('Background health check detected issues: {status}',
+              params: {'status': result.overallStatus.displayName}),
           data: {
             'backgroundTask': true,
             'taskTime': DateTime.now().toIso8601String(),
@@ -278,8 +286,9 @@ class DataObservabilityService {
         final notificationService = CustomNotificationService();
         await notificationService.initialize();
         await notificationService.sendHealthCheckAlert(
-          title: 'Background Health Check Failed',
-          message: 'Background health check task failed: $e',
+          title: _tr('Background Health Check Failed'),
+          message: _tr('Background health check task failed: {error}',
+              params: {'error': '$e'}),
           data: {
             'backgroundTask': true,
             'error': e.toString(),
@@ -309,8 +318,9 @@ class DataObservabilityService {
       final isHealthy = await meilisearchService.isHealthy();
       if (!isHealthy) {
         await notificationService.sendSearchErrorAlert(
-          title: 'Meilisearch Service Unhealthy',
-          message: 'Meilisearch service is not healthy during background sync',
+          title: _tr('Meilisearch Service Unhealthy'),
+          message:
+              _tr('Meilisearch service is not healthy during background sync'),
           data: {
             'indexName': 'all',
             'error': 'Meilisearch service is not healthy',
@@ -328,8 +338,9 @@ class DataObservabilityService {
         dev.log('❌ Background index sync failed');
         // Send error notification
         await notificationService.sendSearchErrorAlert(
-          title: 'Background Index Sync Failed',
-          message: 'Failed to sync data to Meilisearch during background task',
+          title: _tr('Background Index Sync Failed'),
+          message:
+              _tr('Failed to sync data to Meilisearch during background task'),
           data: {
             'indexName': 'background_sync',
             'error': 'Data indexing failed',
@@ -344,8 +355,9 @@ class DataObservabilityService {
         final notificationService = CustomNotificationService();
         await notificationService.initialize();
         await notificationService.sendSearchErrorAlert(
-          title: 'Background Index Sync Failed',
-          message: 'Background Meilisearch index sync failed: $e',
+          title: _tr('Background Index Sync Failed'),
+          message: _tr('Background Meilisearch index sync failed: {error}',
+              params: {'error': '$e'}),
           data: {
             'indexName': 'background_sync',
             'error': e.toString(),

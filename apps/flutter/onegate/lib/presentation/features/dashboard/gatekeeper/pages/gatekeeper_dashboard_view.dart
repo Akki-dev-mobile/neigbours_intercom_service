@@ -200,7 +200,9 @@ class _GateDashboardViewState extends State<GateDashboardView>
       // Show error message if the widget is still mounted
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(
+              content:
+                  Text(context.tr('Error: {error}', params: {'error': '$e'}))),
         );
       }
     }
@@ -275,23 +277,23 @@ class _GateDashboardViewState extends State<GateDashboardView>
         switch (state.runtimeType) {
           case GatekeeperDashboardLoadingState:
             return DashboardLoader(
-              title: 'Loading Dashboard',
-              subtitle: 'Please wait while we prepare your dashboard...',
+              title: context.tr('Loading Dashboard'),
+              subtitle: context.tr('dashboardPrepareSubtitle'),
             );
           case GDInAndOutLoadingState:
             return DashboardLoader(
-              title: 'Loading In-Out Book',
-              subtitle: 'Preparing visitor logs...',
+              title: context.tr('Loading In-Out Book'),
+              subtitle: context.tr('dashboardPreparingVisitorLogs'),
             );
           case GDVisitorsInLoadingState:
             return DashboardLoader(
-              title: 'Loading Visitor-In',
-              subtitle: 'Preparing visitor check-in logs...',
+              title: context.tr('Loading Visitor-In'),
+              subtitle: context.tr('visitorCheckInPreparingSubtitle'),
             );
           case GDVisitorsOutLoadingState:
             return DashboardLoader(
-              title: 'Loading Visitor-Out',
-              subtitle: 'Preparing visitor check-out logs...',
+              title: context.tr('Loading Visitor-Out'),
+              subtitle: context.tr('visitorCheckOutPreparingSubtitle'),
             );
           case GatekeeperDashboardSuccessState:
             final successState = state as GatekeeperDashboardSuccessState;
@@ -540,7 +542,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                 isTablet,
                 width: shortcutWidth,
                 icon: Symbols.deskphone,
-                title: 'Intercom',
+                title: context.tr('Intercom'),
                 onTap: () {
                   IntercomServicesLauncher.open(context);
                 },
@@ -866,7 +868,8 @@ class _GateDashboardViewState extends State<GateDashboardView>
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unable to open Intercom Services: $e'),
+          content: Text(context.tr('Unable to open Intercom Services: {error}',
+              params: {'error': '$e'})),
           backgroundColor: Colors.red,
         ),
       );
@@ -1083,7 +1086,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                           SizedBox(width: isTablet ? 8 : 6),
                           Expanded(
                             child: Text(
-                              'This is an example preview. Tap Enter details to proceed.',
+                              context.tr('visitorExamplePreview'),
                               style: TextStyle(
                                 color: const Color(0xff57636C),
                                 fontSize: isTablet ? 14 : 12,
@@ -1118,7 +1121,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                         ),
                         icon: const Icon(Icons.arrow_forward_rounded),
                         label: Text(
-                          'Enter details',
+                          context.tr('Enter details'),
                           style: TextStyle(
                             fontSize: isTablet ? 14 : 13,
                             fontWeight: FontWeight.w600,

@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/repositories/license_plate_repository.dart';
 import 'package:flutter_onegate/presentation/features/license_plate_detection/bloc/license_plate_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class LicensePlateDetectionPage extends StatelessWidget {
   const LicensePlateDetectionPage({super.key});
@@ -14,7 +15,7 @@ class LicensePlateDetectionPage extends StatelessWidget {
     return BlocProvider(
       create: (_) => LicensePlateBloc(LicensePlateRepository()),
       child: Scaffold(
-        appBar: AppBar(title: const Text('License Plate Detection')),
+        appBar: AppBar(title: Text(context.tr('License Plate Detection'))),
         body: const LicensePlateBody(),
       ),
     );
@@ -61,22 +62,24 @@ class _LicensePlateBodyState extends State<LicensePlateBody> {
                   return const DashboardLoaderIcon();
                 } else if (state is LicensePlateSuccess) {
                   return Text(
-                    'Detected Plate: ${state.plateText}',
+                    context.tr('Detected Plate: {plate}',
+                        params: {'plate': state.plateText}),
                     style: const TextStyle(fontSize: 18, color: Colors.green),
                   );
                 } else if (state is LicensePlateFailure) {
                   return Text(
-                    'Error: ${state.error}',
+                    context
+                        .tr('Error: {error}', params: {'error': state.error}),
                     style: const TextStyle(fontSize: 16, color: Colors.red),
                   );
                 }
-                return const Text('Please select an image to detect.');
+                return Text(context.tr('Please select an image to detect.'));
               },
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => _pickImage(context),
-              child: const Text('Pick Image from Gallery'),
+              child: Text(context.tr('Pick Image from Gallery')),
             ),
           ],
         ),

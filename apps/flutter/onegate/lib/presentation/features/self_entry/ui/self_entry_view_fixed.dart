@@ -195,7 +195,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                           margin: const EdgeInsets.symmetric(horizontal: 20),
                           child: CustomLargeBtn(
                             text: isProcessing
-                                ? context.tr('Processing...')
+                                ? context.tr('Processing')
                                 : context.tr('Next'),
                             disabled: isProcessing,
                             onPressed: isProcessing
@@ -314,7 +314,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
     } catch (e) {
       log('Error during OTP verification: $e');
       myFluttertoast(
-          msg: "OTP verification failed. Please try again.",
+          msg: context.tr('OTP verification failed. Please try again.'),
           backgroundColor: Colors.red);
     }
   }
@@ -599,7 +599,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                         margin: const EdgeInsets.symmetric(horizontal: 20),
                         child: CustomLargeBtn(
                           text: isProcessing
-                              ? context.tr('Processing...')
+                              ? context.tr('Processing')
                               : context.tr('Next'),
                           disabled: isProcessing,
                           onPressed: isProcessing

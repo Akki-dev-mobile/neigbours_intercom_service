@@ -1,7 +1,7 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../generated/l10n/app_localizations.dart';
 
 /// Provider for managing the application language state
 /// Supports English (en), Hindi (hi), and Marathi (mr)
@@ -46,16 +46,20 @@ class LanguageProvider extends ChangeNotifier {
   Future<void> initialize() async {
     try {
       await _loadLanguagePreference();
+      _rebuildKey++;
+      notifyListeners();
       log('🌐 LanguageProvider initialized with locale: ${_currentLocale.languageCode}');
     } catch (e) {
       log('❌ Error initializing LanguageProvider: $e');
       // Fallback to default language
       _currentLocale = const Locale(_defaultLanguage);
+      _rebuildKey++;
+      notifyListeners();
     }
   }
 
   /// Change the application language
-  Future<void> changeLanguage(String languageCode) async {
+  Future<void> changeLanguage(BuildContext context, String languageCode) async {
     try {
       // Validate the language code
       if (!_isValidLanguageCode(languageCode)) {
@@ -69,25 +73,18 @@ class LanguageProvider extends ChangeNotifier {
       // Save the preference
       await _saveLanguagePreference(languageCode);
 
-      // Update the current locale
+      // Refresh the FlutterI18n engine used by context.tr(...) callers.
+      await FlutterI18n.refresh(context, newLocale);
+
+      // Update the current locale after translations are reloaded.
       _currentLocale = newLocale;
+      _rebuildKey++;
 
       log('🌐 Language changed to: $languageCode (${_getLanguageName(languageCode)})');
       log('🔄 Notifying all listeners about language change...');
-
-      // Notify listeners - this should rebuild the entire app
-      notifyListeners();
-
-      // Add a small delay to ensure all widgets have time to rebuild
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      // Notify listeners again to ensure all widgets are updated
       notifyListeners();
 
       log('✅ Language change notification completed');
-
-      // Increment the rebuild key
-      _rebuildKey++;
     } catch (e) {
       log('❌ Error changing language: $e');
       rethrow;
@@ -174,8 +171,8 @@ class LanguageProvider extends ChangeNotifier {
     final screenSize = MediaQuery.of(context).size;
 
     return await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
+          context: context,
+          barrierDismissible: false,
           builder: (context) => Dialog(
             backgroundColor: Colors.transparent,
             elevation: 0,
@@ -343,13 +340,12 @@ class LanguageProvider extends ChangeNotifier {
                         ),
                       ],
                     ),
-          ),
-        ],
-      ),
+                  ),
+                ],
+              ),
             ),
           ),
         ) ??
         false;
   }
 }
- 

@@ -693,11 +693,13 @@ class _IdInputViewState extends State<IdInputView> {
                                                         .mobileNumberIsRequired;
                                                   } else if (value.length !=
                                                       10) {
-                                                    return 'Please enter a 10-digit number';
+                                                    return context
+                                                        .l10n.pleaseEnter10DigitNumber;
                                                   } else if (!RegExp(
                                                           r'^[0-9]+$')
                                                       .hasMatch(value)) {
-                                                    return 'No spaces or special characters allowed';
+                                                    return context
+                                                        .l10n.noSpacesOrSpecialCharactersAllowed;
                                                   }
                                                   return null;
                                                 },
@@ -781,6 +783,9 @@ class _IdInputViewState extends State<IdInputView> {
                                                   counterText: '',
                                                   prefixIcon: CountryCodePicker(
                                                     initialSelection: 'IN',
+                                                    headerText: context.tr(
+                                                      'Select Country',
+                                                    ),
                                                     favorite: [
                                                       'IN',
                                                       'US',
@@ -1141,11 +1146,12 @@ class _IdInputViewState extends State<IdInputView> {
                                                               .start,
                                                       children: [
                                                         RichText(
-                                                          text: const TextSpan(
+                                                          text: TextSpan(
                                                             children: [
                                                               TextSpan(
-                                                                text:
-                                                                    'Visitor Passcode',
+                                                                text: context
+                                                                    .l10n
+                                                                    .visitorPasscode,
                                                                 style:
                                                                     TextStyle(
                                                                   fontSize: 16,
@@ -1409,7 +1415,7 @@ class _IdInputViewState extends State<IdInputView> {
                                     child: Center(
                                       child: Text(
                                         checkVisitorLoading
-                                            ? context.tr('Processing...')
+                                            ? context.tr('Processing')
                                             : context.tr('Next'),
                                         style: const TextStyle(
                                           color: Colors.white,
@@ -2343,7 +2349,9 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                   padding:
                                       const EdgeInsets.symmetric(horizontal: 8),
                                   child: Text(
-                                    purpose.categoryName,
+                                    context.trPurposeCategory(
+                                      purpose.categoryName,
+                                    ),
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
@@ -2471,7 +2479,9 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                                   padding:
                                       const EdgeInsets.symmetric(horizontal: 8),
                                   child: Text(
-                                    purpose.categoryName,
+                                    context.trPurposeCategory(
+                                      purpose.categoryName,
+                                    ),
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
@@ -2550,7 +2560,7 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
                   child: Center(
                     child: Text(
                       selectPurposeLoading
-                          ? context.tr('Processing...')
+                          ? context.tr('Processing')
                           : context.tr('Select Purpose'),
                       style: const TextStyle(
                         color: Colors.white,

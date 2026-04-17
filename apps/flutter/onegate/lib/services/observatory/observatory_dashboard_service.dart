@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as dev;
 import 'package:flutter/foundation.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:dio/dio.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter_onegate/services/crash_reporting/crash_reporter_service.dart';
@@ -18,6 +19,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:prometheus_client/prometheus_client.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter_onegate/main.dart';
 
 /// Enhanced Observatory Dashboard Service for OneGate
 /// Integrates with OneApp Observatory & Monitoring Stack
@@ -744,9 +746,16 @@ class ObservatoryDashboardService {
   /// Handle dashboard alerts
   void handleDashboardAlert(Map<String, dynamic> alert) {
     try {
+      final context = navigatorKey.currentContext;
+      final title = context != null
+          ? FlutterI18n.translate(context, 'Observatory Alert')
+          : 'Observatory Alert';
+      final message = context != null
+          ? FlutterI18n.translate(context, 'Alert from monitoring dashboard')
+          : 'Alert from monitoring dashboard';
       _notificationService?.sendHealthCheckAlert(
-        title: alert['title'] ?? 'Observatory Alert',
-        message: alert['message'] ?? 'Alert from monitoring dashboard',
+        title: alert['title'] ?? title,
+        message: alert['message'] ?? message,
         data: alert,
       );
     } catch (e) {

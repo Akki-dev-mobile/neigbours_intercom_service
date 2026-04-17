@@ -3,12 +3,14 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorMapper.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
+import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:meta/meta.dart';
@@ -21,6 +23,12 @@ class VisitorInEntryBloc
   final VisitorUsecase _visitorUsecase;
   final VisitorLogUsecase _visitorLogUsecase;
   final PreferenceUtils _preferenceUtils;
+
+  String _tr(String key) {
+    final context = navigatorKey.currentContext;
+    if (context == null) return key;
+    return FlutterI18n.translate(context, key);
+  }
 
   VisitorInEntryBloc(
     this._visitorUsecase,
@@ -87,7 +95,7 @@ class VisitorInEntryBloc
     try {
       final imageUrl = await _uploadVisitorImage(event);
       if (imageUrl == null) {
-        emit(VisitorInEntryErrorState(message: "Error uploading image"));
+        emit(VisitorInEntryErrorState(message: _tr("Error uploading image")));
         return;
       }
 
@@ -134,16 +142,15 @@ class VisitorInEntryBloc
     final isUpdated = await _visitorUsecase.updateVisitor(visitor);
     if (isUpdated) {
       // Gatekeeper QR flow must go through unit selection - entry only after all details submitted
-      if (isFromQRScan &&
-          visitorLog != null &&
-          !isGatekeeperQRPasscodeEntry) {
+      if (isFromQRScan && visitorLog != null && !isGatekeeperQRPasscodeEntry) {
         emit(VIENavigateToRequestScreenState(
             visitor, purposeCategory, visitorLog));
       } else {
         emit(VIENavigateToUnitSelectionState(visitor, purposeCategory));
       }
     } else {
-      emit(VisitorInEntryErrorState(message: "Error updating visitor image"));
+      emit(VisitorInEntryErrorState(
+          message: _tr("Error updating visitor image")));
     }
   }
 }

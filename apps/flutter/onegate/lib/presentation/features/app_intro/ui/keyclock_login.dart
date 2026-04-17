@@ -24,6 +24,7 @@ import 'package:get_it/get_it.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 import 'missed_approval_two.dart';
 
@@ -185,21 +186,22 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text("Location Permission Required"),
-        content: const Text(
-          "Location permissions are required to use this feature. Please enable them in your device settings.",
+        title: Text(context.tr('Location Permission Required')),
+        content: Text(
+          context.tr(
+              'Location permissions are required to use this feature. Please enable them in your device settings.'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: Text(context.tr('Cancel')),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               openAppSettings();
             },
-            child: const Text("Open Settings"),
+            child: Text(context.tr('Open Settings')),
           ),
         ],
       ),
@@ -685,8 +687,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
   @override
   Widget build(BuildContext context) {
-    final useNative =
-        _preferNativeLogin || GateConfigHolder.useNativeLogin;
+    final useNative = _preferNativeLogin || GateConfigHolder.useNativeLogin;
     if (useNative) {
       return BlocProvider<LoginBloc>(
         create: (_) => GetIt.I<LoginBloc>(),
@@ -716,6 +717,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
             buildWhen: (_, state) => state is LoginLoadingState,
             builder: (context, state) {
               return Scaffold(
+                backgroundColor: Colors.white,
                 body: const NativeLoginForm(),
               );
             },
@@ -728,6 +730,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       valueListenable: _loginState,
       builder: (context, state, child) {
         return Scaffold(
+          backgroundColor: Colors.white,
           body: Stack(
             children: [
               LoginContent(
@@ -741,8 +744,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
                   );
                 },
               ),
-              if (state.isLoading)
-                const Center(child: DashboardLoaderIcon()),
+              if (state.isLoading) const Center(child: DashboardLoaderIcon()),
             ],
           ),
         );
@@ -750,7 +752,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     );
   }
 
-  void _showNativeSocietySelection(BuildContext context, SocietySelectionState state) {
+  void _showNativeSocietySelection(
+      BuildContext context, SocietySelectionState state) {
     final raw = state.companiesWithAccessToGate;
     if (raw is! List || raw.isEmpty) return;
     final companies = raw.whereType<Company>().toList();
@@ -784,7 +787,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     );
   }
 
-  void _showNativeRoleSelection(BuildContext context, RoleSelectionState state) {
+  void _showNativeRoleSelection(
+      BuildContext context, RoleSelectionState state) {
     final roles = state.roles.whereType<String>().toList();
     if (roles.isEmpty) return;
     showModalBottomSheet<void>(
@@ -805,7 +809,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     );
   }
 
-  void _showNativeGateSelection(BuildContext context, GateSelectionState state) {
+  void _showNativeGateSelection(
+      BuildContext context, GateSelectionState state) {
     final gates = state.gates.whereType<Gate>().toList();
     if (gates.isEmpty) return;
     final gateMaps = gates.map((g) {
@@ -858,17 +863,7 @@ class LoginContent extends StatelessWidget {
       height: MediaQuery.of(context).size.height +
           MediaQuery.of(context).padding.top,
       width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            const Color(0xffF44336).withOpacity(0.12),
-            const Color(0xffff5722).withOpacity(0.05),
-            Colors.white.withOpacity(0.0),
-          ],
-        ),
-      ),
+      color: Colors.white,
       child: SafeArea(
         top: false,
         child: Padding(
@@ -936,7 +931,7 @@ class LoginContent extends StatelessWidget {
 
                     // Tagline
                     Text(
-                      'Smart Gate Management',
+                      context.tr('smartGateManagementTagline'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -982,7 +977,7 @@ class LoginContent extends StatelessWidget {
                     Column(
                       children: [
                         Text(
-                          'Welcome Back!',
+                          context.tr('Welcome Back!'),
                           textAlign: TextAlign.center,
                           style: Theme.of(
                             context,
@@ -995,7 +990,9 @@ class LoginContent extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          "Let's dive in and start recording your visitors",
+                          context.tr(
+                            "Let's dive in and start recording your visitors",
+                          ),
                           textAlign: TextAlign.center,
                           style: Theme.of(
                             context,
@@ -1038,7 +1035,7 @@ class LoginContent extends StatelessWidget {
                           borderRadius: BorderRadius.circular(16),
                           child: Center(
                             child: Text(
-                              'Login',
+                              context.tr('Login'),
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -1058,7 +1055,7 @@ class LoginContent extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          "Don't have an account? ",
+                          context.tr("Don't have an account? "),
                           style: Theme.of(
                             context,
                           ).textTheme.bodyMedium?.copyWith(
@@ -1079,7 +1076,7 @@ class LoginContent extends StatelessWidget {
                               child: Hero(
                                 tag: 'signUpHero',
                                 child: Text(
-                                  'Sign Up',
+                                  context.tr('Sign Up'),
                                   style: Theme.of(
                                     context,
                                   ).textTheme.bodyMedium?.copyWith(
@@ -1217,7 +1214,7 @@ class _SocietySelectionSheetState extends State<SocietySelectionSheet> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Select Your Society',
+                        context.tr('Select Your Society'),
                         style: Theme.of(
                           context,
                         ).textTheme.headlineSmall?.copyWith(
@@ -1228,7 +1225,7 @@ class _SocietySelectionSheetState extends State<SocietySelectionSheet> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Choose your society to continue',
+                        context.tr('Choose your society to continue'),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: const Color(0xff57636C),
                               fontSize: 14,
@@ -1511,7 +1508,7 @@ class RoleSelectionSheet extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Select Your Role',
+                        context.tr('Select Your Role'),
                         style: Theme.of(
                           context,
                         ).textTheme.headlineSmall?.copyWith(
@@ -1522,7 +1519,7 @@ class RoleSelectionSheet extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Choose your role to continue',
+                        context.tr('Choose your role to continue'),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: const Color(0xff57636C),
                               fontSize: 14,
@@ -2003,21 +2000,22 @@ class LocationPermissionHandler {
           context: context,
           barrierDismissible: false,
           builder: (context) => AlertDialog(
-            title: const Text('Location Permission Required'),
-            content: const Text(
-              'Please enable location permissions in your device settings to use this feature.',
+            title: Text(context.tr('Location Permission Required')),
+            content: Text(
+              context.tr(
+                  'Please enable location permissions in your device settings to use this feature.'),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(context.tr('Cancel')),
               ),
               TextButton(
                 onPressed: () {
                   openAppSettings();
                   Navigator.pop(context);
                 },
-                child: const Text('Open Settings'),
+                child: Text(context.tr('Open Settings')),
               ),
             ],
           ),

@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/services/auth_service/enhanced_token_refresh_manager.dart';
 import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
 import 'package:intercom_module/intercom_module.dart';
@@ -29,6 +30,9 @@ class OneGateIntercomBootstrap {
         ),
         contextPort: OneGateIntercomContextPort(gateStorage, tokenProvider),
         appPackageName: 'com.cubeonebiz.gate.flutter_onegate',
+        navigatorKey: navigatorKey,
+        // Meet-service may not deliver cross-app incoming calls when this is true.
+        includePackageNameOnCallWebSocket: false,
       ),
     );
 

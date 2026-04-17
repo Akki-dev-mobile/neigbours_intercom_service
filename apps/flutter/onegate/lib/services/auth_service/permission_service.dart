@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class PermissionService {
-  static Future<bool> checkAndRequestLocationPermission(BuildContext context) async {
+  static Future<bool> checkAndRequestLocationPermission(
+      BuildContext context) async {
     final status = await Permission.location.status;
 
     if (status.isGranted) {
@@ -23,21 +25,23 @@ class PermissionService {
           context: context,
           barrierDismissible: false,
           builder: (context) => AlertDialog(
-            title: const Text('Location Permission Required'),
-            content: const Text(
-              'Please enable location permissions in your device settings to use this feature.',
+            title: Text(context.tr('Location Permission Required')),
+            content: Text(
+              context.tr(
+                'Please enable location permissions in your device settings to use this feature.',
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(context.tr('Cancel')),
               ),
               TextButton(
                 onPressed: () {
                   openAppSettings();
                   Navigator.pop(context);
                 },
-                child: const Text('Open Settings'),
+                child: Text(context.tr('Open Settings')),
               ),
             ],
           ),

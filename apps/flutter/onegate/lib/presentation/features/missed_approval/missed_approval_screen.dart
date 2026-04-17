@@ -447,7 +447,7 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
                       ),
                       SizedBox(height: isTablet ? 28 : 22),
                       Text(
-                        'No Missed Approvals',
+                        context.tr('missedApprovalsEmptyTitle'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: isTablet ? 24 : 21,
@@ -457,7 +457,7 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
                       ),
                       SizedBox(height: isTablet ? 14 : 10),
                       Text(
-                        'No missed approvals found today.',
+                        context.tr('missedApprovalsEmptySubtitle'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: isTablet ? 16 : 14,
@@ -534,7 +534,7 @@ class _MissedApprovalsScreenState extends State<MissedApprovalsScreen> {
         },
         cursorColor: const Color(0xffF44336),
         decoration: InputDecoration(
-          hintText: context.tr('Search by visitor, member, or gate...'),
+          hintText: context.tr('missedApprovalsSearchHint'),
           hintStyle: TextStyle(
             color: Colors.grey.shade500,
             fontSize: isTablet ? 16 : 14,
@@ -1226,6 +1226,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         "company_name": widget.visitorInfo.companyName, // new key
         "file": widget.visitorInfo.visitorImage // new key
       };
+      requestData['app_type'] = 'onegate';
 
       log("📨 Sending FCM Notification (800 bytes) with Data: $requestData");
       final headers = await Environment.getHeaders();

@@ -5,6 +5,7 @@ import 'package:flutter_onegate/services/crash_reporting/analytics_service.dart'
 import 'package:flutter_onegate/services/crash_reporting/models/crash_models.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 /// Screen for viewing analytics data and user behavior metrics
 class AnalyticsDashboardScreen extends StatefulWidget {
@@ -54,7 +55,12 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error loading analytics data: $e'),
+            content: Text(
+              context.tr(
+                'Error loading analytics data: {error}',
+                params: {'error': '$e'},
+              ),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -203,7 +209,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                     color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'Analytics Overview',
+                  context.tr('Analytics Overview'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -215,7 +221,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
               children: [
                 Expanded(
                   child: _buildStatItem(
-                    'Total Events',
+                    context.tr('Total Events'),
                     '${_statistics['totalEvents'] ?? 0}',
                     Colors.blue,
                     Ionicons.pulse_outline,
@@ -223,7 +229,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                 ),
                 Expanded(
                   child: _buildStatItem(
-                    'Last 24h',
+                    context.tr('Last 24h'),
                     '${_statistics['events24h'] ?? 0}',
                     Colors.green,
                     Ionicons.time_outline,
@@ -236,7 +242,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
               children: [
                 Expanded(
                   child: _buildStatItem(
-                    'Sessions',
+                    context.tr('Sessions'),
                     '${_statistics['uniqueSessions'] ?? 0}',
                     Colors.orange,
                     Ionicons.people_outline,
@@ -244,7 +250,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                 ),
                 Expanded(
                   child: _buildStatItem(
-                    'Users',
+                    context.tr('Users'),
                     '${_statistics['uniqueUsers'] ?? 0}',
                     Colors.purple,
                     Ionicons.person_outline,
@@ -308,7 +314,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                     color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'Current Session',
+                  context.tr('Current Session'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -322,7 +328,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                 _buildInfoRow('Started', sessionStartTime.toString()),
             ] else ...[
               Text(
-                'No active session',
+                context.tr('No active session'),
                 style: TextStyle(color: Colors.grey[600]),
               ),
             ],
@@ -348,7 +354,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                     color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'Event Categories',
+                  context.tr('Event Categories'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -358,7 +364,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
             const SizedBox(height: 12),
             if (categoryCounts.isEmpty)
               Text(
-                'No events recorded yet',
+                context.tr('No events recorded yet'),
                 style: TextStyle(color: Colors.grey[600]),
               )
             else
@@ -440,7 +446,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                     color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'Top User Actions',
+                  context.tr('Top User Actions'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -450,7 +456,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
             const SizedBox(height: 12),
             if (sortedActions.isEmpty)
               Text(
-                'No user actions recorded yet',
+                context.tr('No user actions recorded yet'),
                 style: TextStyle(color: Colors.grey[600]),
               )
             else
@@ -518,7 +524,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                     color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'Screen Navigation',
+                  context.tr('Screen Navigation'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -528,7 +534,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
             const SizedBox(height: 12),
             if (sortedScreens.isEmpty)
               Text(
-                'No screen navigation recorded yet',
+                context.tr('No screen navigation recorded yet'),
                 style: TextStyle(color: Colors.grey[600]),
               )
             else
@@ -618,7 +624,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                     color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'Performance Metrics',
+                  context.tr('Performance Metrics'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -667,7 +673,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                     color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'API Performance',
+                  context.tr('API Performance'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -677,7 +683,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
             const SizedBox(height: 12),
             if (apiEvents.isEmpty)
               Text(
-                'No API calls recorded yet',
+                context.tr('No API calls recorded yet'),
                 style: TextStyle(color: Colors.grey[600]),
               )
             else
@@ -816,8 +822,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
               if (event.duration != null)
                 _buildInfoRow('Duration', '${event.duration}ms'),
               const SizedBox(height: 8),
-              const Text(
-                'Parameters:',
+              Text(
+                context.tr('Parameters:'),
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
@@ -838,7 +844,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(context.tr('Close')),
           ),
         ],
       ),

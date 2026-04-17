@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -144,7 +145,7 @@ class _AddStaffState extends State<AddStaff> {
       });
       if (mounted) {
         myFluttertoast(
-          msg: "Failed to load members",
+          msg: context.tr('Failed to load members'),
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           timeInSecForIosWeb: 1,
@@ -176,7 +177,7 @@ class _AddStaffState extends State<AddStaff> {
       debugPrint('Error fetching categories: $e');
       if (mounted) {
         myFluttertoast(
-          msg: "Failed to load categories",
+          msg: context.tr('Failed to load categories'),
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           timeInSecForIosWeb: 1,
@@ -209,7 +210,7 @@ class _AddStaffState extends State<AddStaff> {
       debugPrint('Error capturing image: $e');
       if (mounted) {
         myFluttertoast(
-          msg: "Failed to capture images",
+          msg: context.tr('Failed to capture images'),
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           timeInSecForIosWeb: 1,
@@ -242,7 +243,7 @@ class _AddStaffState extends State<AddStaff> {
       debugPrint('Error selecting image: $e');
       if (mounted) {
         myFluttertoast(
-          msg: "Failed to select image",
+          msg: context.tr('Failed to select image'),
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           timeInSecForIosWeb: 1,
@@ -336,7 +337,7 @@ class _AddStaffState extends State<AddStaff> {
           });
 
           myFluttertoast(
-            msg: "Images uploaded successfully",
+            msg: context.tr("Images uploaded successfully"),
             toastLength: Toast.LENGTH_SHORT,
             gravity: ToastGravity.BOTTOM,
             timeInSecForIosWeb: 1,
@@ -353,7 +354,7 @@ class _AddStaffState extends State<AddStaff> {
     } catch (e) {
       debugPrint('Error uploading images: $e');
       myFluttertoast(
-        msg: "Failed to upload images",
+        msg: context.tr("Failed to upload images"),
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 1,
@@ -493,7 +494,7 @@ class _AddStaffState extends State<AddStaff> {
     // Check for gender selection
     if (_selectedGender.isEmpty) {
       myFluttertoast(
-        msg: "Please select a gender",
+        msg: context.tr("Please select a gender"),
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 1,
@@ -507,7 +508,7 @@ class _AddStaffState extends State<AddStaff> {
     // Check for DOB selection
     if (_selectedDate == null) {
       myFluttertoast(
-        msg: "Please select date of birth",
+        msg: context.tr("Please select date of birth"),
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 1,
@@ -521,7 +522,7 @@ class _AddStaffState extends State<AddStaff> {
     // Check for category selection
     if (_selectedCategory.isEmpty) {
       myFluttertoast(
-        msg: "Please select a category",
+        msg: context.tr("Please select a category"),
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 1,
@@ -535,7 +536,7 @@ class _AddStaffState extends State<AddStaff> {
     // Check for member selection when adding staff
     if (!_isStaff && _selectedMembers.isEmpty) {
       myFluttertoast(
-        msg: "Please select at least one member",
+        msg: context.tr('Please select at least one member'),
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 1,
@@ -552,7 +553,7 @@ class _AddStaffState extends State<AddStaff> {
     // Check for profile and ID proof images
     if (_image == null) {
       myFluttertoast(
-        msg: "Please select a profile image",
+        msg: context.tr("Please select a profile image"),
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 1,
@@ -565,7 +566,7 @@ class _AddStaffState extends State<AddStaff> {
 
     if (_idProofImage == null) {
       myFluttertoast(
-        msg: "Please select an ID proof image",
+        msg: context.tr("Please select an ID proof image"),
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 1,
@@ -660,7 +661,9 @@ class _AddStaffState extends State<AddStaff> {
       if (mounted && response != null) {
         // Show success toast message
         myFluttertoast(
-          msg: "${_isStaff ? 'Staff' : 'Member'} added successfully",
+          msg: _isStaff
+              ? context.tr("Staff added successfully")
+              : context.tr("Member added successfully"),
           toastLength: Toast.LENGTH_LONG,
           gravity: ToastGravity.BOTTOM,
           timeInSecForIosWeb: 2,
@@ -688,7 +691,7 @@ class _AddStaffState extends State<AddStaff> {
         }
 
         myFluttertoast(
-          msg: "Error: $errorMessage",
+          msg: context.tr("Error: {error}", params: {'error': errorMessage}),
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           timeInSecForIosWeb: 1,
@@ -706,8 +709,8 @@ class _AddStaffState extends State<AddStaff> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Members',
+          Text(
+            context.tr('Members'),
             style: TextStyle(
               fontSize: 16,
               color: Colors.black,
@@ -736,7 +739,11 @@ class _AddStaffState extends State<AddStaff> {
 
                         return Chip(
                           backgroundColor: Colors.red.shade100,
-                          label: Text("$memberName ($memberType)"),
+                          label: Text(context.tr('{memberName} ({memberType})',
+                              params: {
+                                'memberName': memberName,
+                                'memberType': '$memberType'
+                              })),
                           deleteIcon: const Icon(Icons.close, size: 18),
                           onDeleted: () {
                             setState(() {
@@ -761,8 +768,13 @@ class _AddStaffState extends State<AddStaff> {
                         Expanded(
                           child: Text(
                             _selectedMembers.isEmpty
-                                ? 'Select members'
-                                : '${_selectedMembers.length} members selected',
+                                ? context.tr('Select Members')
+                                : context.tr(
+                                    '{count} members selected',
+                                    params: {
+                                      'count': '${_selectedMembers.length}',
+                                    },
+                                  ),
                             style: TextStyle(
                               color: _selectedMembers.isEmpty
                                   ? Colors.grey
@@ -782,7 +794,7 @@ class _AddStaffState extends State<AddStaff> {
             Padding(
               padding: const EdgeInsets.only(top: 8.0, left: 12),
               child: Text(
-                'Please select at least one member',
+                context.tr('Please select at least one member'),
                 style: TextStyle(
                   color: Colors.red.shade700,
                   fontSize: 12,
@@ -974,7 +986,7 @@ class _AddStaffState extends State<AddStaff> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'Select Members',
+                                  context.tr('Select Members'),
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -1000,7 +1012,9 @@ class _AddStaffState extends State<AddStaff> {
                               child: TextField(
                                 controller: searchController,
                                 decoration: InputDecoration(
-                                  hintText: 'Search members or units...',
+                                  hintText: context.tr(
+                                    'Search members or units...',
+                                  ),
                                   border: InputBorder.none,
                                   icon: Icon(Icons.search,
                                       color: Colors.red.shade300),
@@ -1025,7 +1039,12 @@ class _AddStaffState extends State<AddStaff> {
                               padding:
                                   const EdgeInsets.symmetric(vertical: 8.0),
                               child: Text(
-                                '${_selectedMembers.length} members selected',
+                                context.tr(
+                                  '{count} members selected',
+                                  params: {
+                                    'count': '${_selectedMembers.length}',
+                                  },
+                                ),
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontWeight: FontWeight.w500,
@@ -1044,7 +1063,7 @@ class _AddStaffState extends State<AddStaff> {
                                       child: Padding(
                                         padding: const EdgeInsets.all(16.0),
                                         child: Text(
-                                          'No members found',
+                                          context.tr('No members found'),
                                           style: TextStyle(
                                               color: Colors.grey.shade600),
                                         ),
@@ -1094,7 +1113,13 @@ class _AddStaffState extends State<AddStaff> {
                                                     ),
                                                   ),
                                                   Text(
-                                                    '${unitMembers.length} members',
+                                                    context.tr(
+                                                      '{count} members',
+                                                      params: {
+                                                        'count':
+                                                            '${unitMembers.length}',
+                                                      },
+                                                    ),
                                                     style: TextStyle(
                                                       color:
                                                           Colors.grey.shade700,
@@ -1158,8 +1183,14 @@ class _AddStaffState extends State<AddStaff> {
                                                           : FontWeight.normal,
                                                     ),
                                                   ),
-                                                  subtitle:
-                                                      Text('Type: $memberType'),
+                                                  subtitle: Text(
+                                                    context.tr(
+                                                      'Type: {type}',
+                                                      params: {
+                                                        'type': memberType,
+                                                      },
+                                                    ),
+                                                  ),
                                                   value: isSelected,
                                                   activeColor: Colors.red,
                                                   checkColor: Colors.white,
@@ -1217,7 +1248,7 @@ class _AddStaffState extends State<AddStaff> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 16, vertical: 12),
                                     ),
-                                    child: const Text('Done'),
+                                    child: Text(context.tr('Done')),
                                     onPressed: () {
                                       this.setState(
                                           () {}); // Update the parent state
@@ -1249,8 +1280,8 @@ class _AddStaffState extends State<AddStaff> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Gender',
+          Text(
+            context.tr('Gender'),
             style: TextStyle(
               fontSize: 16,
               color: Colors.black,
@@ -1314,8 +1345,8 @@ class _AddStaffState extends State<AddStaff> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Role Type',
+          Text(
+            context.tr('Role Type'),
             style: TextStyle(
               fontSize: 16,
               color: Colors.black,
@@ -1334,7 +1365,7 @@ class _AddStaffState extends State<AddStaff> {
                   });
                 },
               ),
-              Text(_isStaff ? 'Staff' : 'Member'),
+              Text(_isStaff ? context.tr('Staff') : context.tr('Member')),
             ],
           ),
         ],
@@ -1344,11 +1375,11 @@ class _AddStaffState extends State<AddStaff> {
 
   String? _validateAadharCard(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter Aadhar Card number';
+      return context.tr('Please enter Aadhar Card number');
     }
 
     if (value.length != 12) {
-      return 'Aadhar Card must be exactly 12 digits';
+      return context.tr('Aadhar Card must be exactly 12 digits');
     }
 
     // Luhn algorithm check for Aadhar (simplified version)
@@ -1363,7 +1394,7 @@ class _AddStaffState extends State<AddStaff> {
     }
 
     if (sum % 10 != 0) {
-      return 'Invalid Aadhar Card number';
+      return context.tr('Invalid Aadhar Card number');
     }
 
     return null;
@@ -1371,12 +1402,12 @@ class _AddStaffState extends State<AddStaff> {
 
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter an email address';
+      return context.tr('Please enter an email address');
     }
 
     final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegExp.hasMatch(value)) {
-      return 'Please enter a valid email address';
+      return context.tr('Please enter a valid email address');
     }
 
     return null;
@@ -1384,7 +1415,7 @@ class _AddStaffState extends State<AddStaff> {
 
   String? _validateIdProof(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter an ID proof number';
+      return context.tr('Please enter an ID proof number');
     }
 
     final input = value.trim();
@@ -1396,22 +1427,24 @@ class _AddStaffState extends State<AddStaff> {
         if (input.length < 8 ||
             input.length > 9 ||
             !RegExp(r'^[A-Za-z0-9]+$').hasMatch(input)) {
-          return 'Please enter a valid Passport number (8-9 alphanumeric characters)';
+          return context.tr(
+              'Please enter a valid Passport number (8-9 alphanumeric characters)');
         }
         break;
       case 'Driving License':
         if (input.length < 5 || !RegExp(r'^[A-Za-z0-9]+$').hasMatch(input)) {
-          return 'Please enter a valid Driving License number';
+          return context.tr('Please enter a valid Driving License number');
         }
         break;
       case 'Voter ID':
         if (!RegExp(r'^[A-Za-z]{3}\d{7}$').hasMatch(input)) {
-          return 'Please enter a valid Voter ID (e.g., ABC1234567)';
+          return context.tr('Please enter a valid Voter ID (e.g., ABC1234567)');
         }
         break;
       case 'PAN Card':
         if (!RegExp(r'^[A-Z]{5}\d{4}[A-Z]$').hasMatch(input)) {
-          return 'Please enter a valid PAN card number (e.g., ABCDE1234F)';
+          return context
+              .tr('Please enter a valid PAN card number (e.g., ABCDE1234F)');
         }
         break;
     }
@@ -1422,7 +1455,8 @@ class _AddStaffState extends State<AddStaff> {
   @override
   Widget build(BuildContext context) {
     return MyScrollView(
-      pageTitle: _isStaff ? "Create Staff" : "Add Member",
+      pageTitle:
+          _isStaff ? context.tr("Create Staff") : context.tr("Add Member"),
       pageBody: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -1473,7 +1507,7 @@ class _AddStaffState extends State<AddStaff> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Personal Details',
+                    Text(context.tr('Personal Details'),
                         style: Theme.of(context).textTheme.displaySmall),
                     const SizedBox(height: 20),
                     CustomForm.textField(
@@ -1481,13 +1515,14 @@ class _AddStaffState extends State<AddStaff> {
                       textController: _nameController,
                       titleColor: Colors.black,
                       hintColor: Colors.grey,
-                      hintText: "Enter Name",
+                      hintText: context.tr('Enter Name'),
                       validator: (value) {
                         if (value?.isEmpty ?? true) {
-                          return 'Please enter a name';
+                          return context.tr('Please enter a name');
                         }
                         if (value!.length < 3) {
-                          return 'Name must be at least 3 characters';
+                          return context
+                              .tr('Name must be at least 3 characters');
                         }
                         return null;
                       },
@@ -1499,7 +1534,7 @@ class _AddStaffState extends State<AddStaff> {
                       hintColor: Theme.of(context).colorScheme.onPrimary,
                       focusNode: _mobileFocusNode,
                       "Mobile Number",
-                      hintText: '0123456789',
+                      hintText: context.tr('0123456789'),
                       prefixIcon: CountryCodePicker(
                         initialSelection: 'IN',
                         favorite: const ['IN'],
@@ -1521,7 +1556,7 @@ class _AddStaffState extends State<AddStaff> {
                             Icons.search,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
-                          hintText: 'Search',
+                          hintText: context.tr('Search'),
                           hintStyle: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
@@ -1572,20 +1607,22 @@ class _AddStaffState extends State<AddStaff> {
                       length: 10,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Mobile number is required';
+                          return context.tr('Mobile number is required');
                         }
 
                         if (value.length != 10) {
-                          return 'Please enter a 10-digit number';
+                          return context.tr('Please enter a 10-digit number');
                         }
 
                         if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                          return 'Mobile number should contain only digits';
+                          return context
+                              .tr('Mobile number should contain only digits');
                         }
 
                         // Basic validation for Indian mobile numbers
                         if (!RegExp(r'^[6-9]\d{9}$').hasMatch(value)) {
-                          return 'Please enter a valid Indian mobile number';
+                          return context
+                              .tr('Please enter a valid Indian mobile number');
                         }
 
                         return null;
@@ -1594,7 +1631,7 @@ class _AddStaffState extends State<AddStaff> {
                     CustomForm.textField(
                       "Email",
                       textController: _emailController,
-                      hintText: "Enter Email",
+                      hintText: context.tr('Enter Email'),
                       titleColor: Colors.black,
                       hintColor: Colors.grey,
                       keyboardType: TextInputType.emailAddress,
@@ -1604,7 +1641,7 @@ class _AddStaffState extends State<AddStaff> {
                       "Date of Birth",
                       titleColor: Colors.black,
                       hintColor: Colors.grey,
-                      hintText: 'Enter Date of Birth',
+                      hintText: context.tr('Enter Date of Birth'),
                       textController: TextEditingController(
                           text: _selectedDate != null
                               ? "${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}"
@@ -1623,19 +1660,19 @@ class _AddStaffState extends State<AddStaff> {
                       textController: addressController,
                       titleColor: Colors.black,
                       hintColor: Colors.grey,
-                      hintText: "Enter Address",
+                      hintText: context.tr('Enter Address'),
                       lines: 3,
                       // maxLines: 3,
                       validator: (value) {
                         if (value?.isEmpty ?? true) {
-                          return 'Please enter an address';
+                          return context.tr('Please enter an address');
                         }
                         return null;
                       },
                     ),
 
                     const SizedBox(height: 20),
-                    Text('Professional Details',
+                    Text(context.tr('Professional Details'),
                         style: Theme.of(context).textTheme.displaySmall),
                     const SizedBox(height: 20),
                     if (!_isStaff) _buildMemberSelection(),
@@ -1645,8 +1682,8 @@ class _AddStaffState extends State<AddStaff> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Category',
+                        Text(
+                          context.tr('Category'),
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.black,
@@ -1668,7 +1705,7 @@ class _AddStaffState extends State<AddStaff> {
                                   : _selectedCategory.isEmpty
                                       ? null
                                       : _selectedCategory,
-                              hint: const Text('Select Category'),
+                              hint: Text(context.tr('Select Category')),
                               items: categories.entries.map((entry) {
                                 return DropdownMenuItem<String>(
                                   value: entry.key,
@@ -1696,8 +1733,8 @@ class _AddStaffState extends State<AddStaff> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Qualification',
+                        Text(
+                          context.tr('Qualification'),
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.black,
@@ -1715,7 +1752,7 @@ class _AddStaffState extends State<AddStaff> {
                             child: DropdownButton<String>(
                               isExpanded: true,
                               value: _selectedQualification,
-                              hint: const Text('Select Qualification'),
+                              hint: Text(context.tr('Select Qualification')),
                               items: qualifications.map((String value) {
                                 return DropdownMenuItem<String>(
                                   value: value,
@@ -1736,7 +1773,7 @@ class _AddStaffState extends State<AddStaff> {
                     ),
 
                     const SizedBox(height: 20),
-                    Text('ID Proof Details',
+                    Text(context.tr('ID Proof Details'),
                         style: Theme.of(context).textTheme.displaySmall),
                     const SizedBox(height: 20),
 
@@ -1744,8 +1781,8 @@ class _AddStaffState extends State<AddStaff> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'ID Proof Type',
+                        Text(
+                          context.tr('ID Proof Type'),
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.black,
@@ -1763,7 +1800,7 @@ class _AddStaffState extends State<AddStaff> {
                             child: DropdownButton<String>(
                               isExpanded: true,
                               value: _selectedIdProof,
-                              hint: const Text('Select ID Proof Type'),
+                              hint: Text(context.tr('Select ID Proof Type')),
                               items: idProofs.map((String value) {
                                 return DropdownMenuItem<String>(
                                   value: value,
@@ -1793,7 +1830,7 @@ class _AddStaffState extends State<AddStaff> {
                       textController: _idNumberController,
                       titleColor: Colors.black,
                       hintColor: Colors.grey,
-                      hintText: "Enter ID Proof Number",
+                      hintText: context.tr('Enter ID Proof Number'),
                       inputFormatters: _getInputFormatters(_selectedIdProof),
                       validator: _validateIdProof,
                     ),
@@ -1804,8 +1841,8 @@ class _AddStaffState extends State<AddStaff> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'ID Proof Image',
+                        Text(
+                          context.tr('ID Proof Image'),
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.black,
@@ -1836,7 +1873,7 @@ class _AddStaffState extends State<AddStaff> {
                                       Icon(Icons.add_a_photo,
                                           size: 40, color: Colors.grey),
                                       SizedBox(height: 8),
-                                      Text('Upload ID Proof Image'),
+                                      Text(context.tr('Upload ID Proof Image')),
                                     ],
                                   ),
                           ),
@@ -1870,7 +1907,7 @@ class _AddStaffState extends State<AddStaff> {
                                 ),
                               )
                             : Text(
-                                'Submit',
+                                context.tr('Submit'),
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyLarge

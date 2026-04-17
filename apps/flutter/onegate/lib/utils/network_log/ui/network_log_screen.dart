@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/utils/network_log/models/network_log.dart';
@@ -59,7 +60,8 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error syncing logs: $e'),
+            content: Text(context
+                .tr('Error syncing logs: {error}', params: {'error': '$e'})),
             backgroundColor: Colors.red,
           ),
         );
@@ -77,7 +79,7 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Network Logs'),
+        title: Text(context.tr('Network Logs')),
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
@@ -85,7 +87,7 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
           ),
           IconButton(
             icon: const Icon(Icons.sync),
-            tooltip: 'Sync Settings',
+            tooltip: context.tr('Sync Settings'),
             onPressed: () {
               Navigator.push(
                 context,
@@ -100,7 +102,7 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
             onPressed: () {
               _logService.clearLogs();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Logs cleared')),
+                SnackBar(content: Text(context.tr('Logs cleared'))),
               );
             },
           ),
@@ -112,8 +114,8 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
           final filteredLogs = _getFilteredLogs(logs);
 
           if (filteredLogs.isEmpty) {
-            return const Center(
-              child: Text('No network logs available'),
+            return Center(
+              child: Text(context.tr('No network logs available')),
             );
           }
 
@@ -128,7 +130,7 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _isSyncing ? null : _triggerManualSync,
-        tooltip: 'Sync Logs',
+        tooltip: context.tr('Sync Logs'),
         child: _isSyncing
             ? const SizedBox(
                 width: 24,
@@ -157,7 +159,8 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
 
   Widget _buildLogItem(NetworkLog log) {
     final statusColor = Color(log.statusColor);
-    final statusText = log.statusCode != null ? '${log.statusCode}' : 'Error';
+    final statusText =
+        log.statusCode != null ? '${log.statusCode}' : context.tr('Error');
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -255,19 +258,19 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('Filter Logs'),
+              title: Text(context.tr('Filter Logs')),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DropdownButtonFormField<String?>(
-                    decoration: const InputDecoration(
-                      labelText: 'HTTP Method',
+                    decoration: InputDecoration(
+                      labelText: context.tr('HTTP Method'),
                     ),
                     value: _selectedMethod,
                     items: [
-                      const DropdownMenuItem(
+                      DropdownMenuItem(
                         value: null,
-                        child: Text('All'),
+                        child: Text(context.tr('All')),
                       ),
                       ...['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
                           .map((method) {
@@ -285,22 +288,22 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<bool?>(
-                    decoration: const InputDecoration(
-                      labelText: 'Status',
+                    decoration: InputDecoration(
+                      labelText: context.tr('Status'),
                     ),
                     value: _hasError,
-                    items: const [
+                    items: [
                       DropdownMenuItem(
                         value: null,
-                        child: Text('All'),
+                        child: Text(context.tr('All')),
                       ),
                       DropdownMenuItem(
                         value: false,
-                        child: Text('Success'),
+                        child: Text(context.tr('Success')),
                       ),
                       DropdownMenuItem(
                         value: true,
-                        child: Text('Error'),
+                        child: Text(context.tr('Error')),
                       ),
                     ],
                     onChanged: (value) {
@@ -316,7 +319,7 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  child: const Text('Cancel'),
+                  child: Text(context.tr('Cancel')),
                 ),
                 TextButton(
                   onPressed: () {
@@ -325,7 +328,7 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
                       _hasError = null;
                     });
                   },
-                  child: const Text('Reset'),
+                  child: Text(context.tr('Reset')),
                 ),
                 TextButton(
                   onPressed: () {
@@ -333,7 +336,7 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
                     // The filter is applied in the ValueListenableBuilder
                     this.setState(() {});
                   },
-                  child: const Text('Apply'),
+                  child: Text(context.tr('Apply')),
                 ),
               ],
             );
@@ -373,10 +376,10 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
                       children: [
                         TabBar(
                           controller: _tabController,
-                          tabs: const [
-                            Tab(text: 'Request'),
-                            Tab(text: 'Response'),
-                            Tab(text: 'Overview'),
+                          tabs: [
+                            Tab(text: context.tr('Request')),
+                            Tab(text: context.tr('Response')),
+                            Tab(text: context.tr('Overview')),
                           ],
                         ),
                         Expanded(
@@ -407,17 +410,17 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('URL'),
+          _buildSectionTitle(context.tr('URL')),
           _buildCopyableText(log.url),
           const SizedBox(height: 16),
-          _buildSectionTitle('Method'),
+          _buildSectionTitle(context.tr('Method')),
           Text(log.method),
           const SizedBox(height: 16),
-          _buildSectionTitle('Headers'),
+          _buildSectionTitle(context.tr('Headers')),
           _buildJsonViewer(log.headers),
           if (log.requestBody != null) ...[
             const SizedBox(height: 16),
-            _buildSectionTitle('Body'),
+            _buildSectionTitle(context.tr('Body')),
             _buildJsonViewer(log.requestBody),
           ],
         ],
@@ -432,7 +435,7 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle('Error'),
+            _buildSectionTitle(context.tr('Error')),
             Text(
               log.error!,
               style: const TextStyle(color: Colors.red),
@@ -447,7 +450,7 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('Status'),
+          _buildSectionTitle(context.tr('Status')),
           Text(
             '${log.statusCode}',
             style: TextStyle(
@@ -456,7 +459,7 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
             ),
           ),
           const SizedBox(height: 16),
-          _buildSectionTitle('Body'),
+          _buildSectionTitle(context.tr('Body')),
           _buildJsonViewer(log.responseBody),
         ],
       ),
@@ -469,21 +472,21 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('Time'),
+          _buildSectionTitle(context.tr('Time')),
           Text('${log.timestamp}'),
           const SizedBox(height: 16),
-          _buildSectionTitle('Duration'),
+          _buildSectionTitle(context.tr('Duration')),
           Text(log.formattedDuration),
           const SizedBox(height: 16),
-          _buildSectionTitle('Method'),
+          _buildSectionTitle(context.tr('Method')),
           Text(log.method),
           const SizedBox(height: 16),
-          _buildSectionTitle('URL'),
+          _buildSectionTitle(context.tr('URL')),
           _buildCopyableText(log.url),
           const SizedBox(height: 16),
-          _buildSectionTitle('Status'),
+          _buildSectionTitle(context.tr('Status')),
           Text(
-            log.statusCode != null ? '${log.statusCode}' : 'Error',
+            log.statusCode != null ? '${log.statusCode}' : context.tr('Error'),
             style: TextStyle(
               color: log.statusCode == null || log.statusCode! >= 400
                   ? Colors.red
@@ -492,13 +495,15 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
             ),
           ),
           const SizedBox(height: 16),
-          _buildSectionTitle('Gate ID'),
-          Text(log.gateId.isEmpty ? 'Not specified' : log.gateId),
+          _buildSectionTitle(context.tr('Gate ID')),
+          Text(log.gateId.isEmpty ? context.tr('Not specified') : log.gateId),
           const SizedBox(height: 16),
-          _buildSectionTitle('Environment'),
-          Text(log.environment.isEmpty ? 'Not specified' : log.environment),
+          _buildSectionTitle(context.tr('Environment')),
+          Text(log.environment.isEmpty
+              ? context.tr('Not specified')
+              : log.environment),
           const SizedBox(height: 16),
-          _buildSectionTitle('Sync Status'),
+          _buildSectionTitle(context.tr('Sync Status')),
           Row(
             children: [
               Icon(
@@ -508,7 +513,9 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
               ),
               const SizedBox(width: 8),
               Text(
-                log.synced ? 'Synced to server' : 'Not synced',
+                log.synced
+                    ? context.tr('Synced to server')
+                    : context.tr('Not synced'),
                 style: TextStyle(
                   color: log.synced ? Colors.green : Colors.orange,
                   fontWeight: FontWeight.bold,
@@ -539,7 +546,7 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
       onTap: () {
         Clipboard.setData(ClipboardData(text: text));
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Copied to clipboard')),
+          SnackBar(content: Text(context.tr('Copied to clipboard'))),
         );
       },
       child: Row(
@@ -560,7 +567,7 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
 
   Widget _buildJsonViewer(dynamic content) {
     if (content == null) {
-      return const Text('No content');
+      return Text(context.tr('No content'));
     }
 
     try {
@@ -580,7 +587,7 @@ class _NetworkLogScreenState extends State<NetworkLogScreen>
         onTap: () {
           Clipboard.setData(ClipboardData(text: prettyJson));
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Copied to clipboard')),
+            SnackBar(content: Text(context.tr('Copied to clipboard'))),
           );
         },
         child: Container(

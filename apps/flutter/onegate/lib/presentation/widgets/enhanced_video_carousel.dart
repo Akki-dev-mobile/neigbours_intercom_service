@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
@@ -284,7 +285,7 @@ class _EnhancedVideoCarouselState extends State<EnhancedVideoCarousel> {
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'Loading...',
+                                AppLocalizations.of(context).loading,
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: isTablet ? 16 : 14,

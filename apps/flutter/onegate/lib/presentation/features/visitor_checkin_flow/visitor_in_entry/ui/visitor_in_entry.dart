@@ -923,14 +923,14 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
         if (state is VisitorInEntryLoadingState) {
           return DashboardLoader(
             title: context.tr('Processing Visitor Details'),
-            subtitle: context.tr('Please wait while we continue...'),
+            subtitle: context.tr('visitorContinueProcessingSubtitle'),
           );
         }
 
         return MyScrollView(
           isScrollable: true,
           pageTitle:
-              '${AppLocalizations.of(context).purposeEntry} - ${effectivePurpose.categoryName}',
+              '${AppLocalizations.of(context).purposeEntry} - ${context.trPurposeCategory(effectivePurpose.categoryName)}',
           pageBody: _buildPurposeForm(effectivePurpose),
           floatingActionButton: widget.selfcheckinFlow
               ? null
@@ -968,7 +968,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                         child: Center(
                           child: Text(
                             _isSubmitting
-                                ? 'Processing...'
+                                ? context.tr('Processing')
                                 : AppLocalizations.of(context).next,
                             style: const TextStyle(
                               color: Colors.white,
@@ -2858,7 +2858,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
             child: Center(
               child: Text(
                 _isSubmitting
-                    ? context.tr('Processing...')
+                    ? context.tr('Processing')
                     : AppLocalizations.of(context).next,
                 style: TextStyle(
                   color: Colors.white,
@@ -3450,9 +3450,12 @@ class _CameraPreviewScreenState extends State<CameraPreviewScreen>
           backgroundColor: Colors.transparent,
           elevation: 0,
           automaticallyImplyLeading: false, // Hide back button
-          title: const Text(
-            'Take Photo',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          title: Text(
+            context.tr('Take Photo'),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         body: SafeArea(

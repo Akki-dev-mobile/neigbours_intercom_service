@@ -24,12 +24,50 @@ allprojects {
     }
 }
 
+ext {
+    pinnedAndroidxTestRunnerVersion = '1.2.0'
+    pinnedAndroidxTestRulesVersion = '1.2.0'
+    pinnedAndroidxEspressoCoreVersion = '3.2.0'
+    pinnedPosthogAndroidVersion = '3.20.3'
+}
+
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
 subprojects {
     project.evaluationDependsOn(':app')
+}
+
+// Some upstream Flutter/Gradle plugins still declare dynamic Android dependencies
+// like `1.2+`, `3.2+`, or `3.+`. Dynamic versions force remote metadata lookups,
+// which makes builds brittle and can fail even when a compatible version is known.
+// Pin them centrally from the app so we don't have to modify Flutter SDK or pub cache.
+subprojects {
+    configurations.configureEach {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'androidx.test' &&
+                    details.requested.name == 'runner') {
+                details.useVersion rootProject.ext.pinnedAndroidxTestRunnerVersion
+                details.because('Avoid dynamic androidx.test runner metadata resolution')
+            }
+            if (details.requested.group == 'androidx.test' &&
+                    details.requested.name == 'rules') {
+                details.useVersion rootProject.ext.pinnedAndroidxTestRulesVersion
+                details.because('Avoid dynamic androidx.test rules metadata resolution')
+            }
+            if (details.requested.group == 'androidx.test.espresso' &&
+                    details.requested.name == 'espresso-core') {
+                details.useVersion rootProject.ext.pinnedAndroidxEspressoCoreVersion
+                details.because('Avoid dynamic Espresso metadata resolution')
+            }
+            if (details.requested.group == 'com.posthog' &&
+                    details.requested.name == 'posthog-android') {
+                details.useVersion rootProject.ext.pinnedPosthogAndroidVersion
+                details.because('Avoid dynamic PostHog metadata resolution')
+            }
+        }
+    }
 }
 
 // Some third-party plugins still pin Kotlin language/api version to 1.6, which is

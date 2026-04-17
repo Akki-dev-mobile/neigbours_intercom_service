@@ -6,6 +6,7 @@ import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter_onegate/presentation/widgets/custom_numpad.dart';
 import 'package:flutter_onegate/presentation/widgets/enhanced_input_field.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class VisitorAuthScreen extends StatefulWidget {
   const VisitorAuthScreen({super.key});
@@ -41,13 +42,15 @@ class _VisitorAuthScreenState extends State<VisitorAuthScreen>
         setState(() => _step = 1);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Please enter a 10‑digit number')),
+          SnackBar(content: Text(context.tr('Please enter a 10-digit number'))),
         );
       }
     } else {
       // Trigger OTP verify callback here
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Verifying OTP ${_otpCtrl.text}')),
+        SnackBar(
+            content: Text(context
+                .tr('Verifying OTP {otp}', params: {'otp': _otpCtrl.text}))),
       );
     }
   }
@@ -270,8 +273,8 @@ class _VisitorAuthScreenState extends State<VisitorAuthScreen>
                         ? EnhancedInputField(
                             controller: _mobileCtrl,
                             isMobileField: true,
-                            label: 'Visitor Mobile Number',
-                            hint: '0123456789',
+                            label: context.tr('Visitor Mobile Number'),
+                            hint: context.tr('0123456789'),
                             maxLength: 10,
                             prefixWidget: CountryCodePicker(
                               initialSelection: 'IN',
@@ -295,7 +298,7 @@ class _VisitorAuthScreenState extends State<VisitorAuthScreen>
                                   color:
                                       Theme.of(context).colorScheme.onSurface,
                                 ),
-                                hintText: 'Search',
+                                hintText: context.tr('Search'),
                                 hintStyle: TextStyle(
                                   color:
                                       Theme.of(context).colorScheme.onSurface,
@@ -340,8 +343,9 @@ class _VisitorAuthScreenState extends State<VisitorAuthScreen>
                         : EnhancedInputField(
                             controller: _otpCtrl,
                             isMobileField: false,
-                            label: 'Enter OTP Sent to Your Mobile Number',
-                            hint: '123456',
+                            label: context
+                                .tr('Enter OTP Sent to Your Mobile Number'),
+                            hint: context.tr('123456'),
                             maxLength: 6,
                             onClear: () {
                               setState(() {

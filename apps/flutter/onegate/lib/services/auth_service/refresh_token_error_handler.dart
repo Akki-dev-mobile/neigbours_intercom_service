@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/presentation/widgets/session_expired_bottom_sheet.dart';
 import 'package:flutter_onegate/services/session_manager/continuous_session_manager.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -311,7 +312,7 @@ class RefreshTokenErrorHandler {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Connection Issue'),
+        title: Text(context.tr('Connection Issue')),
         content: Text(userMessage),
         actions: [
           TextButton(
@@ -322,7 +323,11 @@ class RefreshTokenErrorHandler {
                 _triggerManualRetry();
               }
             },
-            child: Text(shouldRetryFailure(failureType) ? 'Try Again' : 'OK'),
+            child: Text(
+              shouldRetryFailure(failureType)
+                  ? context.tr('Try Again')
+                  : context.tr('OK'),
+            ),
           ),
           if (shouldRetryFailure(failureType))
             TextButton(
@@ -330,7 +335,7 @@ class RefreshTokenErrorHandler {
                 Navigator.of(context).pop();
                 _forceReauthentication(failureType);
               },
-              child: const Text('Login Again'),
+              child: Text(context.tr('Login Again')),
             ),
         ],
       ),
@@ -498,6 +503,77 @@ class RefreshTokenErrorHandler {
 
   /// Get user-friendly error message
   static String _getUserFriendlyMessage(RefreshTokenFailureType failureType) {
+    final context = navigatorKey.currentContext;
+    if (context == null) {
+      return _getDefaultUserFriendlyMessage(failureType);
+    }
+
+    switch (failureType) {
+      case RefreshTokenFailureType.networkTimeout:
+        return context.tr(
+          'Connection timed out. Please check your internet connection and try again.',
+        );
+      case RefreshTokenFailureType.networkUnavailable:
+        return context.tr(
+          'No internet connection available. Please check your network settings.',
+        );
+      case RefreshTokenFailureType.connectionError:
+        return context.tr(
+          'Unable to connect to the server. Please try again later.',
+        );
+      case RefreshTokenFailureType.serverError:
+        return context.tr(
+          'Server is temporarily unavailable. Please try again in a few moments.',
+        );
+      case RefreshTokenFailureType.serviceUnavailable:
+        return context.tr(
+          'Service is currently under maintenance. Please try again later.',
+        );
+      case RefreshTokenFailureType.storageError:
+        return context.tr(
+          'Unable to access secure storage. Please restart the app.',
+        );
+      case RefreshTokenFailureType.configurationError:
+        return context.tr('App configuration error. Please contact support.');
+      default:
+        return context.tr(
+          'An unexpected error occurred. Please try again or contact support.',
+        );
+    }
+  }
+
+  /// Get session expired message
+  static String _getSessionExpiredMessage(RefreshTokenFailureType failureType) {
+    final context = navigatorKey.currentContext;
+    if (context == null) {
+      return _getDefaultSessionExpiredMessage(failureType);
+    }
+
+    switch (failureType) {
+      case RefreshTokenFailureType.refreshTokenExpired:
+        return context.tr(
+          'Your session has expired. Please log in again to continue.',
+        );
+      case RefreshTokenFailureType.refreshTokenRevoked:
+        return context.tr(
+          'Your session has been revoked for security reasons. Please log in again.',
+        );
+      case RefreshTokenFailureType.refreshTokenInvalid:
+        return context
+            .tr('Session authentication failed. Please log in again.');
+      case RefreshTokenFailureType.missingRefreshToken:
+        return context
+            .tr('Session information is missing. Please log in again.');
+      default:
+        return context.tr(
+          'Your session has expired. Please log in again to continue.',
+        );
+    }
+  }
+
+  static String _getDefaultUserFriendlyMessage(
+    RefreshTokenFailureType failureType,
+  ) {
     switch (failureType) {
       case RefreshTokenFailureType.networkTimeout:
         return 'Connection timed out. Please check your internet connection and try again.';
@@ -518,8 +594,9 @@ class RefreshTokenErrorHandler {
     }
   }
 
-  /// Get session expired message
-  static String _getSessionExpiredMessage(RefreshTokenFailureType failureType) {
+  static String _getDefaultSessionExpiredMessage(
+    RefreshTokenFailureType failureType,
+  ) {
     switch (failureType) {
       case RefreshTokenFailureType.refreshTokenExpired:
         return 'Your session has expired. Please log in again to continue.';

@@ -617,8 +617,7 @@ class _SelfHomeViewState extends State<SelfHomeView>
                           isTablet: isTablet,
                           icon: Icons.qr_code_scanner_rounded,
                           title: context.tr('Scan QR Code'),
-                          description: context.tr(
-                              'Scan your QR code for instant check-in. Most convenient method for regular visitors.'),
+                          description: context.tr('qrCheckinDescription'),
                           features: [
                             context.tr('Instant check-in'),
                             context.tr('No typing required'),
@@ -633,7 +632,8 @@ class _SelfHomeViewState extends State<SelfHomeView>
                           icon: Icons.lock_outline_rounded,
                           title: context.tr('Passcode'),
                           description: context.tr(
-                              'Use your passcode for quick and secure check-in without OTP verification.'),
+                            'passcodeCheckinDescription',
+                          ),
                           features: [
                             context.tr('No OTP required'),
                             context.tr('Fast check-in process'),

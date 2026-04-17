@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class ErrorScreen extends StatelessWidget {
   final String? message;
@@ -23,7 +24,7 @@ class ErrorScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            message ?? 'Something went wrong',
+            message ?? context.tr('Something went wrong'),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   color: Colors.grey[800],
                 ),
@@ -33,7 +34,7 @@ class ErrorScreen extends StatelessWidget {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: onRetry,
-              child: const Text('Retry'),
+              child: Text(context.tr('Retry')),
             ),
           ],
         ],

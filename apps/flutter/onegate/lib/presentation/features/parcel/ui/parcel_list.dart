@@ -12,6 +12,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../bloc/parcel_state.dart';
 import 'package:common_widgets/dashboard_loader.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class ParcelList extends StatefulWidget {
   const ParcelList({super.key});
@@ -92,7 +93,7 @@ class _ParcelListState extends State<ParcelList> {
         },
         cursorColor: const Color(0xffF44336),
         decoration: InputDecoration(
-          hintText: 'Search parcel by member, unit, or category...',
+          hintText: context.tr('parcelSearchHint'),
           hintStyle: TextStyle(
             color: Colors.grey.shade500,
             fontSize: isTablet ? 16 : 14,
@@ -202,7 +203,7 @@ class _ParcelListState extends State<ParcelList> {
                 ),
               ),
               title: Text(
-                parcel['visitor_name'] ?? 'Parcel Delivery',
+                parcel['visitor_name'] ?? context.tr('Parcel Delivery'),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: const Color(0xff212427),
@@ -275,7 +276,7 @@ class _ParcelListState extends State<ParcelList> {
                         ? DateFormat('dd-MM-yyyy hh:mm a').format(
                             DateTime.tryParse(checkIn) ?? DateTime.now(),
                           )
-                        : "No check-in time",
+                        : context.tr('No check-in time'),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -358,7 +359,7 @@ class _ParcelListState extends State<ParcelList> {
                             }
                           },
                           child: Text(
-                            'Pick',
+                            context.tr('Pick'),
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium
@@ -605,7 +606,7 @@ class _ParcelListState extends State<ParcelList> {
                       ),
                       SizedBox(height: isTablet ? 28 : 22),
                       Text(
-                        'No Parcel Found',
+                        context.tr('No Parcel Found'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: isTablet ? 24 : 21,
@@ -616,8 +617,13 @@ class _ParcelListState extends State<ParcelList> {
                       SizedBox(height: isTablet ? 14 : 10),
                       Text(
                         searchQuery.trim().isNotEmpty
-                            ? 'No parcels match "$searchQuery". Try a different keyword.'
-                            : 'No parcels match the selected filters.',
+                            ? context.tr(
+                                'No parcels match "{query}". Try a different keyword.',
+                                params: {'query': searchQuery},
+                              )
+                            : context.tr(
+                                'No parcels match the selected filters.',
+                              ),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: isTablet ? 16 : 14,
@@ -668,7 +674,7 @@ class _ParcelListState extends State<ParcelList> {
                               color: Colors.white,
                             ),
                             label: Text(
-                              'Clear Search',
+                              context.tr('Clear Search'),
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -739,7 +745,7 @@ class _ParcelListState extends State<ParcelList> {
                       ),
                       SizedBox(height: isTablet ? 28 : 22),
                       Text(
-                        'No Parcels Today',
+                        context.tr('No Parcels Today'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: isTablet ? 24 : 21,
@@ -749,7 +755,7 @@ class _ParcelListState extends State<ParcelList> {
                       ),
                       SizedBox(height: isTablet ? 14 : 10),
                       Text(
-                        'No parcels found today.',
+                        context.tr('parcelNoItemsToday'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: isTablet ? 16 : 14,
@@ -944,9 +950,10 @@ class _ParcelListState extends State<ParcelList> {
               child: BlocBuilder<ParcelBloc, ParcelState>(
                 builder: (context, state) {
                   if (state is ParcelLoading) {
-                    return const DashboardLoader(
-                      title: 'Loading Parcels',
-                      subtitle: 'Please wait while we fetch parcel data...',
+                    return DashboardLoader(
+                      title: context.tr('Loading Parcels'),
+                      subtitle: context
+                          .tr('Please wait while we fetch parcel data...'),
                     );
                   } else if (state is ParcelLoaded) {
                     return Stack(

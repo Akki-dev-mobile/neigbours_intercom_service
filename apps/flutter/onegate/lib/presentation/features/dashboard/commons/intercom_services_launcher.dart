@@ -5,6 +5,7 @@ import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/services/auth_service/enhanced_token_refresh_manager.dart';
 import 'package:flutter_onegate/services/intercom/onegate_intercom_bootstrap.dart';
 import 'package:intercom_module/intercom_module.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class IntercomServicesLauncher {
   static Future<void> open(BuildContext context) async {
@@ -19,8 +20,8 @@ class IntercomServicesLauncher {
       if (accessToken == null || accessToken.isEmpty) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to open Intercom: missing token'),
+          SnackBar(
+            content: Text(context.tr('Unable to open Intercom: missing token')),
             backgroundColor: Colors.red,
           ),
         );
@@ -40,7 +41,8 @@ class IntercomServicesLauncher {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unable to open Intercom: $e'),
+          content: Text(context
+              .tr('Unable to open Intercom: {error}', params: {'error': '$e'})),
           backgroundColor: Colors.red,
         ),
       );

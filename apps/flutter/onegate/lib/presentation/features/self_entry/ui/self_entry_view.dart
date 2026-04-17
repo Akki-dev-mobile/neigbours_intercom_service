@@ -679,7 +679,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                           child: Center(
                             child: Text(
                               isProcessing
-                                  ? context.tr('Processing...')
+                                  ? context.tr('Processing')
                                   : context.tr('Select Purpose'),
                               style: const TextStyle(
                                 color: Colors.white,
@@ -1057,6 +1057,7 @@ class _SelfEntryViewState extends State<SelfEntryView>
                                   maxLength: 10,
                                   prefixWidget: CountryCodePicker(
                                     initialSelection: 'IN',
+                                    headerText: context.tr('Select Country'),
                                     favorite: ['IN', 'US', 'GB', 'CA', 'AU'],
                                     showFlagMain: true,
                                     showFlagDialog: true,

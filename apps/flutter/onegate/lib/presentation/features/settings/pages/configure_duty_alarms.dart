@@ -1,9 +1,8 @@
-import 'dart:io';
-
 import 'package:alarm/alarm.dart';
 import 'package:alarm/model/volume_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 // import 'package:alarm/alarm.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -24,7 +23,7 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
   @override
   Widget build(BuildContext context) {
     return MyScrollView(
-      pageTitle: 'Configure Duty Alarms',
+      pageTitle: context.tr('Configure Duty Alarms'),
       pageBody: Container(
         height: MediaQuery.of(context).size.height,
         padding: const EdgeInsets.all(16.0),
@@ -45,8 +44,11 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
                 }
               },
               child: Text(startTime == null
-                  ? 'Select Start Time'
-                  : 'Start Time: ${startTime!.format(context)}'),
+                  ? context.tr('Select Start Time')
+                  : context.tr(
+                      'Start Time: {time}',
+                      params: {'time': startTime!.format(context)},
+                    )),
             ),
             ElevatedButton(
               style: ButtonStyle(
@@ -63,8 +65,11 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
                 }
               },
               child: Text(endTime == null
-                  ? 'Select End Time'
-                  : 'End Time: ${endTime!.format(context)}'),
+                  ? context.tr('Select End Time')
+                  : context.tr(
+                      'End Time: {time}',
+                      params: {'time': endTime!.format(context)},
+                    )),
             ),
             ElevatedButton(
               style: ButtonStyle(
@@ -81,8 +86,11 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
                 }
               },
               child: Text(interval == null
-                  ? 'Select Interval'
-                  : 'Interval: ${interval!.inMinutes} minutes'),
+                  ? context.tr('Select Interval')
+                  : context.tr(
+                      'Interval: {minutes} minutes',
+                      params: {'minutes': '${interval!.inMinutes}'},
+                    )),
             ),
             ElevatedButton(
               style: ButtonStyle(
@@ -93,10 +101,12 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
                 if (startTime != null && endTime != null && interval != null) {
                   setupAlarms();
                 } else {
-                  myFluttertoast(msg: "Values of all fields are required");
+                  myFluttertoast(
+                    msg: context.tr('Values of all fields are required'),
+                  );
                 }
               },
-              child: const Text('Set Up Alarms'),
+              child: Text(context.tr('Set Up Alarms')),
             ),
             ElevatedButton(
               style: ButtonStyle(
@@ -104,7 +114,7 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
               onPressed: () {
                 deleteAllAlarms();
               },
-              child: const Text('Delete All Alarms'),
+              child: Text(context.tr('Delete All Alarms')),
             ),
             Expanded(
               child: ListView.builder(
@@ -114,13 +124,18 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
                     padding: const EdgeInsets.all(8.0),
                     child: Column(
                       children: [
-                        Container(color: Colors.red,
+                        Container(
+                          color: Colors.red,
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Text(log[index]),
                           ),
                         ),
-                        IconButton(onPressed: (){Alarm.stop(allalarmTime[index].hashCode);}, icon: Icon(Icons.stop))
+                        IconButton(
+                            onPressed: () {
+                              Alarm.stop(allalarmTime[index].hashCode);
+                            },
+                            icon: Icon(Icons.stop))
                       ],
                     ),
                   );
@@ -142,7 +157,7 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
       builder: (context) {
         Duration selectedDuration = initialTime;
         return AlertDialog(
-          title: const Text('Select Interval'),
+          title: Text(context.tr('Select Interval')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -159,7 +174,7 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
               onPressed: () {
                 Navigator.of(context).pop(selectedDuration);
               },
-              child: const Text('OK'),
+              child: Text(context.tr('OK')),
             ),
           ],
         );
@@ -177,13 +192,14 @@ class _ConfigureDutyAlarmsState extends State<ConfigureDutyAlarms> {
           'Schedule exact alarm permission ${res.isGranted ? '' : 'not'} granted.');
     }
   }
-List<DateTime> allalarmTime=[];
+
+  List<DateTime> allalarmTime = [];
 
   void setupAlarms() async {
     await checkAndroidScheduleExactAlarmPermission();
     print("checkAndroidScheduleExactAlarmPermission Done");
     if (startTime == null || endTime == null || interval == null) {
-      myFluttertoast(msg: "Values of all fields are required");
+      myFluttertoast(msg: context.tr('Values of all fields are required'));
       return;
     }
 
@@ -204,69 +220,56 @@ List<DateTime> allalarmTime=[];
     );
 
     if (endDateTime.isBefore(startDateTime)) {
-      myFluttertoast(msg: "End time must be after start time");
+      myFluttertoast(msg: context.tr('End time must be after start time'));
       return;
     }
     DateTime alarmTime = startDateTime.add(interval!);
     print(alarmTime.isBefore(endDateTime));
     while (endDateTime.isAfter(alarmTime)) {
-    await Alarm.set(
-      alarmSettings: AlarmSettings(
-        id: alarmTime.hashCode,
-        dateTime: alarmTime,
-        assetAudioPath: 'assets/media/audio/alarm.mp3',
-        androidFullScreenIntent: true,
-        loopAudio: true,
-        vibrate: true,
-        notificationSettings: const NotificationSettings(
-          title: 'Duty Alarm',
-          body: 'This is a duty alarm',
-          stopButton: 'Stop the alarm',
-          icon: 'notification_icon',
-        ), volumeSettings:  VolumeSettings.fade(fadeDuration: Duration(seconds: 3)),
-      ),
-    );
-    allalarmTime.add(alarmTime);
+      await Alarm.set(
+        alarmSettings: AlarmSettings(
+          id: alarmTime.hashCode,
+          dateTime: alarmTime,
+          assetAudioPath: 'assets/media/audio/alarm.mp3',
+          androidFullScreenIntent: true,
+          loopAudio: true,
+          vibrate: true,
+          notificationSettings: NotificationSettings(
+            title: context.tr('Duty Alarm'),
+            body: context.tr('This is a duty alarm'),
+            stopButton: context.tr('Stop the alarm'),
+            icon: 'notification_icon',
+          ),
+          volumeSettings:
+              VolumeSettings.fade(fadeDuration: Duration(seconds: 3)),
+        ),
+      );
+      allalarmTime.add(alarmTime);
 
-    setState(() {
-      log.add('Alarm set for ${alarmTime.toLocal()}');
-      print('Alarm set for ${alarmTime.toLocal()}');
-    });
+      setState(() {
+        log.add(
+          context.tr(
+            'Alarm set for {time}',
+            params: {'time': '${alarmTime.toLocal()}'},
+          ),
+        );
+        print('Alarm set for ${alarmTime.toLocal()}');
+      });
 
-    alarmTime = alarmTime.add(interval!);
+      alarmTime = alarmTime.add(interval!);
     }
-myFluttertoast(msg: "All alarms have been set up");
+    myFluttertoast(msg: context.tr('All alarms have been set up'));
   }
 
-  void deleteAllAlarms() async{
-        final now = DateTime.now();
-    final startDateTime = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      startTime!.hour,
-      startTime!.minute,
-    );
-    final endDateTime = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      endTime!.hour,
-      endTime!.minute,
-    );
-        // Alarm.stop(551035148);
-
-        // DateTime alarmTime = startDateTime.add(interval!);
-int len=log.length;
+  void deleteAllAlarms() async {
     for (DateTime alarmTime in allalarmTime) {
-    await Alarm.stop(alarmTime.hashCode);
-
+      await Alarm.stop(alarmTime.hashCode);
     }
 
     setState(() {
       log.clear();
     });
-    myFluttertoast(msg: "All alarms have been deleted");
+    myFluttertoast(msg: context.tr('All alarms have been deleted'));
   }
 }
 
@@ -291,18 +294,21 @@ class _DurationPickerState extends State<DurationPicker> {
     duration = widget.duration;
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(color: Colors.black,
+        Container(
+          color: Colors.black,
           child: Slider(
             value: duration.inMinutes.toDouble(),
             min: 1,
             max: 120,
             divisions: 119,
-            label: '${duration.inMinutes} minutes',
+            label: context.tr(
+              '{minutes} minutes',
+              params: {'minutes': '${duration.inMinutes}'},
+            ),
             onChanged: (value) {
               setState(() {
                 duration = Duration(minutes: value.toInt());

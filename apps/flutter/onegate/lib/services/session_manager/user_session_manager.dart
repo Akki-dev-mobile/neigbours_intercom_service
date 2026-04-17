@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
+import 'package:flutter_onegate/services/notifications/incoming_call_push_service.dart';
 import 'package:flutter_onegate/services/intercom/onegate_intercom_bootstrap.dart';
 import 'package:flutter_onegate/services/session_manager/session_management_coordinator.dart';
 import 'package:intercom_module/core/services/call_websocket_service.dart';
@@ -327,6 +328,7 @@ class UserSessionManager {
       case UserSessionState.authenticated:
         log("✅ User session authenticated");
         _connectCallWebSocket();
+        unawaited(IncomingCallPushService.syncCurrentTokenWithBackend());
         break;
       case UserSessionState.unauthenticated:
         log("🚪 User session unauthenticated");
@@ -348,8 +350,9 @@ class UserSessionManager {
   Future<void> _connectCallWebSocket() async {
     try {
       await OneGateIntercomBootstrap.ensureConfigured();
-      final token = await _authService.tokenRefreshManager.getValidAccessToken() ??
-          await _gateStorage.getAccessToken();
+      final token =
+          await _authService.tokenRefreshManager.getValidAccessToken() ??
+              await _gateStorage.getAccessToken();
       if (token == null || token.isEmpty) {
         log('⚠️ [UserSessionManager] Missing token; skipping call WS connect');
         return;
@@ -363,6 +366,19 @@ class UserSessionManager {
     }
   }
 
+  /// Disconnects and reconnects the meet call WebSocket when the user is
+  /// authenticated (e.g. after app resume) so subscriptions use a fresh token.
+  Future<void> refreshCallWebSocketIfAuthenticated() async {
+    if (_currentState != UserSessionState.authenticated) return;
+    try {
+      log('📞 [UserSessionManager] Refreshing call WebSocket');
+      await CallWebSocketService.instance.disconnect();
+      await _connectCallWebSocket();
+    } catch (e) {
+      log('⚠️ [UserSessionManager] refreshCallWebSocketIfAuthenticated: $e');
+    }
+  }
+
   void _disconnectCallWebSocket() {
     _callWsSubscription?.cancel();
     _callWsSubscription = null;
@@ -370,10 +386,28 @@ class UserSessionManager {
   }
 
   Future<void> _handleCallWsEvent(Map<String, dynamic> payload) async {
-    final action = payload['action']?.toString();
+    final action = payload['action']?.toString().trim().toLowerCase();
     if (action == null || action.isEmpty) return;
 
     final callId = payload['call_id']?.toString();
+    const incomingLike = <String>{
+      'incoming_call',
+      'call_initiated',
+      'call_created',
+      'call_ringing',
+      'ringing',
+      'incoming',
+      'call_ring',
+    };
+    if (incomingLike.contains(action)) {
+      await IncomingCallPushService.handleIncomingCallData(
+        payload,
+        source: 'call_websocket',
+        fromBackground: false,
+      );
+      return;
+    }
+
     if (action == 'call_accepted' || action == 'call_answered') {
       if (callId != null && callId.isNotEmpty) {
         await OutgoingCallAcceptanceStore.saveForCallId(callId, payload);
@@ -390,6 +424,8 @@ class UserSessionManager {
       );
       if (!result.success) {
         log('⚠️ [UserSessionManager] Failed to join Jitsi: ${result.message}');
+      } else {
+        await CallCoordinator.instance.markConnected(callId: callId);
       }
       return;
     }

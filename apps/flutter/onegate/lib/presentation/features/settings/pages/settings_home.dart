@@ -292,7 +292,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              item.label,
+                                              context.tr(item.label),
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .titleMedium
@@ -383,9 +383,9 @@ class _SettingsHomeState extends State<SettingsHome> {
                               ),
                               elevation: 0,
                             ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(
+                            child: Text(
+                              context.tr('Cancel'),
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -511,8 +511,8 @@ class _SettingsHomeState extends State<SettingsHome> {
                                 elevation: 0,
                                 shadowColor: Colors.transparent,
                               ),
-                              child: const Text(
-                                'Confirm',
+                              child: Text(
+                                context.tr('Confirm'),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -534,6 +534,7 @@ class _SettingsHomeState extends State<SettingsHome> {
   }
 
   void _showLanguageSettings(BuildContext context) async {
+    final pageContext = context;
     final languageProvider =
         Provider.of<LanguageProvider>(context, listen: false);
     String tempSelectedLanguageCode = languageProvider.currentLanguageCode;
@@ -629,7 +630,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Choose your preferred language',
+                                context.tr('Choose your preferred language'),
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium
@@ -769,8 +770,8 @@ class _SettingsHomeState extends State<SettingsHome> {
                               ),
                             ),
                             onPressed: () => Navigator.of(context).pop(),
-                            child: const Text(
-                              'Cancel',
+                            child: Text(
+                              context.tr('Cancel'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -810,22 +811,26 @@ class _SettingsHomeState extends State<SettingsHome> {
                                 ),
                               ),
                               onPressed: () async {
-                                Navigator.pop(context);
+                                Navigator.of(context).pop();
                                 if (tempSelectedLanguageCode !=
                                     languageProvider.currentLanguageCode) {
                                   final shouldChange = await languageProvider
                                       .showLanguageChangeDialog(
-                                          context, tempSelectedLanguageCode);
+                                    pageContext,
+                                    tempSelectedLanguageCode,
+                                  );
                                   if (shouldChange) {
                                     try {
                                       await languageProvider.changeLanguage(
-                                          tempSelectedLanguageCode);
+                                        pageContext,
+                                        tempSelectedLanguageCode,
+                                      );
                                       if (mounted) {
-                                        ScaffoldMessenger.of(context)
+                                        ScaffoldMessenger.of(pageContext)
                                             .showSnackBar(
                                           SnackBar(
                                             content: Text(
-                                              AppLocalizations.of(context)
+                                              AppLocalizations.of(pageContext)
                                                       ?.languageChanged ??
                                                   'Language changed successfully',
                                             ),
@@ -840,11 +845,15 @@ class _SettingsHomeState extends State<SettingsHome> {
                                       }
                                     } catch (e) {
                                       if (mounted) {
-                                        ScaffoldMessenger.of(context)
+                                        ScaffoldMessenger.of(pageContext)
                                             .showSnackBar(
                                           SnackBar(
                                             content: Text(
-                                                'Error changing language: $e'),
+                                              pageContext.tr(
+                                                'Error changing language: {error}',
+                                                params: {'error': '$e'},
+                                              ),
+                                            ),
                                             backgroundColor: Colors.red,
                                             behavior: SnackBarBehavior.floating,
                                           ),
@@ -965,7 +974,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Select Approval Time',
+                                context.tr('Select Approval Time'),
                                 style: Theme.of(context)
                                     .textTheme
                                     .headlineSmall
@@ -977,7 +986,9 @@ class _SettingsHomeState extends State<SettingsHome> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Choose visitor approval duration',
+                                context.tr(
+                                  'Choose visitor approval duration',
+                                ),
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium
@@ -1065,7 +1076,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              item.label,
+                                              context.tr(item.label),
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .titleMedium
@@ -1078,7 +1089,9 @@ class _SettingsHomeState extends State<SettingsHome> {
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              'Approval timeout duration',
+                                              context.tr(
+                                                'Approval timeout duration',
+                                              ),
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .bodySmall
@@ -1150,8 +1163,8 @@ class _SettingsHomeState extends State<SettingsHome> {
                               ),
                               elevation: 0,
                             ),
-                            child: const Text(
-                              'Cancel',
+                            child: Text(
+                              context.tr('Cancel'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -1226,14 +1239,14 @@ class _SettingsHomeState extends State<SettingsHome> {
                                             ),
                                           ),
                                           const SizedBox(width: 12),
-                                          const Expanded(
+                                          Expanded(
                                             child: Column(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Text(
-                                                  'Success!',
+                                                  context.tr('Success!'),
                                                   style: TextStyle(
                                                     color: Colors.white,
                                                     fontSize: 16,
@@ -1242,7 +1255,9 @@ class _SettingsHomeState extends State<SettingsHome> {
                                                 ),
                                                 SizedBox(height: 2),
                                                 Text(
-                                                  'Approval time updated successfully',
+                                                  context.tr(
+                                                    'Approval time updated successfully',
+                                                  ),
                                                   style: TextStyle(
                                                     color: Colors.white,
                                                     fontSize: 14,
@@ -1274,8 +1289,8 @@ class _SettingsHomeState extends State<SettingsHome> {
                                 elevation: 0,
                                 shadowColor: Colors.transparent,
                               ),
-                              child: const Text(
-                                'Confirm',
+                              child: Text(
+                                context.tr('Confirm'),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -1362,9 +1377,9 @@ class _SettingsHomeState extends State<SettingsHome> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Select Data Storage',
+                            context.tr('Select Data Storage'),
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 20,
@@ -1406,7 +1421,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                                 fillColor: WidgetStateProperty.all(
                                     Colors.red.shade400),
                                 title: Text(
-                                  item.label,
+                                  context.tr(item.label),
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodyMedium
@@ -1460,8 +1475,8 @@ class _SettingsHomeState extends State<SettingsHome> {
                               });
                               Navigator.pop(context);
                             },
-                            child: const Text(
-                              'Confirm',
+                            child: Text(
+                              context.tr('Confirm'),
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -1525,8 +1540,8 @@ class _SettingsHomeState extends State<SettingsHome> {
             // if (role == "admin" || role == "master")
             PrimarySettingsTile(
               icon: Ionicons.people_outline,
-              title: "Staff",
-              subtitle: "View your society staff",
+              title: context.tr('Staff'),
+              subtitle: context.tr('View your society staff'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -1556,7 +1571,7 @@ class _SettingsHomeState extends State<SettingsHome> {
               PrimarySettingsTile(
                 icon: Icons.settings_accessibility,
                 title: AppLocalizations.of(context)!.visitorSettings,
-                subtitle: "Mark mandatory fields for visitors",
+                subtitle: context.tr('Mark mandatory fields for visitors'),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -1571,7 +1586,7 @@ class _SettingsHomeState extends State<SettingsHome> {
             PrimarySettingsTile(
               icon: Icons.settings_accessibility,
               title: AppLocalizations.of(context)!.visitorSettings,
-              subtitle: "Mark mandatory fields for visitors",
+              subtitle: context.tr('Mark mandatory fields for visitors'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -1586,7 +1601,8 @@ class _SettingsHomeState extends State<SettingsHome> {
               icon: Ionicons.time_outline,
               title: AppLocalizations.of(context)!.visitorApprovalTime,
               subtitle: AppLocalizations.of(context)!.currentPreference(
-                  "${context.watch<VisitorApprovalTimeProvider>().approvalTime} seconds"),
+                '${context.watch<VisitorApprovalTimeProvider>().approvalTime} ${context.tr('seconds')}',
+              ),
               onTap: () {
                 _showVisitorApprovalTime(context);
               },
@@ -1605,8 +1621,10 @@ class _SettingsHomeState extends State<SettingsHome> {
               if (role == "admin" || role == "master" || role == "gatekeeper")
                 PrimarySettingsTile(
                   icon: Ionicons.pulse_outline,
-                  title: "Data Observability",
-                  subtitle: "Monitor system health, search & notifications",
+                  title: context.tr('Data Observability'),
+                  subtitle: context.tr(
+                    'Monitor system health, search & notifications',
+                  ),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -1620,7 +1638,7 @@ class _SettingsHomeState extends State<SettingsHome> {
             // Camera Settings (for all roles)
             PrimarySettingsTile(
               icon: Ionicons.camera_outline,
-              title: "Camera Settings",
+              title: context.tr('Camera Settings'),
               subtitle: AppLocalizations.of(context)!.currentPreference(
                   context.watch<CameraSettingsProvider>().selectedCameraValue ??
                       "Not Selected Camera"),
@@ -1641,8 +1659,8 @@ class _SettingsHomeState extends State<SettingsHome> {
             // Express Entry (enable from settings)
             PrimarySettingsTile(
               icon: Ionicons.person_outline,
-              title: 'Express Entry',
-              subtitle: 'Open express check-in options',
+              title: context.tr('Express Entry'),
+              subtitle: context.tr('Open express check-in options'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -1655,8 +1673,8 @@ class _SettingsHomeState extends State<SettingsHome> {
             // Logout (for all roles)
             PrimarySettingsTile(
               icon: Ionicons.log_out_outline,
-              title: 'Logout',
-              subtitle: 'Logout from the app',
+              title: context.tr('Logout'),
+              subtitle: context.tr('Logout from the app'),
               onTap: () {
                 showDialog(
                   context: context,

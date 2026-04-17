@@ -2,6 +2,7 @@
 
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class ConfigurePermission extends StatefulWidget {
   const ConfigurePermission({super.key});
@@ -17,7 +18,7 @@ class _ConfigurePermissionState extends State<ConfigurePermission> {
       backButtonPressed: () {
         Navigator.pop(context);
       },
-      pageTitle: 'Configure Permission',
+      pageTitle: context.tr('Configure Permission'),
       pageBody: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
@@ -29,9 +30,11 @@ class _ConfigurePermissionState extends State<ConfigurePermission> {
                   Icons.accessibility,
                   color: Colors.green,
                 ),
-                title: Text("Allow 'onegate' to draw over other apps"),
+                title:
+                    Text(context.tr("Allow 'onegate' to draw over other apps")),
                 subtitle: Text(
-                  "This permission is needed to show the approval screen when an approval request arrives for a visitor.",
+                  context.tr(
+                      "This permission is needed to show the approval screen when an approval request arrives for a visitor."),
                   style: TextStyle(
                     fontWeight: FontWeight.w300,
                     fontSize: 12,
@@ -47,9 +50,11 @@ class _ConfigurePermissionState extends State<ConfigurePermission> {
                   Icons.do_not_disturb_on_total_silence_outlined,
                   color: Colors.red,
                 ),
-                title: Text("Allow 'onegate' to escape 'Do Not Disturb' mode"),
+                title: Text(context
+                    .tr("Allow 'onegate' to escape 'Do Not Disturb' mode")),
                 subtitle: Text(
-                  "This permission is needed to ring an emergency alarm even if your device is in DND mode",
+                  context.tr(
+                      "This permission is needed to ring an emergency alarm even if your device is in DND mode"),
                   style: TextStyle(
                     fontWeight: FontWeight.w300,
                     fontSize: 12,

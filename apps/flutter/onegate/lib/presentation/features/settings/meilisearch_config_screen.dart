@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/services/search/meilisearch_config_helper.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 /// Screen for configuring Meilisearch connection settings
 class MeilisearchConfigScreen extends StatefulWidget {
@@ -76,8 +77,11 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result['success']
-                ? 'Connection successful!'
-                : 'Connection failed: ${result['error']}'),
+                ? context.tr('Connection successful!')
+                : context.tr(
+                    'Connection failed: {error}',
+                    params: {'error': '${result['error']}'},
+                  )),
             backgroundColor: result['success'] ? Colors.green : Colors.red,
           ),
         );
@@ -86,7 +90,12 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error testing connection: $e'),
+            content: Text(
+              context.tr(
+                'Error testing connection: {error}',
+                params: {'error': '$e'},
+              ),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -113,8 +122,8 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(success
-                ? 'Configuration saved successfully!'
-                : 'Failed to save configuration'),
+                ? context.tr('Configuration saved successfully!')
+                : context.tr('Failed to save configuration')),
             backgroundColor: success ? Colors.green : Colors.red,
           ),
         );
@@ -127,7 +136,12 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving configuration: $e'),
+            content: Text(
+              context.tr(
+                'Error saving configuration: {error}',
+                params: {'error': '$e'},
+              ),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -151,8 +165,8 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(success
-                ? 'Reset to defaults successfully!'
-                : 'Failed to reset configuration'),
+                ? context.tr('Reset to defaults successfully!')
+                : context.tr('Failed to reset configuration')),
             backgroundColor: success ? Colors.green : Colors.red,
           ),
         );
@@ -161,7 +175,12 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error resetting configuration: $e'),
+            content: Text(
+              context.tr(
+                'Error resetting configuration: {error}',
+                params: {'error': '$e'},
+              ),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -174,7 +193,7 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
   @override
   Widget build(BuildContext context) {
     return MyScrollView(
-      pageTitle: 'Meilisearch Configuration',
+      pageTitle: context.tr('Meilisearch Configuration'),
       pageBody: _isLoading
           ? const Center(child: DashboardLoaderIcon())
           : Form(
@@ -203,7 +222,7 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Server Configuration',
+              context.tr('Server Configuration'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -211,19 +230,19 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _hostController,
-              decoration: const InputDecoration(
-                labelText: 'Meilisearch Host URL',
-                hintText: 'http://localhost:7700',
+              decoration: InputDecoration(
+                labelText: context.tr('Meilisearch Host URL'),
+                hintText: context.tr('http://localhost:7700'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.link),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Host URL is required';
+                  return context.tr('Host URL is required');
                 }
                 final uri = Uri.tryParse(value.trim());
                 if (uri == null || !uri.hasAbsolutePath) {
-                  return 'Please enter a valid URL';
+                  return context.tr('Please enter a valid URL');
                 }
                 return null;
               },
@@ -231,9 +250,9 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _apiKeyController,
-              decoration: const InputDecoration(
-                labelText: 'API Key (Optional)',
-                hintText: 'Leave empty for development',
+              decoration: InputDecoration(
+                labelText: context.tr('API Key (Optional)'),
+                hintText: context.tr('Leave empty for development'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.key),
               ),
@@ -266,7 +285,7 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Connection Status',
+                  context.tr('Connection Status'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -275,10 +294,22 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
             ),
             const SizedBox(height: 8),
             if (isSuccess) ...[
-              const Text('✅ Connection successful'),
-              Text('✅ Server is ${isHealthy ? 'healthy' : 'unhealthy'}'),
+              Text(context.tr('✅ Connection successful')),
+              Text(
+                context.tr(
+                  '✅ Server is {status}',
+                  params: {
+                    'status': context.tr(isHealthy ? 'healthy' : 'unhealthy'),
+                  },
+                ),
+              ),
             ] else ...[
-              Text('❌ ${_connectionStatus!['error']}'),
+              Text(
+                context.tr(
+                  '❌ {error}',
+                  params: {'error': '${_connectionStatus!['error']}'},
+                ),
+              ),
             ],
           ],
         ),
@@ -302,7 +333,10 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
                       )
                     : const Icon(Icons.wifi_find),
                 label: Text(
-                    _isTestingConnection ? 'Testing...' : 'Test Connection'),
+                  _isTestingConnection
+                      ? context.tr('Testing...')
+                      : context.tr('Test Connection'),
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -310,7 +344,7 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
               child: ElevatedButton.icon(
                 onPressed: _isLoading ? null : _saveConfiguration,
                 icon: const Icon(Icons.save),
-                label: const Text('Save'),
+                label: Text(context.tr('Save')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
@@ -325,7 +359,7 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
           child: OutlinedButton.icon(
             onPressed: _isLoading ? null : _resetToDefaults,
             icon: const Icon(Icons.refresh),
-            label: const Text('Reset to Defaults'),
+            label: Text(context.tr('Reset to Defaults')),
           ),
         ),
       ],
@@ -340,19 +374,19 @@ class _MeilisearchConfigScreenState extends State<MeilisearchConfigScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Setup Help',
+              context.tr('Setup Help'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 8),
-            const Text('1. Install Meilisearch server on your machine'),
-            const Text('2. Run: ./meilisearch --master-key="your-key"'),
-            const Text('3. Use http://localhost:7700 as host'),
-            const Text('4. Set your master key as API key'),
+            Text(context.tr('1. Install Meilisearch server on your machine')),
+            Text(context.tr('2. Run: ./meilisearch --master-key="your-key"')),
+            Text(context.tr('3. Use http://localhost:7700 as host')),
+            Text(context.tr('4. Set your master key as API key')),
             const SizedBox(height: 8),
-            const Text(
-              'For development, you can leave API key empty.',
+            Text(
+              context.tr('For development, you can leave API key empty.'),
               style: TextStyle(fontStyle: FontStyle.italic),
             ),
           ],

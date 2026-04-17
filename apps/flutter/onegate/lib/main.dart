@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:flutter_onegate/services/language/language_provider.dart';
@@ -49,6 +50,7 @@ import 'package:flutter_onegate/presentation/features/visitor_log/visitorLogProv
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpose/provider/purposeProvider.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/services/auth_service/token_notification_service.dart';
+import 'package:flutter_onegate/services/notifications/incoming_call_push_service.dart';
 import 'package:flutter_onegate/services/session_manager/user_session_manager.dart';
 import 'package:flutter_onegate/presentation/widgets/session_expired_bottom_sheet.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
@@ -61,6 +63,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_onegate/services/session_manager/session_expiry_fix.dart';
 import 'package:flutter_onegate/services/session_manager/eleven_minute_expiry_fix.dart';
 import 'package:flutter_onegate/services/session_manager/session_management_coordinator.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 import 'data/datasources/remote_datasource.dart';
 import 'data/repositories/visitor_log_repo_impl.dart';
@@ -77,6 +80,13 @@ import 'services/error_tracking/posthog_error_tracking_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 late GateConfig appGateConfig;
+final FlutterI18nDelegate flutterI18nDelegate = FlutterI18nDelegate(
+  translationLoader: FileTranslationLoader(
+    basePath: 'assets/flutter_i18n',
+    fallbackFile: 'en',
+    useCountryCode: false,
+  ),
+);
 
 /// Microsoft Clarity Analytics
 /// Note: Currently disabled due to Flutter package API compatibility issues
@@ -226,6 +236,14 @@ void main() async {
   await setupLocator();
   await GateStorage().init();
   await setupDependencies();
+
+  // Initialize Firebase Messaging runtime only after env + app services are ready.
+  // Token sync needs ApiUrls + auth/session context.
+  try {
+    await IncomingCallPushService.initialize();
+  } catch (e) {
+    log('❌ Failed to initialize IncomingCallPushService: $e');
+  }
 
   // Configure TokenNotificationService to hide snackbar notifications
   // This disables the "refreshing token", "token refreshed successfully", and "login again" snackbars
@@ -417,6 +435,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       case AppLifecycleState.resumed:
         log('📱 App resumed from background/sleep');
         _isAppResuming = true;
+        _refreshMeetCallWebSocketOnResume();
         // When app resumes, check internet with a delay to avoid false positives
         // This prevents showing "no internet" page when waking from sleep
         _handleAppResume();
@@ -471,6 +490,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         route.contains('visitor_in_entry') ||
         route.contains('unit_selection_view') ||
         route.contains('visitor_checkin_flow');
+  }
+
+  /// Re-subscribe meet-service call WebSocket after resume (fresh JWT + socket).
+  void _refreshMeetCallWebSocketOnResume() {
+    Future<void>.microtask(() async {
+      try {
+        await UserSessionManager().refreshCallWebSocketIfAuthenticated();
+      } catch (e) {
+        log('⚠️ Meet call WebSocket refresh on resume skipped: $e');
+      }
+    });
   }
 
   /// Handle app resume from sleep/background
@@ -646,8 +676,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     final context = navigatorKey.currentContext;
     if (context != null) {
       showSessionExpiredBottomSheet(
-        errorMessage:
-            'Your session has expired. Please log in again to continue.',
+        errorMessage: context
+            .tr('Your session has expired. Please log in again to continue.'),
         onLoginComplete: () {
           log('✅ Session expired modal login completed');
         },
@@ -779,9 +809,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           'app_${languageProvider.currentLanguageCode}_${languageProvider.rebuildKey}'),
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
+      builder: FlutterI18n.rootAppBuilder(),
       // Localization configuration
-      localizationsDelegates: const [
+      localizationsDelegates: [
         AppLocalizations.delegate,
+        flutterI18nDelegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
@@ -852,7 +884,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               const Icon(Icons.exit_to_app, color: Colors.red),
               const SizedBox(width: 8),
               Text(
-                AppLocalizations.of(context).exitApp,
+                context.tr('exitApp', fallback: 'Exit App'),
                 style:
                     const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),

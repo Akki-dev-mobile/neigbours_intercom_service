@@ -1254,6 +1254,7 @@ class _MissedApprovalCardState extends State<MissedApprovalCard> {
         "company_name": widget.visitorInfo.companyName,
         "file": widget.visitorInfo.visitorImage
       };
+      requestData['app_type'] = 'onegate';
 
       log("📨 Sending FCM Notification with Data: $requestData");
       final headers = await Environment.getHeaders();
@@ -1471,7 +1472,7 @@ class VisitorInfoSection extends StatelessWidget {
                             const SizedBox(width: 14),
                             Flexible(
                               child: Text(
-                                "${_capitalizeFirstLetter(visitorInfo.purposeSubCategoryName ?? visitorInfo.purposeCategoryName ?? "N/A")} - ${visitorInfo.unitDetails.building_unit ?? 'N/A'}",
+                                "${visitorInfo.purposeSubCategoryName != null && visitorInfo.purposeSubCategoryName!.isNotEmpty ? _capitalizeFirstLetter(visitorInfo.purposeSubCategoryName!) : visitorInfo.purposeCategoryName != null && visitorInfo.purposeCategoryName!.isNotEmpty ? context.trPurposeCategory(visitorInfo.purposeCategoryName!) : "N/A"} - ${visitorInfo.unitDetails.building_unit ?? 'N/A'}",
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium

@@ -4,6 +4,7 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:ionicons/ionicons.dart';
 
 class GateSettingView extends StatefulWidget {
@@ -30,12 +31,12 @@ class _GateSettingViewState extends State<GateSettingView> {
           (route) => false,
         );
       },
-      pageTitle: 'Gate Settings',
+      pageTitle: context.tr('Gate Settings'),
       pageBody: Column(
         children: [
           ListTile(
             title: Text(
-              'Visitors Permissions',
+              context.tr('Visitors Permissions'),
               style: Theme.of(context).textTheme.bodyLarge,
             ),
           ),
@@ -46,8 +47,8 @@ class _GateSettingViewState extends State<GateSettingView> {
                 _visitorsIn = value;
               });
             },
-            title: 'Visitors In',
-            subtitle: 'Enable/Disable Gate 1',
+            title: context.tr('Visitors In'),
+            subtitle: context.tr('Enable/Disable Gate 1'),
             leadingIcon: Ionicons.person_outline,
           ),
           GateSettingListTile(
@@ -57,13 +58,13 @@ class _GateSettingViewState extends State<GateSettingView> {
                 _visitorsOut = value;
               });
             },
-            title: 'Visitor Out',
-            subtitle: 'Enable/Disable Gate 1',
+            title: context.tr('Visitor Out'),
+            subtitle: context.tr('Enable/Disable Gate 1'),
             leadingIcon: Ionicons.person_outline,
           ),
           ListTile(
             title: Text(
-              'Vehicle Permissions',
+              context.tr('Vehicle Permissions'),
               style: Theme.of(context).textTheme.bodyLarge,
             ),
           ),
@@ -74,8 +75,8 @@ class _GateSettingViewState extends State<GateSettingView> {
                 _vehicleIn = value;
               });
             },
-            title: 'Vehicle In',
-            subtitle: 'Enable/Disable Gate 1',
+            title: context.tr('Vehicle In'),
+            subtitle: context.tr('Enable/Disable Gate 1'),
             leadingIcon: Ionicons.car_outline,
           ),
           GateSettingListTile(
@@ -85,8 +86,8 @@ class _GateSettingViewState extends State<GateSettingView> {
                 _vehicleOut = value;
               });
             },
-            title: 'Vehicle Out',
-            subtitle: 'Enable/Disable Gate 1',
+            title: context.tr('Vehicle Out'),
+            subtitle: context.tr('Enable/Disable Gate 1'),
             leadingIcon: Ionicons.car_outline,
           ),
         ],

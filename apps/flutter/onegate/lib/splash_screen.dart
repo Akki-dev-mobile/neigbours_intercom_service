@@ -539,9 +539,9 @@ class _SplashGateLoaderState extends State<_SplashGateLoader>
 
         const SizedBox(height: 16),
 
-        const Text(
-          'Loading...',
-          style: TextStyle(
+        Text(
+          AppLocalizations.of(context).loading,
+          style: const TextStyle(
             fontSize: 16,
             color: Colors.grey,
           ),

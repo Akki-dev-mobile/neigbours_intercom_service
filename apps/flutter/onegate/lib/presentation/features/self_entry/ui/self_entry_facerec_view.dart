@@ -22,6 +22,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:flutter_onegate/utils/route_tracker.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class SelfEntryFacerecView extends StatefulWidget {
   const SelfEntryFacerecView({super.key});
@@ -180,7 +181,8 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
             onChanged: (value) {
               name = value;
             },
-            decoration: const InputDecoration(hintText: "Enter your name"),
+            decoration:
+                InputDecoration(hintText: context.tr('Enter your name')),
           ),
           actions: [
             TextButton(
@@ -239,14 +241,18 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to upload image: ${response.body}')),
+            SnackBar(
+                content: Text(context.tr('Failed to upload image: {error}',
+                    params: {'error': response.body}))),
           );
         }
       }
     } catch (e) {
       print(e);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+            content:
+                Text(context.tr('Error: {error}', params: {'error': '$e'}))),
       );
     }
   }
@@ -289,8 +295,8 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
                 content: Text(jsondata['liveness_passed']
                     ? (jsondata['match_percentage'] > 70)
                         ? jsondata['matched_user']
-                        : "No User Found"
-                    : "Liveness failed recapture the image")),
+                        : context.tr("No User Found")
+                    : context.tr("Liveness failed recapture the image"))),
           );
           final numericRegex = RegExp(r'^[0-9]+$');
 
@@ -308,14 +314,18 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed: ${response.body}')),
+            SnackBar(
+                content: Text(context
+                    .tr('Failed: {error}', params: {'error': response.body}))),
           );
         }
       }
     } catch (e) {
       print(e);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+            content:
+                Text(context.tr('Error: {error}', params: {'error': '$e'}))),
       );
     }
     setState(() {
@@ -488,7 +498,8 @@ class _SelfEntryFacerecViewState extends State<SelfEntryFacerecView> {
                   ? SizedBox(
                       width: size.width,
                       height: size.height * 0.8,
-                      child: const Center(child: Text('No image selected.')))
+                      child:
+                          Center(child: Text(context.tr('No image selected.'))))
                   : ClipRRect(
                       borderRadius: BorderRadius.circular(20),
                       child: Image.file(

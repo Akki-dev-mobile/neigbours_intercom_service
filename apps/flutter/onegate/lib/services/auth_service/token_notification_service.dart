@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
@@ -20,6 +21,12 @@ class TokenNotificationService {
   // Configuration flag to control whether notifications are shown
   bool _showNotifications = false;
 
+  String _tr(String key, {Map<String, String>? params}) {
+    final context = navigatorKey.currentContext;
+    if (context == null) return key;
+    return FlutterI18n.translate(context, key, translationParams: params);
+  }
+
   /// Configure whether to show notifications
   /// Set to false to hide all token refresh snackbars
   void setShowNotifications(bool show) {
@@ -37,15 +44,17 @@ class TokenNotificationService {
       final timeUntilExpiration = JwtTokenUtility.getTimeUntilExpiration(token);
 
       if (userInfo == null) {
-        _showToast("❌ Invalid $tokenType", isError: true);
+        _showToast(_tr('Invalid {tokenType}', params: {'tokenType': tokenType}),
+            isError: true);
         return;
       }
 
-      final userName =
-          userInfo['name'] ?? userInfo['preferred_username'] ?? 'Unknown User';
+      final userName = userInfo['name'] ??
+          userInfo['preferred_username'] ??
+          _tr('Unknown User');
       final expiresIn = timeUntilExpiration != null
           ? _formatDuration(timeUntilExpiration)
-          : 'Unknown';
+          : _tr('Unknown');
 
       final message = "🔑 $tokenType\n👤 $userName\n⏰ Expires in: $expiresIn";
 
@@ -54,7 +63,7 @@ class TokenNotificationService {
         backgroundColor: Colors.blue.shade700,
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
-          label: 'Details',
+          label: _tr('Details'),
           textColor: Colors.white,
           onPressed: () => _showDetailedTokenInfo(token, tokenType),
         ),
@@ -63,7 +72,7 @@ class TokenNotificationService {
       log("📋 Token info shown for $userName");
     } catch (e) {
       log("❌ Error showing token info: $e");
-      _showToast("❌ Error displaying token info", isError: true);
+      _showToast(_tr('Error displaying token info'), isError: true);
     }
   }
 
@@ -84,7 +93,8 @@ class TokenNotificationService {
               children: [
                 const Icon(Icons.security, color: Colors.blue),
                 const SizedBox(width: 8),
-                Text('$tokenType Details'),
+                Text(_tr('{tokenType} Details',
+                    params: {'tokenType': tokenType})),
               ],
             ),
             content: SingleChildScrollView(
@@ -112,7 +122,7 @@ class TokenNotificationService {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Close'),
+                child: Text(_tr('Close')),
               ),
             ],
           );
@@ -124,8 +134,7 @@ class TokenNotificationService {
   }
 
   /// Show token refresh progress notification
-  void showTokenRefreshProgress(
-      {String message = "🔄 Refreshing token, please wait..."}) {
+  void showTokenRefreshProgress({String? message}) {
     if (_isShowingRefreshNotification) return;
 
     _isShowingRefreshNotification = true;
@@ -133,7 +142,7 @@ class TokenNotificationService {
     // Only show snackbar if notifications are enabled
     if (_showNotifications) {
       _showSnackBar(
-        message,
+        message ?? _tr('Refreshing token, please wait...'),
         backgroundColor: Colors.orange.shade700,
         duration:
             const Duration(seconds: 30), // Long duration for refresh process
@@ -157,18 +166,19 @@ class TokenNotificationService {
             userInfo?['name'] ?? userInfo?['preferred_username'] ?? 'User';
 
         _showSnackBar(
-          "✅ Token refreshed successfully!\n👤 Welcome back, $userName",
+          _tr('Token refreshed successfully! Welcome back, {name}',
+              params: {'name': userName}),
           backgroundColor: Colors.green.shade700,
           duration: const Duration(seconds: 3),
           action: SnackBarAction(
-            label: 'View',
+            label: _tr('View'),
             textColor: Colors.white,
             onPressed: () =>
                 showTokenInfo(newToken, tokenType: "New Access Token"),
           ),
         );
       } else {
-        _showToast("✅ Token refreshed successfully!", isError: false);
+        _showToast(_tr('Token refreshed successfully!'), isError: false);
       }
     }
 
@@ -181,8 +191,8 @@ class TokenNotificationService {
     _isShowingRefreshNotification = false;
 
     final message = errorMessage != null
-        ? "❌ Token refresh failed: $errorMessage"
-        : "❌ Token refresh failed. Please login again.";
+        ? _tr('Token refresh failed: {error}', params: {'error': errorMessage})
+        : _tr('Token refresh failed. Please login again.');
 
     // Only show snackbar if notifications are enabled
     if (_showNotifications) {
@@ -191,7 +201,7 @@ class TokenNotificationService {
         backgroundColor: Colors.red.shade700,
         duration: const Duration(seconds: 5),
         action: SnackBarAction(
-          label: 'Login',
+          label: _tr('Login'),
           textColor: Colors.white,
           onPressed: () => _navigateToLogin(),
         ),
@@ -206,7 +216,8 @@ class TokenNotificationService {
     final timeString = _formatDuration(timeUntilExpiration);
 
     _showSnackBar(
-      "⚠️ Token expires in $timeString\nAutomatic refresh will occur soon",
+      _tr('Token expires in {time}. Automatic refresh will occur soon',
+          params: {'time': timeString}),
       backgroundColor: Colors.amber.shade700,
       duration: const Duration(seconds: 4),
     );
@@ -217,8 +228,8 @@ class TokenNotificationService {
   /// Show authentication error notification
   void showAuthenticationError({String? errorMessage}) {
     final message = errorMessage != null
-        ? "🚫 Authentication error: $errorMessage"
-        : "🚫 Authentication failed. Please login again.";
+        ? _tr('Authentication error: {error}', params: {'error': errorMessage})
+        : _tr('Authentication failed. Please login again.');
 
     // Only show snackbar if notifications are enabled
     if (_showNotifications) {
@@ -227,7 +238,7 @@ class TokenNotificationService {
         backgroundColor: Colors.red.shade800,
         duration: const Duration(seconds: 5),
         action: SnackBarAction(
-          label: 'Login',
+          label: _tr('Login'),
           textColor: Colors.white,
           onPressed: () => _navigateToLogin(),
         ),
@@ -244,7 +255,7 @@ class TokenNotificationService {
       backgroundColor: Colors.orange.shade700,
       duration: const Duration(seconds: 4),
       action: SnackBarAction(
-        label: 'Retry',
+        label: _tr('Retry'),
         textColor: Colors.white,
         onPressed: () => _retryNetworkConnection(),
       ),

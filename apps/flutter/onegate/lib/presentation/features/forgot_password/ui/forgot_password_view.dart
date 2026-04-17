@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 /// Screen where user enters email to receive a password reset link.
 /// Calls API: [ApiUrls.forgotPassword] (POST with email) – backend/Keycloak sends the reset link.
@@ -48,8 +49,8 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
     setState(() => _isSubmitting = true);
 
     try {
-      final normalizedMobile =
-          _normalizeMobileWithCountryCode(_usernameController.text, _selectedDialCode);
+      final normalizedMobile = _normalizeMobileWithCountryCode(
+          _usernameController.text, _selectedDialCode);
       if (_step == 1) {
         // Step 1: Request OTP
         final ok = await _remoteDataSource.requestForgotPasswordOtp(
@@ -60,9 +61,10 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
         if (ok) {
           setState(() => _step = 2);
           _startResendTimer();
-          _showSuccessSnackBar('OTP is sent. Please check your mobile / email.');
+          _showSuccessSnackBar(context.tr('otpSentSnackbarMessage'));
         } else {
-          _showErrorSnackBar('Could not send OTP. Please try again.');
+          _showErrorSnackBar(
+              context.tr('Could not send OTP. Please try again.'));
         }
       } else if (_step == 2) {
         // Step 2: Verify OTP
@@ -75,17 +77,19 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
         if (result.success && result.fpAuthCode != null) {
           _fpAuthCode = result.fpAuthCode;
           setState(() => _step = 3);
-          _showSuccessSnackBar('OTP verified. Please set your new password.');
+          _showSuccessSnackBar(context.tr('otpVerifiedSetPasswordMessage'));
         } else {
-          final msg = result.message ?? 'Invalid OTP. Please try again.';
-          _showErrorSnackBar(msg);
+          final rawMessage =
+              result.message ?? context.tr('Invalid OTP. Please try again.');
+          _showErrorSnackBar(context.tr(rawMessage, fallback: rawMessage));
         }
       } else if (_step == 3) {
         // Step 3: Reset password
         final fpCode = _fpAuthCode;
         if (fpCode == null) {
           setState(() => _isSubmitting = false);
-          _showErrorSnackBar('Something went wrong. Please restart the flow.');
+          _showErrorSnackBar(
+              context.tr('Something went wrong. Please restart the flow.'));
           return;
         }
         final ok = await _remoteDataSource.resetForgotPassword(
@@ -97,17 +101,19 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
         setState(() => _isSubmitting = false);
         if (ok) {
           _showSuccessSnackBar(
-            'Password reset successful. You can now login with your new password.',
+            context.tr('passwordResetSuccessMessage'),
           );
           Navigator.pop(context);
         } else {
-          _showErrorSnackBar('Could not reset password. Please try again.');
+          _showErrorSnackBar(
+              context.tr('Could not reset password. Please try again.'));
         }
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      _showErrorSnackBar('Error: ${e.toString()}');
+      _showErrorSnackBar(
+          context.tr('Error: {error}', params: {'error': e.toString()}));
     }
   }
 
@@ -115,7 +121,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
     if (_isSubmitting) return;
     final mobile = _usernameController.text.trim();
     if (mobile.isEmpty) {
-      _showErrorSnackBar('Please enter your mobile number first.');
+      _showErrorSnackBar(context.tr('Please enter your mobile number first.'));
       return;
     }
 
@@ -129,13 +135,13 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
       if (!mounted) return;
       if (ok) {
         _startResendTimer();
-        _showSuccessSnackBar('OTP is sent. Please check your mobile / email.');
+        _showSuccessSnackBar(context.tr('otpSentSnackbarMessage'));
       } else {
-        _showErrorSnackBar('Could not send OTP. Please try again.');
+        _showErrorSnackBar(context.tr('Could not send OTP. Please try again.'));
       }
     } catch (_) {
       if (!mounted) return;
-      _showErrorSnackBar('Could not send OTP. Please try again.');
+      _showErrorSnackBar(context.tr('Could not send OTP. Please try again.'));
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -144,16 +150,16 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
   }
 
   String _primaryActionLabel() {
-    if (_isSubmitting) return 'PLEASE WAIT...';
+    if (_isSubmitting) return context.tr('PLEASE WAIT...');
     switch (_step) {
       case 1:
-        return 'SEND OTP';
+        return context.tr('SEND OTP');
       case 2:
-        return 'VERIFY OTP';
+        return context.tr('VERIFY OTP');
       case 3:
-        return 'RESET PASSWORD';
+        return context.tr('RESET PASSWORD');
       default:
-        return 'CONTINUE';
+        return context.tr('CONTINUE');
     }
   }
 
@@ -162,9 +168,9 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
       case 1:
         return l10n.forgotPassword;
       case 2:
-        return 'Verify OTP';
+        return context.tr('Verify OTP');
       case 3:
-        return 'Set New Password';
+        return context.tr('Set New Password');
       default:
         return l10n.forgotPassword;
     }
@@ -173,11 +179,11 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
   String _stepSubtitle() {
     switch (_step) {
       case 1:
-        return 'Enter your registered mobile number to receive an OTP.';
+        return context.tr('forgotPasswordSubtitleEnterMobile');
       case 2:
-        return 'Enter the OTP sent to your registered mobile number.';
+        return context.tr('forgotPasswordSubtitleEnterOtp');
       case 3:
-        return 'Create a strong password and confirm it to secure your account.';
+        return context.tr('resetPasswordSubtitleCreateStrongPassword');
       default:
         return '';
     }
@@ -237,8 +243,8 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Error',
+                    Text(
+                      context.tr('Error'),
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -297,8 +303,8 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Success',
+                    Text(
+                      context.tr('Success'),
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -336,23 +342,15 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
-        height: MediaQuery.of(context).size.height + MediaQuery.of(context).padding.top,
+        height: MediaQuery.of(context).size.height +
+            MediaQuery.of(context).padding.top,
         width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              const Color(0xffF44336).withOpacity(0.12),
-              const Color(0xffff5722).withOpacity(0.05),
-              Colors.white.withOpacity(0.0),
-            ],
-          ),
-        ),
+        color: Colors.white,
         child: SafeArea(
           top: false,
           child: Padding(
-            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 12),
+            padding:
+                EdgeInsets.only(top: MediaQuery.of(context).padding.top + 12),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -366,7 +364,8 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                           style: IconButton.styleFrom(
                             backgroundColor: Colors.white.withOpacity(0.65),
                           ),
-                          icon: const Icon(Icons.arrow_back, color: Color(0xff212427)),
+                          icon: const Icon(Icons.arrow_back,
+                              color: Color(0xff212427)),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ],
@@ -407,7 +406,8 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                         children: [
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 16),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
@@ -417,8 +417,8 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                                   const Color(0xffff5722).withOpacity(0.03),
                                 ],
                               ),
-                              borderRadius:
-                                  const BorderRadius.vertical(top: Radius.circular(24)),
+                              borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(24)),
                               border: Border.all(
                                 color: Colors.grey.withOpacity(0.25),
                                 width: 0.8,
@@ -429,7 +429,8 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xffF44336).withOpacity(0.15),
+                                    color: const Color(0xffF44336)
+                                        .withOpacity(0.15),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: const Icon(
@@ -441,7 +442,8 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
@@ -480,13 +482,16 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                               children: [
                                 _buildThinField(
                                   context,
-                                  title: 'Mobile',
+                                  title: context.tr('Mobile'),
                                   controller: _usernameController,
-                                  hintText: 'Enter your mobile number',
+                                  hintText:
+                                      context.tr('Enter your mobile number'),
                                   keyboardType: TextInputType.phone,
                                   textInputAction: TextInputAction.done,
                                   maxLength: 10,
-                                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly
+                                  ],
                                   prefixWidget: CountryCodePicker(
                                     initialSelection: _selectedDialCode,
                                     favorite: const ['IN'],
@@ -494,24 +499,28 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                                     showFlagDialog: true,
                                     alignLeft: false,
                                     textStyle: TextStyle(
-                                      color:
-                                          Theme.of(context).colorScheme.onBackground,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onBackground,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                     ),
                                     onChanged: (code) {
                                       setState(() {
-                                        _selectedDialCode = code.dialCode ?? '+91';
+                                        _selectedDialCode =
+                                            code.dialCode ?? '+91';
                                       });
                                     },
                                   ),
                                   onFieldSubmitted: (_) => _handleSubmit(),
                                   validator: (v) {
                                     if (v == null || v.trim().isEmpty) {
-                                      return 'Please enter your registered mobile number';
+                                      return context.tr(
+                                          'Please enter your registered mobile number');
                                     }
                                     if (v.trim().length != 10) {
-                                      return 'Please enter valid mobile number';
+                                      return context.tr(
+                                          'Please enter valid mobile number');
                                     }
                                     return null;
                                   },
@@ -520,18 +529,20 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                                   const SizedBox(height: 16),
                                   _buildThinField(
                                     context,
-                                    title: 'OTP',
+                                    title: context.tr('OTP'),
                                     controller: _otpController,
-                                    hintText: 'Enter the OTP',
+                                    hintText: context.tr('Enter the OTP'),
                                     keyboardType: TextInputType.number,
                                     textInputAction: TextInputAction.done,
                                     onFieldSubmitted: (_) => _handleSubmit(),
                                     validator: (v) {
                                       if (v == null || v.trim().isEmpty) {
-                                        return 'Please enter the OTP you received';
+                                        return context.tr(
+                                            'Please enter the OTP you received');
                                       }
                                       if (v.trim().length < 4) {
-                                        return 'OTP should be at least 4 digits';
+                                        return context.tr(
+                                            'OTP should be at least 4 digits');
                                       }
                                       return null;
                                     },
@@ -539,18 +550,20 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                                   const SizedBox(height: 8),
                                   Builder(
                                     builder: (context) {
-                                      final isResendDisabled =
-                                          _isSubmitting || _resendSecondsRemaining > 0;
+                                      final isResendDisabled = _isSubmitting ||
+                                          _resendSecondsRemaining > 0;
                                       return Align(
                                         alignment: Alignment.centerRight,
                                         child: TextButton(
-                                          onPressed:
-                                              isResendDisabled ? null : _resendOtp,
+                                          onPressed: isResendDisabled
+                                              ? null
+                                              : _resendOtp,
                                           style: ButtonStyle(
-                                            foregroundColor:
-                                                WidgetStateProperty.resolveWith<Color>(
+                                            foregroundColor: WidgetStateProperty
+                                                .resolveWith<Color>(
                                               (states) {
-                                                if (states.contains(WidgetState.disabled)) {
+                                                if (states.contains(
+                                                    WidgetState.disabled)) {
                                                   return const Color(0xffF44336)
                                                       .withOpacity(0.55);
                                                 }
@@ -560,8 +573,13 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                                           ),
                                           child: Text(
                                             _resendSecondsRemaining > 0
-                                                ? 'Resend password in ${_resendSecondsRemaining}s'
-                                                : 'Resend password',
+                                                ? context.tr(
+                                                    'Resend password in {seconds}s',
+                                                    params: {
+                                                        'seconds':
+                                                            '$_resendSecondsRemaining'
+                                                      })
+                                                : context.tr('Resend password'),
                                             style: const TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w500,
@@ -576,17 +594,19 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                                   const SizedBox(height: 16),
                                   _buildThinField(
                                     context,
-                                    title: 'New Password',
+                                    title: context.tr('New Password'),
                                     controller: _passwordController,
-                                    hintText: 'Enter new password',
+                                    hintText: context.tr('Enter new password'),
                                     isObscureText: true,
                                     textInputAction: TextInputAction.next,
                                     validator: (v) {
                                       if (v == null || v.isEmpty) {
-                                        return 'Please enter a new password';
+                                        return context
+                                            .tr('Please enter a new password');
                                       }
                                       if (v.length < 8) {
-                                        return 'Password should be at least 8 characters';
+                                        return context.tr(
+                                            'Password should be at least 8 characters');
                                       }
                                       // if (!RegExp(r'^(?=.*[A-Za-z])(?=.*\\d).+$')
                                       //     .hasMatch(v)) {
@@ -598,18 +618,22 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                                   const SizedBox(height: 16),
                                   _buildThinField(
                                     context,
-                                    title: 'Confirm Password',
+                                    title: context.tr('Confirm Password'),
                                     controller: _confirmPasswordController,
-                                    hintText: 'Re-enter new password',
+                                    hintText:
+                                        context.tr('Re-enter new password'),
                                     isObscureText: true,
                                     textInputAction: TextInputAction.done,
                                     onFieldSubmitted: (_) => _handleSubmit(),
                                     validator: (v) {
                                       if (v == null || v.isEmpty) {
-                                        return 'Please confirm your new password';
+                                        return context.tr(
+                                            'Please confirm your new password');
                                       }
                                       if (v != _passwordController.text) {
-                                        return 'Passwords do not match';
+                                        return context.tr(
+                                          'Passwords do not match',
+                                        );
                                       }
                                       return null;
                                     },
@@ -635,7 +659,8 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                                         borderRadius: BorderRadius.circular(16),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: const Color(0xff212427).withOpacity(0.3),
+                                            color: const Color(0xff212427)
+                                                .withOpacity(0.3),
                                             spreadRadius: 1,
                                             blurRadius: 12,
                                             offset: const Offset(0, 4),
@@ -646,7 +671,8 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                                         color: Colors.transparent,
                                         child: InkWell(
                                           onTap: _handleSubmit,
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
                                           child: Center(
                                             child: Text(
                                               _primaryActionLabel(),
@@ -774,43 +800,57 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
       ],
     );
   }
-
 }
 
 class _AuthHeaderLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final logoSize = (screenWidth * 0.4).clamp(156.0, 210.0);
+    final logoPadding = (logoSize * 0.06).clamp(6.0, 12.0);
+
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.27,
       width: double.infinity,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 132,
-            height: 132,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xffF44336).withOpacity(0.2),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
+          SizedBox(
+            width: logoSize,
+            height: logoSize,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: const Color(0xffE0E3E7),
+                  width: 1,
                 ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Image.asset(
-                'assets/media/images/onegate.png',
-                fit: BoxFit.contain,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xff212427).withOpacity(0.14),
+                    blurRadius: 22,
+                    offset: const Offset(0, 10),
+                  ),
+                  BoxShadow(
+                    color: const Color(0xffF44336).withOpacity(0.08),
+                    blurRadius: 28,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(logoPadding),
+                child: Image.asset(
+                  'assets/media/images/onegate.png',
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
           const SizedBox(height: 14),
           Text(
-            'Smart Gate Management',
+            context.tr('smartGateManagementTagline'),
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,

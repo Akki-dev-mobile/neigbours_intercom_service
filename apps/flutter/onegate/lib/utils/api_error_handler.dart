@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/presentation/widgets/error_screen.dart';
 import 'package:flutter_onegate/services/error_tracking/posthog_error_tracking_service.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 /// A utility class to handle API errors consistently across the app
 class ApiErrorHandler {
@@ -20,7 +21,7 @@ class ApiErrorHandler {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: Text(context.tr('Close')),
           ),
         ],
       ),
@@ -94,7 +95,7 @@ class ApiErrorHandler {
       );
 
       if (context != null) {
-        showErrorScreen(context, 'Unexpected error occurred');
+        showErrorScreen(context, context.tr('Unexpected error occurred'));
       }
 
       if (onError != null) {

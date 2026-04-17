@@ -10,6 +10,7 @@ import 'package:flutter_onegate/data/datasources/keycloack_config.dart';
 import 'package:flutter_onegate/services/auth_service/enhanced_token_refresh_manager.dart';
 import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
 import 'package:flutter_onegate/services/auth_service/enhanced_logout_service.dart';
+import 'package:flutter_onegate/services/notifications/incoming_call_push_service.dart';
 
 class AuthService {
   final FlutterAppAuth _appAuth = const FlutterAppAuth();
@@ -114,6 +115,10 @@ class AuthService {
       // Step 5: Save user data to local storage
       log("💾 Saving user data to local storage...");
       await _saveUserData(userInfo);
+
+      // Force FCM device-token rebind immediately after successful login.
+      // This closes the gap where backend still targets stale UNREGISTERED tokens.
+      unawaited(IncomingCallPushService.syncCurrentTokenWithBackend());
 
       log("✅ ===== LOGIN COMPLETED SUCCESSFULLY =====");
 

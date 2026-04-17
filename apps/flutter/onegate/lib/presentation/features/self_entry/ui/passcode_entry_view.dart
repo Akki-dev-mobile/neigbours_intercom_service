@@ -13,6 +13,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/entities/visitor/purpose/purpose.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/visitor_in_entry/ui/visitor_in_entry.dart';
 import 'package:flutter_onegate/domain/entities/visitor/building_assignment.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'dart:convert';
 
 class PasscodeEntryView extends StatefulWidget {
@@ -180,7 +181,7 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                           return null;
                         },
                         decoration: InputDecoration(
-                          hintText: '123456',
+                          hintText: context.tr('123456'),
                           hintStyle: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w400,
@@ -342,9 +343,10 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                               // Show enhanced success toast
                               showEnhancedToast(
                                 context,
-                                title: "Passcode Verified",
-                                message:
-                                    "Welcome ${visitor.name}! Proceeding to purpose entry.",
+                                title: context.tr('Passcode Verified'),
+                                message: context.tr(
+                                    'Welcome {name}! Proceeding to purpose entry.',
+                                    params: {'name': visitor.name ?? ''}),
                                 backgroundColor: Colors.green,
                                 icon: Icons.verified_user,
                               );
@@ -402,7 +404,7 @@ class _PasscodeEntryViewState extends State<PasscodeEntryView> {
                             stopLoading();
                             showEnhancedToast(
                               context,
-                              title: "Invalid Passcode",
+                              title: context.tr('Invalid Passcode'),
                               message: AppLocalizations.of(context)
                                   .errorVerifyingPasscode,
                               backgroundColor: const Color(0xFFD32F2F),

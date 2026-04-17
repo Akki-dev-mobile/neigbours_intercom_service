@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_usecase.dart';
 import 'package:meta/meta.dart';
@@ -9,6 +11,12 @@ import '../../../../domain/entities/visitor/purpose/purpose.dart';
 
 part 'self_entry_event.dart';
 part 'self_entry_state.dart';
+
+String _tr(String key, {Map<String, String>? params}) {
+  final context = navigatorKey.currentContext;
+  if (context == null) return key;
+  return FlutterI18n.translate(context, key, translationParams: params);
+}
 
 class SelfEntryBloc extends Bloc<SelfEntryEvent, SelfEntryState> {
   final VisitorUsecase _visitorUsecase;
@@ -32,7 +40,7 @@ class SelfEntryBloc extends Bloc<SelfEntryEvent, SelfEntryState> {
         } else {
           emit(
             SelfEntryErrorState(
-              message: 'Something went wrong',
+              message: _tr('Something went wrong'),
             ),
           );
         }
@@ -59,7 +67,7 @@ class SelfEntryBloc extends Bloc<SelfEntryEvent, SelfEntryState> {
       } else {
         emit(
           SelfEntryErrorState(
-            message: 'Something went wrong',
+            message: _tr('Something went wrong'),
           ),
         );
       }

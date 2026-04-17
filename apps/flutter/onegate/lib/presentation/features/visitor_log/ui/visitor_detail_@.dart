@@ -187,10 +187,18 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                                 BorderRadius.circular(isTablet ? 15 : 10),
                           ),
                           child: Text(
-                            _capitalizeFirstLetter(
-                                widget.visitorLog.purposeSubCategoryName ??
-                                    widget.visitorLog.purposeCategoryName ??
-                                    ""),
+                            widget.visitorLog.purposeSubCategoryName != null &&
+                                    widget.visitorLog.purposeSubCategoryName!
+                                        .isNotEmpty
+                                ? _capitalizeFirstLetter(
+                                    widget.visitorLog.purposeSubCategoryName!)
+                                : widget.visitorLog.purposeCategoryName !=
+                                            null &&
+                                        widget.visitorLog.purposeCategoryName!
+                                            .isNotEmpty
+                                    ? context.trPurposeCategory(
+                                        widget.visitorLog.purposeCategoryName!)
+                                    : "",
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
@@ -841,6 +849,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
         "company_name": widget.visitorLog.companyName,
         "file": widget.visitorLog.visitorImage
       };
+      requestData['app_type'] = 'onegate';
       final headers = await Environment.getHeaders();
 
       final response = await Dio().post(

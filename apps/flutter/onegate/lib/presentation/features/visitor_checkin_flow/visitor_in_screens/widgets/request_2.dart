@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
@@ -523,8 +524,10 @@ class _RequestPermissionPage2State extends State<RequestPermissionPage2> {
                   label: AppLocalizations.of(context).purpose,
                   value: widget.visitor.isStaff == true
                       ? AppLocalizations.of(context).staff
-                      : widget.visitorLog?.visitor_purpose_Category_name ??
-                          AppLocalizations.of(context).notSpecified,
+                      : widget.visitorLog?.visitor_purpose_Category_name != null
+                          ? context.trPurposeCategory(
+                              widget.visitorLog!.visitor_purpose_Category_name!)
+                          : AppLocalizations.of(context).notSpecified,
                 ),
               ],
             ),
@@ -991,7 +994,7 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Information Only',
+                      context.tr('Information Only'),
                       style: TextStyle(
                         color: const Color(0xFF4CAF50),
                         fontSize: isSmallMobile ? 10 : 12,
@@ -1018,8 +1021,8 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
             isTablet: isTablet,
             index: 0,
             icon: Icons.check_circle,
-            title: 'Entry Recorded',
-            description: 'Your visitor entry has been successfully recorded.',
+            title: context.tr('Entry Recorded'),
+            description: context.tr('visitorEntryRecordedMessage'),
             color: const Color(0xFF4CAF50),
           ),
 
@@ -1030,9 +1033,8 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
             isTablet: isTablet,
             index: 1,
             icon: Icons.credit_card,
-            title: 'Access Card',
-            description:
-                'Please ask the receptionist to assign an access card for you.',
+            title: context.tr('Access Card'),
+            description: context.tr('assignAccessCardMessage'),
             color: const Color(0xFF2196F3),
           ),
 
@@ -1043,9 +1045,8 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
             isTablet: isTablet,
             index: 2,
             icon: Icons.elevator,
-            title: 'Easy Access',
-            description:
-                'This will allow easy access to the lift and your designated floor.',
+            title: context.tr('Easy Access'),
+            description: context.tr('easyAccessLiftFloorMessage'),
             color: const Color(0xFFFF9800),
           ),
         ],
@@ -1372,7 +1373,7 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
 
                             // Title with responsive typography
                             Text(
-                              'Success!',
+                              context.tr('Success!'),
                               style: TextStyle(
                                 fontSize: isSmallMobile
                                     ? 22
@@ -1392,7 +1393,9 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
 
                             // Subtitle with responsive typography
                             Text(
-                              'Your visitor entry has been successfully recorded',
+                              context.tr(
+                                'Your visitor entry has been successfully recorded.',
+                              ),
                               style: TextStyle(
                                 fontSize: isSmallMobile
                                     ? 14
@@ -1483,7 +1486,7 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
                                         elevation: 0,
                                       ),
                                       child: Text(
-                                        'OK',
+                                        context.tr('OK'),
                                         style: TextStyle(
                                           fontSize: isSmallMobile
                                               ? 16

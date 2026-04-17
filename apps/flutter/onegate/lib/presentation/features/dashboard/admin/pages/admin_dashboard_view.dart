@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/repositories/admin_dash_repo_impl.dart';
@@ -157,7 +158,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView>
                           IntercomServicesLauncher.open(context);
                         },
                         icon: const Icon(Symbols.deskphone),
-                        label: const Text('Intercom'),
+                        label: Text(context.tr('Intercom')),
                       ),
                     ],
                   ),

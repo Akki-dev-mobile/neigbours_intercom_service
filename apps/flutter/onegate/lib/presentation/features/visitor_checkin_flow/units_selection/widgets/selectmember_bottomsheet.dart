@@ -17,105 +17,250 @@ class SelectedMembersBottomSheet extends StatelessWidget {
     this.isLoading = false,
   }) : super(key: key);
 
+  String _memberDescription(BuildContext context) {
+    final count = selectedMembers.length;
+    if (count <= 1) {
+      return context.tr('Review selected member before continuing');
+    }
+    return '$count ${context.tr('members selected for confirmation')}';
+  }
+
+  String _initialsFor(String member) {
+    final parts = member
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .take(2)
+        .toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+    return '${parts[0].substring(0, 1)}${parts[1].substring(0, 1)}'
+        .toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.all(16),
+            width: 50,
+            height: 5,
             decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xffF44336).withValues(alpha: 0.08),
+                  const Color(0xffff5722).withValues(alpha: 0.03),
+                ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 1,
-                ),
-              ],
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Selected Members',
-                  style: Theme.of(context).textTheme.titleLarge,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xffF44336).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xffF44336).withValues(alpha: 0.1),
+                        spreadRadius: 1,
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.group,
+                    color: Color(0xffF44336),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        context.tr('selectedMembersTitle'),
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xff212427),
+                          fontSize: 20,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _memberDescription(context),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xff57636C),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(Icons.close, color: Color(0xff57636C)),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: selectedMembers.length,
-              itemBuilder: (context, index) {
-                final member = selectedMembers.elementAt(index);
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.grey[200],
-                      child: const Icon(
-                        Icons.person,
-                        color: Colors.black,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.only(top: 16),
+                itemCount: selectedMembers.length,
+                itemBuilder: (context, index) {
+                  final member = selectedMembers.elementAt(index);
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () {},
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xffF44336),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.04),
+                                spreadRadius: 1,
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffF44336)
+                                      .withValues(alpha: 0.14),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  _initialsFor(member),
+                                  style: const TextStyle(
+                                    color: Color(0xffF44336),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      member,
+                                      style:
+                                          theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xffF44336),
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      context.tr(
+                                          'Tap confirm to continue with this member'),
+                                      style:
+                                          theme.textTheme.bodySmall?.copyWith(
+                                        color: const Color(0xff57636C),
+                                        fontSize: 14,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffF44336)
+                                      .withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  icon: const Icon(
+                                    Icons.remove_circle_outline,
+                                    size: 18,
+                                    color: Color(0xffF44336),
+                                  ),
+                                  onPressed: () {
+                                    final updatedMembers = Set<String>.from(
+                                        selectedMembersNotifier.value);
+                                    updatedMembers.remove(member);
+                                    selectedMembersNotifier.value =
+                                        updatedMembers;
+                                    if (updatedMembers.isEmpty) {
+                                      Navigator.pop(context);
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                    title: Text(
-                      member,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(
-                        Icons.remove_circle_outline,
-                        color: Colors.red,
-                      ),
-                      onPressed: () {
-                        final updatedMembers =
-                            Set<String>.from(selectedMembersNotifier.value);
-                        updatedMembers.remove(member);
-                        selectedMembersNotifier.value = updatedMembers;
-                        if (updatedMembers.isEmpty) {
-                          Navigator.pop(context);
-                        }
-                      },
-                    ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
             decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
+              color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   spreadRadius: 1,
                   blurRadius: 1,
                   offset: const Offset(0, -1),
@@ -125,24 +270,24 @@ class SelectedMembersBottomSheet extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.black),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(color: Colors.grey[300]!),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
                     onPressed: () {
                       onClearAll();
                       Navigator.pop(context);
                     },
-                    child: const Text(
-                      'Clear All',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
+                    child: Text(
+                      context.tr('clearAllButtonLabel'),
+                      style: const TextStyle(
+                        color: Color(0xff212427),
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -150,71 +295,42 @@ class SelectedMembersBottomSheet extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Container(
-                    height: 45,
+                    height: 48,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xff212427), Color(0xff57636C)],
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
+                        colors: [Color(0xff212427), Color(0xff57636C)],
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 8,
+                          color: Colors.black.withValues(alpha: 0.18),
+                          blurRadius: 10,
                           offset: const Offset(0, 4),
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
-                    child: Container(
-                      width: MediaQuery.of(context).size.width * 0.35,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xff212427), Color(0xff57636C)],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          ),
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 6,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: isLoading
-                              ? null
-                              : () {
-                                  Navigator.pop(context);
-                                  onConfirm();
-                                },
-                          child: Center(
-                            child: Text(
-                              isLoading
-                                  ? context.tr('Processing...')
-                                  : context.tr('Confirm'),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.5,
-                              ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: isLoading
+                            ? null
+                            : () {
+                                Navigator.pop(context);
+                                onConfirm();
+                              },
+                        child: Center(
+                          child: Text(
+                            isLoading
+                                ? context.tr('Processing')
+                                : context.tr('Confirm'),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
                             ),
                           ),
                         ),

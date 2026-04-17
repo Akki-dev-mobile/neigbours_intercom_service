@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class AssignCardPopup extends StatefulWidget {
   final int visitorId;
@@ -46,7 +47,7 @@ class _AssignCardPopupState extends State<AssignCardPopup> {
 
   Future<void> _saveCardNumber() async {
     if (_cardNumberController.text.trim().isEmpty) {
-      _showErrorToast('Please enter a card number');
+      _showErrorToast(context.tr('Please enter a card number'));
       return;
     }
 
@@ -74,13 +75,17 @@ class _AssignCardPopupState extends State<AssignCardPopup> {
         // Show enhanced green success toast
         _showEnhancedSuccessToast();
       } else {
-        _showErrorToast('Failed to assign card number. Please try again.');
+        _showErrorToast(
+          context.tr('Failed to assign card number. Please try again.'),
+        );
         setState(() {
           _isLoading = false;
         });
       }
     } catch (e) {
-      _showErrorToast('Error: ${e.toString()}');
+      _showErrorToast(
+        context.tr('Error: {error}', params: {'error': e.toString()}),
+      );
       setState(() {
         _isLoading = false;
       });
@@ -127,8 +132,8 @@ class _AssignCardPopupState extends State<AssignCardPopup> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Card Assigned Successfully',
+                    Text(
+                      context.tr('Card Assigned Successfully'),
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -137,7 +142,13 @@ class _AssignCardPopupState extends State<AssignCardPopup> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Card number ${_cardNumberController.text.trim()} has been assigned to ${widget.visitorName}',
+                      context.tr(
+                        'Card number {cardNumber} has been assigned to {visitorName}',
+                        params: {
+                          'cardNumber': _cardNumberController.text.trim(),
+                          'visitorName': widget.visitorName,
+                        },
+                      ),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 13,
@@ -232,8 +243,8 @@ class _AssignCardPopupState extends State<AssignCardPopup> {
               const SizedBox(height: 24),
 
               // Title with OneGate typography
-              const Text(
-                'Assign Card',
+              Text(
+                context.tr('Assign Card'),
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -246,7 +257,10 @@ class _AssignCardPopupState extends State<AssignCardPopup> {
 
               // Subtitle
               Text(
-                'Assign a card number to ${widget.visitorName}',
+                context.tr(
+                  'Assign a card number to {visitorName}',
+                  params: {'visitorName': widget.visitorName},
+                ),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -282,7 +296,7 @@ class _AssignCardPopupState extends State<AssignCardPopup> {
                     FilteringTextInputFormatter.digitsOnly, // Only allow digits
                   ],
                   decoration: InputDecoration(
-                    hintText: 'Enter card number',
+                    hintText: context.tr('Enter card number'),
                     hintStyle: const TextStyle(
                       color: Color(0xff57636C),
                       fontSize: 16,
@@ -348,7 +362,7 @@ class _AssignCardPopupState extends State<AssignCardPopup> {
                           ),
                         ),
                         child: Text(
-                          'Cancel',
+                          context.tr('Cancel'),
                           style: TextStyle(
                             color: const Color(0xff57636C),
                             fontWeight: FontWeight.w600,
@@ -401,8 +415,8 @@ class _AssignCardPopupState extends State<AssignCardPopup> {
                                       Colors.white),
                                 ),
                               )
-                            : const Text(
-                                'Save',
+                            : Text(
+                                context.tr('Save'),
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,

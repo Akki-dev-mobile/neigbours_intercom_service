@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'call_history.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class MemberList extends StatefulWidget {
   const MemberList({Key? key}) : super(key: key);
@@ -42,7 +43,9 @@ class _MemberListState extends State<MemberList> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load members: ${e.toString()}')),
+        SnackBar(
+            content: Text(context.tr('Failed to load members: {error}',
+                params: {'error': e.toString()}))),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -80,7 +83,7 @@ class _MemberListState extends State<MemberList> {
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Search by name or flat',
+          hintText: context.tr('Search by name or flat'),
           hintStyle: TextStyle(color: Colors.grey[500]),
           prefixIcon: const Icon(Icons.search, color: Colors.black),
           suffixIcon: _searchController.text.isNotEmpty
@@ -322,7 +325,7 @@ class _MemberListState extends State<MemberList> {
                 ),
               );
             },
-            tooltip: 'Call History',
+            tooltip: context.tr('Call History'),
           ),
         ],
       ),

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class VisitorDetailsScreen extends StatefulWidget {
   final String visitorName;
@@ -343,7 +344,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
             context: context,
             isTablet: isTablet,
             icon: Icons.phone_rounded,
-            label: 'Mobile',
+            label: context.tr('Mobile'),
             value: widget.mobileNumber,
             iconColor: const Color(0xffF44336),
             iconBg: const Color(0xffFFEBEE),
@@ -355,7 +356,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
             context: context,
             isTablet: isTablet,
             icon: Icons.location_on_rounded,
-            label: 'Coming From',
+            label: context.tr('Coming From'),
             value: widget.comingFrom,
             iconColor: const Color(0xffF44336),
             iconBg: const Color(0xffFFEBEE),
@@ -367,7 +368,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
             context: context,
             isTablet: isTablet,
             icon: Icons.apartment_rounded,
-            label: 'Unit',
+            label: context.tr('Unit'),
             value: widget.unit,
             iconColor: const Color(0xffF44336),
             iconBg: const Color(0xffFFEBEE),

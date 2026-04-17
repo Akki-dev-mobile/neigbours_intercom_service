@@ -1079,10 +1079,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'visitor recording terminated',
-                    style: TextStyle(
+                    context.tr('visitorRecordingTerminated'),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -1193,10 +1193,10 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'visitor recording terminated',
-                        style: TextStyle(
+                        context.tr('visitorRecordingTerminated'),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -2195,7 +2195,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                         SizedBox(width: isTablet ? 6 : 4),
                         Text(
                           filteredMembers.isEmpty
-                              ? 'No results'
+                              ? context.tr('No results')
                               : memberCount == 1
                                   ? '1 member'
                                   : '$memberCount members',
@@ -2315,7 +2315,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               return DashboardLoader(
                 title: context.tr('Loading Units'),
                 subtitle:
-                    context.tr('Please wait while we fetch available units...'),
+                    context.tr('Please wait while we fetch available units'),
               );
             }
 
@@ -2323,7 +2323,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               return DashboardLoader(
                 title: context.tr('Loading Units'),
                 subtitle:
-                    context.tr('Please wait while we fetch available units...'),
+                    context.tr('Please wait while we fetch available units'),
               );
             }
 
@@ -2380,7 +2380,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
               ),
               SizedBox(height: isTablet ? 24 : 20),
               Text(
-                'No Members Found',
+                context.tr('No Members Found'),
                 style: TextStyle(
                   fontSize: isTablet ? 20 : 18,
                   fontWeight: FontWeight.w600,
@@ -2948,8 +2948,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                                     child: Center(
                                       child: Text(
                                         _isConfirming
-                                            ? 'Processing...'
-                                            : 'Confirm',
+                                            ? context.tr('Processing')
+                                            : context.tr('Confirm'),
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 18,
@@ -3125,7 +3125,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           ? selectedMemberIds.first.toString()
           : "232",
       'company_name': companyName ?? "",
-      "file": widget.visitor.visitor_image ?? ""
+      "file": widget.visitor.visitor_image ?? "",
+      'app_type': 'onegate',
     };
   }
 

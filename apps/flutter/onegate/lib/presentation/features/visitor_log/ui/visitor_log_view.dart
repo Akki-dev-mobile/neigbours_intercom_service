@@ -148,7 +148,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
 
   void _refreshVisitorLogList() {
     // Refresh visitor log list after card assignment
-    switch (widget.id) {
+    switch (_resolvedVisitorLogType(widget.id)) {
       case "In Out Book":
         _visitorLogBloc.add(FetchVisitorLogEvent(
           DateTime.now(),
@@ -177,7 +177,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
   void _initializeLogs() {
     debugPrint("VisitorLogView initialized with ID: '${widget.id}'");
 
-    switch (widget.id) {
+    switch (_resolvedVisitorLogType(widget.id)) {
       case "In Out Book":
         debugPrint("Triggering FetchVisitorLogEvent for In Out Book");
         _currentSection = "ALL";
@@ -259,7 +259,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
         "🔍 [CARD SEARCH] Performing card number search for: '$cardNumber'");
 
     // Fetch all data without search filter for client-side filtering
-    switch (widget.id) {
+    switch (_resolvedVisitorLogType(widget.id)) {
       case "Visitor In":
         _visitorLogBloc.add(FetchCheckInLogEvent(
           DateTime.now(),
@@ -328,7 +328,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
   void _loadInitialData() {
     debugPrint("Loading initial data for: ${widget.id}");
 
-    switch (widget.id) {
+    switch (_resolvedVisitorLogType(widget.id)) {
       case "In Out Book":
         _visitorLogBloc.add(FetchVisitorLogEvent(
           DateTime.now(),
@@ -372,6 +372,27 @@ class _VisitorLogViewState extends State<VisitorLogView>
     setState(() {
       _visitorCardEntryEnabled = prefs.getBool('visitorCardNumber') ?? false;
     });
+  }
+
+  String _resolvedVisitorLogType(String id) {
+    final raw = id.trim().toLowerCase();
+    // Avoid inherited-widget access in initState by using widget inputs only.
+    // logList is passed from dashboard in the active locale.
+    final localizedInOut = widget.logList.isNotEmpty
+        ? widget.logList[0].trim().toLowerCase()
+        : '';
+    final localizedVisitorIn = widget.logList.length > 1
+        ? widget.logList[1].trim().toLowerCase()
+        : '';
+    final localizedVisitorOut = widget.logList.length > 2
+        ? widget.logList[2].trim().toLowerCase()
+        : '';
+
+    if (raw == 'in out book' || raw == localizedInOut) return 'In Out Book';
+    if (raw == 'visitor in' || raw == localizedVisitorIn) return 'Visitor In';
+    if (raw == 'visitor out' || raw == localizedVisitorOut) return 'Visitor Out';
+    if (raw == 'cards') return 'Cards';
+    return id;
   }
 
   @override
@@ -436,17 +457,15 @@ class _VisitorLogViewState extends State<VisitorLogView>
           case VisitorLogLoadingState:
             // When coming from dashboard navigation, avoid showing the extra loader
             // since dashboard already shows appropriate loading states
-            if (widget.id == 'In Out Book' ||
-                widget.id == AppLocalizations.of(context).inOutBook ||
-                widget.id == 'Visitor In' ||
-                widget.id == AppLocalizations.of(context).visitorIn ||
-                widget.id == 'Visitor Out' ||
-                widget.id == AppLocalizations.of(context).visitorOut) {
+            final resolvedType = _resolvedVisitorLogType(widget.id);
+            if (resolvedType == 'In Out Book' ||
+                resolvedType == 'Visitor In' ||
+                resolvedType == 'Visitor Out') {
               return const SizedBox.shrink();
             }
             return DashboardLoader(
-              title: 'Loading Visitor Logs',
-              subtitle: 'Please wait while we fetch visitor data...',
+              title: context.tr('Loading Visitor Logs'),
+              subtitle: context.tr('visitorLogFetchDataSubtitle'),
             );
 
           case VisitorLogSuccessState:
@@ -461,7 +480,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
             debugPrint("🎯 [UI BUILD] - widget.id: ${widget.id}");
 
             final visitorLogs = (successState.visitorLogs ?? []).where((log) {
-              if (widget.id == "Cards") {
+              if (_resolvedVisitorLogType(widget.id) == "Cards") {
                 return log.visitor_card_number != null &&
                     log.visitor_card_number!.isNotEmpty;
               }
@@ -639,9 +658,9 @@ class _VisitorLogViewState extends State<VisitorLogView>
                   ),
                 ),
                 actions: [
-                  if (widget.id == "In Out Book" ||
-                      widget.id == "Visitor In" ||
-                      widget.id == "Visitor Out")
+                  if (_resolvedVisitorLogType(widget.id) == "In Out Book" ||
+                      _resolvedVisitorLogType(widget.id) == "Visitor In" ||
+                      _resolvedVisitorLogType(widget.id) == "Visitor Out")
                     Padding(
                       padding: const EdgeInsets.only(right: 10.0),
                       child: Container(
@@ -722,7 +741,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                             onFieldSubmitted: (value) {
                               log("🔍 [SEARCH] Searching for: '$value'");
                               // Trigger immediate search on submit
-                              switch (widget.id) {
+                              switch (_resolvedVisitorLogType(widget.id)) {
                                 case "Visitor In":
                                   _visitorLogBloc.add(FetchCheckInLogEvent(
                                     DateTime.now(),
@@ -768,7 +787,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                 final searchQuery =
                                     value.isNotEmpty ? value : null;
 
-                                switch (widget.id) {
+                                switch (_resolvedVisitorLogType(widget.id)) {
                                   case "Visitor In":
                                     _visitorLogBloc.add(FetchCheckInLogEvent(
                                       DateTime.now(),
@@ -819,7 +838,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                       ),
                                     );
 
-                                    switch (widget.id) {
+                                    switch (_resolvedVisitorLogType(widget.id)) {
                                       case "Visitor In":
                                         visitorLogBloc.add(FetchCheckInLogEvent(
                                           DateTime.now(),
@@ -978,7 +997,9 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                                   visitorLog:
                                                       logsForDate[logIndex],
                                                   isVisitorCardsView:
-                                                      widget.id == "Cards",
+                                                      _resolvedVisitorLogType(
+                                                              widget.id) ==
+                                                          "Cards",
                                                   visitorCardEntryEnabled:
                                                       _visitorCardEntryEnabled,
                                                   onCardAssigned:
@@ -1944,9 +1965,11 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                         onPressed: () async {
                                           if (startDate == null) {
                                             _showEnhancedErrorToast(
-                                              title: 'Date Required',
-                                              message:
-                                                  'Please select a start date to proceed',
+                                              title:
+                                                  context.tr('Date Required'),
+                                              message: context.tr(
+                                                'Please select a start date to proceed',
+                                              ),
                                               icon:
                                                   Icons.calendar_today_rounded,
                                             );
@@ -1954,9 +1977,11 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                           }
                                           if (endDate == null) {
                                             _showEnhancedErrorToast(
-                                              title: 'Date Required',
-                                              message:
-                                                  'Please select an end date to proceed',
+                                              title:
+                                                  context.tr('Date Required'),
+                                              message: context.tr(
+                                                'Please select an end date to proceed',
+                                              ),
                                               icon:
                                                   Icons.calendar_today_rounded,
                                             );
@@ -1993,10 +2018,13 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                             };
 
                                             // Add is_checkout based on the initiating card
-                                            if (widget.id == 'Visitor In') {
+                                            if (_resolvedVisitorLogType(
+                                                    widget.id) ==
+                                                'Visitor In') {
                                               visitorData['is_checkout'] =
                                                   false;
-                                            } else if (widget.id ==
+                                            } else if (_resolvedVisitorLogType(
+                                                    widget.id) ==
                                                 'Visitor Out') {
                                               visitorData['is_checkout'] = true;
                                             }
@@ -2007,15 +2035,20 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                                   await remoteDataSource
                                                       .exportLogs(visitorData);
                                                 },
-                                                title: 'Exporting logs...',
+                                                title: context.tr(
+                                                  'exportLogsProgressTitle',
+                                                ),
                                               );
 
                                               // Close bottom sheet after progress completes
                                               Navigator.pop(context);
                                               _showExportSuccessDialog(
-                                                title: '🎉 Export Successful!',
-                                                message:
-                                                    'Your visitor logs have been exported and sent to your registered email address. Please check your inbox.',
+                                                title: context.tr(
+                                                  'exportLogsSuccessTitle',
+                                                ),
+                                                message: context.tr(
+                                                  'exportLogsSuccessMessage',
+                                                ),
                                                 icon:
                                                     Icons.download_done_rounded,
                                               );
@@ -2047,8 +2080,8 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                           color: Colors.white,
                                           size: 20,
                                         ),
-                                        label: const Text(
-                                          "Export Logs",
+                                        label: Text(
+                                          context.tr('Export Logs'),
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 16,
@@ -2367,9 +2400,9 @@ class _VisitorLogViewState extends State<VisitorLogView>
                           Navigator.of(context).pop();
                           onDismiss?.call();
                         },
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Text('OK'),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text(context.tr('OK')),
                         ),
                       ),
                     ),
@@ -2471,7 +2504,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Filter Options',
+                                context.tr('Filter Options'),
                                 style: Theme.of(context)
                                     .textTheme
                                     .headlineSmall
@@ -2483,7 +2516,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Choose your preferred view',
+                                context.tr('Choose your preferred view'),
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium
@@ -2574,7 +2607,10 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              filterOption,
+                                              _getLocalizedVisitorLogTitle(
+                                                context,
+                                                filterOption,
+                                              ),
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .titleMedium
@@ -2693,8 +2729,8 @@ class _VisitorLogViewState extends State<VisitorLogView>
                           color: Colors.white,
                           size: 20,
                         ),
-                        label: const Text(
-                          "Apply Filter",
+                        label: Text(
+                          context.tr('Apply Filter'),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -2733,15 +2769,15 @@ class _VisitorLogViewState extends State<VisitorLogView>
   String _getFilterDescription(String filterOption) {
     switch (filterOption.toLowerCase()) {
       case 'in out book':
-        return 'View all visitor entries and exits';
+        return context.tr('View all visitor entries and exits');
       case 'visitor in':
-        return 'Show only checked-in visitors';
+        return context.tr('Show only checked-in visitors');
       case 'visitor out':
-        return 'Show only checked-out visitors';
+        return context.tr('Show only checked-out visitors');
       case 'cards':
-        return 'View visitors with card access';
+        return context.tr('View visitors with card access');
       default:
-        return 'Filter visitor log entries';
+        return context.tr('Filter visitor log entries');
     }
   }
 
@@ -2850,7 +2886,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
         duration: const Duration(seconds: 4),
         elevation: 12,
         action: SnackBarAction(
-          label: 'Dismiss',
+          label: context.tr('Dismiss'),
           textColor: Colors.white,
           onPressed: () {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -2995,9 +3031,9 @@ class _VisitorLogViewState extends State<VisitorLogView>
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        'OK',
-                        style: TextStyle(
+                      child: Text(
+                        context.tr('OK'),
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
@@ -3045,8 +3081,10 @@ class _VisitorLogViewState extends State<VisitorLogView>
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'No data found for the selected filters. Try a different date range or card.',
+                Text(
+                  context.tr(
+                    'No data found for the selected filters. Try a different date range or card.',
+                  ),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -3059,7 +3097,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () => Navigator.of(ctx).pop(),
-                    child: const Text('OK'),
+                    child: Text(context.tr('OK')),
                   ),
                 ),
               ],
@@ -3135,8 +3173,8 @@ class _VisitorLogViewState extends State<VisitorLogView>
                   const SizedBox(height: 24),
 
                   // Title (match success UI typography)
-                  const Text(
-                    'Export Failed',
+                  Text(
+                    context.tr('Export Failed'),
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -3186,9 +3224,9 @@ class _VisitorLogViewState extends State<VisitorLogView>
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        'OK',
-                        style: TextStyle(
+                      child: Text(
+                        context.tr('OK'),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -3298,7 +3336,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'No more visitors to load',
+                  context.tr('No more visitors to load'),
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade600,
@@ -3363,8 +3401,8 @@ class _VisitorLogViewState extends State<VisitorLogView>
                         ),
                       ),
                       SizedBox(height: isTablet ? 28 : 22),
-                      const Text(
-                        'No Visitors Found',
+                      Text(
+                        context.tr('No Visitors Found'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 21,
@@ -3374,7 +3412,10 @@ class _VisitorLogViewState extends State<VisitorLogView>
                       ),
                       SizedBox(height: isTablet ? 14 : 10),
                       Text(
-                        'No visitors match "$_searchText". Try a different keyword.',
+                        context.tr(
+                          'No visitors match "{query}". Try a different keyword.',
+                          params: {'query': _searchText ?? ''},
+                        ),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: isTablet ? 16 : 14,
@@ -3395,9 +3436,10 @@ class _VisitorLogViewState extends State<VisitorLogView>
   /// Enhanced empty state for no visitors today
   Widget _buildEnhancedEmptyVisitorsState() {
     final isTablet = MediaQuery.of(context).size.width > 600;
-    final descriptionText = widget.id == 'Visitor Out'
-        ? 'Looks quiet right now. Visitor exits will appear here as soon as someone checks out.'
-        : 'Looks quiet right now. Visitor entries will appear here as soon as someone checks in.';
+    final descriptionText =
+        _resolvedVisitorLogType(widget.id) == 'Visitor Out'
+        ? context.tr('visitorEmptyExitsQuietMessage')
+        : context.tr('visitorEmptyEntriesQuietMessage');
     return Align(
       alignment: Alignment.topCenter,
       child: Padding(
@@ -3441,7 +3483,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
                   ),
                   SizedBox(height: isTablet ? 28 : 22),
                   Text(
-                    'No visitors yet today',
+                    context.tr('No visitors yet today'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: isTablet ? 24 : 21,
@@ -3526,7 +3568,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
   }
 
   String _getLocalizedVisitorLogTitle(BuildContext context, String id) {
-    switch (id) {
+    switch (_resolvedVisitorLogType(id)) {
       case 'In Out Book':
         return context.l10n.visitorLogTitleInOutBook;
       case 'Visitor In':
@@ -3707,7 +3749,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                             const SizedBox(width: 14),
                             Flexible(
                               child: Text(
-                                "${_capitalizeFirstLetter(widget.visitorLog.visitor_purpose_Category_name?.toString() ?? "N/A")} ${_getUnitText()}",
+                                "${widget.visitorLog.visitor_purpose_Category_name != null ? context.trPurposeCategory(widget.visitorLog.visitor_purpose_Category_name!) : "N/A"} ${_getUnitText()}",
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium
@@ -3899,9 +3941,12 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                               onTap: () {
                                 if (widget.visitorLog.visitor_id == null) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content:
-                                          Text('Error: Visitor ID not found'),
+                                    SnackBar(
+                                      content: Text(
+                                        context.tr(
+                                          'Error: Visitor ID not found',
+                                        ),
+                                      ),
                                       backgroundColor: Colors.red,
                                     ),
                                   );
@@ -3955,7 +4000,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: const [
+                                  children: [
                                     Icon(
                                       Icons.credit_card,
                                       size: 16,
@@ -3963,7 +4008,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                     ),
                                     SizedBox(width: 6),
                                     Text(
-                                      'Assign Card',
+                                      context.tr('Assign Card'),
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
@@ -4031,7 +4076,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  'Confirm Checkout',
+                                                  context
+                                                      .tr('Confirm Checkout'),
                                                   style: Theme.of(context)
                                                       .textTheme
                                                       .titleLarge
@@ -4075,7 +4121,9 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                                               : 12),
                                                       Expanded(
                                                         child: Text(
-                                                          'This action will permanently record the checkout time and cannot be undone.',
+                                                          context.tr(
+                                                            'This action will permanently record the checkout time and cannot be undone.',
+                                                          ),
                                                           style: Theme.of(
                                                                   context)
                                                               .textTheme
@@ -4206,9 +4254,11 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                                                                   ),
                                                                                 ),
                                                                                 const SizedBox(width: 12),
-                                                                                const Expanded(
+                                                                                Expanded(
                                                                                   child: Text(
-                                                                                    'Visitor checked out successfully',
+                                                                                    context.tr(
+                                                                                      'Visitor checked out successfully',
+                                                                                    ),
                                                                                     style: TextStyle(color: Colors.white),
                                                                                   ),
                                                                                 ),
@@ -4278,7 +4328,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                     );
                                   },
                                   child: Text(
-                                    'Checkout',
+                                    context.tr('checkout'),
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium
@@ -4380,7 +4430,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     Icon(
                       Icons.how_to_reg,
                       color: Colors.white,
@@ -4388,7 +4438,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                     ),
                     SizedBox(width: 4),
                     Text(
-                      "Pre-approved",
+                      context.tr('Pre-approved'),
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,

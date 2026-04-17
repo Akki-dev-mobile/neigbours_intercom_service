@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:common_widgets/common_widgets.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class CallHistoryScreen extends StatefulWidget {
   final String fromNumber;
@@ -35,7 +36,9 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load call logs: $e')),
+        SnackBar(
+            content: Text(context.tr('Failed to load call logs: {error}',
+                params: {'error': '$e'}))),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -73,7 +76,7 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                log['member_name'] ?? 'Unknown Contact',
+                log['member_name'] ?? context.tr('Unknown Contact'),
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -85,7 +88,7 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    log['to_number'] ?? 'N/A',
+                    log['to_number'] ?? context.tr('N/A'),
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey.shade600,
@@ -100,8 +103,8 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
                           ClipboardData(text: log['phone_number']),
                         );
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Phone number copied'),
+                          SnackBar(
+                            content: Text(context.tr('Phone number copied')),
                             duration: Duration(seconds: 2),
                           ),
                         );
@@ -124,14 +127,14 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
                   ),
                   _buildDetailChip(
                     icon: _getCallTypeIcon(log['call_type'] ?? ''),
-                    label: "INTERCOM",
+                    label: context.tr('INTERCOM'),
                     color: _getCallTypeColor(log['call_type'] ?? ''),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
               CustomLargeBtn(
-                  text: 'Call Back',
+                  text: context.tr('Call Back'),
                   onPressed: () async {
                     Navigator.of(context).pop();
 

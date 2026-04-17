@@ -6,25 +6,30 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/presentation/features/auth/bloc/login_bloc.dart';
 import 'package:flutter_onegate/presentation/features/forgot_password/ui/forgot_password_view.dart';
 import 'package:flutter_onegate/presentation/features/request_gate_access/ui/request_gate_access_view.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 /// User-friendly message for known error patterns.
-String _mapErrorMessage(String? raw) {
-  if (raw == null || raw.isEmpty) return 'Something went wrong. Please try again.';
+String _mapErrorMessage(BuildContext context, String? raw) {
+  if (raw == null || raw.isEmpty)
+    return context.tr('Something went wrong. Please try again.');
   final lower = raw.toLowerCase();
-  if (lower.contains('invalid') && (lower.contains('credential') || lower.contains('password'))) {
-    return 'Incorrect mobile or password.';
+  if (lower.contains('invalid') &&
+      (lower.contains('credential') || lower.contains('password'))) {
+    return context.tr('Incorrect mobile or password.');
   }
   if (lower.contains('user credentials were incorrect')) {
-    return 'The user credentials were incorrect.';
+    return context.tr('The user credentials were incorrect.');
   }
   if (lower.contains('locked') || lower.contains('disabled')) {
-    return 'Your account is locked. Contact your administrator.';
+    return context.tr('Your account is locked. Contact your administrator.');
   }
-  if (lower.contains('timeout') || lower.contains('connection') || lower.contains('network')) {
-    return "We're having trouble connecting. Please retry.";
+  if (lower.contains('timeout') ||
+      lower.contains('connection') ||
+      lower.contains('network')) {
+    return context.tr("We're having trouble connecting. Please retry.");
   }
   if (lower.contains('401') || lower.contains('unauthorized')) {
-    return 'Incorrect mobile or password.';
+    return context.tr('Incorrect mobile or password.');
   }
   return raw.length > 120 ? '${raw.substring(0, 120)}…' : raw;
 }
@@ -75,8 +80,8 @@ class _NativeLoginFormState extends State<NativeLoginForm> {
 
   void _submit() {
     if (!_isFormValid) return;
-    final normalizedMobile =
-        _normalizeMobileWithCountryCode(_usernameController.text, _selectedDialCode);
+    final normalizedMobile = _normalizeMobileWithCountryCode(
+        _usernameController.text, _selectedDialCode);
     context.read<LoginBloc>().add(
           LoginButtonPressedEvent(
             normalizedMobile,
@@ -109,23 +114,15 @@ class _NativeLoginFormState extends State<NativeLoginForm> {
         final showLoader = isLoading && errorMessage == null;
 
         return Container(
-          height: MediaQuery.of(context).size.height + MediaQuery.of(context).padding.top,
+          height: MediaQuery.of(context).size.height +
+              MediaQuery.of(context).padding.top,
           width: double.infinity,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                const Color(0xffF44336).withOpacity(0.12),
-                const Color(0xffff5722).withOpacity(0.05),
-                Colors.white.withOpacity(0.0),
-              ],
-            ),
-          ),
+          color: Colors.white,
           child: SafeArea(
             top: false,
             child: Padding(
-              padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 20),
+              padding:
+                  EdgeInsets.only(top: MediaQuery.of(context).padding.top + 20),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -148,8 +145,11 @@ class _NativeLoginFormState extends State<NativeLoginForm> {
                         usernameController: _usernameController,
                         passwordController: _passwordController,
                         obscurePassword: _obscurePassword,
-                        onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
-                        errorMessage: errorMessage != null ? _mapErrorMessage(errorMessage) : null,
+                        onToggleObscure: () => setState(
+                            () => _obscurePassword = !_obscurePassword),
+                        errorMessage: errorMessage != null
+                            ? _mapErrorMessage(context, errorMessage)
+                            : null,
                         isLoading: isLoading,
                         showLoader: showLoader,
                         isFormValid: _isFormValid,
@@ -183,39 +183,52 @@ class _NativeLoginFormState extends State<NativeLoginForm> {
 class _LoginHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final logoSize = (screenWidth * 0.4).clamp(156.0, 210.0);
+    final logoPadding = (logoSize * 0.06).clamp(6.0, 12.0);
+
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.32,
       width: double.infinity,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 140,
-            height: 140,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xffF44336).withOpacity(0.2),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
+          SizedBox(
+            width: logoSize,
+            height: logoSize,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: const Color(0xffE0E3E7),
+                  width: 1,
                 ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Image.asset(
-                'assets/media/images/onegate.png',
-                width: 120,
-                height: 120,
-                fit: BoxFit.contain,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xff212427).withOpacity(0.14),
+                    blurRadius: 22,
+                    offset: const Offset(0, 10),
+                  ),
+                  BoxShadow(
+                    color: const Color(0xffF44336).withOpacity(0.08),
+                    blurRadius: 28,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(logoPadding),
+                child: Image.asset(
+                  'assets/media/images/onegate.png',
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
           const SizedBox(height: 16),
           Text(
-            'Smart Gate Management',
+            context.tr('Smart Gate Management'),
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -274,16 +287,18 @@ class _LoginFormCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: (errorMessage != null ? const Color(0xffF44336) : Colors.grey).withOpacity(0.12),
-            spreadRadius: errorMessage != null ? 2 : 3,
-            blurRadius: 24,
-            offset: const Offset(0, 6),
+            color:
+                (errorMessage != null ? const Color(0xffF44336) : Colors.grey)
+                    .withOpacity(0.18),
+            spreadRadius: errorMessage != null ? 2 : 4,
+            blurRadius: 30,
+            offset: const Offset(0, 10),
           ),
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withOpacity(0.12),
             spreadRadius: 1,
-            blurRadius: 15,
-            offset: const Offset(0, 2),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -304,7 +319,8 @@ class _LoginFormCard extends StatelessWidget {
                     const Color(0xffff5722).withOpacity(0.03),
                   ],
                 ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
                 border: Border.all(
                   color: Colors.grey.withOpacity(0.25),
                   width: 0.8,
@@ -339,8 +355,11 @@ class _LoginFormCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Welcome Back!',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          context.tr('Welcome Back!'),
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: const Color(0xff212427),
                                 fontSize: 20,
@@ -348,12 +367,13 @@ class _LoginFormCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Sign in with your mobile number',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: const Color(0xff57636C),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                              ),
+                          context.tr('Sign in with your mobile number'),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: const Color(0xff57636C),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w400,
+                                  ),
                         ),
                       ],
                     ),
@@ -373,9 +393,9 @@ class _LoginFormCard extends StatelessWidget {
                     const SizedBox(height: 4),
                   _buildThinBorderField(
                     context,
-                    title: 'Mobile',
+                    title: context.tr('Mobile'),
                     controller: usernameController,
-                    hintText: 'Enter mobile number',
+                    hintText: context.tr('Enter mobile number'),
                     keyboardType: TextInputType.phone,
                     textInputAction: TextInputAction.next,
                     maxLength: 10,
@@ -397,10 +417,10 @@ class _LoginFormCard extends StatelessWidget {
                     ),
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
-                        return 'Enter mobile number';
+                        return context.tr('Enter mobile number');
                       }
                       if (v.trim().length != 10) {
-                        return 'Enter valid mobile number';
+                        return context.tr('Enter valid mobile number');
                       }
                       return null;
                     },
@@ -409,19 +429,22 @@ class _LoginFormCard extends StatelessWidget {
                   const SizedBox(height: 16),
                   _buildThinBorderField(
                     context,
-                    title: 'Password',
+                    title: context.tr('Password'),
                     controller: passwordController,
-                    hintText: 'Enter password',
+                    hintText: context.tr('Enter password'),
                     isObscureText: obscurePassword,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _trySubmit(),
                     suffixIcon: IconButton(
-                      icon:
-                          Icon(obscurePassword ? Icons.visibility_off : Icons.visibility),
+                      icon: Icon(obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility),
                       onPressed: onToggleObscure,
                     ),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return 'Enter your password';
+                      if (v == null || v.isEmpty) {
+                        return context.tr('Enter your password');
+                      }
                       return null;
                     },
                     onChanged: (_) => (context as Element).markNeedsBuild(),
@@ -439,7 +462,7 @@ class _LoginFormCard extends StatelessWidget {
                         );
                       },
                       child: Text(
-                        'Forgot password?',
+                        context.tr('Forgot password?'),
                         style: TextStyle(
                           color: const Color(0xffF44336),
                           fontSize: 14,
@@ -452,7 +475,9 @@ class _LoginFormCard extends StatelessWidget {
                   Semantics(
                     button: true,
                     enabled: isFormValid && !isLoading,
-                    label: showLoader ? 'Signing in' : 'Sign in with mobile number',
+                    label: showLoader
+                        ? 'Signing in'
+                        : 'Sign in with mobile number',
                     child: IgnorePointer(
                       ignoring: !isFormValid || isLoading,
                       child: Opacity(
@@ -485,8 +510,8 @@ class _LoginFormCard extends StatelessWidget {
                               onTap: _trySubmit,
                               borderRadius: BorderRadius.circular(16),
                               child: Center(
-                                child: const Text(
-                                  'Login',
+                                child: Text(
+                                  context.tr('Login'),
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 16,
@@ -506,7 +531,7 @@ class _LoginFormCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Don't have an account? ",
+                        context.tr("Don't have an account? "),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: const Color(0xff57636C),
                               fontSize: 15,
@@ -516,10 +541,14 @@ class _LoginFormCard extends StatelessWidget {
                         onTap: onSignUpPressed,
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 4),
                           child: Text(
-                            'Sign Up',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            context.tr('Sign Up'),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
                                   color: const Color(0xffF44336),
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
@@ -643,7 +672,6 @@ class _LoginFormCard extends StatelessWidget {
       ],
     );
   }
-
 }
 
 class _ErrorBanner extends StatelessWidget {
@@ -655,7 +683,7 @@ class _ErrorBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       liveRegion: true,
-      label: 'Error: $message',
+      label: context.tr('Error: {error}', params: {'error': message}),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
@@ -665,7 +693,8 @@ class _ErrorBanner extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error, size: 22),
+            Icon(Icons.error_outline,
+                color: Theme.of(context).colorScheme.error, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Text(

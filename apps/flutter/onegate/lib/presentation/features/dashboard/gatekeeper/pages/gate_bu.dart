@@ -2,6 +2,7 @@
 
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:kiosk_mode/kiosk_mode.dart';
@@ -30,21 +31,21 @@ class _SelfEntryViewState extends State<SelfEntryView> {
 
   List<Step> selfEntrySteps() => [
         Step(
-          title: Text('Account'),
+          title: Text(context.tr('Account')),
           content: Center(
-            child: Text('Account'),
+            child: Text(context.tr('Account')),
           ),
         ),
         Step(
-          title: Text('Personal'),
+          title: Text(context.tr('Personal')),
           content: Center(
-            child: Text('Personal'),
+            child: Text(context.tr('Personal')),
           ),
         ),
         Step(
-          title: Text('Address'),
+          title: Text(context.tr('Address')),
           content: Center(
-            child: Text('Address'),
+            child: Text(context.tr('Address')),
           ),
         ),
       ];
@@ -223,7 +224,7 @@ class _SelfEntryViewState extends State<SelfEntryView> {
                   hintColor: Theme.of(context).colorScheme.onPrimary,
                   focusNode: _mobileFocusNode,
                   "Visitor Mobile Number",
-                  hintText: '0123456789',
+                  hintText: context.tr('0123456789'),
                   prefixIcon: CountryCodePicker(
                     initialSelection: 'IN',
                     favorite: ['IN'],
@@ -245,7 +246,7 @@ class _SelfEntryViewState extends State<SelfEntryView> {
                         Icons.search,
                         color: Theme.of(context).colorScheme.onBackground,
                       ),
-                      hintText: 'Search',
+                      hintText: context.tr('Search'),
                       hintStyle: TextStyle(
                         color: Theme.of(context).colorScheme.onBackground,
                       ),
@@ -313,7 +314,7 @@ class _SelfEntryViewState extends State<SelfEntryView> {
                       titleColor: Theme.of(context).colorScheme.onBackground,
                       hintColor: Theme.of(context).colorScheme.onPrimary,
                       "OTP",
-                      hintText: '123456',
+                      hintText: context.tr('123456'),
                       textCapitalization: TextCapitalization.characters,
                       length: 6,
                       counterText: '$_start',

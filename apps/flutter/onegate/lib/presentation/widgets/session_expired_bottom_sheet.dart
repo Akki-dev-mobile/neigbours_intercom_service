@@ -8,6 +8,7 @@ import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/services/auth_service/centralized_logout_service.dart';
 import 'package:flutter_onegate/services/session_manager/session_management_coordinator.dart';
 import 'package:flutter_onegate/main.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 /// Animated bottom sheet that appears when session expires
 /// Provides a smooth user experience for session expiration scenarios
@@ -168,13 +169,13 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Session Expired',
+                          context.tr('Session Expired'),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -183,7 +184,8 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
                         ),
                         SizedBox(height: 2),
                         Text(
-                          'Your session has expired. Logging out securely...',
+                          context.tr(
+                              'Your session has expired. Logging out securely...'),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 14,
@@ -278,7 +280,7 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
 
                     // Title
                     Text(
-                      'Session Expired',
+                      context.tr('Session Expired'),
                       style:
                           Theme.of(context).textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
@@ -292,7 +294,8 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
                     // Message
                     Text(
                       widget.errorMessage ??
-                          'Your session has expired for security reasons. Please log in again to continue.',
+                          context.tr(
+                              'Your session has expired for security reasons. Please log in again to continue.'),
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: Colors.grey.shade700,
                             height: 1.5,
@@ -385,7 +388,7 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Logging out...',
+                          context.tr('Logging out...'),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -394,16 +397,16 @@ class _SessionExpiredBottomSheetState extends State<SessionExpiredBottomSheet>
                         ),
                       ],
                     )
-                  : const Row(
+                  : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.login,
                           size: 20,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
-                          'Login Again',
+                          context.tr('Login Again'),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

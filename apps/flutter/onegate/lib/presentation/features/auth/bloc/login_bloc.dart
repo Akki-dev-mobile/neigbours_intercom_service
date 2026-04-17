@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/auth/access_token_response.dart';
 import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_onegate/domain/entities/auth/company.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
 import 'package:flutter_onegate/domain/use_cases/gate_usecase.dart';
+import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:meta/meta.dart';
@@ -20,6 +22,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final LoginUseCase _loginUseCase;
   final GateUseCase _gateUseCase;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+
+  String _tr(String key, {Map<String, String>? params}) {
+    final context = navigatorKey.currentContext;
+    if (context == null) return key;
+    return FlutterI18n.translate(context, key, translationParams: params);
+  }
 
   LoginBloc(this._loginUseCase, this._gateUseCase) : super(LoginInitial()) {
     on<LoginInitialEvent>(loginInitialEvent);
@@ -89,7 +97,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
     }
     // Map master -> admin for role selection sheet (Admin / Gatekeeper)
-    roles = roles.map((r) => r.toLowerCase() == 'master' ? 'admin' : r).toList();
+    roles =
+        roles.map((r) => r.toLowerCase() == 'master' ? 'admin' : r).toList();
     _preferenceUtils.saveRoles(roles);
 
     if (roles.contains('master') || roles.contains('admin')) {
@@ -136,7 +145,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             emit(NavigateToAdminDashboardState());
             return;
           } else if (gates.isEmpty) {
-            emit(LoginErrorState(message: "No gates found for this society"));
+            emit(LoginErrorState(
+                message: _tr("No gates found for this society")));
             return;
           } else {
             await _preferenceUtils.saveGatesList(gates);
@@ -156,7 +166,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           final List<Gate> gateList = response ?? [];
           emit(LoginInitial());
           if (gateList.isEmpty) {
-            emit(LoginErrorState(message: "No gates found for this society"));
+            emit(LoginErrorState(
+                message: _tr("No gates found for this society")));
             return;
           }
           await _preferenceUtils.saveGatesList(gateList);
@@ -195,7 +206,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit(NavigateToGatekeeperDashboardState());
       } else {
         emit(LoginErrorState(
-            message: "Gate Mismatch: Reach out to admin for gate correction."));
+            message:
+                _tr("Gate Mismatch: Reach out to admin for gate correction.")));
       }
     }
   }
@@ -270,7 +282,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       if (response.accessToken != null && response.accessToken!.isNotEmpty) {
         unawaited(GateStorage().saveAccessToken(response.accessToken!));
       }
-      if (response.refresh_token != null && response.refresh_token!.isNotEmpty) {
+      if (response.refresh_token != null &&
+          response.refresh_token!.isNotEmpty) {
         unawaited(GateStorage().saveRefreshToken(response.refresh_token!));
       }
       if (response.userInfo != null) {
@@ -282,7 +295,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       // Always show society list after login so user can pick society every time
       if (companiesWithAccessToGate.isEmpty) {
         emit(LoginErrorState(
-            message: "No societies found for your account."));
+            message: _tr("No societies found for your account.")));
       } else {
         emit(SocietySelectionState(companiesWithAccessToGate));
       }

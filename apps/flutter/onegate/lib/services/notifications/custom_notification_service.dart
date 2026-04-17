@@ -1,9 +1,17 @@
 import 'dart:developer' as dev;
 import 'package:dio/dio.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/services/notifications/models/notification_models.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
+
+String _tr(String key, {Map<String, String>? params}) {
+  final context = navigatorKey.currentContext;
+  if (context == null) return key;
+  return FlutterI18n.translate(context, key, translationParams: params);
+}
 
 /// Custom notification service that replaces ntfy.sh with internal implementation
 class CustomNotificationService {
@@ -128,9 +136,9 @@ class CustomNotificationService {
   Future<bool> testNotification() async {
     return await _sendNotification(
       topic: _healthCheckTopic,
-      title: 'Test Notification',
-      message:
-          'This is a test notification from OneGate custom notification service.',
+      title: _tr('Test Notification'),
+      message: _tr(
+          'This is a test notification from OneGate custom notification service.'),
       data: {'test': true},
       priority: AlertPriority.default_,
       tags: ['test'],

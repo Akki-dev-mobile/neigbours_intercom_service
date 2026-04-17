@@ -1,10 +1,18 @@
 import 'dart:developer' as dev;
+import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/services/notifications/custom_notification_service.dart';
 import 'package:flutter_onegate/services/notifications/models/notification_models.dart';
 import 'package:flutter_onegate/services/search/meilisearch_service.dart';
 import 'package:hive/hive.dart';
+
+String _tr(String key, {Map<String, String>? params}) {
+  final context = navigatorKey.currentContext;
+  if (context == null) return key;
+  return FlutterI18n.translate(context, key, translationParams: params);
+}
 
 /// Service for monitoring data health and consistency
 class DataHealthService {
@@ -372,15 +380,15 @@ class DataHealthService {
   Future<void> _processHealthCheckAlerts(HealthCheckResult result) async {
     if (result.overallStatus == HealthStatus.critical) {
       await _notificationService.sendHealthCheckAlert(
-        title: 'Critical Health Check Alert',
-        message: 'OneGate system health check detected critical issues',
+        title: _tr('Critical Health Check Alert'),
+        message: _tr('OneGate system health check detected critical issues'),
         data: result.toJson(),
         priority: AlertPriority.max,
       );
     } else if (result.overallStatus == HealthStatus.warning) {
       await _notificationService.sendHealthCheckAlert(
-        title: 'Health Check Warning',
-        message: 'OneGate system health check detected warnings',
+        title: _tr('Health Check Warning'),
+        message: _tr('OneGate system health check detected warnings'),
         data: result.toJson(),
         priority: AlertPriority.high,
       );
@@ -393,9 +401,14 @@ class DataHealthService {
               [];
       for (final mismatch in mismatches) {
         await _notificationService.sendDataAnomalyAlert(
-          title: 'Resident Count Mismatch',
-          message:
-              'Building ${mismatch['building']}: Expected ${mismatch['expected']}, Found ${mismatch['actual']}',
+          title: _tr('Resident Count Mismatch'),
+          message: _tr(
+              'Building {building}: Expected {expected}, Found {actual}',
+              params: {
+                'building': '${mismatch['building']}',
+                'expected': '${mismatch['expected']}',
+                'actual': '${mismatch['actual']}'
+              }),
           data: {
             'building': mismatch['building'],
             'expectedCount': mismatch['expected'],
@@ -407,9 +420,9 @@ class DataHealthService {
 
     if (result.visitorDataCheck?.status == HealthStatus.warning) {
       await _notificationService.sendDataAnomalyAlert(
-        title: 'Visitor Data Inconsistency',
+        title: _tr('Visitor Data Inconsistency'),
         message: result.visitorDataCheck?.message ??
-            'Visitor data inconsistency detected',
+            _tr('Visitor data inconsistency detected'),
         data: result.visitorDataCheck?.details,
       );
     }

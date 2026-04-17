@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 /// Enhanced input field for mobile number and OTP entry
 class EnhancedInputField extends StatelessWidget {
@@ -77,7 +78,7 @@ class EnhancedInputField extends StatelessWidget {
         decoration: InputDecoration(
           // Hide the label inside the input field
           labelText: null,
-          hintText: hint ?? (isMobileField ? '0123456789' : '123456'),
+          hintText: hint ?? context.tr(isMobileField ? '0123456789' : '123456'),
           hintStyle: const TextStyle(
             color: Color(0xFF9CA3AF),
             fontSize: 16,

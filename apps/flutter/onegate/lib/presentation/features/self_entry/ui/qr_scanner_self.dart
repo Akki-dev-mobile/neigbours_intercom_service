@@ -1197,9 +1197,9 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                     ),
                     elevation: 2,
                   ),
-                  child: const Text(
-                    "OK",
-                    style: TextStyle(
+                  child: Text(
+                    context.tr('OK'),
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),

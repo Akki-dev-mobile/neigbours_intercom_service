@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/visitor/visitorLog.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
+import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
@@ -18,6 +20,12 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
   final VisitorLogUsecase visitorLogUseCase;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
   final GateStorage _gateStorage = GateStorage();
+
+  String _tr(String key) {
+    final context = navigatorKey.currentContext;
+    if (context == null) return key;
+    return FlutterI18n.translate(context, key);
+  }
 
   VisitorLogBloc(this.visitorLogUseCase) : super(VisitorLogInitial()) {
     on<FetchVisitorLogEvent>(fetchVisitorLogEvent);
@@ -99,7 +107,7 @@ class VisitorLogBloc extends Bloc<VisitorLogEvent, VisitorLogState> {
         }
       } else {
         // Handle failure
-        emit(VisitorLogErrorState('Something went wrong'));
+        emit(VisitorLogErrorState(_tr('Something went wrong')));
       }
     } catch (error) {
       // Emit error state on exception

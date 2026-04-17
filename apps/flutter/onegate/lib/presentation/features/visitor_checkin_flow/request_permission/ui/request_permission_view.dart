@@ -11,6 +11,7 @@ import 'package:flutter_onegate/domain/entities/visitor/visitor.dart';
 import 'package:flutter_onegate/domain/use_cases/visitor_log_usecae.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/request_permission/bloc/request_permission_bloc.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
@@ -125,7 +126,8 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
                                 style: Theme.of(context).textTheme.labelMedium,
                                 children: <TextSpan>[
                                   TextSpan(
-                                    text: widget.purposeCategory.categoryName,
+                                    text: context.trPurposeCategory(
+                                        widget.purposeCategory.categoryName),
                                     style: TextStyle(
                                       color: Colors.blue[400],
                                     ),
@@ -244,7 +246,7 @@ class _RequestPermissionViewState extends State<RequestPermissionView> {
               ),
               floatingActionButton: CustomLargeBtn(
                 heroTag: 'gate_dashboard',
-                text: 'Allow',
+                text: AppLocalizations.of(context).allow,
                 onPressed: () {
                   requestPermissionBloc.add(
                     AllowButtonClickedEvent(

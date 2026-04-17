@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onegate/presentation/features/app_intro/ui/keyclock_login.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 import '../bloc/request_gate_access_bloc.dart';
 
@@ -65,7 +66,8 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Email app could not open. Please email support@futurescapetech.com with your details.',
+              context.tr(
+                  'Email app could not open. Please email support@futurescapetech.com with your details.'),
             ),
             backgroundColor: Colors.orange.shade700,
           ),
@@ -77,7 +79,8 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Email app could not open. Please email support@futurescapetech.com with your details.',
+              context.tr(
+                  'Email app could not open. Please email support@futurescapetech.com with your details.'),
             ),
             backgroundColor: Colors.orange.shade700,
           ),
@@ -268,7 +271,8 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xffF44336).withOpacity(0.1),
+                                  color:
+                                      const Color(0xffF44336).withOpacity(0.1),
                                   spreadRadius: 1,
                                   blurRadius: 4,
                                   offset: const Offset(0, 1),
@@ -288,7 +292,7 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  'Request Submitted',
+                                  context.tr('Request Submitted'),
                                   style: Theme.of(context)
                                       .textTheme
                                       .headlineSmall
@@ -300,7 +304,7 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Thank you for your request.',
+                                  context.tr('requestSubmittedThankYouMessage'),
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodyMedium
@@ -323,13 +327,14 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Our team will reach out within 24–48 hours to verify details and get you started.',
+                            context.tr('requestSubmittedTeamReachoutMessage'),
                             textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: const Color(0xff57636C),
-                                  fontSize: 13,
-                                  height: 1.4,
-                                ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: const Color(0xff57636C),
+                                      fontSize: 13,
+                                      height: 1.4,
+                                    ),
                           ),
                           const SizedBox(height: 14),
                           Container(
@@ -344,7 +349,8 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xff212427).withOpacity(0.3),
+                                  color:
+                                      const Color(0xff212427).withOpacity(0.3),
                                   spreadRadius: 1,
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
@@ -357,15 +363,16 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
                                 onTap: () {
                                   Navigator.of(ctx).pop();
                                   Navigator.of(context).pushAndRemoveUntil(
-                                    MaterialPageRoute(builder: (_) => const MyAppLogin()),
+                                    MaterialPageRoute(
+                                        builder: (_) => const MyAppLogin()),
                                     (route) => false,
                                   );
                                 },
                                 borderRadius: BorderRadius.circular(16),
-                                child: const Center(
+                                child: Center(
                                   child: Text(
-                                    'OK',
-                                    style: TextStyle(
+                                    context.tr('OK'),
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -390,16 +397,17 @@ class _RequestGateAccessState extends State<RequestGateAccess> {
         return Stack(
           children: [
             Scaffold(
+              backgroundColor: Colors.white,
               body: SignUpContent(
-            onSubmitPressed: _submitRequestAccessForm,
-            requestAccessFormKey: _requestAccessFormKey,
-            clientNameTextCtrl: clientNameTextCtrl!,
-            mobileNumberTextCtrl: mobileNumberTextCtrl!,
-            clientSocietyTextCtrl: clientSocietyTextCtrl!,
-            userNameFocusNode: _userNameFocusNode,
-            mobileNumberFocusNode: _mobileNumberFocusNode,
-            societyNameFocusNode: _societyNameFocusNode,
-          ),
+                onSubmitPressed: _submitRequestAccessForm,
+                requestAccessFormKey: _requestAccessFormKey,
+                clientNameTextCtrl: clientNameTextCtrl!,
+                mobileNumberTextCtrl: mobileNumberTextCtrl!,
+                clientSocietyTextCtrl: clientSocietyTextCtrl!,
+                userNameFocusNode: _userNameFocusNode,
+                mobileNumberFocusNode: _mobileNumberFocusNode,
+                societyNameFocusNode: _societyNameFocusNode,
+              ),
             ),
             if (state is RequestAccessLoadingState)
               Container(
@@ -534,27 +542,19 @@ class SignUpContent extends StatelessWidget {
             .clamp(isTablet ? 20.0 : 16.0, isTablet ? 36.0 : 28.0)
             .toDouble();
     // Content minHeight must subtract bottom padding so total scroll height never exceeds viewport
-    final contentMinHeight = (viewportHeight - bottomPadding).clamp(0.0, double.infinity);
+    final contentMinHeight =
+        (viewportHeight - bottomPadding).clamp(0.0, double.infinity);
 
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            const Color(0xffF44336).withOpacity(0.12),
-            const Color(0xffff5722).withOpacity(0.05),
-            Colors.white.withOpacity(0.0),
-          ],
-        ),
-      ),
+      color: Colors.white,
       child: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: contentMinHeight > 0 ? contentMinHeight : viewportHeight,
+              minHeight:
+                  contentMinHeight > 0 ? contentMinHeight : viewportHeight,
             ),
             child: Padding(
               padding: EdgeInsets.only(
@@ -569,367 +569,378 @@ class SignUpContent extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                        // Back Button
-                        Padding(
-                          padding: EdgeInsets.only(
-                            top: isSmallScreen ? 8 : (isTablet ? 20 : 10),
-                            bottom: isSmallScreen ? 8 : (isTablet ? 20 : 10),
-                          ),
-                          child: Row(
-                            children: [
-                              IconButton(
-                                style: IconButton.styleFrom(
-                                  backgroundColor:
-                                      Colors.white.withOpacity(0.1),
-                                ),
-                                icon: Icon(
-                                  Icons.arrow_back,
-                                  color: const Color(0xff212427),
-                                ),
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                              ),
-                            ],
-                          ),
+                      // Back Button
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: isSmallScreen ? 8 : (isTablet ? 20 : 10),
+                          bottom: isSmallScreen ? 8 : (isTablet ? 20 : 10),
                         ),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              style: IconButton.styleFrom(
+                                backgroundColor: Colors.white.withOpacity(0.1),
+                              ),
+                              icon: Icon(
+                                Icons.arrow_back,
+                                color: const Color(0xff212427),
+                              ),
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
 
-                        // Enhanced Sign-Up Illustration - Responsive
-                        Container(
-                          height: logoSize + (isSmallScreen ? 24 : (isTablet ? 52 : 40)),
-                          width: double.infinity,
-                          padding: EdgeInsets.symmetric(
-                            vertical: isSmallScreen ? 8 : (isTablet ? 20 : 10),
+                      // Enhanced Sign-Up Illustration - Responsive
+                      Container(
+                        height: logoSize +
+                            (isSmallScreen ? 24 : (isTablet ? 52 : 40)),
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          vertical: isSmallScreen ? 8 : (isTablet ? 20 : 10),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: logoSize,
+                              height: logoSize,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: const Color(0xffE0E3E7),
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xff212427)
+                                        .withOpacity(0.14),
+                                    blurRadius: 22,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                  BoxShadow(
+                                    color: const Color(0xffF44336)
+                                        .withOpacity(0.08),
+                                    blurRadius: 28,
+                                    offset: const Offset(0, 12),
+                                  ),
+                                ],
+                              ),
+                              child: Padding(
+                                padding: EdgeInsets.all(isSmallScreen ? 8 : 10),
+                                child: Image.asset(
+                                  'assets/media/images/onegate.png',
+                                  width: logoSize,
+                                  height: logoSize,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: isTablet ? 12 : 10),
+                          ],
+                        ),
+                      ),
+
+                      // Enhanced Content Container
+                      Container(
+                        width: double.infinity,
+                        margin: EdgeInsets.symmetric(
+                          horizontal: isTablet ? 0 : 0,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 0,
+                          vertical: 0,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: Colors.grey.withOpacity(0.28),
+                            width: 0.8,
                           ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: logoSize,
-                                height: logoSize,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.15),
+                              spreadRadius: 3,
+                              blurRadius: 30,
+                              offset: const Offset(0, 8),
+                            ),
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.08),
+                              spreadRadius: 1,
+                              blurRadius: 15,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.fromLTRB(
+                                20,
+                                isSmallScreen ? 16 : 20,
+                                20,
+                                isSmallScreen ? 14 : 16,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    const Color(0xffF44336).withOpacity(0.08),
+                                    const Color(0xffff5722).withOpacity(0.03),
+                                  ],
+                                ),
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(24),
+                                ),
+                                border: Border.all(
+                                  color: Colors.grey.withOpacity(0.25),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xffF44336)
+                                          .withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xffF44336)
+                                              .withOpacity(0.1),
+                                          spreadRadius: 1,
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 1),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.rocket_launch_rounded,
+                                      color: Color(0xffF44336),
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          context.tr('Ready to Roll?'),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headlineSmall
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                                color: const Color(0xff212427),
+                                                fontSize: isTablet ? 22 : 20,
+                                              ),
+                                        ),
+                                        SizedBox(height: isTablet ? 6 : 4),
+                                        Text(
+                                          context.tr(
+                                            'Request now & hear from us in 24-48 hours!',
+                                          ),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: const Color(0xff57636C),
+                                                fontSize: isTablet ? 15 : 14,
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            SizedBox(height: isTablet ? 28 : 20),
+
+                            // Form Section - Responsive
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isTablet ? 32 : 20,
+                              ),
+                              child: Form(
+                                key: requestAccessFormKey,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _buildThinBorderField(
+                                      titleColor: Theme.of(context)
+                                          .colorScheme
+                                          .onBackground,
+                                      hintColor: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary,
+                                      focusNode: userNameFocusNode,
+                                      title: context.tr('Your Name'),
+                                      controller: clientNameTextCtrl!,
+                                      hintText: context.tr('Enter your name'),
+                                      textCapitalization:
+                                          TextCapitalization.words,
+                                    ),
+                                    SizedBox(height: isTablet ? 16 : 12),
+                                    _buildThinBorderField(
+                                      titleColor: Theme.of(context)
+                                          .colorScheme
+                                          .onBackground,
+                                      hintColor: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary,
+                                      focusNode: mobileNumberFocusNode,
+                                      title: context.tr('Mobile'),
+                                      controller: mobileNumberTextCtrl!,
+                                      hintText: context.tr('Mobile'),
+                                      keyboardType: TextInputType.number,
+                                      maxLength: 10,
+                                      validator: (value) {
+                                        if (value!.isEmpty) {
+                                          return context
+                                              .tr('Please enter mobile number');
+                                        } else if (value.length < 10) {
+                                          return context.tr(
+                                              'Please enter valid mobile number');
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    SizedBox(height: isTablet ? 16 : 12),
+                                    _buildThinBorderField(
+                                      titleColor: Theme.of(context)
+                                          .colorScheme
+                                          .onBackground,
+                                      hintColor: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary,
+                                      focusNode: societyNameFocusNode,
+                                      title: context.tr('Society Name'),
+                                      controller: clientSocietyTextCtrl!,
+                                      hintText: context.tr('Society Name'),
+                                      textCapitalization:
+                                          TextCapitalization.words,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            SizedBox(height: isTablet ? 40 : 24),
+
+                            // Enhanced Submit Button - Responsive
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isTablet ? 32 : 20,
+                              ),
+                              child: Container(
+                                width: double.infinity,
+                                height: isTablet ? 56 : 50,
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(28),
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Color(0xff212427),
+                                      Color(0xff57636C),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xffF44336)
-                                          .withOpacity(0.2),
-                                      blurRadius: 18,
-                                      offset: const Offset(0, 8),
+                                      color: const Color(0xff212427)
+                                          .withOpacity(0.3),
+                                      spreadRadius: 1,
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
                                     ),
                                   ],
                                 ),
-                                child: Padding(
-                                  padding: EdgeInsets.all(isSmallScreen ? 8 : 10),
-                                  child: Image.asset(
-                                    'assets/media/images/onegate.png',
-                                    width: logoSize,
-                                    height: logoSize,
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: isTablet ? 12 : 10),
-                            ],
-                          ),
-                        ),
-
-                        // Enhanced Content Container
-                        Container(
-                          width: double.infinity,
-                          margin: EdgeInsets.symmetric(
-                            horizontal: isTablet ? 0 : 0,
-                          ),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 0,
-                            vertical: 0,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: Colors.grey.withOpacity(0.28),
-                              width: 0.8,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.15),
-                                spreadRadius: 3,
-                                blurRadius: 30,
-                                offset: const Offset(0, 8),
-                              ),
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.08),
-                                spreadRadius: 1,
-                                blurRadius: 15,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                                Container(
-                                  width: double.infinity,
-                                  padding: EdgeInsets.fromLTRB(
-                                    20,
-                                    isSmallScreen ? 16 : 20,
-                                    20,
-                                    isSmallScreen ? 14 : 16,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        const Color(0xffF44336).withOpacity(0.08),
-                                        const Color(0xffff5722).withOpacity(0.03),
-                                      ],
-                                    ),
-                                    borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(24),
-                                    ),
-                                    border: Border.all(
-                                      color: Colors.grey.withOpacity(0.25),
-                                      width: 0.8,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xffF44336)
-                                              .withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(12),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: const Color(0xffF44336)
-                                                  .withOpacity(0.1),
-                                              spreadRadius: 1,
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 1),
-                                            ),
-                                          ],
-                                        ),
-                                        child: const Icon(
-                                          Icons.rocket_launch_rounded,
-                                          color: Color(0xffF44336),
-                                          size: 24,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              'Ready to Roll?',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .headlineSmall
-                                                  ?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                    color:
-                                                        const Color(0xff212427),
-                                                    fontSize: isTablet ? 22 : 20,
-                                                  ),
-                                            ),
-                                            SizedBox(
-                                                height: isTablet ? 6 : 4),
-                                            Text(
-                                              'Request now & hear from us in 24-48 hours!',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium
-                                                  ?.copyWith(
-                                                    color:
-                                                        const Color(0xff57636C),
-                                                    fontSize: isTablet ? 15 : 14,
-                                                    fontWeight: FontWeight.w400,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                SizedBox(height: isTablet ? 28 : 20),
-
-                                // Form Section - Responsive
-              Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: isTablet ? 32 : 20,
-                                  ),
-                                  child: Form(
-                                  key: requestAccessFormKey,
-                child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildThinBorderField(
-                                        titleColor: Theme.of(context)
-                                            .colorScheme
-                                            .onBackground,
-                                        hintColor: Theme.of(context)
-                                            .colorScheme
-                                            .onPrimary,
-                                        focusNode: userNameFocusNode,
-                      title: 'Your Name',
-                      controller: clientNameTextCtrl!,
-                      hintText: 'Enter your name',
-                                        textCapitalization:
-                                            TextCapitalization.words,
-                                      ),
-                                      SizedBox(height: isTablet ? 16 : 12),
-                    _buildThinBorderField(
-                                        titleColor: Theme.of(context)
-                                            .colorScheme
-                                            .onBackground,
-                                        hintColor: Theme.of(context)
-                                            .colorScheme
-                                            .onPrimary,
-                                        focusNode: mobileNumberFocusNode,
-                      title: 'Mobile',
-                      controller: mobileNumberTextCtrl!,
-                      hintText: 'Mobile',
-                      keyboardType: TextInputType.number,
-                                        maxLength: 10,
-                      validator: (value) {
-                        if (value!.isEmpty) {
-                          return 'Please enter mobile number';
-                        } else if (value.length < 10) {
-                          return 'Please enter valid mobile number';
-                        }
-                        return null;
-                      },
-                    ),
-                                      SizedBox(height: isTablet ? 16 : 12),
-                    _buildThinBorderField(
-                                        titleColor: Theme.of(context)
-                                            .colorScheme
-                                            .onBackground,
-                                        hintColor: Theme.of(context)
-                                            .colorScheme
-                                            .onPrimary,
-                                        focusNode: societyNameFocusNode,
-                      title: 'Society Name',
-                      controller: clientSocietyTextCtrl!,
-                      hintText: 'Society Name',
-                                        textCapitalization:
-                                            TextCapitalization.words,
-                    ),
-                  ],
-                ),
-              ),
-                                ),
-
-                                SizedBox(height: isTablet ? 40 : 24),
-
-                                // Enhanced Submit Button - Responsive
-                                Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: isTablet ? 32 : 20,
-                                  ),
-                                  child: Container(
-                                  width: double.infinity,
-                                  height: isTablet ? 56 : 50,
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        Color(0xff212427),
-                                        Color(0xff57636C),
-                                      ],
-                                    ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: onSubmitPressed,
                                     borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xff212427)
-                                            .withOpacity(0.3),
-                                        spreadRadius: 1,
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: onSubmitPressed,
-                                      borderRadius: BorderRadius.circular(16),
-                                      child: Center(
-                                        child: Text(
-                                          'Request Callback',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: isTablet ? 18 : 16,
-                                            fontWeight: FontWeight.w600,
-                                            letterSpacing: 0.5,
-                                          ),
+                                    child: Center(
+                                      child: Text(
+                                        context.tr('Request Callback'),
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: isTablet ? 18 : 16,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.5,
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
+                              ),
+                            ),
+
+                            SizedBox(height: isTablet ? 24 : 16),
+
+                            // Back to Login Section - Responsive
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  context.tr("Already have an account? "),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        color: const Color(0xff57636C),
+                                        fontSize: isTablet ? 16 : 14,
+                                      ),
                                 ),
-
-                                SizedBox(height: isTablet ? 24 : 16),
-
-                                // Back to Login Section - Responsive
-                                Wrap(
-                                  alignment: WrapAlignment.center,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: [
-                                    Text(
-                                      "Already have an account? ",
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            color: const Color(0xff57636C),
-                                            fontSize: isTablet ? 16 : 14,
-                                          ),
-                                    ),
-                                    Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        onTap: () {
-                                          Navigator.pop(context);
-                                        },
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          child: Text(
-                                            'Login',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  color:
-                                                      const Color(0xffF44336),
-                                                  fontSize: isTablet ? 16 : 14,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                          ),
-                                        ),
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                    },
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      child: Text(
+                                        context.tr('Login'),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: const Color(0xffF44336),
+                                              fontSize: isTablet ? 16 : 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                       ),
                                     ),
-                                  ],
+                                  ),
                                 ),
-                                SizedBox(height: loginSectionBottomSpacing),
-                            ],
-                          ),
+                              ],
+                            ),
+                            SizedBox(height: loginSectionBottomSpacing),
+                          ],
                         ),
+                      ),
 
-                        SizedBox(height: isSmallScreen ? 12 : (isTablet ? 24 : 16)),
+                      SizedBox(
+                          height: isSmallScreen ? 12 : (isTablet ? 24 : 16)),
                     ],
                   ),
                 ),

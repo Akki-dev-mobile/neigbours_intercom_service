@@ -1,18 +1,17 @@
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpose/provider/purposeProvider.dart';
-import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class VisitorSettingsView extends StatefulWidget {
   bool? comingfrom;
@@ -227,7 +226,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Please try again or check your connection',
+                      context.tr('Please try again or check your connection'),
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.9),
                         fontSize: 14,
@@ -274,7 +273,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
             child: MyScrollView(
               hasBackButton: widget.comingfrom == true ? false : true,
               backButtonPressed: _handleBackNavigation,
-              pageTitle: 'Visitor Settings',
+              pageTitle: context.tr('Visitor Settings'),
               pageBody: Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: isTablet ? 24 : 16,
@@ -287,8 +286,10 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                       context: context,
                       isTablet: isTablet,
                       icon: _getSettingIcon('address'),
-                      title: "Visitor's Address",
-                      subtitle: "Set visitor's address as mandatory",
+                      title: context.tr("Visitor's Address"),
+                      subtitle: context.tr(
+                        "Set visitor's address as mandatory",
+                      ),
                       switchValue: visitorProvider.visitorsAddress,
                       onChanged: visitorProvider.updateVisitorsAddress,
                     ),
@@ -299,8 +300,10 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                       context: context,
                       isTablet: isTablet,
                       icon: _getSettingIcon('approval'),
-                      title: "Member's Approval",
-                      subtitle: "Set member's approval as mandatory",
+                      title: context.tr("Member's Approval"),
+                      subtitle: context.tr(
+                        "Set member's approval as mandatory",
+                      ),
                       switchValue: visitorProvider.membersApproval,
                       onChanged: visitorProvider.updateMembersApproval,
                     ),
@@ -311,8 +314,10 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                       context: context,
                       isTablet: isTablet,
                       icon: _getSettingIcon('card'),
-                      title: "Visitor Card Number",
-                      subtitle: "Set visitor card number as mandatory",
+                      title: context.tr('Visitor Card Number'),
+                      subtitle: context.tr(
+                        'Set visitor card number as mandatory',
+                      ),
                       switchValue: visitorProvider.visitorCardNumber,
                       onChanged: visitorProvider.updateVisitorCardNumber,
                     ),
@@ -323,8 +328,10 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                       context: context,
                       isTablet: isTablet,
                       icon: _getSettingIcon('purpose'),
-                      title: "Visitor's Purpose",
-                      subtitle: "Set visitor's purpose as mandatory",
+                      title: context.tr("Visitor's Purpose"),
+                      subtitle: context.tr(
+                        "Set visitor's purpose as mandatory",
+                      ),
                       switchValue: purposeProvider.isPurposeToggleOn,
                       onChanged: (value) async {
                         await purposeProvider.setPurposeToggleState(value);
@@ -563,7 +570,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Visitor Types',
+                        context.tr('Visitor Types'),
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w700,
                               color: const Color(0xff212427),
@@ -573,7 +580,9 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'Select the types of visitors you want to allow',
+                        context.tr(
+                          'Select the types of visitors you want to allow',
+                        ),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: const Color(0xff212427).withOpacity(0.7),
                               fontSize: isTablet ? 14 : 12,
@@ -752,7 +761,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Text(
-                purpose.categoryName,
+                context.trPurposeCategory(purpose.categoryName),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -812,7 +821,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
 
           SizedBox(height: isTablet ? 20 : 16),
           Text(
-            "Loading Visitor Types",
+            context.tr('Loading Visitor Types'),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: const Color(0xff212427),
                   fontSize: isTablet ? 18 : 16,
@@ -821,7 +830,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
           ),
           SizedBox(height: isTablet ? 8 : 6),
           Text(
-            "Please wait while we fetch available visitor categories",
+            context.tr('Please wait while we fetch available visitor categories'),
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[600],
@@ -854,7 +863,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
           ),
           SizedBox(height: isTablet ? 16 : 12),
           Text(
-            "No visitor types available",
+            context.tr('No visitor types available'),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Colors.grey[600],
                   fontSize: isTablet ? 18 : 16,
@@ -918,7 +927,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Saving...',
+                        context.tr('Saving...'),
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.8),
                           fontSize: isTablet ? 18 : 16,
@@ -929,7 +938,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                     ],
                   )
                 : Text(
-                    'Confirm',
+                    context.tr('Confirm'),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: isTablet ? 18 : 16,

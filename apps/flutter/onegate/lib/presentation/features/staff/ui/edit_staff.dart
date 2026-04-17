@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_onegate/data/models/staff_model.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 import 'package:flutter_onegate/utils/myfluttertoast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -318,7 +319,7 @@ class _EditStaffState extends State<EditStaff> {
           actions: <Widget>[
             TextButton(
               child: Text(
-                'Cancel',
+                context.tr('Cancel'),
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               onPressed: () {
@@ -327,7 +328,7 @@ class _EditStaffState extends State<EditStaff> {
             ),
             TextButton(
               child: Text(
-                'Confirm',
+                context.tr('Confirm'),
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               onPressed: () async {
@@ -378,8 +379,8 @@ class _EditStaffState extends State<EditStaff> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Gender',
+          Text(
+            context.tr('Gender'),
             style: TextStyle(
               fontSize: 16,
               color: Colors.black,
@@ -636,7 +637,7 @@ class _EditStaffState extends State<EditStaff> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text("Edit Staff"),
+          title: Text(context.tr('Edit Staff')),
         ),
         body: const Center(
           child: DashboardLoaderIcon(),
@@ -645,7 +646,7 @@ class _EditStaffState extends State<EditStaff> {
     }
 
     return MyScrollView(
-      pageTitle: "Edit Staff",
+      pageTitle: context.tr('Edit Staff'),
       pageBody: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -694,7 +695,7 @@ class _EditStaffState extends State<EditStaff> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Personal Details',
+                  context.tr('Personal Details'),
                   style: Theme.of(context).textTheme.displaySmall,
                 ),
                 const SizedBox(height: 20),
@@ -705,7 +706,7 @@ class _EditStaffState extends State<EditStaff> {
                   textController: _nameController,
                   titleColor: Colors.black,
                   hintColor: Colors.grey,
-                  hintText: "Enter Name",
+                  hintText: context.tr('Enter Name'),
                   validator: (value) {
                     if (value?.isEmpty ?? true) {
                       return 'Please enter a name';
@@ -722,7 +723,7 @@ class _EditStaffState extends State<EditStaff> {
                   "Mobile Number",
                   focusNode: _mobileFocusNode,
                   textController: _phoneController,
-                  hintText: "0123456789",
+                  hintText: context.tr('0123456789'),
                   titleColor: Theme.of(context).colorScheme.onSurface,
                   hintColor: Theme.of(context).colorScheme.onPrimary,
                   prefixIcon: CountryCodePicker(
@@ -744,7 +745,7 @@ class _EditStaffState extends State<EditStaff> {
                         Icons.search,
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
-                      hintText: 'Search',
+                      hintText: context.tr('Search'),
                       hintStyle: TextStyle(
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
@@ -790,7 +791,7 @@ class _EditStaffState extends State<EditStaff> {
                 CustomForm.textField(
                   "Email",
                   textController: _emailController,
-                  hintText: "Enter Email",
+                  hintText: context.tr('Enter Email'),
                   titleColor: Colors.black,
                   hintColor: Colors.grey,
                   keyboardType: TextInputType.emailAddress,
@@ -830,8 +831,8 @@ class _EditStaffState extends State<EditStaff> {
 
                 // Category
                 CustomDropdown(
-                  title: "Category",
-                  hintText: "Select Category",
+                  title: context.tr('Category'),
+                  hintText: context.tr('Select Category'),
                   items: categories.values.toSet().toList(),
                   selectedItem: _selectedCategoryValue.isNotEmpty
                       ? _selectedCategoryValue
@@ -850,8 +851,8 @@ class _EditStaffState extends State<EditStaff> {
 
                 // Qualification
                 CustomDropdown(
-                  title: "Qualification",
-                  hintText: "Select Qualification",
+                  title: context.tr('Qualification'),
+                  hintText: context.tr('Select Qualification'),
                   initialValue: _selectedQualification,
                   items: qualifications,
                   selectedItem: qualifications.contains(_selectedQualification)
@@ -868,8 +869,8 @@ class _EditStaffState extends State<EditStaff> {
 
                 // ID Proof
                 CustomDropdown(
-                  title: "ID Proof",
-                  hintText: "Select ID Proof",
+                  title: context.tr('ID Proof'),
+                  hintText: context.tr('Select ID Proof'),
                   items: idProofs,
                   initialValue: idProofs.contains(_selectedIdProof)
                       ? _selectedIdProof
@@ -894,7 +895,7 @@ class _EditStaffState extends State<EditStaff> {
                   _selectedIdProof,
                   titleColor: Colors.black,
                   hintColor: Colors.grey,
-                  hintText: "Enter ID Number",
+                  hintText: context.tr('Enter ID Number'),
                   textController: _idNumberController,
                   inputFormatters: _getInputFormatters(_selectedIdProof),
                   // Apply input formatters
@@ -948,7 +949,7 @@ class _EditStaffState extends State<EditStaff> {
                   textController: _addressController,
                   titleColor: Colors.black,
                   hintColor: Colors.grey,
-                  hintText: "Enter Address",
+                  hintText: context.tr('Enter Address'),
                   lines: 3,
                   validator: (value) {
                     if (value?.isEmpty ?? true) {
@@ -973,8 +974,8 @@ class _EditStaffState extends State<EditStaff> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text(
-                      "Update Staff",
+                    child: Text(
+                      context.tr('Update Staff'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

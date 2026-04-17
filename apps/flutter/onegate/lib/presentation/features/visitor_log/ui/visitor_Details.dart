@@ -207,7 +207,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                                     ),
                                     child: Text(
                                       widget.visitorLog.visitor?.name ??
-                                          "Guest",
+                                          context.tr('Guest'),
                                       style: Theme.of(context)
                                           .textTheme
                                           .headlineMedium
