@@ -1595,5 +1595,12 @@
   "visitorRecordingTerminated": "अभ्यागत रेकॉर्डिंग समाप्त झाले",
   "Review selected member before continuing": "पुढे जाण्यापूर्वी निवडलेल्या सदस्याचे पुनरावलोकन करा",
   "members selected for confirmation": "पुष्टीसाठी सदस्य निवडले",
-  "Tap confirm to continue with this member": "या सदस्यासह पुढे जाण्यासाठी पुष्टी करा वर टॅप करा"
+  "Tap confirm to continue with this member": "या सदस्यासह पुढे जाण्यासाठी पुष्टी करा वर टॅप करा",
+  "visitorApprovalTimeOption20": "20 सेकंद",
+  "visitorApprovalTimeOption40": "40 सेकंद",
+  "visitorApprovalTimeOption60": "60 सेकंद",
+  "visitorApprovalTimeOption80": "80 सेकंद",
+  "visitorApprovalTimeOption100": "100 सेकंद",
+  "visitorApprovalTimeOption120": "120 सेकंद",
+  "Saving": "सेव्ह करत आहे..."
 }

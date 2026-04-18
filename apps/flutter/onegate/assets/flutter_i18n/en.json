@@ -1595,5 +1595,12 @@
   "visitorRecordingTerminated": "Visitor recording terminated",
   "Review selected member before continuing": "Review selected member before continuing",
   "members selected for confirmation": "members selected for confirmation",
-  "Tap confirm to continue with this member": "Tap confirm to continue with this member"
+  "Tap confirm to continue with this member": "Tap confirm to continue with this member",
+  "visitorApprovalTimeOption20": "20 seconds",
+  "visitorApprovalTimeOption40": "40 seconds",
+  "visitorApprovalTimeOption60": "60 seconds",
+  "visitorApprovalTimeOption80": "80 seconds",
+  "visitorApprovalTimeOption100": "100 seconds",
+  "visitorApprovalTimeOption120": "120 seconds",
+  "Saving": "Saving..."
 }

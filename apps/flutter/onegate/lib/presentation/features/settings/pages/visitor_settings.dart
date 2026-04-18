@@ -927,7 +927,7 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        context.tr('Saving...'),
+                        context.tr('Saving'),
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.8),
                           fontSize: isTablet ? 18 : 16,

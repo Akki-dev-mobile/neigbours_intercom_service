@@ -18,7 +18,6 @@ import 'package:flutter_onegate/presentation/features/settings/pages/camera_prov
 import 'package:flutter_onegate/presentation/features/settings/pages/configure_duty_alarms.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/network_logs_dashboard.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
-import 'package:flutter_onegate/presentation/features/settings/data_observability_settings_screen.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
@@ -1616,25 +1615,6 @@ class _SettingsHomeState extends State<SettingsHome> {
               icon: Icons.apps_rounded,
             ),
             SizedBox(height: isTablet ? 16 : 12),
-            // Data Observability (for Admin, Master, and Gatekeeper)
-            if (kDebugMode)
-              if (role == "admin" || role == "master" || role == "gatekeeper")
-                PrimarySettingsTile(
-                  icon: Ionicons.pulse_outline,
-                  title: context.tr('Data Observability'),
-                  subtitle: context.tr(
-                    'Monitor system health, search & notifications',
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const DataObservabilitySettingsScreen(),
-                      ),
-                    );
-                  },
-                ),
             // Camera Settings (for all roles)
             PrimarySettingsTile(
               icon: Ionicons.camera_outline,
@@ -1883,7 +1863,7 @@ class _SettingsHomeState extends State<SettingsHome> {
                                             await logout(context);
                                           },
                                           child: Text(
-                                            'Logout',
+                                            context.tr('Logout'),
                                             style: TextStyle(
                                               color: Colors.white,
                                               fontWeight: FontWeight.w600,
@@ -2218,10 +2198,10 @@ List<MultiSelectItem<String>> _languageItems = [
   MultiSelectItem<String>('Hindi', 'Hindi'),
 ];
 List<MultiSelectItem<String>> _visitorApprovalTimeItems = [
-  MultiSelectItem<String>('20 seconds', '20'),
-  MultiSelectItem<String>('40 seconds', '40'),
-  MultiSelectItem<String>('60 seconds', '60'),
-  MultiSelectItem<String>('80 seconds', '80'),
-  MultiSelectItem<String>('100 seconds', '100'),
-  MultiSelectItem<String>('120 seconds', '120'),
+  MultiSelectItem<String>('visitorApprovalTimeOption20', '20'),
+  MultiSelectItem<String>('visitorApprovalTimeOption40', '40'),
+  MultiSelectItem<String>('visitorApprovalTimeOption60', '60'),
+  MultiSelectItem<String>('visitorApprovalTimeOption80', '80'),
+  MultiSelectItem<String>('visitorApprovalTimeOption100', '100'),
+  MultiSelectItem<String>('visitorApprovalTimeOption120', '120'),
 ];
