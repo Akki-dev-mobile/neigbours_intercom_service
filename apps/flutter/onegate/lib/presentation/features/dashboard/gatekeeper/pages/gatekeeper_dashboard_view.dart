@@ -692,7 +692,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                   context,
                   isTablet,
                   width: shortcutWidth,
-                  icon: Icons.badge_rounded,
+                  icon: Icons.badge_outlined,
                   title: context.l10n.cards,
                   onTap: () {
                     Navigator.push(

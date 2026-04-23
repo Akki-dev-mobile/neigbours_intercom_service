@@ -265,11 +265,11 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                         _buildBorderedSection(
                           context,
                           isTablet,
-                          title: context.tr('Contact Information'),
+                          title: context.tr('visitorDetailsContactInformation'),
                           children: [
                             _buildInfoTile(
                               icon: Icons.phone,
-                              title: context.tr('Phone Number'),
+                              title: context.tr('visitorDetailsPhoneNumber'),
                               subtitle: widget.visitorLog.visitor?.mobile ??
                                   context.tr('N/A'),
                               iconColor:
@@ -284,11 +284,11 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                         _buildBorderedSection(
                           context,
                           isTablet,
-                          title: context.tr('Visit Details'),
+                          title: context.tr('visitorDetailsVisitDetails'),
                           children: [
                             _buildInfoTile(
                               icon: Icons.apartment,
-                              title: context.tr('Visiting Unit'),
+                              title: context.tr('visitorDetailsVisitingUnit'),
                               subtitle: widget.unitList == "0001"
                                   ? context.tr('Society Office')
                                   : (widget.unitList != null &&
@@ -326,7 +326,8 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          "Card Number",
+                                          context.tr(
+                                              'visitorDetailsCardNumber'),
                                           style: Theme.of(context)
                                               .textTheme
                                               .titleSmall
@@ -380,12 +381,13 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 const Icon(
-                                                  Icons.credit_card,
+                                                  Icons.badge_outlined,
                                                   size: 18,
                                                 ),
                                                 const SizedBox(width: 8),
                                                 Text(
-                                                  'Assign Card',
+                                                  context.tr(
+                                                      'visitorDetailsAssignCard'),
                                                   style: Theme.of(context)
                                                       .textTheme
                                                       .bodyMedium!
@@ -406,8 +408,9 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                                         _getCurrentCardNumber()!.isNotEmpty &&
                                         _visitorCardEntryEnabled
                                     ? _buildInfoTile(
-                                        icon: Icons.badge,
-                                        title: context.tr('Card Number'),
+                                        icon: Icons.badge_outlined,
+                                        title:
+                                            context.tr('visitorDetailsCardNumber'),
                                         subtitle:
                                             _getCurrentCardNumber() ?? 'N/A',
                                         iconColor: Colors
@@ -422,7 +425,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                         _buildBorderedSection(
                           context,
                           isTablet,
-                          title: context.tr('Visitor Timeline'),
+                          title: context.tr('visitorDetailsTimeline'),
                           children: _buildTimeline(),
                         ),
                       ],
@@ -461,7 +464,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              context.tr('Pre-approved'),
+                              context.tr('visitorDetailsPreApproved'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -578,7 +581,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
     // Add Check-In
     if (widget.visitorLog.visitor_check_in != null) {
       addTimelineItem(
-        label: context.tr('checkIn'),
+        label: context.tr('visitorDetailsCheckIn'),
         description: widget.visitorLog.visitor_check_in!,
         icon: Icons.login,
         color: Colors.green,
@@ -589,7 +592,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
     // Add Approved By
     String approvedByText;
     if (widget.visitorLog.initiated_from == "invited_guest") {
-      approvedByText = context.tr('guestPreApprovedByMember');
+      approvedByText = context.tr('visitorDetailsGuestPreApprovedByMember');
     } else if (widget.unitList == "0001") {
       approvedByText = context.tr('preApprovedStaff');
     } else {
@@ -598,7 +601,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
     }
 
     addTimelineItem(
-      label: context.tr('approvedBy'),
+      label: context.tr('visitorDetailsApprovedBy'),
       description: toBeginningOfSentenceCase(approvedByText),
       icon: Icons.person,
       color: Colors.brown,
@@ -823,7 +826,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen> {
   Widget _buildCallButton() {
     return ElevatedButton.icon(
       icon: const Icon(Icons.call, size: 16, color: Colors.white),
-      label: Text(context.tr('Call'),
+      label: Text(context.tr('visitorDetailsCall'),
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
       onPressed: () => _makePhoneCall(widget.visitorLog.visitor?.mobile ?? ""),
       style: ElevatedButton.styleFrom(

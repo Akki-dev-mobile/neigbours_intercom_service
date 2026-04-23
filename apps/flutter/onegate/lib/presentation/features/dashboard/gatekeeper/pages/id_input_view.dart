@@ -2517,56 +2517,60 @@ class _ImageGridBottomSheetState extends State<ImageGridBottomSheet> {
           ),
 
           // Enhanced Action Button
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                top: BorderSide(
-                  color: Colors.grey.withOpacity(0.2),
-                  width: 1,
-                ),
-              ),
-            ),
+          SafeArea(
+            top: false,
             child: Container(
-              width: double.infinity,
-              height: 56,
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xff212427), Color(0xff57636C)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(
+                    color: Colors.grey.withOpacity(0.2),
+                    width: 1,
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
+              child: Container(
+                width: double.infinity,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xff212427), Color(0xff57636C)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
                   borderRadius: BorderRadius.circular(16),
-                  onTap:
-                      selectPurposeLoading ? null : purposeSelectionBottomSheet,
-                  child: Center(
-                    child: Text(
-                      selectPurposeLoading
-                          ? context.tr('Processing')
-                          : context.tr('Select Purpose'),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: selectPurposeLoading
+                        ? null
+                        : purposeSelectionBottomSheet,
+                    child: Center(
+                      child: Text(
+                        selectPurposeLoading
+                            ? context.tr('Processing')
+                            : context.tr('Select Purpose'),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                   ),

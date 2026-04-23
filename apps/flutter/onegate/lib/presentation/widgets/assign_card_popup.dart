@@ -235,7 +235,7 @@ class _AssignCardPopupState extends State<AssignCardPopup> {
                   ],
                 ),
                 child: const Icon(
-                  Icons.credit_card,
+                  Icons.badge_outlined,
                   color: Colors.white,
                   size: 40,
                 ),
@@ -314,7 +314,7 @@ class _AssignCardPopupState extends State<AssignCardPopup> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
-                        Icons.credit_card,
+                        Icons.badge_outlined,
                         color: Color(0xFFF44336),
                         size: 20,
                       ),

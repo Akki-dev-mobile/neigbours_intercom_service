@@ -2183,28 +2183,33 @@ class RemoteDataSource {
     bool? isStaff,
   }) async {
     try {
-      final String url = ApiUrls.verifyGuestPasscode;
       final prefs = await SharedPreferences.getInstance();
       final selectedGateName =
           prefs.getString('selected_gate') ?? 'Default Gate';
       final resolvedCompanyId = await gateStorage.getSocietyId();
+      final int resolvedCompanyIdInt = int.parse(resolvedCompanyId ?? "412");
+
+      // Updated verify payload per latest backend contract:
+      // POST /member/pass/verify with company_id + in_gate + passcode
+      // Intentionally do not call /visitor/passcode/verify.
+      final String verifyUrl = ApiUrls.verifyMemberPass;
+
       final Map<String, dynamic> requestData = {
-        "company_id": int.parse(resolvedCompanyId ?? "412"),
+        "company_id": resolvedCompanyIdInt,
         "in_gate": selectedGateName,
         "passcode": passcode,
       };
+      final accessToken = await _getAccessToken();
 
       log("🔍 Sending request to verify passcode: $requestData");
 
       final response = await Dio().post(
-        url,
+        verifyUrl,
         data: requestData,
         options: Options(
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': await _getAccessToken() != null
-                ? 'Bearer ${await _getAccessToken()}'
-                : '',
+            'Authorization': accessToken != null ? 'Bearer $accessToken' : '',
           },
         ),
       );
@@ -2215,14 +2220,6 @@ class RemoteDataSource {
       } else {
         _handleErrorResponse();
 
-        // log("❌ Failed to verify passcode. Status Code: ${response.statusCode}, Response: ${response.data}");
-        // Fluttertoast.showToast(
-        //   msg: "Not a valid passcode!",
-        //   toastLength: Toast.LENGTH_SHORT,
-        //   gravity: ToastGravity.BOTTOM,
-        //   backgroundColor: Colors.red,
-        //   textColor: Colors.white,
-        // );
         throw Exception('Failed to verify passcode');
       }
     } catch (e, stackTrace) {
@@ -2230,14 +2227,6 @@ class RemoteDataSource {
 
       log("❌ Error verifying passcode: $e");
       log("StackTrace: $stackTrace");
-
-      // Fluttertoast.showToast(
-      //   msg: "Not a valid passcode!",
-      //   toastLength: Toast.LENGTH_SHORT,
-      //   gravity: ToastGravity.BOTTOM,
-      //   backgroundColor: Colors.red,
-      //   textColor: Colors.white,
-      // );
 
       throw Exception('Failed to verify passcode');
     }
@@ -2252,14 +2241,18 @@ class RemoteDataSource {
   }) async {
     try {
       const String url = 'https://gateapi.cubeone.in/api/member/pass/verify';
-      final prefs = await SharedPreferences.getInstance();
-      final selectedGateName = prefs.getString('selected_gate') ?? gateName;
       final resolvedCompanyId = await gateStorage.getSocietyId();
+      final accessToken = await _getAccessToken();
+      final int? companyIdFromArgs = int.tryParse(companyId);
+      final int resolvedCompanyIdInt =
+          int.tryParse(resolvedCompanyId ?? '') ?? companyIdFromArgs ?? 0;
+
+      if (resolvedCompanyIdInt <= 0) {
+        throw Exception('Invalid company_id for member pass verification');
+      }
 
       final Map<String, dynamic> requestData = {
-        "company_id": int.parse(resolvedCompanyId ?? companyId),
-        "in_gate": selectedGateName,
-        "passcode": null,
+        "company_id": resolvedCompanyIdInt,
         "mobile": mobile,
         if (passId != null) "pass_id": passId,
       };
@@ -2272,9 +2265,7 @@ class RemoteDataSource {
         options: Options(
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': await _getAccessToken() != null
-                ? 'Bearer ${await _getAccessToken()}'
-                : '',
+            'Authorization': accessToken != null ? 'Bearer $accessToken' : '',
           },
         ),
       );

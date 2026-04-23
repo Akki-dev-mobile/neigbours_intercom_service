@@ -215,8 +215,9 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         log("🔍 Raw QR Code data: $code");
 
         String? mobile;
-        int? id;
+        int? passId;
         String? name;
+        String? city;
         String? passcode;
         bool? isStaff;
 
@@ -225,9 +226,16 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           scannedJson = jsonDecode(code);
           log("✅ Parsed JSON from QR: $scannedJson");
 
-          mobile = scannedJson['mobile']?.toString();
-          id = scannedJson['id'];
+          mobile = (scannedJson['mobile'] ?? scannedJson['mobile_number'])
+              ?.toString();
+          final parsedPassId = scannedJson['id'] ?? scannedJson['pass_id'];
+          if (parsedPassId is int) {
+            passId = parsedPassId;
+          } else if (parsedPassId != null) {
+            passId = int.tryParse(parsedPassId.toString());
+          }
           name = scannedJson['name'];
+          city = scannedJson['city']?.toString();
           isStaff = scannedJson['is_staff'];
 
           passcode = scannedJson['passcode']?.toString();
@@ -236,29 +244,65 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           passcode = code;
         }
 
-        final result = await remoteDataSource.verifyPasscode(
-          companyId: widget.companyId ?? "",
-          passcode: passcode,
-        );
+        Map<String, dynamic> result;
+        final bool hasPasscode = passcode?.trim().isNotEmpty == true;
+        final bool hasPassIdAndMobile =
+            passId != null && (mobile?.trim().isNotEmpty == true);
+        final bool isTrustedCitizenPassQr = hasPassIdAndMobile && !hasPasscode;
+
+        // Keep guest invitation QR behavior intact by always favoring
+        // passcode verification when an explicit passcode is present.
+        if (!isTrustedCitizenPassQr && (passcode?.isEmpty ?? true)) {
+          passcode = code;
+        }
+
+        if (isTrustedCitizenPassQr) {
+          result = await remoteDataSource.verifyMemberPass(
+            mobile: mobile!,
+            companyId: widget.companyId ?? "",
+            gateName: "",
+            passId: passId,
+          );
+        } else {
+          result = await remoteDataSource.verifyPasscode(
+            companyId: widget.companyId ?? "",
+            passcode: passcode,
+          );
+        }
+
+        final List<dynamic> responseData =
+            (result['data'] as List<dynamic>?) ?? <dynamic>[];
+        final Map<String, dynamic>? visitorData =
+            _extractVisitorDataFromVerification(responseData);
+        if (visitorData == null) {
+          throw Exception("Invalid verification data received.");
+        }
+        final String? resolvedComingFrom =
+            visitorData['coming_from']?.toString().trim().isNotEmpty == true
+                ? visitorData['coming_from']?.toString()
+                : (visitorData['city']?.toString().trim().isNotEmpty == true
+                    ? visitorData['city']?.toString()
+                    : city);
+
+        isStaff = isStaff ?? (visitorData['is_staff'] == true);
         if (isStaff == true) {
           // Play success sound for staff
           _playSuccessSound();
 
-          final staffData = result['data'][0];
           Visitor visitor = Visitor(
-            visitor_image: staffData['visitor_image'],
-            name: staffData['name'],
-            mobile: staffData['mobile'],
+            visitor_image: visitorData['visitor_image'],
+            name: visitorData['name'],
+            mobile: visitorData['mobile'],
             // visitor_image: visitorData['qr_code'],
           );
 
           // Extract visitor_count from API response, checking both visitor_count and guest_count fields
           final int staffVisitorCount =
-              staffData['visitor_count'] ?? staffData['guest_count'] ?? 1;
+              visitorData['visitor_count'] ?? visitorData['guest_count'] ?? 1;
 
           VisitorLog visitorLog = VisitorLog(
             visitor: visitor,
-            visitor_coming_from: staffData['coming_from'],
+            visitor_coming_from: resolvedComingFrom,
             visitor_purpose_Category_name: "Staff",
             visitor_purpose_category_id: 1,
             visitor_count: staffVisitorCount,
@@ -288,8 +332,6 @@ class _QRScannerScreenState extends State<QRScannerScreen>
           // Play success sound
           _playSuccessSound();
 
-          final visitorData = result['data'][0];
-
           Visitor visitor = Visitor(
             id: visitorData['visitor_id'],
             name: visitorData['name'],
@@ -303,7 +345,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
           VisitorLog visitorLog = VisitorLog(
             visitor: visitor,
-            visitor_coming_from: visitorData['coming_from'],
+            visitor_coming_from: resolvedComingFrom,
             visitor_purpose_Category_name: visitorData['category'],
             visitor_purpose_category_id: 1,
             visitor_count: visitorCount,
@@ -335,12 +377,12 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             MaterialPageRoute(
               builder: (context) => VisitorsInEntry(
                 selfcheckinFlow: widget.self_checkin,
-                comingfrom: visitorData['coming_from'],
+                comingfrom: resolvedComingFrom,
                 searchedVisitor: visitor,
                 selectedValue: completePurpose ??
                     PurposeCategory1(categoryId: 1, categoryName: "Guest"),
-                mobile: mobile ?? visitor.mobile!,
-                guestname: name ?? visitor.name ?? "",
+                mobile: visitor.mobile ?? mobile ?? "",
+                guestname: visitor.name ?? name ?? "",
                 isFromQRScan: true, // Flag to indicate this is from QR scan
                 isGatekeeperQRPasscodeEntry:
                     widget.isGatekeeperQRPasscodeEntry ??
@@ -365,6 +407,30 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         });
       }
     });
+  }
+
+  Map<String, dynamic>? _extractVisitorDataFromVerification(
+      List<dynamic> responseData) {
+    if (responseData.isEmpty) return null;
+
+    // For member/pass/verify the visitor payload is expected as the last item.
+    final dynamic lastItem = responseData.last;
+    if (lastItem is Map<String, dynamic> && lastItem['visitor_id'] != null) {
+      return lastItem;
+    }
+
+    // Fallback for passcode verification and legacy payload variants.
+    for (final item in responseData) {
+      if (item is Map<String, dynamic> && item['visitor_id'] != null) {
+        return item;
+      }
+    }
+
+    final dynamic firstItem = responseData.first;
+    if (firstItem is Map<String, dynamic>) {
+      return firstItem;
+    }
+    return null;
   }
 
   File? _imageFile;

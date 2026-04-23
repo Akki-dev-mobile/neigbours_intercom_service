@@ -2778,8 +2778,15 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                 return const SizedBox.shrink();
               }
 
+              final safeBottomInset = MediaQuery.of(context).viewPadding.bottom;
+
               return Container(
-                margin: EdgeInsets.all(isTablet ? 20 : 16),
+                margin: EdgeInsets.fromLTRB(
+                  isTablet ? 20 : 16,
+                  isTablet ? 20 : 16,
+                  isTablet ? 20 : 16,
+                  (isTablet ? 20 : 16) + safeBottomInset,
+                ),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,

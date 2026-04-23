@@ -1743,5 +1743,17 @@
   "You cannot send messages to this group because you are no longer a member.": "आप इस समूह में संदेश नहीं भेज सकते क्योंकि आप अब सदस्य नहीं हैं।",
   "Residents": "निवासी",
   "Committee": "समिति",
-  "Groups": "समूह"
+  "Groups": "समूह",
+  "visitorDetailsContactInformation": "संपर्क जानकारी",
+  "visitorDetailsPhoneNumber": "फोन नंबर",
+  "visitorDetailsVisitDetails": "विजिट विवरण",
+  "visitorDetailsVisitingUnit": "विजिटिंग यूनिट",
+  "visitorDetailsCardNumber": "कार्ड नंबर",
+  "visitorDetailsAssignCard": "कार्ड असाइन करें",
+  "visitorDetailsTimeline": "विजिटर समयरेखा",
+  "visitorDetailsPreApproved": "पूर्व-स्वीकृत",
+  "visitorDetailsCheckIn": "चेक इन",
+  "visitorDetailsApprovedBy": "द्वारा अनुमोदित",
+  "visitorDetailsGuestPreApprovedByMember": "अतिथि को सदस्य द्वारा पूर्व-स्वीकृत किया गया",
+  "visitorDetailsCall": "कॉल करें"
 }

@@ -89,7 +89,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkin => 'Check In';
 
   @override
-  String get checkout => 'Check Out';
+  String get checkout => 'Checkout';
 
   @override
   String get approval => 'Approval';
@@ -1373,7 +1373,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkIn => 'Check In';
 
   @override
-  String get checkOut => 'Check Out';
+  String get checkOut => 'Checkout';
 
   @override
   String get approvedBy => 'Approved By';

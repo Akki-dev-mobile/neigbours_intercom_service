@@ -68,7 +68,11 @@ class ApiUrls {
   /// Request gate access / callback (Ready to Roll form)
   static String get requestGateAccess => '$gateBaseUrl/visitor/requestAccess';
 
-  static String get verifyGuestPasscode => '$gateBaseUrl/member/pass/verify';
+  /// Alphanumeric guest invitation passcode verification endpoint.
+  static String get verifyGuestPasscode => '$gateBaseUrl/visitor/passcode/verify';
+
+  /// Trusted citizen/member pass verification endpoint (pass_id + mobile).
+  static String get verifyMemberPass => '$gateBaseUrl/member/pass/verify';
 
   /// Forgot password: request reset link (sends email via backend/Keycloak).
   static String get forgotPassword => '$gateBaseUrl/auth/forgot-password';

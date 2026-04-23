@@ -245,7 +245,7 @@ abstract class AppLocalizations {
   /// Check out action
   ///
   /// In en, this message translates to:
-  /// **'Check Out'**
+  /// **'Checkout'**
   String get checkout;
 
   /// Approval status
@@ -2711,7 +2711,7 @@ abstract class AppLocalizations {
   /// Label for check out time
   ///
   /// In en, this message translates to:
-  /// **'Check Out'**
+  /// **'Checkout'**
   String get checkOut;
 
   /// Label for approved by field

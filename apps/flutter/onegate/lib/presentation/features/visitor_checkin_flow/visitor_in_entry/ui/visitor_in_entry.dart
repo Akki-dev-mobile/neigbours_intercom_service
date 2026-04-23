@@ -792,7 +792,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
               break;
             case 'card number required':
               focusNode = _visitorNumberFocusNode;
-              icon = Icons.credit_card_outlined;
+              icon = Icons.badge_outlined;
               break;
             case 'cab number required':
               focusNode = _carNumberFocusNode;
@@ -1072,7 +1072,7 @@ class _VisitorsInEntryState extends State<VisitorsInEntry> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
-                            Icons.badge,
+                            Icons.badge_outlined,
                             color: Color(0xffF44336),
                             size: 24,
                           ),

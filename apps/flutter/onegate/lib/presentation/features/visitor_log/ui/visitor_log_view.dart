@@ -2759,7 +2759,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
       case 'visitor out':
         return Icons.logout_rounded;
       case 'cards':
-        return Icons.badge_rounded;
+        return Icons.badge_outlined;
       default:
         return Icons.filter_list_rounded;
     }
@@ -4000,7 +4000,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      Icons.credit_card,
+                                      Icons.badge_outlined,
                                       size: 16,
                                       color: Colors.white,
                                     ),

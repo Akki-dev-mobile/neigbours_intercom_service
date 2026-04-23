@@ -1032,7 +1032,7 @@ class _ModernSuccessDialogState extends State<_ModernSuccessDialog>
             context: context,
             isTablet: isTablet,
             index: 1,
-            icon: Icons.credit_card,
+            icon: Icons.badge_outlined,
             title: context.tr('Access Card'),
             description: context.tr('assignAccessCardMessage'),
             color: const Color(0xFF2196F3),

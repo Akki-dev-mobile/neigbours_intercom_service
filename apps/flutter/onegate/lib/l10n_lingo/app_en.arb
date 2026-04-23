@@ -124,7 +124,7 @@
     "description": "Check in action"
   },
   
-  "checkout": "Check Out",
+  "checkout": "Checkout",
   "@checkout": {
     "description": "Check out action"
   },
@@ -2481,7 +2481,7 @@
     "description": "Label for check in time"
   },
 
-  "checkOut": "Check Out",
+  "checkOut": "Checkout",
   "@checkOut": {
     "description": "Label for check out time"
   },

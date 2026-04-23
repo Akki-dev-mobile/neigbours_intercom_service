@@ -191,46 +191,49 @@ class _SelfEntryViewState extends State<SelfEntryView>
                               : _buildPurposeGrid(setState, context),
                         ),
                         // Next Button
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 20),
-                          child: CustomLargeBtn(
-                            text: isProcessing
-                                ? context.tr('Processing')
-                                : context.tr('Next'),
-                            disabled: isProcessing,
-                            onPressed: isProcessing
-                                ? null
-                                : () async {
-                                    if (isProcessing) return;
-                                    setState(() => isProcessing = true);
-                                    final societyId =
-                                        await gateStorage.getSocietyId();
-                                    final int? companyId =
-                                        int.tryParse(societyId.toString());
+                        SafeArea(
+                          top: false,
+                          minimum: const EdgeInsets.only(bottom: 10),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 20),
+                            child: CustomLargeBtn(
+                              text: isProcessing
+                                  ? context.tr('Processing')
+                                  : context.tr('Next'),
+                              disabled: isProcessing,
+                              onPressed: isProcessing
+                                  ? null
+                                  : () async {
+                                      if (isProcessing) return;
+                                      setState(() => isProcessing = true);
+                                      final societyId =
+                                          await gateStorage.getSocietyId();
+                                      final int? companyId =
+                                          int.tryParse(societyId.toString());
 
-                                    // String? visiImage = await RemoteDataSource()
-                                    //     .uploadFile(File(image!.path),
-                                    //         _mobileController.text, companyId ?? 0);
+                                      // String? visiImage = await RemoteDataSource()
+                                      //     .uploadFile(File(image!.path),
+                                      //         _mobileController.text, companyId ?? 0);
 
-                                    // log(comingfrom);
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => VisitorsInEntry(
-                                          selfcheckinFlow: true,
-                                          comingfrom: comingfrom,
-                                          searchedVisitor: visitor,
-                                          selectedValue: globalSelectedPurposes[
-                                              selectedImageIndex ?? 0],
-                                          mobile: _mobileController.text,
+                                      // log(comingfrom);
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => VisitorsInEntry(
+                                            selfcheckinFlow: true,
+                                            comingfrom: comingfrom,
+                                            searchedVisitor: visitor,
+                                            selectedValue: globalSelectedPurposes[
+                                                selectedImageIndex ?? 0],
+                                            mobile: _mobileController.text,
+                                          ),
                                         ),
-                                      ),
-                                    );
-                                    setState(() => isProcessing = false);
-                                  },
+                                      );
+                                      setState(() => isProcessing = false);
+                                    },
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 10),
                       ],
                     ),
                   ),
@@ -595,54 +598,57 @@ class _SelfEntryViewState extends State<SelfEntryView>
                             : _buildPurposeGrid(setState, context),
                       ),
                       // Next Button
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        child: CustomLargeBtn(
-                          text: isProcessing
-                              ? context.tr('Processing')
-                              : context.tr('Next'),
-                          disabled: isProcessing,
-                          onPressed: isProcessing
-                              ? null
-                              : () async {
-                                  if (isProcessing) return;
-                                  setState(() => isProcessing = true);
-                                  final societyId =
-                                      await gateStorage.getSocietyId();
-                                  final int? companyId =
-                                      int.tryParse(societyId.toString());
+                      SafeArea(
+                        top: false,
+                        minimum: const EdgeInsets.only(bottom: 10),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20),
+                          child: CustomLargeBtn(
+                            text: isProcessing
+                                ? context.tr('Processing')
+                                : context.tr('Next'),
+                            disabled: isProcessing,
+                            onPressed: isProcessing
+                                ? null
+                                : () async {
+                                    if (isProcessing) return;
+                                    setState(() => isProcessing = true);
+                                    final societyId =
+                                        await gateStorage.getSocietyId();
+                                    final int? companyId =
+                                        int.tryParse(societyId.toString());
 
-                                  String? visiImage = await RemoteDataSource()
-                                      .uploadFile(
-                                          fileimage ?? File(image!.path),
-                                          _mobileController.text,
-                                          companyId ?? 0);
+                                    String? visiImage = await RemoteDataSource()
+                                        .uploadFile(
+                                            fileimage ?? File(image!.path),
+                                            _mobileController.text,
+                                            companyId ?? 0);
 
-                                  Visitor visitor = Visitor(
-                                    id: int.parse(visitorId ?? "0"),
-                                    name: "",
-                                    mobile: _mobileController.text,
-                                    visitor_image: visiImage,
-                                  );
-                                  // log(comingfrom);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => VisitorsInEntry(
-                                        selfcheckinFlow: true,
-                                        comingfrom: comingfrom,
-                                        searchedVisitor: visitor,
-                                        selectedValue: globalSelectedPurposes[
-                                            selectedImageIndex ?? 0],
-                                        mobile: _mobileController.text,
+                                    Visitor visitor = Visitor(
+                                      id: int.parse(visitorId ?? "0"),
+                                      name: "",
+                                      mobile: _mobileController.text,
+                                      visitor_image: visiImage,
+                                    );
+                                    // log(comingfrom);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => VisitorsInEntry(
+                                          selfcheckinFlow: true,
+                                          comingfrom: comingfrom,
+                                          searchedVisitor: visitor,
+                                          selectedValue: globalSelectedPurposes[
+                                              selectedImageIndex ?? 0],
+                                          mobile: _mobileController.text,
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                  setState(() => isProcessing = false);
-                                },
+                                    );
+                                    setState(() => isProcessing = false);
+                                  },
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 10),
                     ],
                   ),
                 ),

@@ -3,7 +3,6 @@
 import 'dart:developer';
 
 import 'package:common_widgets/common_widgets.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kiosk_mode/flutter_kiosk_mode.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
@@ -16,7 +15,6 @@ import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_sel
 import 'package:flutter_onegate/presentation/features/settings/pages/app_permissions.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/camera_provider.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/configure_duty_alarms.dart';
-import 'package:flutter_onegate/presentation/features/settings/data_observability_settings_screen.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/network_logs_dashboard.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_settings.dart';
 import 'package:flutter_onegate/presentation/features/staff/ui/staff_home_view.dart';
@@ -1616,25 +1614,6 @@ class _SettingsHomeState extends State<SettingsHome> {
               icon: Icons.apps_rounded,
             ),
             SizedBox(height: isTablet ? 16 : 12),
-            // Data Observability (for Admin, Master, and Gatekeeper)
-            if (kDebugMode)
-              if (role == "admin" || role == "master" || role == "gatekeeper")
-                PrimarySettingsTile(
-                  icon: Ionicons.pulse_outline,
-                  title: context.tr('Data Observability'),
-                  subtitle: context.tr(
-                    'Monitor system health, search & notifications',
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const DataObservabilitySettingsScreen(),
-                      ),
-                    );
-                  },
-                ),
             // Camera Settings (for all roles)
             PrimarySettingsTile(
               icon: Ionicons.camera_outline,
@@ -2113,6 +2092,13 @@ class PrimarySettingsTile extends StatelessWidget {
           color: Colors.grey.shade300,
           width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
