@@ -420,6 +420,10 @@ class _ParcelListState extends State<ParcelList> {
 
   String _capitalizeFirstLetter(String text) {
     if (text.isEmpty) return "";
+    final normalized = text.trim().toLowerCase();
+    if (normalized == 'one app' || normalized == 'oneapp') {
+      return 'one app';
+    }
     return text
         .split(' ') // Split into words
         .map((word) => word.isNotEmpty
@@ -952,8 +956,7 @@ class _ParcelListState extends State<ParcelList> {
                   if (state is ParcelLoading) {
                     return DashboardLoader(
                       title: context.tr('Loading Parcels'),
-                      subtitle: context
-                          .tr('Please wait while we fetch parcel data...'),
+                      subtitle: context.tr('parcelLoaderFetchDataSubtitle'),
                     );
                   } else if (state is ParcelLoaded) {
                     return Stack(

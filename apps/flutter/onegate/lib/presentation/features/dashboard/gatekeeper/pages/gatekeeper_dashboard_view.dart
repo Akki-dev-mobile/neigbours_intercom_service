@@ -127,7 +127,11 @@ class _GateDashboardViewState extends State<GateDashboardView>
       log("Keycloak session ended.");
 
       final prefs = await SharedPreferences.getInstance();
+      final preservedLanguage = prefs.getString('selected_language');
       await prefs.clear();
+      if (preservedLanguage != null && preservedLanguage.isNotEmpty) {
+        await prefs.setString('selected_language', preservedLanguage);
+      }
       log("Preferences cleared.");
 
       Navigator.pushAndRemoveUntil(
@@ -552,7 +556,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                 context,
                 isTablet,
                 width: shortcutWidth,
-                icon: Icons.inventory_2_rounded,
+                icon: Symbols.box,
                 title: context.l10n.parcel,
                 hasNotification: hasPendingParcels,
                 onTap: () async {

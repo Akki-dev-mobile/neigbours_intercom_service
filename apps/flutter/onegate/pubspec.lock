@@ -1382,7 +1382,7 @@ packages:
   intercom_module:
     dependency: "direct main"
     description:
-      path: "../../../packages/intercom_module-old"
+      path: "../../../packages/intercom_module"
       relative: true
     source: path
     version: "0.0.1"

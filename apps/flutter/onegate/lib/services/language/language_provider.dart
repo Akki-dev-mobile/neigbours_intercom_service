@@ -9,8 +9,33 @@ class LanguageProvider extends ChangeNotifier {
   static const String _languageKey = 'selected_language';
   static const String _defaultLanguage = 'en';
 
-  Locale _currentLocale = const Locale(_defaultLanguage);
+  LanguageProvider({Locale? initialLocale})
+      : _currentLocale = initialLocale ?? const Locale(_defaultLanguage);
+
+  Locale _currentLocale;
   int _rebuildKey = 0;
+
+  static bool isSupportedLanguageCode(String languageCode) {
+    return const ['en', 'hi', 'mr'].contains(languageCode);
+  }
+
+  static Locale localeFromCode(String? languageCode) {
+    if (languageCode != null && isSupportedLanguageCode(languageCode)) {
+      return Locale(languageCode);
+    }
+    return const Locale(_defaultLanguage);
+  }
+
+  static Future<Locale> loadInitialLocale() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedLanguage = prefs.getString(_languageKey);
+      return localeFromCode(savedLanguage);
+    } catch (e) {
+      log('❌ Error loading initial locale: $e');
+      return const Locale(_defaultLanguage);
+    }
+  }
 
   /// Get the current locale
   Locale get currentLocale => _currentLocale;
@@ -45,9 +70,12 @@ class LanguageProvider extends ChangeNotifier {
   /// Initialize the language provider and load saved language preference
   Future<void> initialize() async {
     try {
+      final previousCode = _currentLocale.languageCode;
       await _loadLanguagePreference();
-      _rebuildKey++;
-      notifyListeners();
+      if (previousCode != _currentLocale.languageCode) {
+        _rebuildKey++;
+        notifyListeners();
+      }
       log('🌐 LanguageProvider initialized with locale: ${_currentLocale.languageCode}');
     } catch (e) {
       log('❌ Error initializing LanguageProvider: $e');
@@ -98,7 +126,7 @@ class LanguageProvider extends ChangeNotifier {
       final savedLanguage = prefs.getString(_languageKey) ?? _defaultLanguage;
 
       // Validate saved language
-      if (_isValidLanguageCode(savedLanguage)) {
+      if (isSupportedLanguageCode(savedLanguage)) {
         _currentLocale = Locale(savedLanguage);
         log('🌐 Loaded saved language: $savedLanguage');
       } else {
@@ -125,7 +153,7 @@ class LanguageProvider extends ChangeNotifier {
 
   /// Check if the language code is valid
   bool _isValidLanguageCode(String languageCode) {
-    return ['en', 'hi', 'mr'].contains(languageCode);
+    return isSupportedLanguageCode(languageCode);
   }
 
   /// Get the display name for a language code

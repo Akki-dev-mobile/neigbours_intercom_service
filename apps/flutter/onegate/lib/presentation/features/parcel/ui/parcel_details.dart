@@ -369,6 +369,10 @@ class _ParcelDetailsState extends State<ParcelDetails> {
 
   String _capitalizeFirstLetter(String text) {
     if (text.isEmpty) return "";
+    final normalized = text.trim().toLowerCase();
+    if (normalized == 'one app' || normalized == 'oneapp') {
+      return 'one app';
+    }
     return text
         .split(' ')
         .map((word) => word.isNotEmpty

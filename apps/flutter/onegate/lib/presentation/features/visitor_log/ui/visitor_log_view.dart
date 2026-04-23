@@ -378,19 +378,17 @@ class _VisitorLogViewState extends State<VisitorLogView>
     final raw = id.trim().toLowerCase();
     // Avoid inherited-widget access in initState by using widget inputs only.
     // logList is passed from dashboard in the active locale.
-    final localizedInOut = widget.logList.isNotEmpty
-        ? widget.logList[0].trim().toLowerCase()
-        : '';
-    final localizedVisitorIn = widget.logList.length > 1
-        ? widget.logList[1].trim().toLowerCase()
-        : '';
-    final localizedVisitorOut = widget.logList.length > 2
-        ? widget.logList[2].trim().toLowerCase()
-        : '';
+    final localizedInOut =
+        widget.logList.isNotEmpty ? widget.logList[0].trim().toLowerCase() : '';
+    final localizedVisitorIn =
+        widget.logList.length > 1 ? widget.logList[1].trim().toLowerCase() : '';
+    final localizedVisitorOut =
+        widget.logList.length > 2 ? widget.logList[2].trim().toLowerCase() : '';
 
     if (raw == 'in out book' || raw == localizedInOut) return 'In Out Book';
     if (raw == 'visitor in' || raw == localizedVisitorIn) return 'Visitor In';
-    if (raw == 'visitor out' || raw == localizedVisitorOut) return 'Visitor Out';
+    if (raw == 'visitor out' || raw == localizedVisitorOut)
+      return 'Visitor Out';
     if (raw == 'cards') return 'Cards';
     return id;
   }
@@ -838,7 +836,8 @@ class _VisitorLogViewState extends State<VisitorLogView>
                                       ),
                                     );
 
-                                    switch (_resolvedVisitorLogType(widget.id)) {
+                                    switch (
+                                        _resolvedVisitorLogType(widget.id)) {
                                       case "Visitor In":
                                         visitorLogBloc.add(FetchCheckInLogEvent(
                                           DateTime.now(),
@@ -3436,8 +3435,7 @@ class _VisitorLogViewState extends State<VisitorLogView>
   /// Enhanced empty state for no visitors today
   Widget _buildEnhancedEmptyVisitorsState() {
     final isTablet = MediaQuery.of(context).size.width > 600;
-    final descriptionText =
-        _resolvedVisitorLogType(widget.id) == 'Visitor Out'
+    final descriptionText = _resolvedVisitorLogType(widget.id) == 'Visitor Out'
         ? context.tr('visitorEmptyExitsQuietMessage')
         : context.tr('visitorEmptyEntriesQuietMessage');
     return Align(
@@ -4122,7 +4120,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                                       Expanded(
                                                         child: Text(
                                                           context.tr(
-                                                            'This action will permanently record the checkout time and cannot be undone.',
+                                                            'checkoutPermanentInfo',
                                                           ),
                                                           style: Theme.of(
                                                                   context)
@@ -4174,7 +4172,7 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                                             Navigator.pop(
                                                                 context),
                                                         child: Text(
-                                                          'Cancel',
+                                                          context.tr('cancel'),
                                                           style: TextStyle(
                                                             color: const Color(
                                                                 0xff57636C),
@@ -4298,7 +4296,8 @@ class _VisitorLogItemState extends State<VisitorLogItem> {
                                                                     ),
                                                                   )
                                                                 : Text(
-                                                                    'Confirm',
+                                                                    context.tr(
+                                                                        'confirm'),
                                                                     style:
                                                                         TextStyle(
                                                                       color: Colors

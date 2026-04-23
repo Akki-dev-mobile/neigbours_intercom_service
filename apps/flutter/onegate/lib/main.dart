@@ -318,6 +318,9 @@ void main() async {
   );
   await ThemeManager.initializeWithAppId(appId);
 
+  // Load persisted language before first frame to avoid startup fallback to English.
+  final initialLocale = await LanguageProvider.loadInitialLocale();
+
   runApp(
     ScreenUtilInit(
       fontSizeResolver: (num size, ScreenUtil _) => 0.5,
@@ -329,7 +332,8 @@ void main() async {
         providers: [
           // Language provider for multilingual support
           ChangeNotifierProvider<LanguageProvider>(
-            create: (_) => LanguageProvider()..initialize(),
+            create: (_) =>
+                LanguageProvider(initialLocale: initialLocale)..initialize(),
           ),
           ChangeNotifierProvider<PurposeProvider>(
             create: (_) => PurposeProvider(),
@@ -410,6 +414,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   // Session management
   UserSessionManager? _sessionManager;
   StreamSubscription<UserSessionState>? _sessionStateSubscription;
+  String? _lastSyncedFlutterI18nLanguageCode;
+  bool _isFlutterI18nSyncScheduled = false;
 
   @override
   void initState() {
@@ -804,6 +810,22 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
     // Use NetworkLogOverlay in debug mode, otherwise just return the app
     final languageProvider = context.watch<LanguageProvider>();
+    final targetLanguageCode = languageProvider.currentLanguageCode;
+    if (_lastSyncedFlutterI18nLanguageCode != targetLanguageCode &&
+        !_isFlutterI18nSyncScheduled) {
+      _isFlutterI18nSyncScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          if (!mounted) return;
+          await FlutterI18n.refresh(context, languageProvider.currentLocale);
+          _lastSyncedFlutterI18nLanguageCode = targetLanguageCode;
+        } catch (e) {
+          log('❌ Failed to sync FlutterI18n locale: $e');
+        } finally {
+          _isFlutterI18nSyncScheduled = false;
+        }
+      });
+    }
     Widget app = MaterialApp(
       key: ValueKey(
           'app_${languageProvider.currentLanguageCode}_${languageProvider.rebuildKey}'),
@@ -824,14 +846,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         Locale('mr'), // Marathi
       ],
       locale: languageProvider.currentLocale,
-      localeResolutionCallback: (locale, supportedLocales) {
-        // Check if the current device locale is supported
+      localeResolutionCallback: (deviceLocale, supportedLocales) {
+        // Always prioritize persisted app language.
         for (var supportedLocale in supportedLocales) {
-          if (locale?.languageCode == supportedLocale.languageCode) {
+          if (languageProvider.currentLocale.languageCode ==
+              supportedLocale.languageCode) {
             return supportedLocale;
           }
         }
-        // If the device locale is not supported, return English as default
+        // Fallback to device locale if app locale isn't in supported list.
+        for (var supportedLocale in supportedLocales) {
+          if (deviceLocale?.languageCode == supportedLocale.languageCode) {
+            return supportedLocale;
+          }
+        }
+        // Final fallback.
         return const Locale('en');
       },
       theme: ThemeManager.lightTheme.copyWith(

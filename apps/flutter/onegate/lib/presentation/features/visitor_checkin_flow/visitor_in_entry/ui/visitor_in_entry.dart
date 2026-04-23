@@ -3061,8 +3061,9 @@ class ListeningDialogState extends State<ListeningDialog>
     with SingleTickerProviderStateMixin {
   late stt.SpeechToText _speechToText;
   bool _isListening = false;
-  String recognizedText = 'Listening...';
+  String recognizedText = '';
   bool _hasRecognizedText = false;
+  bool _hasLocalizedInitialText = false;
 
   late AnimationController _controller;
   late Animation<double> _animation;
@@ -3087,7 +3088,7 @@ class ListeningDialogState extends State<ListeningDialog>
   Future<void> _startListening() async {
     setState(() {
       _hasRecognizedText = false;
-      recognizedText = 'Listening...';
+      recognizedText = context.tr('Listening...');
     });
 
     bool available = await _speechToText.initialize(
@@ -3099,7 +3100,9 @@ class ListeningDialogState extends State<ListeningDialog>
       onError: (error) {
         print('Error: $error');
         setState(() {
-          recognizedText = 'Error occurred. Please try again.';
+          recognizedText = context.tr(
+            'Error occurred. Please try again.',
+          );
           _isListening = false;
         });
       },
@@ -3122,7 +3125,7 @@ class ListeningDialogState extends State<ListeningDialog>
       );
     } else {
       setState(() {
-        recognizedText = 'Speech recognition not available';
+        recognizedText = context.tr('Speech recognition not available');
         _isListening = false;
       });
     }
@@ -3136,6 +3139,15 @@ class ListeningDialogState extends State<ListeningDialog>
   void _stopListening() {
     _speechToText.stop();
     setState(() => _isListening = false);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasLocalizedInitialText) {
+      _hasLocalizedInitialText = true;
+      recognizedText = context.tr('Listening...');
+    }
   }
 
   @override
@@ -3193,9 +3205,9 @@ class ListeningDialogState extends State<ListeningDialog>
               const SizedBox(height: 20),
 
               // Title
-              const Text(
-                'Voice Recognition',
-                style: TextStyle(
+              Text(
+                context.tr('Voice Recognition'),
+                style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: Color(0xff212427),
@@ -3226,7 +3238,9 @@ class ListeningDialogState extends State<ListeningDialog>
                   ],
                 ),
                 child: Text(
-                  recognizedText,
+                  recognizedText.isEmpty
+                      ? context.tr('Listening...')
+                      : recognizedText,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,

@@ -18,6 +18,7 @@ class EnhancedLogoutService {
 
   final FlutterAppAuth _appAuth = const FlutterAppAuth();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  static const String _languagePreferenceKey = 'selected_language';
   final TokenNotificationService _notificationService =
       TokenNotificationService();
 
@@ -155,10 +156,14 @@ class EnhancedLogoutService {
       log("🧹 Clearing SharedPreferences...");
 
       final prefs = await SharedPreferences.getInstance();
+      final preservedLanguage = prefs.getString(_languagePreferenceKey);
 
       if (clearAll) {
         // Clear all preferences
         await prefs.clear();
+        if (preservedLanguage != null && preservedLanguage.isNotEmpty) {
+          await prefs.setString(_languagePreferenceKey, preservedLanguage);
+        }
         log("✅ All SharedPreferences cleared");
       } else {
         // Clear only authentication-related preferences
@@ -286,7 +291,11 @@ class EnhancedLogoutService {
 
       // Clear all SharedPreferences
       final prefs = await SharedPreferences.getInstance();
+      final preservedLanguage = prefs.getString(_languagePreferenceKey);
       await prefs.clear();
+      if (preservedLanguage != null && preservedLanguage.isNotEmpty) {
+        await prefs.setString(_languagePreferenceKey, preservedLanguage);
+      }
 
       log("✅ Quick logout completed");
       return true;

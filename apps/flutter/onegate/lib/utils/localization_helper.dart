@@ -148,7 +148,7 @@ class LocalizationHelper {
         'This is an example preview. Tap Enter details to proceed.',
     'this is an example preview. tap enter details to proceed.':
         'This is an example preview. Tap Enter details to proceed.',
-    'not a oneapp user': 'Not a OneApp user',
+    'not a oneapp user': 'Not a one app user',
     'invite': 'Invite',
     'no parcel found today': 'No parcels found today.',
     'no parcels found today.': 'No parcels found today.',

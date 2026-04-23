@@ -190,7 +190,7 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                             widget.visitorLog.purposeSubCategoryName != null &&
                                     widget.visitorLog.purposeSubCategoryName!
                                         .isNotEmpty
-                                ? _capitalizeFirstLetter(
+                                ? _formatPurposeLabel(
                                     widget.visitorLog.purposeSubCategoryName!)
                                 : widget.visitorLog.purposeCategoryName !=
                                             null &&
@@ -411,8 +411,8 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              "Pre-approved",
-                              style: TextStyle(
+                              context.tr('Pre-approved'),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 11,
@@ -583,6 +583,23 @@ class _VisitorDetailsScreenState extends State<VisitorDetailsScreen2> {
             ? word[0].toUpperCase() + word.substring(1).toLowerCase()
             : word)
         .join(' '); // Join words back together
+  }
+
+  String _formatPurposeLabel(String text) {
+    if (text.trim().isEmpty) return '';
+    final normalized = text.trim().toUpperCase();
+    const purposeCategories = {
+      'GUEST',
+      'DELIVERY',
+      'STAFF',
+      'MEMBER STAFF',
+      'VENDOR',
+      'CABS',
+    };
+    if (purposeCategories.contains(normalized)) {
+      return context.trPurposeCategory(text);
+    }
+    return _capitalizeFirstLetter(text);
   }
 
   String _getFormattedAllowStatus(BuildContext context, String allowStatus) {

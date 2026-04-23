@@ -64,7 +64,7 @@ dependencies:
   onegate_guard_intercom:
     path: ../../../packages/onegate_guard_intercom
   intercom_module:
-    path: ../../../packages/intercom_module-old
+    path: ../../../packages/intercom_module
   random_avatar: ^0.0.8
   animations: ^2.0.8
   flutter_animate: ^4.2.0+1
