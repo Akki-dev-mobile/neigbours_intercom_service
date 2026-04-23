@@ -7,7 +7,8 @@ import 'package:onegate_feature_core/onegate_feature_core.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class JitsiCallManager {
-  JitsiCallManager._(this._host, this._dio, this._jitsiServerUrl, this._callBaseUrl);
+  JitsiCallManager._(
+      this._host, this._dio, this._jitsiServerUrl, this._callBaseUrl);
 
   final FeatureHost _host;
   final Dio _dio;
@@ -26,7 +27,7 @@ class JitsiCallManager {
 
     final callBase = (callRaw is String && callRaw.trim().isNotEmpty)
         ? Uri.parse(callRaw.trim())
-        : Uri.parse('http://13.201.27.102:7071/api/v1');
+        : Uri.parse('https://apigw.cubeone.in/chatapp/api/v1');
 
     final dio = Dio(
       BaseOptions(
@@ -47,18 +48,21 @@ class JitsiCallManager {
     await _ensurePermissions(video: true);
 
     final token = (await _host.authSession()).accessToken;
-    final xUserId = _resolveXUserIdFromToken(token) ?? _host.currentContext().userId;
+    final xUserId =
+        _resolveXUserIdFromToken(token) ?? _host.currentContext().userId;
 
     final payload = <String, Object?>{
       if (toUserPhone != null && toUserPhone.trim().isNotEmpty)
         'to_user_phone': _normalizePhone(toUserPhone),
-      if (toUserId != null && toUserId.trim().isNotEmpty) 'to_user_id': toUserId,
+      if (toUserId != null && toUserId.trim().isNotEmpty)
+        'to_user_id': toUserId,
       'call_type': 'video',
       if (toUserAvatarUrl != null && toUserAvatarUrl.trim().isNotEmpty)
         'image_avtar_url': toUserAvatarUrl.trim(),
     };
 
-    final uri = _callBaseUrl.replace(path: _joinPath(_callBaseUrl.path, '/calls'));
+    final uri =
+        _callBaseUrl.replace(path: _joinPath(_callBaseUrl.path, '/calls'));
     final res = await _dio.postUri(
       uri,
       data: payload,
@@ -159,4 +163,3 @@ String _joinPath(String basePath, String nextPath) {
   if (base.isEmpty) return next;
   return '$base$next';
 }
-

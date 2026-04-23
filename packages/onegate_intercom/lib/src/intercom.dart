@@ -8,7 +8,7 @@ import 'ui/intercom_home_screen.dart';
 ///
 /// Required flags in [FeatureConfig.flags] (strings):
 /// - `onegate.societyBaseUrl` (example: https://societybackend.cubeone.in/api)
-/// - `onegate.chatApiBaseUrl` (example: http://13.201.27.102:7071/api/v1)
+/// - `onegate.chatApiBaseUrl` (example: https://apigw.cubeone.in/chatapp/api/v1)
 /// - `onegate.callApiBaseUrl` (call service base url)
 /// - `onegate.jitsiServerUrl` (example: https://collab.cubeone.in)
 Future<void> openIntercom(
@@ -19,7 +19,8 @@ Future<void> openIntercom(
 }) async {
   final effectiveCtx = ctx ?? host.currentContext();
   final baseConfig = host.featureConfig();
-  final enabled = baseConfig.guardIntercomEnabled || baseConfig.neighboursEnabled;
+  final enabled =
+      baseConfig.guardIntercomEnabled || baseConfig.neighboursEnabled;
 
   if (!enabled) {
     host.log('Intercom disabled by FeatureConfig');
@@ -45,4 +46,3 @@ Future<void> openIntercom(
     ),
   );
 }
-

@@ -14,7 +14,7 @@ class IntercomApiClient {
     final raw = flags['onegate.chatApiBaseUrl'];
     final base = (raw is String && raw.trim().isNotEmpty)
         ? Uri.parse(raw.trim())
-        : Uri.parse('http://13.201.27.102:7071/api/v1');
+        : Uri.parse('https://apigw.cubeone.in/chatapp/api/v1');
 
     final dio = Dio(
       BaseOptions(
@@ -84,4 +84,3 @@ String? _resolveXUserIdFromToken(String token) {
     return null;
   }
 }
-

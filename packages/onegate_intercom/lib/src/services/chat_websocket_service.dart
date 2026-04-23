@@ -21,7 +21,7 @@ class ChatWebSocketService {
     final raw = flags['onegate.chatApiBaseUrl'];
     final restBase = (raw is String && raw.trim().isNotEmpty)
         ? Uri.parse(raw.trim())
-        : Uri.parse('http://13.201.27.102:7071/api/v1');
+        : Uri.parse('https://apigw.cubeone.in/chatapp/api/v1');
 
     final ws = _toWsBase(restBase);
     return ChatWebSocketService._(host, ws);
@@ -51,7 +51,8 @@ class ChatWebSocketService {
           }
         } catch (_) {}
       },
-      onError: (e, st) => _host.log('WebSocket error', error: e, stackTrace: st),
+      onError: (e, st) =>
+          _host.log('WebSocket error', error: e, stackTrace: st),
       onDone: () => _host.log('WebSocket closed'),
       cancelOnError: false,
     );
@@ -84,4 +85,3 @@ Uri _toWsBase(Uri restBase) {
       : '${restBase.path}/ws';
   return restBase.replace(scheme: scheme, path: path, queryParameters: {});
 }
-
