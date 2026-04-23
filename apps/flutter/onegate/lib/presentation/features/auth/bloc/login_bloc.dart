@@ -139,7 +139,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
           emit(LoginInitial());
           if (gates.length == 1) {
-            _preferenceUtils.setSelectedGate(gates[0]);
+            await _preferenceUtils.setSelectedGate(gates[0]);
             _preferenceUtils.setIsLogin(true);
             await GateStorage().saveRole('admin');
             emit(NavigateToAdminDashboardState());
@@ -153,6 +153,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             emit(GateSelectionState(gates));
           }
         } else {
+          final hasSelectedGate = await _ensureSelectedGate(gates);
+          if (!hasSelectedGate) {
+            emit(GateSelectionState(gates));
+            return;
+          }
           _preferenceUtils.setIsLogin(true);
           await GateStorage().saveRole('admin');
           emit(NavigateToAdminDashboardState());
@@ -172,7 +177,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           }
           await _preferenceUtils.saveGatesList(gateList);
           if (gateList.length == 1) {
-            _preferenceUtils.setSelectedGate(gateList[0]);
+            await _preferenceUtils.setSelectedGate(gateList[0]);
             _preferenceUtils.setIsLogin(true);
             await GateStorage().saveRole('gatekeeper');
             emit(NavigateToGatekeeperDashboardState());
@@ -180,6 +185,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           }
           emit(GateSelectionState(gateList));
         } else {
+          final hasSelectedGate = await _ensureSelectedGate(existingGates);
+          if (!hasSelectedGate) {
+            emit(GateSelectionState(existingGates));
+            return;
+          }
           _preferenceUtils.setIsLogin(true);
           await GateStorage().saveRole('gatekeeper');
           emit(NavigateToGatekeeperDashboardState());
@@ -194,7 +204,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   FutureOr<void> gateSelectionButtonPressedEvent(
       GateSelectionButtonPressedEvent event, Emitter<LoginState> emit) async {
-    _preferenceUtils.setSelectedGate(event.gate);
+    await _preferenceUtils.setSelectedGate(event.gate);
     if (_preferenceUtils.getIsAdmin()!) {
       await GateStorage().saveRole('admin');
       emit(NavigateToAdminDashboardState());
@@ -210,6 +220,32 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
                 _tr("Gate Mismatch: Reach out to admin for gate correction.")));
       }
     }
+  }
+
+  Future<bool> _ensureSelectedGate(List<Gate> gates) async {
+    final selectedGate = _preferenceUtils.getSelectedGate();
+    if (selectedGate != null) return true;
+
+    final storedGate = await GateStorage().getSelectedGate();
+    final storedGateName = storedGate['name']?.trim();
+    if (storedGateName != null &&
+        storedGateName.isNotEmpty &&
+        storedGateName.toLowerCase() != 'null') {
+      for (final gate in gates) {
+        if ((gate.gateName ?? '').trim().toLowerCase() ==
+            storedGateName.toLowerCase()) {
+          await _preferenceUtils.setSelectedGate(gate);
+          return true;
+        }
+      }
+    }
+
+    if (gates.length == 1) {
+      await _preferenceUtils.setSelectedGate(gates.first);
+      return true;
+    }
+
+    return false;
   }
 
   Future<bool> _userMatchesSelectedGate() async {

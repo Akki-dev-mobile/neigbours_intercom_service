@@ -97,25 +97,125 @@ class _GateDashboardViewState extends State<GateDashboardView>
 
   Future<void> getSelectedGate() async {
     final prefs = await SharedPreferences.getInstance();
+    String? gateName = _normalizeGateName(prefs.getString('selected_gate'));
+
+    if (gateName == null || gateName.isEmpty) {
+      final storedGate = await GateStorage().getSelectedGate();
+      gateName = _normalizeGateName(storedGate['name']);
+    }
+
+    if (gateName == null || gateName.isEmpty) {
+      gateName = await _resolveGateNameFromCacheOrApi(prefs);
+    }
+
+    if (!mounted) return;
     setState(() {
-      selectedGateName = _normalizeGateName(prefs.getString('selected_gate'));
+      selectedGateName = gateName;
     });
   }
 
+  Future<String?> _resolveGateNameFromCacheOrApi(
+      SharedPreferences prefs) async {
+    final selectedGateId = prefs.getString('selected_gate_id')?.trim();
+
+    // 1) Try cached gates list from preferences first (fast, no network).
+    final cachedGatesJson = prefs.getString('gates_list');
+    if (cachedGatesJson != null && cachedGatesJson.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(cachedGatesJson);
+        if (decoded is List) {
+          final cachedName =
+              _extractGateNameFromGateList(decoded, selectedGateId);
+          if (cachedName != null && cachedName.isNotEmpty) {
+            await prefs.setString('selected_gate', cachedName);
+            return cachedName;
+          }
+        }
+      } catch (e) {
+        log('⚠️ Failed to parse cached gates_list: $e');
+      }
+    }
+
+    // 2) Fallback to API fetch only when local values are missing.
+    try {
+      final gates = await _remoteDataSource.fetchGates();
+      final apiName = _extractGateNameFromGateList(gates, selectedGateId);
+      if (apiName != null && apiName.isNotEmpty) {
+        await prefs.setString('selected_gate', apiName);
+        return apiName;
+      }
+    } catch (e) {
+      log('⚠️ Failed to resolve gate name from API: $e');
+    }
+
+    return null;
+  }
+
+  String? _extractGateNameFromGateList(
+    List<dynamic> gates,
+    String? selectedGateId,
+  ) {
+    if (gates.isEmpty) return null;
+
+    Map<String, dynamic>? selectedGate;
+    if (selectedGateId != null && selectedGateId.isNotEmpty) {
+      for (final gate in gates) {
+        if (gate is Map) {
+          final gateMap = Map<String, dynamic>.from(gate);
+          final gateId = (gateMap['gate_id'] ?? gateMap['id'])?.toString();
+          if (gateId == selectedGateId) {
+            selectedGate = gateMap;
+            break;
+          }
+        }
+      }
+    }
+
+    // If no exact id match, use first available gate as safe fallback.
+    selectedGate ??= gates.first is Map
+        ? Map<String, dynamic>.from(gates.first as Map)
+        : null;
+    if (selectedGate == null) return null;
+
+    final rawName = selectedGate['gate_name'] ??
+        selectedGate['gateName'] ??
+        selectedGate['name'];
+    return _normalizeGateName(rawName?.toString());
+  }
+
   String? _normalizeGateName(String? raw) {
-    if (raw == null || raw.trim().isEmpty) return raw;
+    if (raw == null || raw.trim().isEmpty) return null;
     final trimmed = raw.trim();
+    if (trimmed.toLowerCase() == 'null') return null;
     if (trimmed.startsWith('{')) {
       try {
         final decoded = jsonDecode(trimmed);
-        if (decoded is Map && decoded['gate_name'] != null) {
-          return decoded['gate_name'].toString();
+        if (decoded is Map) {
+          final gateName =
+              decoded['gate_name'] ?? decoded['gateName'] ?? decoded['name'];
+          if (gateName != null && gateName.toString().trim().isNotEmpty) {
+            return gateName.toString().trim();
+          }
         }
       } catch (_) {
         // If parsing fails, fall back to raw string.
       }
     }
-    return raw;
+    return trimmed;
+  }
+
+  String _displayGateName(String? gateName) {
+    final normalized = _normalizeGateName(gateName);
+    if (normalized == null || normalized.isEmpty) {
+      return 'Gate';
+    }
+    return normalized
+        .split(' ')
+        .where((word) => word.isNotEmpty)
+        .map(
+          (word) => word[0].toUpperCase() + word.substring(1).toLowerCase(),
+        )
+        .join(' ');
   }
 
   Future<void> logout(BuildContext context) async {
@@ -405,14 +505,7 @@ class _GateDashboardViewState extends State<GateDashboardView>
                 letterSpacing: 0.3,
               ),
               child: Text(
-                selectedGateName
-                    .toString()
-                    .split(' ')
-                    .map((word) => word.isNotEmpty
-                        ? word[0].toUpperCase() +
-                            word.substring(1).toLowerCase()
-                        : '')
-                    .join(' '),
+                _displayGateName(selectedGateName),
               ),
             ),
           ),

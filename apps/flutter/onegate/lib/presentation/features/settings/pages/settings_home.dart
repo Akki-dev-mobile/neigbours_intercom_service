@@ -362,7 +362,12 @@ class _SettingsHomeState extends State<SettingsHome> {
 
                   // Confirm Button Section
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      16 + MediaQuery.of(context).viewPadding.bottom,
+                    ),
                     child: Row(
                       children: [
                         Expanded(
@@ -749,7 +754,12 @@ class _SettingsHomeState extends State<SettingsHome> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      16 + MediaQuery.of(context).viewPadding.bottom,
+                    ),
                     child: Row(
                       children: [
                         Expanded(
@@ -1142,7 +1152,12 @@ class _SettingsHomeState extends State<SettingsHome> {
 
                   // Confirm Button Section
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      16 + MediaQuery.of(context).viewPadding.bottom,
+                    ),
                     child: Row(
                       children: [
                         Expanded(
