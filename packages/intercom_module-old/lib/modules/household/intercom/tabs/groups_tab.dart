@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -646,7 +647,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           debugPrint(
               '🔄 [GroupsTab] Group update detected - immediately calling API (bypassing cache and throttling)');
           debugPrint(
-              '📡 [GroupsTab] API: GET http://13.201.27.102:7071/api/v1/rooms/all?company_id=$currentCompanyId&chat_type=group&is_member=true');
+              '📡 [GroupsTab] API: GET https://apigw.cubeone.in/chatapp/api/v1/rooms/all?company_id=$currentCompanyId&chat_type=group&is_member=true');
           GroupsTab._groupUpdated = false; // Reset flag
 
           // CRITICAL FIX: Don't clear cache - optimistic updates might already be in _groups
@@ -693,7 +694,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         debugPrint(
             '🔄 [GroupsTab] Tab tapped - calling API to fetch fresh groups (will respect throttling)');
         debugPrint(
-            '📡 [GroupsTab] API: GET http://13.201.27.102:7071/api/v1/rooms/all?company_id=$currentCompanyId&chat_type=group&is_member=true');
+            '📡 [GroupsTab] API: GET https://apigw.cubeone.in/chatapp/api/v1/rooms/all?company_id=$currentCompanyId&chat_type=group&is_member=true');
 
         // Small delay to ensure widget is fully built (cancellable with generation check)
         final scheduledGeneration = _activationGeneration;
@@ -1620,12 +1621,12 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 
       // Call API to get rooms where user is a member
       // This endpoint returns ONLY rooms where the current user is already a member
-      // API Endpoint: GET http://13.201.27.102:7071/api/v1/rooms/all?company_id={companyId}&chat_type=group&is_member=true
+      // API Endpoint: GET https://apigw.cubeone.in/chatapp/api/v1/rooms/all?company_id={companyId}&chat_type=group&is_member=true
       // This matches the curl command format provided
       debugPrint(
           '📡 [GroupsTab] Calling API to fetch group rooms for company_id: $companyId');
       debugPrint(
-          '🌐 [GroupsTab] API URL: http://13.201.27.102:7071/api/v1/rooms/all?company_id=$companyId&chat_type=group&is_member=true');
+          '🌐 [GroupsTab] API URL: https://apigw.cubeone.in/chatapp/api/v1/rooms/all?company_id=$companyId&chat_type=group&is_member=true');
       debugPrint(
           '🔑 [GroupsTab] Using Authorization: Bearer <token> (handled by RoomService)');
       final response = await _roomService.getAllRooms(
@@ -1824,7 +1825,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           EnhancedToast.error(
             context,
             title: 'Error',
-            message: 'Unable to load groups',
+            message: FlutterI18n.translate(context, 'Unable to load groups'),
           );
         } else if (statusCode == 429) {
           // Rate limit error - too many requests
@@ -2737,8 +2738,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
               ),
               const SizedBox(height: 24),
               // Title
-              const Text(
-                'Delete Group',
+              Text(
+                FlutterI18n.translate(context, 'Delete Group'),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -2749,7 +2750,10 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
               const SizedBox(height: 12),
               // Message
               Text(
-                'This group will be permanently deleted. This action cannot be undone.',
+                FlutterI18n.translate(
+                  context,
+                  'This group will be permanently deleted. This action cannot be undone.',
+                ),
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey.shade700,
@@ -2776,8 +2780,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Cancel',
+                        child: Text(
+                          FlutterI18n.translate(context, 'Cancel'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -2820,8 +2824,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Delete',
+                        child: Text(
+                          FlutterI18n.translate(context, 'Delete'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -3055,7 +3059,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                'Chat Groups',
+                                FlutterI18n.translate(context, 'Chat Groups'),
                                 style: GoogleFonts.montserrat(
                                   color: Colors.white,
                                   fontSize: 16,
@@ -3084,8 +3088,14 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                     const SizedBox(width: 6),
                                     Text(
                                       _isWebSocketConnected
-                                          ? 'Online'
-                                          : 'Offline',
+                                          ? FlutterI18n.translate(
+                                              context,
+                                              'Online',
+                                            )
+                                          : FlutterI18n.translate(
+                                              context,
+                                              'Offline',
+                                            ),
                                       style: GoogleFonts.montserrat(
                                         color: Colors.white,
                                         fontSize: 12,
@@ -3130,7 +3140,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
-                                    'Total: ${_groups.length}',
+                                    '${FlutterI18n.translate(context, 'Total:') ?? 'Total:'} ${_groups.length}',
                                     style: GoogleFonts.montserrat(
                                       color: const Color(0xffc62828),
                                       fontSize: 12,
@@ -3158,7 +3168,10 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                       size: 18,
                                     ),
                                     label: Text(
-                                      'Create Group',
+                                      FlutterI18n.translate(
+                                        context,
+                                        'Create Group',
+                                      ),
                                       style: GoogleFonts.montserrat(
                                         color: Colors.white,
                                         fontSize: 12,
@@ -3213,7 +3226,10 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                     child: TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
-                        hintText: 'Search groups...',
+                        hintText: FlutterI18n.translate(
+                          context,
+                          'Search groups...',
+                        ),
                         hintStyle: TextStyle(
                           color: Colors.grey.shade400,
                           fontSize: 14,
@@ -3326,8 +3342,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'No groups found',
+                    Text(
+                      FlutterI18n.translate(context, 'No groups found'),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -3337,7 +3353,10 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Create a new group to start chatting',
+                      FlutterI18n.translate(
+                        context,
+                        'Create a new group to start chatting',
+                      ),
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 14,
@@ -3369,8 +3388,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                           color: Colors.white,
                           size: 20,
                         ),
-                        label: const Text(
-                          'Create Group',
+                        label: Text(
+                          FlutterI18n.translate(context, 'Create Group'),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -3438,8 +3457,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Unable to load groups',
+                    Text(
+                      FlutterI18n.translate(context, 'Unable to load groups'),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -3465,7 +3484,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                     ElevatedButton.icon(
                       onPressed: _loadGroups,
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
+                      label: Text(FlutterI18n.translate(context, 'Retry')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -3499,12 +3518,15 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     const Color unreadAccent = AppColors.success;
 
     // Check if there are any messages in the group
-    final hasMessages =
-        lastMessageText.isNotEmpty && lastMessageText != 'No messages yet';
+    const noMessagesPlaceholder = 'No messages yet';
+    final localizedNoMessages =
+        FlutterI18n.translate(context, noMessagesPlaceholder);
+    final hasMessages = lastMessageText.isNotEmpty &&
+        lastMessageText != noMessagesPlaceholder;
 
     if (!hasMessages) {
       // No messages in the group: show "No messages yet"
-      displayMessage = 'No messages yet';
+      displayMessage = localizedNoMessages;
       showIndicator = false;
       showBadge = false;
     } else if (isOpened) {
@@ -3517,18 +3539,19 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       // Group hasn't been opened: show count/new messages with badge and indicator
       if (group.unreadCount > 1) {
         // More than 1 unread message: show count with "new messages"
-        displayMessage = '${group.unreadCount} new messages';
+        displayMessage =
+            '${group.unreadCount} ${FlutterI18n.translate(context, 'new messages')}';
         showIndicator = true;
         showBadge = true;
       } else if (group.unreadCount == 1) {
         // Exactly 1 unread message: show first 10 characters (matching chat history behavior)
         if (lastMessageText.isNotEmpty &&
-            lastMessageText != 'No messages yet') {
+            lastMessageText != noMessagesPlaceholder) {
           displayMessage = lastMessageText.length > 10
               ? '${lastMessageText.substring(0, 10)}...'
               : lastMessageText;
         } else {
-          displayMessage = 'New message';
+          displayMessage = FlutterI18n.translate(context, 'New message');
         }
         showIndicator = true;
         showBadge = true;
@@ -4272,7 +4295,12 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                       _deleteGroup(group);
                                     },
                                     icon: const Icon(Icons.delete_outline),
-                                    label: const Text('Delete Group'),
+                                    label: Text(
+                                      FlutterI18n.translate(
+                                        context,
+                                        'Delete Group',
+                                      ),
+                                    ),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.red,
                                       foregroundColor: Colors.white,
@@ -4814,7 +4842,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
   Future<void> _startListening() async {
     final result = await NavigationHelper.pushRoute<String>(
       context,
-      MaterialPageRoute(
+      MaterialPageRoute<String>(
         builder: (context) => VoiceSearchScreen(
           onTextRecognized: (text) {
             // Update search field with recognized text in real-time

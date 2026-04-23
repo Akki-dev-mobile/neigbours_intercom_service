@@ -625,7 +625,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
   Future<void> _startListening() async {
     final result = await NavigationHelper.pushRoute<String>(
       context,
-      MaterialPageRoute(
+      MaterialPageRoute<String>(
         builder: (context) => VoiceSearchScreen(
           onTextRecognized: (text) {
             // Update search field with recognized text in real-time

@@ -29,8 +29,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         _commentController.clear();
       });
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Comment added')));
+      EnhancedToast.success(context, message: 'Comment added');
     }
   }
 
@@ -85,7 +84,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       children: [
                         CircleAvatar(
                           backgroundColor: AppColors.primary.withOpacity(0.1),
-                          child: const Icon(Icons.person, color: AppColors.primary),
+                          child: const Icon(
+                            Icons.person,
+                            color: AppColors.primary,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -109,8 +111,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 4),
-                                  const Text('•',
-                                      style: TextStyle(color: Colors.grey)),
+                                  const Text(
+                                    '•',
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     widget.post.timeAgo,
@@ -157,8 +161,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
                                     return const Center(
-                                      child: Icon(Icons.image_not_supported,
-                                          size: 40, color: Colors.grey),
+                                      child: Icon(
+                                        Icons.image_not_supported,
+                                        size: 40,
+                                        color: Colors.grey,
+                                      ),
                                     );
                                   },
                                 ),
@@ -197,8 +204,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         ),
                         TextButton.icon(
                           onPressed: () {}, // Already on comment page
-                          icon: Icon(Icons.comment_outlined,
-                              color: Colors.grey.shade600),
+                          icon: Icon(
+                            Icons.comment_outlined,
+                            color: Colors.grey.shade600,
+                          ),
                           label: Text(
                             '${widget.post.commentCount} comments',
                             style: TextStyle(color: Colors.grey.shade600),
@@ -247,7 +256,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   color: Colors.grey.shade300,
                   blurRadius: 4,
                   offset: const Offset(0, -2),
-                )
+                ),
               ],
             ),
             child: Row(
@@ -258,8 +267,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     decoration: const InputDecoration(
                       hintText: 'Add a comment...',
                       border: OutlineInputBorder(),
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ),

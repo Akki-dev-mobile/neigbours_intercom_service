@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'dart:io' show Platform, Directory, File;
@@ -81,6 +82,7 @@ class GroupChatScreen extends ConsumerStatefulWidget {
 
 class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     with TickerProviderStateMixin {
+  static const Color _oneGateIconRed = Color(0xffc62828);
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _messageFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
@@ -690,7 +692,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         if (mounted) {
           setState(() {
             _hasError = true;
-            _errorMessage = messagesResponse.error ?? 'Failed to load messages';
+            _errorMessage = messagesResponse.error ??
+                FlutterI18n.translate(context, 'Failed to load messages');
             _isLoading = false;
           });
         }
@@ -702,7 +705,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       if (mounted) {
         setState(() {
           _hasError = true;
-          _errorMessage = 'Failed to load messages';
+          _errorMessage = FlutterI18n.translate(context, 'Failed to load messages');
           _isLoading = false;
         });
       }
@@ -4163,7 +4166,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                           children: [
                             Icon(Icons.delete_outline, color: Colors.red),
                             SizedBox(width: 8),
-                            Text('Clear Chat'),
+                            Text(FlutterI18n.translate(context, 'Clear Chat')),
                           ],
                         ),
                       ),
@@ -5657,7 +5660,10 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                       decoration: InputDecoration(
                         hintText: _replyingTo != null
                             ? 'Reply to ${_replyingTo!.isFromUser(widget.currentUserId) ? "your message" : _replyingTo!.senderName}...'
-                            : 'Type a message...',
+                            : FlutterI18n.translate(
+                                context,
+                                'Type a message...',
+                              ),
                         hintStyle: TextStyle(
                           color: isDarkTheme
                               ? Colors.grey.shade500
@@ -8430,17 +8436,20 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       if (!mounted) return;
       Navigator.pop(context); // Close loading indicator
 
-      if (response.success && response.data != null) {
-        final reactions = response.data!;
+      final reactionsList =
+          response.success ? (response.data ?? <MessageReaction>[]) : null;
 
-        if (reactions.isEmpty) {
+      if (reactionsList != null) {
+        if (reactionsList.isEmpty) {
           EnhancedToast.info(
             context,
-            title: 'No Reactions',
-            message: 'No one has reacted to this message yet',
+            title: FlutterI18n.translate(context, 'No Reactions'),
+            message: FlutterI18n.translate(context, 'No reaction till now'),
           );
           return;
         }
+
+        final reactions = reactionsList;
 
         // Group reactions by reaction type
         final groupedReactions = <String, List<MessageReaction>>{};
@@ -8611,13 +8620,26 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
             ),
           );
         }
-      } else {
-        EnhancedToast.error(
-          context,
-          title: 'Error',
-          message: response.error ?? 'Failed to fetch reactions',
-        );
+        return;
       }
+
+      final errLower = (response.error ?? '').toLowerCase();
+      if (response.statusCode == 404 ||
+          errLower.contains('not found') ||
+          errLower.contains('no reaction')) {
+        EnhancedToast.info(
+          context,
+          title: FlutterI18n.translate(context, 'No Reactions'),
+          message: FlutterI18n.translate(context, 'No reaction till now'),
+        );
+        return;
+      }
+
+      EnhancedToast.error(
+        context,
+        title: 'Error',
+        message: response.error ?? 'Failed to fetch reactions',
+      );
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context); // Close loading indicator if still open
@@ -8836,11 +8858,12 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         return;
       }
 
-      if (response.success && response.data != null) {
+      if (response.success) {
         final msgIndex = _messages.indexWhere((m) => m.id == messageId);
         if (msgIndex != -1 && mounted) {
           // Create a new list to ensure Flutter detects the change
-          final updatedReactions = List<MessageReaction>.from(response.data!);
+          final updatedReactions =
+              List<MessageReaction>.from(response.data ?? <MessageReaction>[]);
 
           log(
             '🔄 [GroupChatScreen] Updating reactions for message $messageId: ${updatedReactions.length} reactions',
@@ -9970,7 +9993,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                           Expanded(
                             child: _buildAttachmentOption(
                               Icons.photo_library,
-                              'Gallery',
+                              FlutterI18n.translate(context, 'Gallery'),
                               () => _pickMultipleMedia(),
                             ),
                           ),
@@ -9978,7 +10001,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                           Expanded(
                             child: _buildAttachmentOption(
                               Icons.camera_alt,
-                              'Camera',
+                              FlutterI18n.translate(context, 'Camera'),
                               () => _pickImage(ImageSource.camera),
                             ),
                           ),
@@ -10986,7 +11009,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
             ),
             const SizedBox(height: 16),
             const Text(
-              'No messages yet',
+              FlutterI18n.translate(context, 'No messages yet'),
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -10996,7 +11019,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              'Start the conversation',
+              FlutterI18n.translate(context, 'Start the conversation'),
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 14,
@@ -11030,7 +11053,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           ),
           const SizedBox(height: 24),
           Text(
-            'Unable to load messages',
+            FlutterI18n.translate(context, 'Unable to load messages'),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -11060,7 +11083,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                     _openRoom();
                   },
             icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
+            label: Text(FlutterI18n.translate(context, 'Retry')),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xffc62828),
               foregroundColor: Colors.white,
@@ -11103,8 +11126,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               ),
               const SizedBox(height: 24),
               // Title
-              const Text(
-                'Clear Chat',
+              Text(
+                FlutterI18n.translate(context, 'Clear Chat'),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -11115,7 +11138,10 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               const SizedBox(height: 12),
               // Message
               Text(
-                'Are you sure you want to clear all messages from this group chat? This action cannot be undone.',
+                FlutterI18n.translate(
+                  context,
+                  'Are you sure you want to clear all messages from this group chat? This action cannot be undone.',
+                ),
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey.shade700,
@@ -11142,8 +11168,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Cancel',
+                        child: Text(
+                          FlutterI18n.translate(context, 'Cancel'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -11186,8 +11212,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Clear',
+                        child: Text(
+                          FlutterI18n.translate(context, 'Clear'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -12232,7 +12258,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
             backgroundColor: Colors.white,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black87),
+              icon: const Icon(Icons.arrow_back, color: _oneGateIconRed),
               onPressed: () {
                 _isGroupInfoPageOpen = false; // Mark as closed
                 Navigator.pop(context);
@@ -12348,7 +12374,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                 Icon(
                                   Icons.people,
                                   size: 16,
-                                  color: Colors.grey.shade600,
+                                  color: _oneGateIconRed,
                                 ),
                                 const SizedBox(width: 4),
                                 if (_groupInfoMemberCountNotifier != null)
@@ -12359,7 +12385,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                       return Text(
                                         '$count ${count == 1 ? 'member' : 'members'}',
                                         style: TextStyle(
-                                          color: Colors.grey.shade600,
+                                          color: AppColors.textPrimary,
                                           fontSize: 14,
                                         ),
                                       );
@@ -12369,7 +12395,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                   Text(
                                     '${roomInfo.memberCount ?? roomInfo.members.length} ${((roomInfo.memberCount ?? roomInfo.members.length) == 1) ? 'member' : 'members'}',
                                     style: TextStyle(
-                                      color: Colors.grey.shade600,
+                                      color: AppColors.textPrimary,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -12520,7 +12546,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         children: [
           Row(
             children: [
-              Icon(icon, size: 20, color: AppColors.primary),
+              Icon(icon, size: 20, color: _oneGateIconRed),
               const SizedBox(width: 8),
               Text(
                 title,
@@ -12576,7 +12602,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.people, size: 20, color: AppColors.primary),
+                Icon(Icons.people, size: 20, color: _oneGateIconRed),
                 const SizedBox(width: 8),
                 const Text(
                   'Members',
@@ -12609,7 +12635,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.people, size: 20, color: AppColors.primary),
+                Icon(Icons.people, size: 20, color: _oneGateIconRed),
                 const SizedBox(width: 8),
                 const Text(
                   'Members',
@@ -12640,7 +12666,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         children: [
           Row(
             children: [
-              Icon(Icons.people, size: 20, color: AppColors.primary),
+              Icon(Icons.people, size: 20, color: _oneGateIconRed),
               const SizedBox(width: 8),
               const Text(
                 'Members',
@@ -12781,7 +12807,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                             _showRemoveMemberConfirmation(member, displayName),
                         icon: const Icon(
                           Icons.delete_outline,
-                          color: Colors.red,
+                          color: _oneGateIconRed,
                           size: 20,
                         ),
                         padding: EdgeInsets.zero,
@@ -13284,9 +13310,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               size: 28,
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Leave Group',
+                FlutterI18n.translate(context, 'Leave Group'),
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
@@ -13297,7 +13323,10 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Are you sure you want to leave "${widget.group.name}"?',
+              FlutterI18n.translate(
+                context,
+                'Are you sure you want to leave "{groupName}"?',
+              ).replaceAll('{groupName}', widget.group.name),
               style: const TextStyle(fontSize: 16, height: 1.5),
             ),
             const SizedBox(height: 12),
@@ -13318,7 +13347,10 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'You will no longer receive messages from this group.',
+                      FlutterI18n.translate(
+                        context,
+                        'You will no longer receive messages from this group.',
+                      ),
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.red.shade700,
@@ -13337,8 +13369,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
-            child: const Text(
-              'Cancel',
+            child: Text(
+              FlutterI18n.translate(context, 'Cancel'),
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
@@ -13629,8 +13661,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text(
-              'Leave Group',
+            child: Text(
+              FlutterI18n.translate(context, 'Leave Group'),
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
@@ -13664,59 +13696,82 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
   void _showUploadGroupImageDialog() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext context) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, -2),
                 ),
-              ),
-              const SizedBox(height: 20),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  'Select Image Source',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: _oneGateIconRed.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildImageSourceOption(
-                    icon: Icons.camera_alt_rounded,
-                    label: 'Camera',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _uploadGroupImage(ImageSource.camera);
-                    },
-                  ),
-                  _buildImageSourceOption(
-                    icon: Icons.photo_library_rounded,
-                    label: 'Gallery',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _uploadGroupImage(ImageSource.gallery);
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-            ],
+                const SizedBox(height: 18),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.image_rounded,
+                      size: 20,
+                      color: _oneGateIconRed,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      FlutterI18n.translate(context, 'Select Image Source'),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildImageSourceOption(
+                      icon: Icons.camera_alt_rounded,
+                      label: FlutterI18n.translate(context, 'Camera'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _uploadGroupImage(ImageSource.camera);
+                      },
+                    ),
+                    _buildImageSourceOption(
+                      icon: Icons.photo_library_rounded,
+                      label: FlutterI18n.translate(context, 'Gallery'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _uploadGroupImage(ImageSource.gallery);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 28),
+              ],
+            ),
           ),
         );
       },
@@ -13735,13 +13790,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: _oneGateIconRed.withOpacity(0.06),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: _oneGateIconRed.withOpacity(0.18)),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 24, color: AppColors.primary),
+            Icon(icon, size: 24, color: _oneGateIconRed),
             const SizedBox(height: 12),
             Text(
               label,

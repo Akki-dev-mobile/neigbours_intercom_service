@@ -17,14 +17,16 @@ class RoomService extends BaseApiService {
   static RoomService? _instance;
 
   RoomService._()
-      : super(
-          baseUrl: AppConstants.roomServiceBaseUrl,
-          serviceName: 'RoomService',
-          connectTimeout:
-              const Duration(seconds: 60), // Increased timeout for slow server
-          receiveTimeout:
-              const Duration(seconds: 60), // Increased timeout for slow server
-        );
+    : super(
+        baseUrl: AppConstants.roomServiceBaseUrl,
+        serviceName: 'RoomService',
+        connectTimeout: const Duration(
+          seconds: 60,
+        ), // Increased timeout for slow server
+        receiveTimeout: const Duration(
+          seconds: 60,
+        ), // Increased timeout for slow server
+      );
 
   /// Get singleton instance
   static RoomService get instance {
@@ -50,8 +52,10 @@ class RoomService extends BaseApiService {
 
     // Check if URL contains localhost or 127.0.0.1
     if (url.contains('localhost') || url.contains('127.0.0.1')) {
-      log('🔄 [RoomService] Transforming localhost URL: $url',
-          name: 'RoomService');
+      log(
+        '🔄 [RoomService] Transforming localhost URL: $url',
+        name: 'RoomService',
+      );
 
       // Extract the path from the URL (everything after the host)
       final uri = Uri.tryParse(url);
@@ -64,8 +68,10 @@ class RoomService extends BaseApiService {
         // Use the same path structure but with the actual server
         final transformedUrl = '$serverOrigin$path$query$fragment';
 
-        log('✅ [RoomService] Transformed URL: $transformedUrl',
-            name: 'RoomService');
+        log(
+          '✅ [RoomService] Transformed URL: $transformedUrl',
+          name: 'RoomService',
+        );
         log('   Original path: $path', name: 'RoomService');
         return transformedUrl;
       }
@@ -77,8 +83,10 @@ class RoomService extends BaseApiService {
           .replaceAll('http://127.0.0.1:8080', serverOrigin)
           .replaceAll('https://127.0.0.1:8080', serverOrigin);
 
-      log('✅ [RoomService] Transformed URL (fallback): $transformedUrl',
-          name: 'RoomService');
+      log(
+        '✅ [RoomService] Transformed URL (fallback): $transformedUrl',
+        name: 'RoomService',
+      );
       return transformedUrl;
     }
 
@@ -108,8 +116,10 @@ class RoomService extends BaseApiService {
     final cleanKey = fileKey.startsWith('/') ? fileKey.substring(1) : fileKey;
     final constructedUrl = '$serverBaseUrl/$cleanKey';
 
-    log('🔧 [RoomService] Constructed file URL from key: $constructedUrl',
-        name: 'RoomService');
+    log(
+      '🔧 [RoomService] Constructed file URL from key: $constructedUrl',
+      name: 'RoomService',
+    );
     return constructedUrl;
   }
 
@@ -126,37 +136,56 @@ class RoomService extends BaseApiService {
       final userData = await KeycloakService.getUserData();
       if (userData != null) {
         // DEBUG: Log all available user ID fields
-        log('🔍 [RoomService] User data keys: ${userData.keys.toList()}',
-            name: serviceName);
-        log('🔍 [RoomService] old_gate_user_id: ${userData['old_gate_user_id']}',
-            name: serviceName);
-        log('🔍 [RoomService] old_sso_user_id: ${userData['old_sso_user_id']}',
-            name: serviceName);
-        log('🔍 [RoomService] user_id: ${userData['user_id']}',
-            name: serviceName);
+        log(
+          '🔍 [RoomService] User data keys: ${userData.keys.toList()}',
+          name: serviceName,
+        );
+        log(
+          '🔍 [RoomService] old_gate_user_id: ${userData['old_gate_user_id']}',
+          name: serviceName,
+        );
+        log(
+          '🔍 [RoomService] old_sso_user_id: ${userData['old_sso_user_id']}',
+          name: serviceName,
+        );
+        log(
+          '🔍 [RoomService] user_id: ${userData['user_id']}',
+          name: serviceName,
+        );
 
         // CRITICAL FIX: Use old_gate_user_id for x-user-id header
         // This matches the user_id used when adding members to rooms
         // Priority: old_gate_user_id > old_sso_user_id > user_id
-        final userId = userData['old_gate_user_id']?.toString() ??
+        final userId =
+            userData['old_gate_user_id']?.toString() ??
             userData['old_sso_user_id']?.toString() ??
             userData['user_id']?.toString();
 
         if (userId != null && userId.isNotEmpty) {
           headers['x-user-id'] = userId;
-          log('✅ [RoomService] Set x-user-id header: $userId (from old_gate_user_id)',
-              name: serviceName);
-          log('🔍 [RoomService] All headers being sent: ${headers.keys.toList()}',
-              name: serviceName);
+          log(
+            '✅ [RoomService] Set x-user-id header: $userId (from old_gate_user_id)',
+            name: serviceName,
+          );
+          log(
+            '🔍 [RoomService] All headers being sent: ${headers.keys.toList()}',
+            name: serviceName,
+          );
         } else {
-          log('⚠️ [RoomService] No valid user_id found in token for x-user-id header',
-              name: serviceName);
-          log('⚠️ [RoomService] Available IDs: old_gate_user_id=${userData['old_gate_user_id']}, old_sso_user_id=${userData['old_sso_user_id']}, user_id=${userData['user_id']}',
-              name: serviceName);
+          log(
+            '⚠️ [RoomService] No valid user_id found in token for x-user-id header',
+            name: serviceName,
+          );
+          log(
+            '⚠️ [RoomService] Available IDs: old_gate_user_id=${userData['old_gate_user_id']}, old_sso_user_id=${userData['old_sso_user_id']}, user_id=${userData['user_id']}',
+            name: serviceName,
+          );
         }
       } else {
-        log('⚠️ [RoomService] User data is null, cannot set x-user-id header',
-            name: serviceName);
+        log(
+          '⚠️ [RoomService] User data is null, cannot set x-user-id header',
+          name: serviceName,
+        );
       }
 
       return headers;
@@ -198,16 +227,13 @@ class RoomService extends BaseApiService {
       // Validate request
       if (!request.validate()) {
         final errors = request.getValidationErrors();
-        return ApiResponse.error(
-          errors.join(', '),
-          statusCode: 400,
-        );
+        return ApiResponse.error(errors.join(', '), statusCode: 400);
       }
 
       log('Creating room: ${request.name}', name: serviceName);
 
       // Make API call with extended timeout for slow server
-      // Note: Server at http://13.201.27.102:7071 can be slow, so we use longer timeout
+      // Note: Server at https://apigw.cubeone.in/chatapp can be slow, so we use longer timeout
       final response = await post<Room>(
         '/rooms',
         data: request.toJson(),
@@ -222,21 +248,22 @@ class RoomService extends BaseApiService {
       );
 
       if (response.success && response.data != null) {
-        log('Room created successfully: ${response.data!.id}',
-            name: serviceName);
+        log(
+          'Room created successfully: ${response.data!.id}',
+          name: serviceName,
+        );
       } else {
         log('Failed to create room: ${response.error}', name: serviceName);
-        log('   statusCode: ${response.statusCode}, message: ${response.message}',
-            name: serviceName);
+        log(
+          '   statusCode: ${response.statusCode}, message: ${response.message}',
+          name: serviceName,
+        );
       }
 
       return response;
     } catch (e) {
       log('Exception creating room: $e', name: serviceName);
-      return ApiResponse.error(
-        'Failed to create room: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to create room: $e', statusCode: 0);
     }
   }
 
@@ -276,7 +303,7 @@ class RoomService extends BaseApiService {
   /// GET /rooms/{roomId}/messages?company_id={companyId}&limit={limit}&offset={offset}
   ///
   /// Matches curl format:
-  /// curl --location 'http://13.201.27.102:7071/api/v1/rooms/{roomId}/messages?company_id={companyId}&limit={limit}&offset={offset}'
+  /// curl --location 'https://apigw.cubeone.in/chatapp/api/v1/rooms/{roomId}/messages?company_id={companyId}&limit={limit}&offset={offset}'
   /// --header 'Authorization: Bearer {token}'
   Future<ApiResponse<List<RoomMessage>>> getMessages({
     required String roomId,
@@ -285,8 +312,10 @@ class RoomService extends BaseApiService {
     int offset = 0,
   }) async {
     try {
-      log('📥 [RoomService] Fetching messages for room: $roomId',
-          name: serviceName);
+      log(
+        '📥 [RoomService] Fetching messages for room: $roomId',
+        name: serviceName,
+      );
       log('   company_id: ${companyId ?? "not provided"}', name: serviceName);
       log('   limit: $limit', name: serviceName);
       log('   offset: $offset', name: serviceName);
@@ -303,8 +332,10 @@ class RoomService extends BaseApiService {
       // Log the exact URL that will be called
       final endpoint = '/rooms/$roomId/messages';
       final queryString = queryParameters.entries
-          .map((e) =>
-              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value.toString())}')
+          .map(
+            (e) =>
+                '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value.toString())}',
+          )
           .join('&');
       log('🌐 [RoomService] API Call:', name: serviceName);
       log('   Method: GET', name: serviceName);
@@ -331,35 +362,53 @@ class RoomService extends BaseApiService {
                     if (item is Map<String, dynamic>) {
                       final message = RoomMessage.fromJson(item);
                       // Log message details for debugging
-                      log('📨 [RoomService] Parsed message:',
-                          name: serviceName);
+                      log(
+                        '📨 [RoomService] Parsed message:',
+                        name: serviceName,
+                      );
                       log('   ID: ${message.id}', name: serviceName);
-                      log('   Content: ${message.body.isEmpty ? "(empty)" : message.body.substring(0, message.body.length > 50 ? 50 : message.body.length)}',
-                          name: serviceName);
+                      log(
+                        '   Content: ${message.body.isEmpty ? "(empty)" : message.body.substring(0, message.body.length > 50 ? 50 : message.body.length)}',
+                        name: serviceName,
+                      );
                       log('   Sender: ${message.senderId}', name: serviceName);
-                      log('   Created: ${message.createdAt}',
-                          name: serviceName);
-                      log('   ReplyTo: ${message.replyTo ?? "null"}',
-                          name: serviceName);
+                      log(
+                        '   Created: ${message.createdAt}',
+                        name: serviceName,
+                      );
+                      log(
+                        '   ReplyTo: ${message.replyTo ?? "null"}',
+                        name: serviceName,
+                      );
                       return message;
                     } else {
-                      log('⚠️ [RoomService] Invalid message item format: $item',
-                          name: serviceName);
+                      log(
+                        '⚠️ [RoomService] Invalid message item format: $item',
+                        name: serviceName,
+                      );
                       return null;
                     }
                   } catch (e, stackTrace) {
-                    log('❌ [RoomService] Error parsing message item: $e',
-                        name: serviceName, error: e, stackTrace: stackTrace);
-                    log('⚠️ [RoomService] Problematic item: $item',
-                        name: serviceName);
+                    log(
+                      '❌ [RoomService] Error parsing message item: $e',
+                      name: serviceName,
+                      error: e,
+                      stackTrace: stackTrace,
+                    );
+                    log(
+                      '⚠️ [RoomService] Problematic item: $item',
+                      name: serviceName,
+                    );
                     return null;
                   }
                 })
                 .whereType<RoomMessage>() // Filter out null values
                 .toList();
 
-            log('✅ [RoomService] Successfully parsed ${messages.length} messages',
-                name: serviceName);
+            log(
+              '✅ [RoomService] Successfully parsed ${messages.length} messages',
+              name: serviceName,
+            );
             return messages;
           }
 
@@ -367,14 +416,18 @@ class RoomService extends BaseApiService {
           // This is a valid response format, not an error
           // Backend response: { "data": null, "message": "Messages fetched successfully", "status": "success", "status_code": 200 }
           if (json == null) {
-            log('✅ [RoomService] No messages (data is null) - returning empty list',
-                name: serviceName);
+            log(
+              '✅ [RoomService] No messages (data is null) - returning empty list',
+              name: serviceName,
+            );
             return <RoomMessage>[];
           }
 
           // Handle unexpected format (only log if truly unexpected)
-          log('⚠️ [RoomService] Unexpected message data format: ${json.runtimeType}',
-              name: serviceName);
+          log(
+            '⚠️ [RoomService] Unexpected message data format: ${json.runtimeType}',
+            name: serviceName,
+          );
           return <RoomMessage>[];
         },
       );
@@ -388,16 +441,24 @@ class RoomService extends BaseApiService {
 
         // Log message order for debugging
         if (messages.isNotEmpty) {
-          log('📅 [RoomService] Message order: oldest=${messages.first.createdAt}, newest=${messages.last.createdAt}',
-              name: serviceName);
+          log(
+            '📅 [RoomService] Message order: oldest=${messages.first.createdAt}, newest=${messages.last.createdAt}',
+            name: serviceName,
+          );
         }
 
-        log('✅ [RoomService] Successfully fetched ${messages.length} messages for room: $roomId',
-            name: serviceName);
-        log('   Response status: ${response.statusCode ?? 200}',
-            name: serviceName);
-        log('   Response message: ${response.message ?? "Messages fetched successfully"}',
-            name: serviceName);
+        log(
+          '✅ [RoomService] Successfully fetched ${messages.length} messages for room: $roomId',
+          name: serviceName,
+        );
+        log(
+          '   Response status: ${response.statusCode ?? 200}',
+          name: serviceName,
+        );
+        log(
+          '   Response message: ${response.message ?? "Messages fetched successfully"}',
+          name: serviceName,
+        );
 
         return ApiResponse.success(
           messages,
@@ -407,17 +468,16 @@ class RoomService extends BaseApiService {
       } else {
         log('❌ [RoomService] Failed to fetch messages:', name: serviceName);
         log('   Error: ${response.error}', name: serviceName);
-        log('   Status code: ${response.statusCode ?? "unknown"}',
-            name: serviceName);
+        log(
+          '   Status code: ${response.statusCode ?? "unknown"}',
+          name: serviceName,
+        );
         return response;
       }
     } catch (e, stackTrace) {
       log('❌ [RoomService] Exception fetching messages: $e', name: serviceName);
       log('   Stack trace: $stackTrace', name: serviceName);
-      return ApiResponse.error(
-        'Failed to fetch messages: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to fetch messages: $e', statusCode: 0);
     }
   }
 
@@ -447,17 +507,23 @@ class RoomService extends BaseApiService {
       );
 
       if (response.success) {
-        log('✅ [RoomService] Room marked as read successfully: $roomId',
-            name: serviceName);
+        log(
+          '✅ [RoomService] Room marked as read successfully: $roomId',
+          name: serviceName,
+        );
       } else {
-        log('❌ [RoomService] Failed to mark room as read: ${response.error}',
-            name: serviceName);
+        log(
+          '❌ [RoomService] Failed to mark room as read: ${response.error}',
+          name: serviceName,
+        );
       }
 
       return response;
     } catch (e, stackTrace) {
-      log('❌ [RoomService] Exception marking room as read: $e',
-          name: serviceName);
+      log(
+        '❌ [RoomService] Exception marking room as read: $e',
+        name: serviceName,
+      );
       log('   Stack trace: $stackTrace', name: serviceName);
       return ApiResponse.error(
         'Failed to mark room as read: $e',
@@ -503,30 +569,40 @@ class RoomService extends BaseApiService {
     bool isMember = true,
   }) async {
     try {
-      log('Fetching all rooms${companyId != null ? ' for company_id: $companyId' : ''}${chatType != null ? ' with chat_type: $chatType' : ''}${isMember ? ' with is_member=true' : ''}',
-          name: serviceName);
+      log(
+        'Fetching all rooms${companyId != null ? ' for company_id: $companyId' : ''}${chatType != null ? ' with chat_type: $chatType' : ''}${isMember ? ' with is_member=true' : ''}',
+        name: serviceName,
+      );
 
       // Build query parameters
       final queryParameters = <String, dynamic>{};
       if (companyId != null) {
         queryParameters['company_id'] = companyId;
-        log('📋 [RoomService] Adding company_id=$companyId to query parameters',
-            name: serviceName);
+        log(
+          '📋 [RoomService] Adding company_id=$companyId to query parameters',
+          name: serviceName,
+        );
       } else {
-        log('⚠️ [RoomService] WARNING: company_id is null - API call will not filter by company',
-            name: serviceName);
+        log(
+          '⚠️ [RoomService] WARNING: company_id is null - API call will not filter by company',
+          name: serviceName,
+        );
       }
 
       if (chatType != null && chatType.isNotEmpty) {
         queryParameters['chat_type'] = chatType;
-        log('📋 [RoomService] Adding chat_type=$chatType to query parameters',
-            name: serviceName);
+        log(
+          '📋 [RoomService] Adding chat_type=$chatType to query parameters',
+          name: serviceName,
+        );
       }
 
       // Add is_member parameter (default: true)
       queryParameters['is_member'] = isMember;
-      log('📋 [RoomService] Adding is_member=$isMember to query parameters',
-          name: serviceName);
+      log(
+        '📋 [RoomService] Adding is_member=$isMember to query parameters',
+        name: serviceName,
+      );
 
       // Log the full URL for debugging
       final fullUrl =
@@ -561,8 +637,10 @@ class RoomService extends BaseApiService {
         // DO NOT re-sort - preserve backend order
         final rooms = response.data!;
 
-        log('Fetched ${rooms.length} rooms (preserving API order)',
-            name: serviceName);
+        log(
+          'Fetched ${rooms.length} rooms (preserving API order)',
+          name: serviceName,
+        );
         return ApiResponse.success(
           rooms,
           message: response.message ?? 'Rooms fetched successfully',
@@ -574,10 +652,7 @@ class RoomService extends BaseApiService {
       }
     } catch (e) {
       log('Exception fetching rooms: $e', name: serviceName);
-      return ApiResponse.error(
-        'Failed to fetch rooms: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to fetch rooms: $e', statusCode: 0);
     }
   }
 
@@ -607,8 +682,10 @@ class RoomService extends BaseApiService {
     String? contactPhone, // Phone number for the contact
   }) async {
     try {
-      log('🚀 [RoomService] Creating 1-to-1 room for contact: $contactName (ID: $contactId)',
-          name: serviceName);
+      log(
+        '🚀 [RoomService] Creating 1-to-1 room for contact: $contactName (ID: $contactId)',
+        name: serviceName,
+      );
 
       // Step 1: Create the room
       final roomName = contactName; // Use contact name as room name
@@ -621,10 +698,14 @@ class RoomService extends BaseApiService {
       final createResponse = await createRoom(createRequest);
 
       if (!createResponse.success || createResponse.data == null) {
-        log('❌ [RoomService] Failed to create 1-to-1 room: ${createResponse.error}',
-            name: serviceName);
-        log('   statusCode: ${createResponse.statusCode}, message: ${createResponse.message}',
-            name: serviceName);
+        log(
+          '❌ [RoomService] Failed to create 1-to-1 room: ${createResponse.error}',
+          name: serviceName,
+        );
+        log(
+          '   statusCode: ${createResponse.statusCode}, message: ${createResponse.message}',
+          name: serviceName,
+        );
         return ApiResponse.error(
           createResponse.error ?? 'Failed to create room',
           statusCode: createResponse.statusCode ?? 0,
@@ -633,13 +714,16 @@ class RoomService extends BaseApiService {
 
       final roomId = createResponse.data!.id;
       // Backend must return a valid UUID; Room.fromJson fallback can produce "unknown-..." if id is missing
-      final isValidUuid = roomId.isNotEmpty &&
+      final isValidUuid =
+          roomId.isNotEmpty &&
           roomId.contains('-') &&
           roomId.length >= 30 &&
           !roomId.startsWith('unknown-');
       if (!isValidUuid) {
-        log('❌ [RoomService] Create returned invalid room id (backend may not have sent id): $roomId',
-            name: serviceName);
+        log(
+          '❌ [RoomService] Create returned invalid room id (backend may not have sent id): $roomId',
+          name: serviceName,
+        );
         return ApiResponse.error(
           'Room created but invalid id returned (${roomId.length > 40 ? roomId.substring(0, 40) + "..." : roomId}). Please try again.',
           statusCode: createResponse.statusCode ?? 201,
@@ -653,8 +737,10 @@ class RoomService extends BaseApiService {
       if (_isNumeric(contactId)) {
         userId = int.tryParse(contactId);
         if (userId == null) {
-          log('⚠️ [RoomService] Contact ID is not a valid numeric ID: $contactId',
-              name: serviceName);
+          log(
+            '⚠️ [RoomService] Contact ID is not a valid numeric ID: $contactId',
+            name: serviceName,
+          );
           // Still return room_id - member can be added later
           return ApiResponse.success(
             roomId,
@@ -664,10 +750,14 @@ class RoomService extends BaseApiService {
           );
         }
       } else {
-        log('⚠️ [RoomService] Contact ID is not numeric (UUID format): $contactId',
-            name: serviceName);
-        log('   Cannot use in members API which requires numeric user_id',
-            name: serviceName);
+        log(
+          '⚠️ [RoomService] Contact ID is not numeric (UUID format): $contactId',
+          name: serviceName,
+        );
+        log(
+          '   Cannot use in members API which requires numeric user_id',
+          name: serviceName,
+        );
         // Still return room_id - member might be added via UUID lookup or other method
         return ApiResponse.success(
           roomId,
@@ -684,8 +774,10 @@ class RoomService extends BaseApiService {
       };
 
       log('📝 [RoomService] Adding member to room: $roomId', name: serviceName);
-      log('   Member data: user_id=$userId, name=$contactName, phone=${contactPhone ?? "not provided"}',
-          name: serviceName);
+      log(
+        '   Member data: user_id=$userId, name=$contactName, phone=${contactPhone ?? "not provided"}',
+        name: serviceName,
+      );
 
       // Add member using the API endpoint
       final addMemberResponse = await addMembersToRoom(
@@ -694,19 +786,27 @@ class RoomService extends BaseApiService {
       );
 
       if (addMemberResponse.success) {
-        log('✅ [RoomService] Successfully added member to 1-to-1 room: $roomId',
-            name: serviceName);
+        log(
+          '✅ [RoomService] Successfully added member to 1-to-1 room: $roomId',
+          name: serviceName,
+        );
         log('   Member: $contactName (user_id: $userId)', name: serviceName);
       } else {
-        log('⚠️ [RoomService] Failed to add member to room, but room was created: ${addMemberResponse.error}',
-            name: serviceName);
-        log('   Room ID: $roomId - member can be added later',
-            name: serviceName);
+        log(
+          '⚠️ [RoomService] Failed to add member to room, but room was created: ${addMemberResponse.error}',
+          name: serviceName,
+        );
+        log(
+          '   Room ID: $roomId - member can be added later',
+          name: serviceName,
+        );
         // Don't fail - room is created, member addition can be retried
       }
 
-      log('✅ [RoomService] 1-to-1 room creation complete: $roomId',
-          name: serviceName);
+      log(
+        '✅ [RoomService] 1-to-1 room creation complete: $roomId',
+        name: serviceName,
+      );
       log('   Room name: $roomName', name: serviceName);
       log('   Contact: $contactName (ID: $contactId)', name: serviceName);
       log('   Room is ready for WebSocket connection', name: serviceName);
@@ -717,8 +817,10 @@ class RoomService extends BaseApiService {
         statusCode: 201,
       );
     } catch (e, stackTrace) {
-      log('❌ [RoomService] Exception creating 1-to-1 room: $e',
-          name: serviceName);
+      log(
+        '❌ [RoomService] Exception creating 1-to-1 room: $e',
+        name: serviceName,
+      );
       log('   Stack trace: $stackTrace', name: serviceName);
       return ApiResponse.error(
         'Failed to create 1-to-1 room: $e',
@@ -769,8 +871,10 @@ class RoomService extends BaseApiService {
     }
 
     try {
-      log('🔁 [RoomService] Forwarding message $messageId to ${targetRoomIds.length} room(s)',
-          name: serviceName);
+      log(
+        '🔁 [RoomService] Forwarding message $messageId to ${targetRoomIds.length} room(s)',
+        name: serviceName,
+      );
 
       final response = await post<Map<String, dynamic>>(
         '/messages/forward',
@@ -784,29 +888,33 @@ class RoomService extends BaseApiService {
           if (json is Map<String, dynamic>) return json;
           if (json is Map) {
             return Map<String, dynamic>.from(
-                json.map((key, value) => MapEntry(key.toString(), value)));
+              json.map((key, value) => MapEntry(key.toString(), value)),
+            );
           }
           return <String, dynamic>{};
         },
       );
 
       if (response.success) {
-        log('✅ [RoomService] Forwarded message $messageId successfully',
-            name: serviceName);
+        log(
+          '✅ [RoomService] Forwarded message $messageId successfully',
+          name: serviceName,
+        );
       } else {
-        log('❌ [RoomService] Forward failed: ${response.error}',
-            name: serviceName);
+        log(
+          '❌ [RoomService] Forward failed: ${response.error}',
+          name: serviceName,
+        );
       }
 
       return response;
     } catch (e, stackTrace) {
-      log('❌ [RoomService] Exception forwarding message: $e',
-          name: serviceName);
-      log('   Stack: $stackTrace', name: serviceName);
-      return ApiResponse.error(
-        'Failed to forward message: $e',
-        statusCode: 0,
+      log(
+        '❌ [RoomService] Exception forwarding message: $e',
+        name: serviceName,
       );
+      log('   Stack: $stackTrace', name: serviceName);
+      return ApiResponse.error('Failed to forward message: $e', statusCode: 0);
     }
   }
 
@@ -836,9 +944,7 @@ class RoomService extends BaseApiService {
       // Make API call
       final response = await post<Map<String, dynamic>>(
         '/rooms/join',
-        data: {
-          'room_id': roomId,
-        },
+        data: {'room_id': roomId},
         fromJson: (json) => json as Map<String, dynamic>,
       );
 
@@ -851,10 +957,7 @@ class RoomService extends BaseApiService {
       return response;
     } catch (e) {
       log('Exception joining room: $e', name: serviceName);
-      return ApiResponse.error(
-        'Failed to join room: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to join room: $e', statusCode: 0);
     }
   }
 
@@ -883,9 +986,7 @@ class RoomService extends BaseApiService {
       // Make API call
       final response = await post<Map<String, dynamic>>(
         '/rooms/leave',
-        data: {
-          'room_id': roomId,
-        },
+        data: {'room_id': roomId},
         fromJson: (json) => json as Map<String, dynamic>,
       );
 
@@ -898,10 +999,7 @@ class RoomService extends BaseApiService {
       return response;
     } catch (e) {
       log('Exception leaving room: $e', name: serviceName);
-      return ApiResponse.error(
-        'Failed to leave room: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to leave room: $e', statusCode: 0);
     }
   }
 
@@ -935,10 +1033,7 @@ class RoomService extends BaseApiService {
       return response;
     } catch (e) {
       log('Exception deleting room: $e', name: serviceName);
-      return ApiResponse.error(
-        'Failed to delete room: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to delete room: $e', statusCode: 0);
     }
   }
 
@@ -978,8 +1073,10 @@ class RoomService extends BaseApiService {
     int? companyId,
   }) async {
     try {
-      log('Fetching room info for room: $roomId${companyId != null ? ' (company_id: $companyId)' : ''}',
-          name: serviceName);
+      log(
+        'Fetching room info for room: $roomId${companyId != null ? ' (company_id: $companyId)' : ''}',
+        name: serviceName,
+      );
 
       // Build query parameters
       final queryParameters = <String, dynamic>{};
@@ -992,29 +1089,38 @@ class RoomService extends BaseApiService {
         '/rooms/$roomId/info',
         queryParameters: queryParameters.isNotEmpty ? queryParameters : null,
         options: Options(
-          receiveTimeout:
-              const Duration(seconds: 60), // Longer timeout for room info
+          receiveTimeout: const Duration(
+            seconds: 60,
+          ), // Longer timeout for room info
         ),
         fromJson: (json) {
           // Safely handle the json parameter
           if (json == null) {
-            log('⚠️ [RoomService] Room info response data is null',
-                name: serviceName);
+            log(
+              '⚠️ [RoomService] Room info response data is null',
+              name: serviceName,
+            );
             throw Exception('Room info response data is null');
           }
 
           // Log the raw JSON structure for debugging
-          log('📋 [RoomService] Raw JSON type: ${json.runtimeType}',
-              name: serviceName);
+          log(
+            '📋 [RoomService] Raw JSON type: ${json.runtimeType}',
+            name: serviceName,
+          );
           if (json is Map) {
-            log('📋 [RoomService] JSON keys: ${json.keys.toList()}',
-                name: serviceName);
+            log(
+              '📋 [RoomService] JSON keys: ${json.keys.toList()}',
+              name: serviceName,
+            );
           }
 
           // Handle case where json is already a Map
           if (json is Map<String, dynamic>) {
-            log('✅ [RoomService] Parsing RoomInfo from Map<String, dynamic>',
-                name: serviceName);
+            log(
+              '✅ [RoomService] Parsing RoomInfo from Map<String, dynamic>',
+              name: serviceName,
+            );
             return RoomInfo.fromJson(json);
           }
 
@@ -1025,15 +1131,20 @@ class RoomService extends BaseApiService {
             json.forEach((key, value) {
               convertedMap[key.toString()] = value;
             });
-            log('✅ [RoomService] Parsing RoomInfo from converted Map',
-                name: serviceName);
+            log(
+              '✅ [RoomService] Parsing RoomInfo from converted Map',
+              name: serviceName,
+            );
             return RoomInfo.fromJson(convertedMap);
           }
 
-          log('⚠️ [RoomService] Unexpected room info data type: ${json.runtimeType}',
-              name: serviceName);
+          log(
+            '⚠️ [RoomService] Unexpected room info data type: ${json.runtimeType}',
+            name: serviceName,
+          );
           throw Exception(
-              'Unexpected room info response format: ${json.runtimeType}');
+            'Unexpected room info response format: ${json.runtimeType}',
+          );
         },
       );
 
@@ -1043,8 +1154,10 @@ class RoomService extends BaseApiService {
         log('   Room name: ${roomInfo.name}', name: serviceName);
         log('   Member count: ${roomInfo.memberCount}', name: serviceName);
         for (final member in roomInfo.members) {
-          log('   Member: ${member.username ?? "Unknown"} (ID: ${member.userId}), Avatar: ${member.avatar ?? "null"}',
-              name: serviceName);
+          log(
+            '   Member: ${member.username ?? "Unknown"} (ID: ${member.userId}), Avatar: ${member.avatar ?? "null"}',
+            name: serviceName,
+          );
         }
       } else {
         log('Failed to fetch room info: ${response.error}', name: serviceName);
@@ -1053,10 +1166,7 @@ class RoomService extends BaseApiService {
       return response;
     } catch (e) {
       log('Exception fetching room info: $e', name: serviceName);
-      return ApiResponse.error(
-        'Failed to fetch room info: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to fetch room info: $e', statusCode: 0);
     }
   }
 
@@ -1090,23 +1200,21 @@ class RoomService extends BaseApiService {
 
       // Validate file exists
       if (!await photoFile.exists()) {
-        log('⚠️ [RoomService] Photo file does not exist: ${photoFile.path}',
-            name: serviceName);
-        return ApiResponse.error(
-          'Photo file does not exist',
-          statusCode: 400,
+        log(
+          '⚠️ [RoomService] Photo file does not exist: ${photoFile.path}',
+          name: serviceName,
         );
+        return ApiResponse.error('Photo file does not exist', statusCode: 400);
       }
 
       // Validate file size
       final fileSize = await photoFile.length();
       if (fileSize == 0) {
-        log('⚠️ [RoomService] Photo file is empty: ${photoFile.path}',
-            name: serviceName);
-        return ApiResponse.error(
-          'Photo file is empty',
-          statusCode: 400,
+        log(
+          '⚠️ [RoomService] Photo file is empty: ${photoFile.path}',
+          name: serviceName,
         );
+        return ApiResponse.error('Photo file is empty', statusCode: 400);
       }
 
       // Validate file extension
@@ -1115,16 +1223,20 @@ class RoomService extends BaseApiService {
       if (fileExtension != 'jpg' &&
           fileExtension != 'jpeg' &&
           fileExtension != 'png') {
-        log('⚠️ [RoomService] Invalid file extension: $fileExtension',
-            name: serviceName);
+        log(
+          '⚠️ [RoomService] Invalid file extension: $fileExtension',
+          name: serviceName,
+        );
         return ApiResponse.error(
           'Invalid file type. Only JPEG and PNG images are allowed.',
           statusCode: 400,
         );
       }
 
-      log('📤 [RoomService] Uploading file: $fileName (${(fileSize / 1024).toStringAsFixed(2)} KB)',
-          name: serviceName);
+      log(
+        '📤 [RoomService] Uploading file: $fileName (${(fileSize / 1024).toStringAsFixed(2)} KB)',
+        name: serviceName,
+      );
 
       // Create multipart form data
       // Note: is_primary should be sent as a string "true" or "false" to match curl format
@@ -1140,22 +1252,25 @@ class RoomService extends BaseApiService {
       final authHeaders = await getAuthHeaders();
 
       // Make API call using Dio directly for multipart
-      final dio = Dio(BaseOptions(
-        baseUrl: baseUrl,
-        connectTimeout:
-            const Duration(seconds: 60), // Longer timeout for uploads
-        receiveTimeout: const Duration(seconds: 60),
-        headers: {
-          ...authHeaders,
-          'Accept': 'application/json',
-          // Don't set Content-Type - Dio will set it automatically for multipart
-        },
-        // Configure validateStatus to not throw for 400, we'll handle it manually
-        validateStatus: (status) {
-          return status != null &&
-              status < 500; // Don't throw for 4xx, only 5xx
-        },
-      ));
+      final dio = Dio(
+        BaseOptions(
+          baseUrl: baseUrl,
+          connectTimeout: const Duration(
+            seconds: 60,
+          ), // Longer timeout for uploads
+          receiveTimeout: const Duration(seconds: 60),
+          headers: {
+            ...authHeaders,
+            'Accept': 'application/json',
+            // Don't set Content-Type - Dio will set it automatically for multipart
+          },
+          // Configure validateStatus to not throw for 400, we'll handle it manually
+          validateStatus: (status) {
+            return status != null &&
+                status < 500; // Don't throw for 4xx, only 5xx
+          },
+        ),
+      );
 
       // Add interceptors for logging
       dio.interceptors.add(
@@ -1164,26 +1279,38 @@ class RoomService extends BaseApiService {
             log('→ POST ${options.uri}', name: serviceName);
             log('→ Headers: ${options.headers}', name: serviceName);
             log('→ Form fields: ${formData.fields}', name: serviceName);
-            log('→ Form files: ${formData.files.map((f) => f.key).toList()}',
-                name: serviceName);
+            log(
+              '→ Form files: ${formData.files.map((f) => f.key).toList()}',
+              name: serviceName,
+            );
             handler.next(options);
           },
           onResponse: (response, handler) {
-            log('← ${response.statusCode} ${response.requestOptions.uri}',
-                name: serviceName);
+            log(
+              '← ${response.statusCode} ${response.requestOptions.uri}',
+              name: serviceName,
+            );
             log('← Response data: ${response.data}', name: serviceName);
             handler.next(response);
           },
           onError: (error, handler) {
-            log('✗ ${error.type} ${error.requestOptions.uri}',
-                name: serviceName);
+            log(
+              '✗ ${error.type} ${error.requestOptions.uri}',
+              name: serviceName,
+            );
             if (error.response != null) {
-              log('✗ Error response: ${error.response?.data}',
-                  name: serviceName);
-              log('✗ Error status: ${error.response?.statusCode}',
-                  name: serviceName);
-              log('✗ Error headers: ${error.response?.headers}',
-                  name: serviceName);
+              log(
+                '✗ Error response: ${error.response?.data}',
+                name: serviceName,
+              );
+              log(
+                '✗ Error status: ${error.response?.statusCode}',
+                name: serviceName,
+              );
+              log(
+                '✗ Error headers: ${error.response?.headers}',
+                name: serviceName,
+              );
             }
             handler.next(error);
           },
@@ -1201,8 +1328,10 @@ class RoomService extends BaseApiService {
         // Parse response
         if (response.statusCode == 201 && response.data != null) {
           final data = response.data!;
-          log('✅ [RoomService] Photo uploaded successfully for room: $roomId',
-              name: serviceName);
+          log(
+            '✅ [RoomService] Photo uploaded successfully for room: $roomId',
+            name: serviceName,
+          );
           return ApiResponse.success(
             data,
             message:
@@ -1215,23 +1344,27 @@ class RoomService extends BaseApiService {
           String errorMessage = 'Failed to upload photo';
 
           if (errorData is Map<String, dynamic>) {
-            errorMessage = errorData['message'] as String? ??
+            errorMessage =
+                errorData['message'] as String? ??
                 errorData['error'] as String? ??
                 errorMessage;
-            log('⚠️ [RoomService] 400 Bad Request: $errorMessage',
-                name: serviceName);
+            log(
+              '⚠️ [RoomService] 400 Bad Request: $errorMessage',
+              name: serviceName,
+            );
           } else {
-            log('⚠️ [RoomService] 400 Bad Request: ${errorData.toString()}',
-                name: serviceName);
+            log(
+              '⚠️ [RoomService] 400 Bad Request: ${errorData.toString()}',
+              name: serviceName,
+            );
           }
 
-          return ApiResponse.error(
-            errorMessage,
-            statusCode: 400,
-          );
+          return ApiResponse.error(errorMessage, statusCode: 400);
         } else {
-          log('⚠️ [RoomService] Photo upload failed: ${response.statusCode}',
-              name: serviceName);
+          log(
+            '⚠️ [RoomService] Photo upload failed: ${response.statusCode}',
+            name: serviceName,
+          );
           return ApiResponse.error(
             'Failed to upload photo',
             statusCode: response.statusCode,
@@ -1247,21 +1380,23 @@ class RoomService extends BaseApiService {
           String errorMessage = 'Failed to upload photo';
 
           if (errorData is Map<String, dynamic>) {
-            errorMessage = errorData['message'] as String? ??
+            errorMessage =
+                errorData['message'] as String? ??
                 errorData['error'] as String? ??
                 errorMessage;
           }
 
-          log('⚠️ [RoomService] Error response ($statusCode): $errorMessage',
-              name: serviceName);
-
-          return ApiResponse.error(
-            errorMessage,
-            statusCode: statusCode,
+          log(
+            '⚠️ [RoomService] Error response ($statusCode): $errorMessage',
+            name: serviceName,
           );
+
+          return ApiResponse.error(errorMessage, statusCode: statusCode);
         } else {
-          log('⚠️ [RoomService] DioException without response: ${e.message}',
-              name: serviceName);
+          log(
+            '⚠️ [RoomService] DioException without response: ${e.message}',
+            name: serviceName,
+          );
           return ApiResponse.error(
             'Failed to upload photo: ${e.message}',
             statusCode: 0,
@@ -1270,10 +1405,7 @@ class RoomService extends BaseApiService {
       }
     } catch (e) {
       log('⚠️ [RoomService] Photo upload exception: $e', name: serviceName);
-      return ApiResponse.error(
-        'Failed to upload photo: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to upload photo: $e', statusCode: 0);
     }
   }
 
@@ -1310,51 +1442,48 @@ class RoomService extends BaseApiService {
     bool isPrimary = false,
   }) async {
     try {
-      log('Uploading photo for room: $roomId with image_url: $imageUrl',
-          name: serviceName);
+      log(
+        'Uploading photo for room: $roomId with image_url: $imageUrl',
+        name: serviceName,
+      );
 
       // Validate image URL
       if (imageUrl.isEmpty) {
         log('⚠️ [RoomService] Image URL is empty', name: serviceName);
-        return ApiResponse.error(
-          'Image URL is required',
-          statusCode: 400,
-        );
+        return ApiResponse.error('Image URL is required', statusCode: 400);
       }
 
       // Build query parameters
-      final queryParameters = <String, dynamic>{
-        'company_id': companyId,
-      };
+      final queryParameters = <String, dynamic>{'company_id': companyId};
 
       // Make API call using base service POST method
       final response = await post<Map<String, dynamic>>(
         '/rooms/$roomId/photo',
-        data: {
-          'image_url': imageUrl,
-          'is_primary': isPrimary,
-        },
+        data: {'image_url': imageUrl, 'is_primary': isPrimary},
         queryParameters: queryParameters,
         fromJson: (json) => json as Map<String, dynamic>,
       );
 
       if (response.success) {
-        log('✅ [RoomService] Photo uploaded successfully for room: $roomId',
-            name: serviceName);
+        log(
+          '✅ [RoomService] Photo uploaded successfully for room: $roomId',
+          name: serviceName,
+        );
       } else {
-        log('⚠️ [RoomService] Photo upload failed: ${response.error}',
-            name: serviceName);
+        log(
+          '⚠️ [RoomService] Photo upload failed: ${response.error}',
+          name: serviceName,
+        );
       }
 
       return response;
     } catch (e) {
       // Silent failure - just log, don't throw
-      log('⚠️ [RoomService] Photo upload exception (silent): $e',
-          name: serviceName);
-      return ApiResponse.error(
-        'Failed to upload photo: $e',
-        statusCode: 0,
+      log(
+        '⚠️ [RoomService] Photo upload exception (silent): $e',
+        name: serviceName,
       );
+      return ApiResponse.error('Failed to upload photo: $e', statusCode: 0);
     }
   }
 
@@ -1393,9 +1522,7 @@ class RoomService extends BaseApiService {
       // Make API call
       final response = await put<RoomMessage>(
         '/messages/$messageId',
-        data: {
-          'content': content,
-        },
+        data: {'content': content},
         fromJson: (json) {
           if (json == null) {
             throw Exception('Response data is null');
@@ -1413,10 +1540,7 @@ class RoomService extends BaseApiService {
       return response;
     } catch (e) {
       log('❌ Exception editing message: $e', name: serviceName);
-      return ApiResponse.error(
-        'Failed to edit message: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to edit message: $e', statusCode: 0);
     }
   }
 
@@ -1462,10 +1586,7 @@ class RoomService extends BaseApiService {
       return response;
     } catch (e) {
       log('❌ Exception deleting message: $e', name: serviceName);
-      return ApiResponse.error(
-        'Failed to delete message: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to delete message: $e', statusCode: 0);
     }
   }
 
@@ -1503,8 +1624,10 @@ class RoomService extends BaseApiService {
   }) async {
     try {
       if (members.isEmpty) {
-        log('⚠️ [RoomService] Empty member list, skipping addMembersToRoom',
-            name: serviceName);
+        log(
+          '⚠️ [RoomService] Empty member list, skipping addMembersToRoom',
+          name: serviceName,
+        );
         return ApiResponse.success(
           null,
           message: 'No members to add',
@@ -1512,15 +1635,15 @@ class RoomService extends BaseApiService {
         );
       }
 
-      log('Adding ${members.length} members to room: $roomId',
-          name: serviceName);
+      log(
+        'Adding ${members.length} members to room: $roomId',
+        name: serviceName,
+      );
 
       // Make API call
       final response = await post<void>(
         '/rooms/$roomId/members',
-        data: {
-          'members': members,
-        },
+        data: {'members': members},
         fromJson: (json) => null, // No response data to parse
       );
 
@@ -1534,8 +1657,10 @@ class RoomService extends BaseApiService {
         // 409 only occurs for already-active members, which is idempotent behavior
         if (response.statusCode == 409 &&
             response.error?.toLowerCase().contains('already') == true) {
-          log('✅ Member already exists in room (409 treated as success): $roomId',
-              name: serviceName);
+          log(
+            '✅ Member already exists in room (409 treated as success): $roomId',
+            name: serviceName,
+          );
           // Return success instead of error for 409 "Already a member"
           return ApiResponse.success(
             null,
@@ -1543,21 +1668,22 @@ class RoomService extends BaseApiService {
             statusCode: 409, // Keep original status code for transparency
           );
         } else {
-          log('⚠️ Failed to add some members: ${response.error}',
-              name: serviceName);
+          log(
+            '⚠️ Failed to add some members: ${response.error}',
+            name: serviceName,
+          );
           // Don't throw - partial success is acceptable for other errors
         }
       }
 
       return response;
     } catch (e) {
-      log('⚠️ Exception adding members to room (non-blocking): $e',
-          name: serviceName);
-      // Return error but don't throw - group creation should still succeed
-      return ApiResponse.error(
-        'Failed to add members: $e',
-        statusCode: 0,
+      log(
+        '⚠️ Exception adding members to room (non-blocking): $e',
+        name: serviceName,
       );
+      // Return error but don't throw - group creation should still succeed
+      return ApiResponse.error('Failed to add members: $e', statusCode: 0);
     }
   }
 
@@ -1597,20 +1723,21 @@ class RoomService extends BaseApiService {
       );
 
       if (response.success) {
-        log('✅ Member $userId removed successfully from room: $roomId',
-            name: serviceName);
+        log(
+          '✅ Member $userId removed successfully from room: $roomId',
+          name: serviceName,
+        );
       } else {
-        log('❌ Failed to remove member $userId: ${response.error}',
-            name: serviceName);
+        log(
+          '❌ Failed to remove member $userId: ${response.error}',
+          name: serviceName,
+        );
       }
 
       return response;
     } catch (e) {
       log('❌ Exception removing member $userId: $e', name: serviceName);
-      return ApiResponse.error(
-        'Failed to remove member: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to remove member: $e', statusCode: 0);
     }
   }
 
@@ -1649,37 +1776,32 @@ class RoomService extends BaseApiService {
       // Validate inputs
       if (name.trim().isEmpty) {
         log('⚠️ [RoomService] Member name is empty', name: serviceName);
-        return ApiResponse.error(
-          'Member name is required',
-          statusCode: 400,
-        );
+        return ApiResponse.error('Member name is required', statusCode: 400);
       }
 
       // Make API call
       final response = await put<void>(
         '/rooms/$roomId/members/$userId',
-        data: {
-          'name': name.trim(),
-          'phone': phone.trim(),
-        },
+        data: {'name': name.trim(), 'phone': phone.trim()},
         fromJson: (json) => null, // No response data to parse
       );
 
       if (response.success) {
-        log('✅ Member $userId updated successfully in room: $roomId',
-            name: serviceName);
+        log(
+          '✅ Member $userId updated successfully in room: $roomId',
+          name: serviceName,
+        );
       } else {
-        log('❌ Failed to update member $userId: ${response.error}',
-            name: serviceName);
+        log(
+          '❌ Failed to update member $userId: ${response.error}',
+          name: serviceName,
+        );
       }
 
       return response;
     } catch (e) {
       log('❌ Exception updating member $userId: $e', name: serviceName);
-      return ApiResponse.error(
-        'Failed to update member: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to update member: $e', statusCode: 0);
     }
   }
 
@@ -1708,18 +1830,16 @@ class RoomService extends BaseApiService {
     required int companyId,
   }) async {
     try {
-      log('Clearing chat for room: $roomId (company_id: $companyId)',
-          name: serviceName);
+      log(
+        'Clearing chat for room: $roomId (company_id: $companyId)',
+        name: serviceName,
+      );
 
       // Make API call
       final response = await post<void>(
         '/rooms/clear',
-        queryParameters: {
-          'company_id': companyId,
-        },
-        data: {
-          'room_id': roomId,
-        },
+        queryParameters: {'company_id': companyId},
+        data: {'room_id': roomId},
         fromJson: (json) => null, // No response data to parse
       );
 
@@ -1732,10 +1852,7 @@ class RoomService extends BaseApiService {
       return response;
     } catch (e) {
       log('❌ Exception clearing chat: $e', name: serviceName);
-      return ApiResponse.error(
-        'Failed to clear chat: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to clear chat: $e', statusCode: 0);
     }
   }
 
@@ -1774,8 +1891,10 @@ class RoomService extends BaseApiService {
     required String reactionType,
   }) async {
     try {
-      log('Adding reaction: $reactionType to message: $messageId',
-          name: serviceName);
+      log(
+        'Adding reaction: $reactionType to message: $messageId',
+        name: serviceName,
+      );
 
       // Validate reaction_type
       // We now allow any string (emoji) as reaction type
@@ -1790,9 +1909,7 @@ class RoomService extends BaseApiService {
       // Make API call
       final response = await post<MessageReaction>(
         '/messages/$messageId/reactions',
-        data: {
-          'reaction_type': reactionType,
-        },
+        data: {'reaction_type': reactionType},
         fromJson: (json) {
           if (json == null) {
             throw Exception('Response data is null');
@@ -1802,8 +1919,10 @@ class RoomService extends BaseApiService {
       );
 
       if (response.success && response.data != null) {
-        log('✅ Reaction added successfully: $reactionType → message $messageId',
-            name: serviceName);
+        log(
+          '✅ Reaction added successfully: $reactionType → message $messageId',
+          name: serviceName,
+        );
       } else {
         log('❌ Failed to add reaction: ${response.error}', name: serviceName);
       }
@@ -1812,10 +1931,7 @@ class RoomService extends BaseApiService {
     } catch (e) {
       log('❌ Exception adding reaction: $e', name: serviceName);
       // Fail silently - don't crash UI
-      return ApiResponse.error(
-        'Failed to add reaction: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to add reaction: $e', statusCode: 0);
     }
   }
 
@@ -1869,13 +1985,19 @@ class RoomService extends BaseApiService {
                     if (item is Map<String, dynamic>) {
                       return MessageReaction.fromJson(item);
                     } else {
-                      log('⚠️ [RoomService] Invalid reaction item format: $item',
-                          name: serviceName);
+                      log(
+                        '⚠️ [RoomService] Invalid reaction item format: $item',
+                        name: serviceName,
+                      );
                       return null;
                     }
                   } catch (e, stackTrace) {
-                    log('❌ [RoomService] Error parsing reaction item: $e',
-                        name: serviceName, error: e, stackTrace: stackTrace);
+                    log(
+                      '❌ [RoomService] Error parsing reaction item: $e',
+                      name: serviceName,
+                      error: e,
+                      stackTrace: stackTrace,
+                    );
                     return null;
                   }
                 })
@@ -1884,28 +2006,31 @@ class RoomService extends BaseApiService {
           }
 
           // Handle unexpected format
-          log('⚠️ [RoomService] Unexpected reactions data format: $json',
-              name: serviceName);
+          log(
+            '⚠️ [RoomService] Unexpected reactions data format: $json',
+            name: serviceName,
+          );
           return <MessageReaction>[];
         },
       );
 
       if (response.success && response.data != null) {
-        log('✅ Fetched ${response.data!.length} reactions for message: $messageId',
-            name: serviceName);
+        log(
+          '✅ Fetched ${response.data!.length} reactions for message: $messageId',
+          name: serviceName,
+        );
       } else {
-        log('❌ Failed to fetch reactions: ${response.error}',
-            name: serviceName);
+        log(
+          '❌ Failed to fetch reactions: ${response.error}',
+          name: serviceName,
+        );
       }
 
       return response;
     } catch (e) {
       log('❌ Exception fetching reactions: $e', name: serviceName);
       // Fail silently - don't crash UI
-      return ApiResponse.error(
-        'Failed to fetch reactions: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to fetch reactions: $e', statusCode: 0);
     }
   }
 
@@ -1945,8 +2070,10 @@ class RoomService extends BaseApiService {
     required String reactionType,
   }) async {
     try {
-      log('Updating reaction: $reactionType for message: $messageId',
-          name: serviceName);
+      log(
+        'Updating reaction: $reactionType for message: $messageId',
+        name: serviceName,
+      );
 
       // Validate reaction_type
       // We now allow any string (emoji) as reaction type
@@ -1963,9 +2090,7 @@ class RoomService extends BaseApiService {
       // Body: { "reaction_type": "love" }
       final response = await put<MessageReaction>(
         '/messages/$messageId/reactions',
-        data: {
-          'reaction_type': reactionType,
-        },
+        data: {'reaction_type': reactionType},
         fromJson: (json) {
           if (json == null) {
             throw Exception('Response data is null');
@@ -1975,13 +2100,19 @@ class RoomService extends BaseApiService {
       );
 
       if (response.success && response.data != null) {
-        log('✅ Reaction updated successfully: $reactionType → message $messageId',
-            name: serviceName);
-        log('   Updated reaction: ${response.data!.reactionType} by user ${response.data!.userId}',
-            name: serviceName);
+        log(
+          '✅ Reaction updated successfully: $reactionType → message $messageId',
+          name: serviceName,
+        );
+        log(
+          '   Updated reaction: ${response.data!.reactionType} by user ${response.data!.userId}',
+          name: serviceName,
+        );
       } else {
-        log('❌ Failed to update reaction: ${response.error}',
-            name: serviceName);
+        log(
+          '❌ Failed to update reaction: ${response.error}',
+          name: serviceName,
+        );
         log('   Status code: ${response.statusCode}', name: serviceName);
       }
 
@@ -1989,10 +2120,7 @@ class RoomService extends BaseApiService {
     } catch (e) {
       log('❌ Exception updating reaction: $e', name: serviceName);
       // Fail silently - don't crash UI
-      return ApiResponse.error(
-        'Failed to update reaction: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to update reaction: $e', statusCode: 0);
     }
   }
 
@@ -2038,21 +2166,22 @@ class RoomService extends BaseApiService {
       );
 
       if (response.success) {
-        log('✅ Reaction deleted successfully for message: $messageId',
-            name: serviceName);
+        log(
+          '✅ Reaction deleted successfully for message: $messageId',
+          name: serviceName,
+        );
       } else {
-        log('❌ Failed to delete reaction: ${response.error}',
-            name: serviceName);
+        log(
+          '❌ Failed to delete reaction: ${response.error}',
+          name: serviceName,
+        );
       }
 
       return response;
     } catch (e) {
       log('❌ Exception deleting reaction: $e', name: serviceName);
       // Fail silently - don't crash UI
-      return ApiResponse.error(
-        'Failed to delete reaction: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to delete reaction: $e', statusCode: 0);
     }
   }
 
@@ -2094,39 +2223,36 @@ class RoomService extends BaseApiService {
     ProgressCallback? onSendProgress,
   }) async {
     try {
-      log('📤 [RoomService] Uploading file to S3 for room: $roomId',
-          name: serviceName);
+      log(
+        '📤 [RoomService] Uploading file to S3 for room: $roomId',
+        name: serviceName,
+      );
 
       // Validate file exists
       if (!await file.exists()) {
-        log('⚠️ [RoomService] File does not exist: ${file.path}',
-            name: serviceName);
-        return ApiResponse.error(
-          'File does not exist',
-          statusCode: 400,
+        log(
+          '⚠️ [RoomService] File does not exist: ${file.path}',
+          name: serviceName,
         );
+        return ApiResponse.error('File does not exist', statusCode: 400);
       }
 
       // Validate file size
       final fileSize = await file.length();
       if (fileSize == 0) {
         log('⚠️ [RoomService] File is empty: ${file.path}', name: serviceName);
-        return ApiResponse.error(
-          'File is empty',
-          statusCode: 400,
-        );
+        return ApiResponse.error('File is empty', statusCode: 400);
       }
 
       final fileName = file.path.split('/').last;
-      log('📤 [RoomService] Uploading file: $fileName (${(fileSize / 1024).toStringAsFixed(2)} KB)',
-          name: serviceName);
+      log(
+        '📤 [RoomService] Uploading file: $fileName (${(fileSize / 1024).toStringAsFixed(2)} KB)',
+        name: serviceName,
+      );
 
       // Create multipart form data
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(
-          file.path,
-          filename: fileName,
-        ),
+        'file': await MultipartFile.fromFile(file.path, filename: fileName),
         if (content != null && content.isNotEmpty) 'content': content,
       });
 
@@ -2135,16 +2261,18 @@ class RoomService extends BaseApiService {
 
       // Create Dio instance for this upload (to handle multipart properly)
       // Use the same base configuration as the service
-      final dio = Dio(BaseOptions(
-        baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 60),
-        receiveTimeout: const Duration(seconds: 60),
-        headers: {
-          'Accept': 'application/json',
-          ...authHeaders, // This includes Authorization: Bearer {token}
-          // Don't set Content-Type - Dio will set it automatically with boundary for multipart
-        },
-      ));
+      final dio = Dio(
+        BaseOptions(
+          baseUrl: baseUrl,
+          connectTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 60),
+          headers: {
+            'Accept': 'application/json',
+            ...authHeaders, // This includes Authorization: Bearer {token}
+            // Don't set Content-Type - Dio will set it automatically with boundary for multipart
+          },
+        ),
+      );
 
       // Add interceptors for logging
       dio.interceptors.add(NetworkLoggingInterceptor(clientTag: serviceName));
@@ -2182,8 +2310,10 @@ class RoomService extends BaseApiService {
             final transformedUrl = transformLocalhostUrl(originalUrl);
             if (transformedUrl != originalUrl) {
               data['file_url'] = transformedUrl;
-              log('🔄 [RoomService] Transformed file_url from localhost to server URL',
-                  name: serviceName);
+              log(
+                '🔄 [RoomService] Transformed file_url from localhost to server URL',
+                name: serviceName,
+              );
             }
           }
 
@@ -2196,13 +2326,17 @@ class RoomService extends BaseApiService {
             final constructedUrl = constructFileUrlFromKey(fileKeyValue);
             if (constructedUrl != null) {
               data['file_url'] = constructedUrl;
-              log('🔧 [RoomService] Constructed file_url from file_key',
-                  name: serviceName);
+              log(
+                '🔧 [RoomService] Constructed file_url from file_key',
+                name: serviceName,
+              );
             }
           }
 
-          log('✅ [RoomService] File uploaded successfully to S3 for room: $roomId',
-              name: serviceName);
+          log(
+            '✅ [RoomService] File uploaded successfully to S3 for room: $roomId',
+            name: serviceName,
+          );
           log('   File URL: ${data['file_url']}', name: serviceName);
           log('   File Key: ${data['file_key']}', name: serviceName);
           log('   MIME Type: ${data['mime_type']}', name: serviceName);
@@ -2210,7 +2344,8 @@ class RoomService extends BaseApiService {
 
           return ApiResponse.success(
             data,
-            message: responseData['message'] as String? ??
+            message:
+                responseData['message'] as String? ??
                 'File uploaded successfully',
             statusCode: response.statusCode,
           );
@@ -2220,23 +2355,27 @@ class RoomService extends BaseApiService {
           String errorMessage = 'Failed to upload file';
 
           if (errorData is Map<String, dynamic>) {
-            errorMessage = errorData['message'] as String? ??
+            errorMessage =
+                errorData['message'] as String? ??
                 errorData['error'] as String? ??
                 errorMessage;
-            log('⚠️ [RoomService] 400 Bad Request: $errorMessage',
-                name: serviceName);
+            log(
+              '⚠️ [RoomService] 400 Bad Request: $errorMessage',
+              name: serviceName,
+            );
           } else {
-            log('⚠️ [RoomService] 400 Bad Request: ${errorData.toString()}',
-                name: serviceName);
+            log(
+              '⚠️ [RoomService] 400 Bad Request: ${errorData.toString()}',
+              name: serviceName,
+            );
           }
 
-          return ApiResponse.error(
-            errorMessage,
-            statusCode: 400,
-          );
+          return ApiResponse.error(errorMessage, statusCode: 400);
         } else {
-          log('⚠️ [RoomService] File upload failed: ${response.statusCode}',
-              name: serviceName);
+          log(
+            '⚠️ [RoomService] File upload failed: ${response.statusCode}',
+            name: serviceName,
+          );
           return ApiResponse.error(
             'Failed to upload file',
             statusCode: response.statusCode,
@@ -2253,7 +2392,8 @@ class RoomService extends BaseApiService {
           String errorMessage = 'Failed to upload file';
 
           if (errorData is Map<String, dynamic>) {
-            errorMessage = errorData['message'] as String? ??
+            errorMessage =
+                errorData['message'] as String? ??
                 errorData['error'] as String? ??
                 errorMessage;
           }
@@ -2272,10 +2412,7 @@ class RoomService extends BaseApiService {
       }
     } catch (e) {
       log('❌ [RoomService] Exception uploading file: $e', name: serviceName);
-      return ApiResponse.error(
-        'Failed to upload file: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to upload file: $e', statusCode: 0);
     }
   }
 
@@ -2300,13 +2437,16 @@ class RoomService extends BaseApiService {
   /// }
   ///
   /// Example curl:
-  /// curl --location 'http://13.201.27.102:7071/api/v1/messages/{messageId}/read-receipts' \
+  /// curl --location 'https://apigw.cubeone.in/chatapp/api/v1/messages/{messageId}/read-receipts' \
   /// --header 'Authorization: Bearer {token}'
   Future<ApiResponse<List<Map<String, dynamic>>>> getReadReceipts(
-      String messageId) async {
+    String messageId,
+  ) async {
     try {
-      log('📖 [RoomService] Fetching read receipts for message: $messageId',
-          name: serviceName);
+      log(
+        '📖 [RoomService] Fetching read receipts for message: $messageId',
+        name: serviceName,
+      );
 
       final response = await get<List<Map<String, dynamic>>>(
         '/messages/$messageId/read-receipts',
@@ -2323,8 +2463,9 @@ class RoomService extends BaseApiService {
                   if (item is Map<String, dynamic>) {
                     return item;
                   } else if (item is Map) {
-                    return Map<String, dynamic>.from(item
-                        .map((key, value) => MapEntry(key.toString(), value)));
+                    return Map<String, dynamic>.from(
+                      item.map((key, value) => MapEntry(key.toString(), value)),
+                    );
                   }
                   return null;
                 })
@@ -2333,29 +2474,37 @@ class RoomService extends BaseApiService {
           }
 
           // Handle unexpected format
-          log('⚠️ [RoomService] Unexpected read receipts data format: ${json.runtimeType}',
-              name: serviceName);
+          log(
+            '⚠️ [RoomService] Unexpected read receipts data format: ${json.runtimeType}',
+            name: serviceName,
+          );
           return <Map<String, dynamic>>[];
         },
       );
 
       if (response.success) {
         final receipts = response.data ?? <Map<String, dynamic>>[];
-        log('✅ [RoomService] Successfully fetched ${receipts.length} read receipts for message: $messageId',
-            name: serviceName);
+        log(
+          '✅ [RoomService] Successfully fetched ${receipts.length} read receipts for message: $messageId',
+          name: serviceName,
+        );
         return ApiResponse.success(
           receipts,
           message: response.message ?? 'Read receipts fetched successfully',
           statusCode: response.statusCode ?? 200,
         );
       } else {
-        log('❌ [RoomService] Failed to fetch read receipts: ${response.error}',
-            name: serviceName);
+        log(
+          '❌ [RoomService] Failed to fetch read receipts: ${response.error}',
+          name: serviceName,
+        );
         return response;
       }
     } catch (e, stackTrace) {
-      log('❌ [RoomService] Exception fetching read receipts: $e',
-          name: serviceName);
+      log(
+        '❌ [RoomService] Exception fetching read receipts: $e',
+        name: serviceName,
+      );
       log('   Stack trace: $stackTrace', name: serviceName);
       return ApiResponse.error(
         'Failed to fetch read receipts: $e',
@@ -2383,35 +2532,41 @@ class RoomService extends BaseApiService {
   /// }
   ///
   /// Example curl:
-  /// curl --location 'http://13.201.27.102:7071/api/v1/messages/{messageId}/read' \
+  /// curl --location 'https://apigw.cubeone.in/chatapp/api/v1/messages/{messageId}/read' \
   /// --header 'Authorization: Bearer {token}' \
   /// --header 'Content-Type: application/json' \
   /// --data '{"message_id": "770e8400-e29b-41d4-a716-446655440000"}'
   Future<ApiResponse<void>> markMessageAsRead(String messageId) async {
     try {
-      log('📖 [RoomService] Marking message as read: $messageId',
-          name: serviceName);
+      log(
+        '📖 [RoomService] Marking message as read: $messageId',
+        name: serviceName,
+      );
 
       final response = await post<void>(
         '/messages/$messageId/read',
-        data: {
-          'message_id': messageId,
-        },
+        data: {'message_id': messageId},
         fromJson: (_) => null, // No response data to parse
       );
 
       if (response.success) {
-        log('✅ [RoomService] Message marked as read successfully: $messageId',
-            name: serviceName);
+        log(
+          '✅ [RoomService] Message marked as read successfully: $messageId',
+          name: serviceName,
+        );
       } else {
-        log('❌ [RoomService] Failed to mark message as read: ${response.error}',
-            name: serviceName);
+        log(
+          '❌ [RoomService] Failed to mark message as read: ${response.error}',
+          name: serviceName,
+        );
       }
 
       return response;
     } catch (e, stackTrace) {
-      log('❌ [RoomService] Exception marking message as read: $e',
-          name: serviceName);
+      log(
+        '❌ [RoomService] Exception marking message as read: $e',
+        name: serviceName,
+      );
       log('   Stack trace: $stackTrace', name: serviceName);
       return ApiResponse.error(
         'Failed to mark message as read: $e',
@@ -2445,33 +2600,31 @@ class RoomService extends BaseApiService {
     required String status,
   }) async {
     try {
-      log('👤 [RoomService] Updating presence: isOnline=$isOnline, status=$status',
-          name: serviceName);
+      log(
+        '👤 [RoomService] Updating presence: isOnline=$isOnline, status=$status',
+        name: serviceName,
+      );
 
       final response = await post<void>(
         '/presence',
-        data: {
-          'is_online': isOnline,
-          'status': status,
-        },
+        data: {'is_online': isOnline, 'status': status},
         fromJson: (_) => null, // No response data to parse
       );
 
       if (response.success) {
         log('✅ [RoomService] Presence updated successfully', name: serviceName);
       } else {
-        log('❌ [RoomService] Failed to update presence: ${response.error}',
-            name: serviceName);
+        log(
+          '❌ [RoomService] Failed to update presence: ${response.error}',
+          name: serviceName,
+        );
       }
 
       return response;
     } catch (e, stackTrace) {
       log('❌ [RoomService] Exception updating presence: $e', name: serviceName);
       log('   Stack trace: $stackTrace', name: serviceName);
-      return ApiResponse.error(
-        'Failed to update presence: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to update presence: $e', statusCode: 0);
     }
   }
 
@@ -2510,8 +2663,10 @@ class RoomService extends BaseApiService {
     List<String> userIds,
   ) async {
     try {
-      log('👥 [RoomService] Fetching presence for ${userIds.length} users',
-          name: serviceName);
+      log(
+        '👥 [RoomService] Fetching presence for ${userIds.length} users',
+        name: serviceName,
+      );
 
       // Join user IDs with comma for query parameter
       final userIdsParam = userIds.join(',');
@@ -2531,8 +2686,9 @@ class RoomService extends BaseApiService {
                   if (item is Map<String, dynamic>) {
                     return item;
                   } else if (item is Map) {
-                    return Map<String, dynamic>.from(item
-                        .map((key, value) => MapEntry(key.toString(), value)));
+                    return Map<String, dynamic>.from(
+                      item.map((key, value) => MapEntry(key.toString(), value)),
+                    );
                   }
                   return null;
                 })
@@ -2544,13 +2700,16 @@ class RoomService extends BaseApiService {
           if (json is Map && json['data'] != null) {
             final data = json['data'];
             if (data is List) {
-              return (data as List)
+              return (data)
                   .map((item) {
                     if (item is Map<String, dynamic>) {
                       return item;
                     } else if (item is Map) {
-                      return Map<String, dynamic>.from(item.map(
-                          (key, value) => MapEntry(key.toString(), value)));
+                      return Map<String, dynamic>.from(
+                        item.map(
+                          (key, value) => MapEntry(key.toString(), value),
+                        ),
+                      );
                     }
                     return null;
                   })
@@ -2560,33 +2719,36 @@ class RoomService extends BaseApiService {
           }
 
           // Handle unexpected format
-          log('⚠️ [RoomService] Unexpected presence data format: ${json.runtimeType}',
-              name: serviceName);
+          log(
+            '⚠️ [RoomService] Unexpected presence data format: ${json.runtimeType}',
+            name: serviceName,
+          );
           return <Map<String, dynamic>>[];
         },
       );
 
       if (response.success) {
         final presenceList = response.data ?? <Map<String, dynamic>>[];
-        log('✅ [RoomService] Successfully fetched presence for ${presenceList.length} users',
-            name: serviceName);
+        log(
+          '✅ [RoomService] Successfully fetched presence for ${presenceList.length} users',
+          name: serviceName,
+        );
         return ApiResponse.success(
           presenceList,
           message: response.message ?? 'Presence fetched successfully',
           statusCode: response.statusCode ?? 200,
         );
       } else {
-        log('❌ [RoomService] Failed to fetch presence: ${response.error}',
-            name: serviceName);
+        log(
+          '❌ [RoomService] Failed to fetch presence: ${response.error}',
+          name: serviceName,
+        );
         return response;
       }
     } catch (e, stackTrace) {
       log('❌ [RoomService] Exception fetching presence: $e', name: serviceName);
       log('   Stack trace: $stackTrace', name: serviceName);
-      return ApiResponse.error(
-        'Failed to fetch presence: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to fetch presence: $e', statusCode: 0);
     }
   }
 

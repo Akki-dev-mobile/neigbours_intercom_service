@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 class NavigationHelper {
   static Future<T?> push<T>(BuildContext context, Widget page) {
-    return Navigator.of(context).push<T>(MaterialPageRoute(builder: (_) => page));
+    return Navigator.of(
+      context,
+    ).push<T>(MaterialPageRoute(builder: (_) => page));
   }
 
   static Future<T?> pushRoute<T>(
@@ -24,7 +26,9 @@ class NavigationHelper {
     } else if (routeOrBuilderOrPage is Widget) {
       builder = (_) => routeOrBuilderOrPage;
     } else {
-      throw ArgumentError('pushRoute expects a Route, WidgetBuilder, or Widget');
+      throw ArgumentError(
+        'pushRoute expects a Route, WidgetBuilder, or Widget',
+      );
     }
 
     return Navigator.of(context).push<T>(
@@ -39,10 +43,7 @@ class NavigationHelper {
             return child;
           }
           return Scaffold(
-            appBar: customAppBar ??
-                AppBar(
-                  title: Text(title ?? ''),
-                ),
+            appBar: customAppBar ?? AppBar(title: Text(title ?? '')),
             body: child,
           );
         },
@@ -62,7 +63,9 @@ class NavigationHelper {
     } else if (builderOrPage is Widget) {
       builder = (_) => builderOrPage;
     } else {
-      throw ArgumentError('replaceWithWidget expects a WidgetBuilder or Widget');
+      throw ArgumentError(
+        'replaceWithWidget expects a WidgetBuilder or Widget',
+      );
     }
 
     return Navigator.of(context).pushReplacement<T, T>(

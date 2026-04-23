@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter/services.dart';
 import 'dart:io' show Platform, Directory, File;
 import 'package:image_picker/image_picker.dart';
@@ -3918,7 +3919,8 @@ class _ChatScreenState extends State<ChatScreen>
     setState(() {
       _isLoading = false;
       _hasError = true;
-      _errorMessage = errorMessage ?? 'Failed to load messages';
+      _errorMessage =
+          errorMessage ?? FlutterI18n.translate(context, 'Failed to load messages');
     });
     _hideLoaderDialog();
 
@@ -4225,7 +4227,10 @@ class _ChatScreenState extends State<ChatScreen>
         EnhancedToast.error(
           context,
           title: 'Failed to send',
-          message: 'Please check your connection and try again',
+          message: FlutterI18n.translate(
+            context,
+            'Please check your connection and try again',
+          ),
         );
       }
     }
@@ -4408,13 +4413,13 @@ class _ChatScreenState extends State<ChatScreen>
         PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert, color: Colors.black),
           itemBuilder: (context) => [
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'clear',
               child: Row(
                 children: [
-                  Icon(Icons.delete_outline, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('Clear Chat'),
+                  const Icon(Icons.delete_outline, color: Colors.red),
+                  const SizedBox(width: 8),
+                  Text(FlutterI18n.translate(context, 'Clear Chat')),
                 ],
               ),
             ),
@@ -4797,7 +4802,10 @@ class _ChatScreenState extends State<ChatScreen>
                                           decoration: InputDecoration(
                                             hintText: _replyingTo != null
                                                 ? 'Reply to ${_replyingTo!.isMe ? "your message" : widget.contact.name}...'
-                                                : 'Type a message...',
+                                                : FlutterI18n.translate(
+                                                    context,
+                                                    'Type a message...',
+                                                  ),
                                             hintStyle: TextStyle(
                                               color: isDarkTheme
                                                   ? Colors.grey.shade500
@@ -5328,14 +5336,20 @@ class _ChatScreenState extends State<ChatScreen>
                                             _showDocumentOptions(
                                                 message.documentFile!,
                                                 message.documentName ??
-                                                    'Document');
+                                                    FlutterI18n.translate(
+                                                      context,
+                                                      'Document',
+                                                    ));
                                           } else if (message.documentUrl !=
                                               null) {
                                             // Download document from S3 URL
                                             _downloadDocumentFromUrl(
                                               message.documentUrl!,
                                               message.documentName ??
-                                                  'Document',
+                                                  FlutterI18n.translate(
+                                                    context,
+                                                    'Document',
+                                                  ),
                                             );
                                           }
                                         },
@@ -5374,7 +5388,10 @@ class _ChatScreenState extends State<ChatScreen>
                                                   children: [
                                                     Text(
                                                       message.documentName ??
-                                                          'Document',
+                                                          FlutterI18n.translate(
+                                                            context,
+                                                            'Document',
+                                                          ),
                                                       style: const TextStyle(
                                                         fontWeight:
                                                             FontWeight.bold,
@@ -5418,7 +5435,10 @@ class _ChatScreenState extends State<ChatScreen>
                                                     _downloadDocumentFromUrl(
                                                       message.documentUrl!,
                                                       message.documentName ??
-                                                          'Document',
+                                                          FlutterI18n.translate(
+                                                            context,
+                                                            'Document',
+                                                          ),
                                                     );
                                                   }
                                                 },
@@ -6605,17 +6625,20 @@ class _ChatScreenState extends State<ChatScreen>
       if (!mounted) return;
       Navigator.pop(context); // Close loading indicator
 
-      if (response.success && response.data != null) {
-        final reactions = response.data!;
+      final reactionsList =
+          response.success ? (response.data ?? <MessageReaction>[]) : null;
 
-        if (reactions.isEmpty) {
+      if (reactionsList != null) {
+        if (reactionsList.isEmpty) {
           EnhancedToast.info(
             context,
-            title: 'No Reactions',
-            message: 'No one has reacted to this message yet',
+            title: FlutterI18n.translate(context, 'No Reactions'),
+            message: FlutterI18n.translate(context, 'No reaction till now'),
           );
           return;
         }
+
+        final reactions = reactionsList;
 
         // Group reactions by reaction type
         final groupedReactions = <String, List<MessageReaction>>{};
@@ -6778,13 +6801,26 @@ class _ChatScreenState extends State<ChatScreen>
             ),
           );
         }
-      } else {
-        EnhancedToast.error(
-          context,
-          title: 'Error',
-          message: response.error ?? 'Failed to fetch reactions',
-        );
+        return;
       }
+
+      final errLower = (response.error ?? '').toLowerCase();
+      if (response.statusCode == 404 ||
+          errLower.contains('not found') ||
+          errLower.contains('no reaction')) {
+        EnhancedToast.info(
+          context,
+          title: FlutterI18n.translate(context, 'No Reactions'),
+          message: FlutterI18n.translate(context, 'No reaction till now'),
+        );
+        return;
+      }
+
+      EnhancedToast.error(
+        context,
+        title: 'Error',
+        message: response.error ?? 'Failed to fetch reactions',
+      );
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context); // Close loading indicator if still open
@@ -7280,11 +7316,12 @@ class _ChatScreenState extends State<ChatScreen>
         return;
       }
 
-      if (response.success && response.data != null) {
+      if (response.success) {
         final msgIndex = _messages.indexWhere((m) => m.id == messageId);
         if (msgIndex != -1 && mounted) {
           // Create a new list to ensure Flutter detects the change
-          final updatedReactions = List<MessageReaction>.from(response.data!);
+          final updatedReactions =
+              List<MessageReaction>.from(response.data ?? <MessageReaction>[]);
 
           log('🔄 [ChatScreen] Updating reactions for message $messageId: ${updatedReactions.length} reactions');
           log('   Current user ID: $_currentUserId');
@@ -9159,7 +9196,7 @@ class _ChatScreenState extends State<ChatScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'Failed to load messages',
+              FlutterI18n.translate(context, 'Failed to load messages'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -9168,7 +9205,11 @@ class _ChatScreenState extends State<ChatScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              _errorMessage ?? 'Please check your connection and try again',
+              _errorMessage ??
+                  FlutterI18n.translate(
+                    context,
+                    'Please check your connection and try again',
+                  ),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -9191,7 +9232,7 @@ class _ChatScreenState extends State<ChatScreen>
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Retry'),
+              child: Text(FlutterI18n.translate(context, 'Retry')),
             ),
           ],
         ),
@@ -9233,7 +9274,7 @@ class _ChatScreenState extends State<ChatScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'No messages yet',
+              FlutterI18n.translate(context, 'No messages yet'),
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -9243,7 +9284,7 @@ class _ChatScreenState extends State<ChatScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              'Start the conversation',
+              FlutterI18n.translate(context, 'Start the conversation'),
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 14,
@@ -9290,8 +9331,8 @@ class _ChatScreenState extends State<ChatScreen>
               ),
               const SizedBox(height: 24),
               // Title
-              const Text(
-                'Clear Chat',
+              Text(
+                FlutterI18n.translate(context, 'Clear Chat'),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -9302,7 +9343,10 @@ class _ChatScreenState extends State<ChatScreen>
               const SizedBox(height: 12),
               // Message
               Text(
-                'Are you sure you want to clear all messages from this chat? This action cannot be undone.',
+                FlutterI18n.translate(
+                  context,
+                  'Are you sure you want to clear all messages from this chat? This action cannot be undone.',
+                ),
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey.shade700,
@@ -9329,8 +9373,8 @@ class _ChatScreenState extends State<ChatScreen>
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Cancel',
+                        child: Text(
+                          FlutterI18n.translate(context, 'Cancel'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -9522,14 +9566,26 @@ class _ChatScreenState extends State<ChatScreen>
                         spacing: 24,
                         runSpacing: 16,
                         children: [
-                          _buildAttachmentOption(Icons.photo_library, 'Gallery',
-                              () => _pickMultipleMedia()),
-                          _buildAttachmentOption(Icons.camera_alt, 'Camera',
-                              () => _pickImage(ImageSource.camera)),
-                          _buildAttachmentOption(Icons.insert_drive_file,
-                              'Document', _pickDocument),
                           _buildAttachmentOption(
-                              Icons.videocam, 'Video', _pickVideo),
+                            Icons.photo_library,
+                            FlutterI18n.translate(context, 'Gallery'),
+                            () => _pickMultipleMedia(),
+                          ),
+                          _buildAttachmentOption(
+                            Icons.camera_alt,
+                            FlutterI18n.translate(context, 'Camera'),
+                            () => _pickImage(ImageSource.camera),
+                          ),
+                          _buildAttachmentOption(
+                            Icons.insert_drive_file,
+                            FlutterI18n.translate(context, 'Document'),
+                            _pickDocument,
+                          ),
+                          _buildAttachmentOption(
+                            Icons.videocam,
+                            FlutterI18n.translate(context, 'Video'),
+                            _pickVideo,
+                          ),
                         ],
                       ),
                     ],
@@ -11664,7 +11720,10 @@ class _ChatScreenState extends State<ChatScreen>
         final file = File('${directory.path}/$finalFileName');
         await file.writeAsBytes(response.bodyBytes);
 
-        await Share.shareXFiles([XFile(file.path)], text: 'Document');
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text: FlutterI18n.translate(context, 'Document'),
+        );
         EnhancedToast.success(
           context,
           title: 'Downloaded',

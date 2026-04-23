@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:developer' as developer;
 import 'package:intl/intl.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../src/config/intercom_module_config.dart';
+import '../../../src/di/intercom_providers.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/layout/app_scaffold.dart';
 import '../../../core/widgets/responsive_tab_bar.dart';
@@ -93,7 +97,6 @@ class _IntercomScreenState extends State<IntercomScreen>
     });
   }
 
-
   void _handleTabChange() {
     if (!_tabController.indexIsChanging) {
       final newIndex = _tabController.index;
@@ -108,11 +111,7 @@ class _IntercomScreenState extends State<IntercomScreen>
   void _initializeTabs() {
     if (widget.fromNeighborsCard) {
       // When accessed from Neighbors Card, show Residents, Committee and Groups tabs
-      _tabTitles = [
-        'Residents',
-        'Committee',
-        'Groups',
-      ];
+      _tabTitles = ['Residents', 'Committee', 'Groups'];
       _tabIcons = [
         Icons.people_rounded,
         Icons.groups_rounded,
@@ -120,11 +119,7 @@ class _IntercomScreenState extends State<IntercomScreen>
       ];
     } else if (widget.fromOneGateCard) {
       // When accessed from OneGate Card, show only Gatekeepers tab
-      _tabTitles = [
-        'Gatekeepers',
-        'Society Office',
-        'Lobbies',
-      ];
+      _tabTitles = ['Gatekeepers', 'Society Office', 'Lobbies'];
       _tabIcons = [
         Icons.security_rounded,
         Icons.business_rounded,
@@ -132,12 +127,7 @@ class _IntercomScreenState extends State<IntercomScreen>
       ];
     } else if (widget.showGatekeeperTab) {
       // Normal mode with gatekeeper tab
-      _tabTitles = [
-        'Posts',
-        'Residents',
-        'Committee',
-        'Gatekeepers',
-      ];
+      _tabTitles = ['Posts', 'Residents', 'Committee', 'Gatekeepers'];
       _tabIcons = [
         Icons.forum_rounded,
         Icons.people_rounded,
@@ -146,11 +136,7 @@ class _IntercomScreenState extends State<IntercomScreen>
       ];
     } else {
       // Normal mode without gatekeeper tab
-      _tabTitles = [
-        'Posts',
-        'Residents',
-        'Committee',
-      ];
+      _tabTitles = ['Posts', 'Residents', 'Committee'];
       _tabIcons = [
         Icons.forum_rounded,
         Icons.people_rounded,
@@ -179,64 +165,73 @@ class _IntercomScreenState extends State<IntercomScreen>
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold.internal(
-      title: 'Intercom',
-      customAppBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.white,
-        titleSpacing: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          color: Colors.black,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'Intercom',
-          style: const TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: _isGroupsTabSelected
-            ? null
-            : [
-                IconButton(
-                  icon: const Icon(Icons.history),
-                  color: const Color(0xffc62828),
-                  onPressed: () {
-                    _showCallHistory();
-                  },
-                  tooltip: 'Chat History',
-                ),
-              ],
-      ),
-      body: Column(
-        children: [
-          // Modern Segmented Control Tabs
-          ResponsiveTabBar(
-            controller: _tabController,
-            tabLabels: _tabTitles,
-            tabIcons: _tabIcons,
-            currentIndex: _currentIndex,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            segmented: true,
-            compact: true,
-          ),
+    final config = IntercomModule.config;
 
-          // Tab content
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-              ),
-              child: TabBarView(
-                controller: _tabController,
-                children: _buildTabContentList(),
-              ),
+    return ProviderScope(
+      overrides: [
+        intercomAuthPortProvider.overrideWithValue(config.authPort),
+        intercomContextPortProvider.overrideWithValue(config.contextPort),
+        intercomEndpointsProvider.overrideWithValue(config.endpoints),
+        if (config.httpClient != null)
+          intercomHttpClientProvider.overrideWithValue(config.httpClient!),
+      ],
+      child: AppScaffold.internal(
+        title: 'Intercom',
+        customAppBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          surfaceTintColor: Colors.white,
+          titleSpacing: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            color: Colors.black,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: const Text(
+            'Intercom',
+            style: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.w700,
             ),
           ),
-        ],
+          actions: _isGroupsTabSelected
+              ? null
+              : [
+                  IconButton(
+                    icon: const Icon(Icons.history),
+                    color: const Color(0xffc62828),
+                    onPressed: () {
+                      _showCallHistory();
+                    },
+                    tooltip: 'Chat History',
+                  ),
+                ],
+        ),
+        body: Column(
+          children: [
+            // Modern Segmented Control Tabs
+            ResponsiveTabBar(
+              controller: _tabController,
+              tabLabels: _tabTitles,
+              tabIcons: _tabIcons,
+              currentIndex: _currentIndex,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              segmented: true,
+              compact: true,
+            ),
+
+            // Tab content
+            Expanded(
+              child: Container(
+                decoration: const BoxDecoration(color: Colors.white),
+                child: TabBarView(
+                  controller: _tabController,
+                  children: _buildTabContentList(),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -245,26 +240,14 @@ class _IntercomScreenState extends State<IntercomScreen>
     if (widget.fromNeighborsCard) {
       // When accessed from Neighbors Card, show Residents, Committee and Groups tabs
       return [
-        ResidentsTab(
-          activeTabNotifier: _activeTabNotifier,
-          tabIndex: 0,
-        ),
-        CommitteeTab(
-          activeTabNotifier: _activeTabNotifier,
-          tabIndex: 1,
-        ),
-        GroupsTab(
-          activeTabNotifier: _activeTabNotifier,
-          tabIndex: 2,
-        ),
+        ResidentsTab(activeTabNotifier: _activeTabNotifier, tabIndex: 0),
+        CommitteeTab(activeTabNotifier: _activeTabNotifier, tabIndex: 1),
+        GroupsTab(activeTabNotifier: _activeTabNotifier, tabIndex: 2),
       ];
     } else if (widget.fromOneGateCard) {
       // When accessed from OneGate Card
       return [
-        GatekeepersTab(
-          activeTabNotifier: _activeTabNotifier,
-          tabIndex: 0,
-        ),
+        GatekeepersTab(activeTabNotifier: _activeTabNotifier, tabIndex: 0),
         const SocietyOfficeTab(),
         const LobbiesTab(),
       ];
@@ -272,31 +255,16 @@ class _IntercomScreenState extends State<IntercomScreen>
       // Normal mode with gatekeeper tab
       return [
         const PostsTab(),
-        ResidentsTab(
-          activeTabNotifier: _activeTabNotifier,
-          tabIndex: 1,
-        ),
-        CommitteeTab(
-          activeTabNotifier: _activeTabNotifier,
-          tabIndex: 2,
-        ),
-        GatekeepersTab(
-          activeTabNotifier: _activeTabNotifier,
-          tabIndex: 3,
-        ),
+        ResidentsTab(activeTabNotifier: _activeTabNotifier, tabIndex: 1),
+        CommitteeTab(activeTabNotifier: _activeTabNotifier, tabIndex: 2),
+        GatekeepersTab(activeTabNotifier: _activeTabNotifier, tabIndex: 3),
       ];
     } else {
       // Normal mode without gatekeeper tab
       return [
         const PostsTab(),
-        ResidentsTab(
-          activeTabNotifier: _activeTabNotifier,
-          tabIndex: 1,
-        ),
-        CommitteeTab(
-          activeTabNotifier: _activeTabNotifier,
-          tabIndex: 2,
-        ),
+        ResidentsTab(activeTabNotifier: _activeTabNotifier, tabIndex: 1),
+        CommitteeTab(activeTabNotifier: _activeTabNotifier, tabIndex: 2),
       ];
     }
   }
@@ -366,10 +334,7 @@ class _CallHistoryPageState extends State<CallHistoryPage>
         ),
         title: const Text(
           'Chats & Calls History',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w700,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700),
         ),
       ),
       body: Column(
@@ -393,7 +358,8 @@ class _CallHistoryPageState extends State<CallHistoryPage>
                 children: [
                   // Chats Tab - Show actual 1-to-1 chat history (first tab)
                   _ChatHistoryTab(
-                      scrollController: _chatHistoryScrollController),
+                    scrollController: _chatHistoryScrollController,
+                  ),
 
                   // Calls Tab (second tab)
                   const _CallsHistoryTab(),
@@ -436,9 +402,7 @@ class IntercomSearchDelegate extends SearchDelegate<String> {
 
   @override
   Widget buildResults(BuildContext context) {
-    return const Center(
-      child: Text('Search not implemented in this demo'),
-    );
+    return const Center(child: Text('Search not implemented in this demo'));
   }
 
   @override
@@ -576,9 +540,7 @@ class _CallsEmptyState extends StatelessWidget {
 class _CallHistoryItem extends StatelessWidget {
   final CallHistoryEntry entry;
 
-  const _CallHistoryItem({
-    required this.entry,
-  });
+  const _CallHistoryItem({required this.entry});
 
   @override
   Widget build(BuildContext context) {
@@ -590,8 +552,7 @@ class _CallHistoryItem extends StatelessWidget {
     final isDeclined = status == CallStatus.declined;
 
     final callTypeLabel = entry.callType.displayName;
-    final statusLabel =
-        showAsMissed ? 'Missed' : status.displayName;
+    final statusLabel = showAsMissed ? 'Missed' : status.displayName;
 
     // Icon: use missed icons for missed/declined, arrows otherwise.
     final IconData statusIcon;
@@ -600,11 +561,11 @@ class _CallHistoryItem extends StatelessWidget {
           ? Icons.call_missed_outgoing
           : Icons.call_missed;
     } else {
-      statusIcon =
-          entry.isOutgoing ? Icons.call_made : Icons.call_received;
+      statusIcon = entry.isOutgoing ? Icons.call_made : Icons.call_received;
     }
-    final Color statusIconColor =
-        (showAsMissed || isDeclined) ? Colors.red : AppColors.success;
+    final Color statusIconColor = (showAsMissed || isDeclined)
+        ? Colors.red
+        : AppColors.success;
 
     // Build styled preview text: call type (grey) · status (colored) · duration (grey).
     final baseStyle = TextStyle(color: Colors.grey.shade600);
@@ -653,10 +614,7 @@ class _CallHistoryItem extends StatelessWidget {
             : null,
         child: avatarUrl != null
             ? null
-            : Icon(
-                Icons.person,
-                color: const Color(0xffc62828),
-              ),
+            : Icon(Icons.person, color: const Color(0xffc62828)),
       ),
       title: Text(
         entry.contactName,
@@ -667,11 +625,7 @@ class _CallHistoryItem extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                statusIcon,
-                size: 14,
-                color: statusIconColor,
-              ),
+              Icon(statusIcon, size: 14, color: statusIconColor),
               const SizedBox(width: 4),
               Expanded(
                 child: Text.rich(
@@ -684,10 +638,7 @@ class _CallHistoryItem extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             dateTimeText,
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
           ),
         ],
       ),
@@ -762,9 +713,7 @@ class _RoomProcessingResult {
 class _ChatHistoryTab extends StatefulWidget {
   final ScrollController scrollController;
 
-  const _ChatHistoryTab({
-    required this.scrollController,
-  });
+  const _ChatHistoryTab({required this.scrollController});
 
   @override
   State<_ChatHistoryTab> createState() => _ChatHistoryTabState();
@@ -795,12 +744,14 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
   final Set<String> _pendingRoomInfoRequests =
       {}; // Track rooms being fetched to prevent duplicates
   final Map<String, DateTime> _roomInfoCacheTimestamps = {}; // Track cache age
-  static const Duration _roomInfoCacheTTL =
-      Duration(minutes: 5); // Cache validity: 5 minutes
+  static const Duration _roomInfoCacheTTL = Duration(
+    minutes: 5,
+  ); // Cache validity: 5 minutes
   static const int _maxConcurrentRequests = 5; // Maximum concurrent API calls
   DateTime? _lastRateLimitError; // Track last 429 error time
-  static const Duration _rateLimitBackoff =
-      Duration(minutes: 2); // Backoff after 429 error
+  static const Duration _rateLimitBackoff = Duration(
+    minutes: 2,
+  ); // Backoff after 429 error
 
   @override
   void initState() {
@@ -839,15 +790,15 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
     );
 
     // Listen to connection state changes
-    _wsConnectionSubscription = _chatService.connectionStateStream.listen(
-      (isConnected) {
-        if (mounted) {
-          setState(() {
-            _isWebSocketConnected = isConnected;
-          });
-        }
-      },
-    );
+    _wsConnectionSubscription = _chatService.connectionStateStream.listen((
+      isConnected,
+    ) {
+      if (mounted) {
+        setState(() {
+          _isWebSocketConnected = isConnected;
+        });
+      }
+    });
 
     // Initialize connection status
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -867,20 +818,23 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
     if (roomId == null || roomId.isEmpty) return;
 
     // Handle unread_count_update events from WebSocket
-    final messageType = wsMessage.type?.toLowerCase() ??
+    final messageType =
+        wsMessage.type?.toLowerCase() ??
         wsMessage.data?['type']?.toString().toLowerCase();
     if (messageType == 'unread_count_update' ||
         wsMessage.messageTypeEnum == WebSocketMessageType.unreadCountUpdate) {
       final updateRoomId = roomId ?? wsMessage.data?['room_id']?.toString();
       final userId = wsMessage.userId ?? wsMessage.data?['user_id']?.toString();
-      final unreadCount = wsMessage.data?['unread_count'] as int? ??
+      final unreadCount =
+          wsMessage.data?['unread_count'] as int? ??
           (wsMessage.data?['unread_count'] is String
               ? int.tryParse(wsMessage.data!['unread_count'] as String)
               : null);
 
       if (updateRoomId != null && userId != null && unreadCount != null) {
         developer.log(
-            '📊 [ChatHistoryTab] Received unread_count_update: room=$updateRoomId, user=$userId, count=$unreadCount');
+          '📊 [ChatHistoryTab] Received unread_count_update: room=$updateRoomId, user=$userId, count=$unreadCount',
+        );
 
         // Update local unread count manager if this is for current user
         if (userId == _currentUserId) {
@@ -890,7 +844,8 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
             // Backend is source of truth - update local cache with exact count
             await _unreadManager.setUnreadCount(updateRoomId, unreadCount);
             developer.log(
-                '📊 [ChatHistoryTab] Unread count updated to $unreadCount for room $updateRoomId');
+              '📊 [ChatHistoryTab] Unread count updated to $unreadCount for room $updateRoomId',
+            );
           }
 
           // Update chat history UI with new unread count
@@ -901,7 +856,8 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
     }
 
     developer.log(
-        '📨 [ChatHistoryTab] Received WebSocket message for room: $roomId');
+      '📨 [ChatHistoryTab] Received WebSocket message for room: $roomId',
+    );
 
     // Check if this message is from current user
     final isFromCurrentUser = wsMessage.userId == _currentUserId;
@@ -931,7 +887,8 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
   /// System messages include: admin actions, member add/remove, etc.
   bool _isSystemMessageFromWebSocket(WebSocketMessage wsMessage) {
     // Check message_type from WebSocket data
-    final messageType = wsMessage.messageType?.toLowerCase() ??
+    final messageType =
+        wsMessage.messageType?.toLowerCase() ??
         wsMessage.data?['message_type']?.toString().toLowerCase();
     final eventType = wsMessage.data?['event_type']?.toString().toLowerCase();
 
@@ -1008,7 +965,8 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
     });
 
     developer.log(
-        '✅ [ChatHistoryTab] Updated chat history for room $roomId: unread=$unreadCount');
+      '✅ [ChatHistoryTab] Updated chat history for room $roomId: unread=$unreadCount',
+    );
   }
 
   /// Load the set of opened chat room IDs from SharedPreferences
@@ -1019,8 +977,9 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
       setState(() {
         _openedChats = openedChatsList.toSet();
       });
-      developer
-          .log('✅ [ChatHistoryTab] Loaded ${_openedChats.length} opened chats');
+      developer.log(
+        '✅ [ChatHistoryTab] Loaded ${_openedChats.length} opened chats',
+      );
     } catch (e) {
       developer.log('⚠️ [ChatHistoryTab] Error loading opened chats: $e');
     }
@@ -1048,7 +1007,8 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
           );
         });
         developer.log(
-            '✅ [ChatHistoryTab] Cleared unreadCount for chat $roomId on open');
+          '✅ [ChatHistoryTab] Cleared unreadCount for chat $roomId on open',
+        );
       } else if (!_openedChats.contains(roomId)) {
         // Just add to opened set if not already there
         setState(() {
@@ -1088,7 +1048,8 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
       developer.log('ℹ️ [ChatHistoryTab] Cleared opened flag for chat $roomId');
     } catch (e) {
       developer.log(
-          '⚠️ [ChatHistoryTab] Error clearing opened flag for chat $roomId: $e');
+        '⚠️ [ChatHistoryTab] Error clearing opened flag for chat $roomId: $e',
+      );
     }
   }
 
@@ -1103,29 +1064,28 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
     try {
       // Fetch room info with reduced timeout for faster failure
       final roomInfoResponse = await _roomService
-          .getRoomInfo(
-        roomId: room.id,
-        companyId: companyId,
-      )
+          .getRoomInfo(roomId: room.id, companyId: companyId)
           .timeout(
-        const Duration(seconds: 8), // Reduced timeout for faster failure
-        onTimeout: () {
-          developer.log(
-              '⏱️ [ChatHistoryTab] Timeout fetching room info for ${room.id}');
-          return ApiResponse.error('Request timeout', statusCode: 408);
-        },
-      );
+            const Duration(seconds: 8), // Reduced timeout for faster failure
+            onTimeout: () {
+              developer.log(
+                '⏱️ [ChatHistoryTab] Timeout fetching room info for ${room.id}',
+              );
+              return ApiResponse.error('Request timeout', statusCode: 408);
+            },
+          );
 
       if (!roomInfoResponse.success || roomInfoResponse.data == null) {
         developer.log(
-            '⚠️ [ChatHistoryTab] Failed to get room info for ${room.id}: ${roomInfoResponse.error}');
+          '⚠️ [ChatHistoryTab] Failed to get room info for ${room.id}: ${roomInfoResponse.error}',
+        );
         // Use basic room data as fallback
         return _RoomProcessingResult(
           chatData: _ChatHistoryData(
             roomId: room.id,
             contactName: room.name,
             contactId: room.createdBy,
-            lastMessage: 'No messages yet',
+            lastMessage: FlutterI18n.translate(context, 'No messages yet'),
             time: _formatTime(room.lastActive ?? room.updatedAt),
             lastActive: room.lastActive ?? room.updatedAt,
             unreadCount: 0,
@@ -1182,7 +1142,8 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
         // Use cached last message from UnreadCountManager or placeholder
         final lastMessage =
             _unreadManager.getLastMessage(room.id) ?? 'Tap to open chat';
-        final lastMessageTime = _unreadManager.getLastMessageTime(room.id) ??
+        final lastMessageTime =
+            _unreadManager.getLastMessageTime(room.id) ??
             (roomInfo.lastActive ?? room.updatedAt);
         final unreadCount = _unreadManager.getUnreadCount(room.id);
         final timeStr = _formatTime(lastMessageTime);
@@ -1200,16 +1161,12 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
           ),
         );
       } else {
-        return _RoomProcessingResult(
-          error: 'Could not determine other member',
-        );
+        return _RoomProcessingResult(error: 'Could not determine other member');
       }
     } catch (e, stackTrace) {
       developer.log('❌ [ChatHistoryTab] Error processing room ${room.id}: $e');
       developer.log('   Stack trace: $stackTrace');
-      return _RoomProcessingResult(
-        error: e.toString(),
-      );
+      return _RoomProcessingResult(error: e.toString());
     }
   }
 
@@ -1286,11 +1243,13 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
     try {
       // PERFORMANCE OPTIMIZATION: Check rate limit backoff
       if (_lastRateLimitError != null) {
-        final timeSinceRateLimit =
-            DateTime.now().difference(_lastRateLimitError!);
+        final timeSinceRateLimit = DateTime.now().difference(
+          _lastRateLimitError!,
+        );
         if (timeSinceRateLimit < _rateLimitBackoff) {
           developer.log(
-              '⏸️ [ChatHistoryTab] Skipping load - rate limit backoff active (${_rateLimitBackoff.inMinutes - timeSinceRateLimit.inMinutes}min remaining)');
+            '⏸️ [ChatHistoryTab] Skipping load - rate limit backoff active (${_rateLimitBackoff.inMinutes - timeSinceRateLimit.inMinutes}min remaining)',
+          );
           return;
         }
       }
@@ -1298,13 +1257,15 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
       final companyId = await _apiService.getSelectedSocietyId();
       if (companyId == null) {
         developer.log(
-            '❌ [ChatHistoryTab] Company ID is null, cannot load chat history');
+          '❌ [ChatHistoryTab] Company ID is null, cannot load chat history',
+        );
         return;
       }
       _companyId = companyId;
 
       developer.log(
-          '📡 [ChatHistoryTab] Fetching 1-to-1 chats for company_id: $companyId');
+        '📡 [ChatHistoryTab] Fetching 1-to-1 chats for company_id: $companyId',
+      );
 
       // Fetch 1-to-1 chats using chat_type=1-1 filter
       final roomsResponse = await _chatService.fetchRooms(
@@ -1313,14 +1274,16 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
       );
 
       if (!mounted) {
-        developer
-            .log('⚠️ [ChatHistoryTab] Widget not mounted, cancelling load');
+        developer.log(
+          '⚠️ [ChatHistoryTab] Widget not mounted, cancelling load',
+        );
         return;
       }
 
       if (!roomsResponse.success) {
         developer.log(
-            '❌ [ChatHistoryTab] Failed to fetch rooms: ${roomsResponse.error}');
+          '❌ [ChatHistoryTab] Failed to fetch rooms: ${roomsResponse.error}',
+        );
         // Don't show error - UI is already visible with empty state
         return;
       }
@@ -1350,12 +1313,15 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
         if (room.unreadCount != null && room.unreadCount! > 0) {
           await _unreadManager.setUnreadCount(room.id, room.unreadCount!);
           developer.log(
-              '📥 [ChatHistoryTab] Seeded unread count from API for room ${room.id}: ${room.unreadCount}');
+            '📥 [ChatHistoryTab] Seeded unread count from API for room ${room.id}: ${room.unreadCount}',
+          );
           // If backend says there are unread messages, ensure this chat is not treated as "opened"
           if (_openedChats.remove(room.id)) {
             final prefs = await SharedPreferences.getInstance();
             await prefs.setStringList(
-                'opened_chat_rooms', _openedChats.toList());
+              'opened_chat_rooms',
+              _openedChats.toList(),
+            );
           }
         }
       }
@@ -1363,21 +1329,24 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
       final initialChats = rooms.map((room) {
         // Use UnreadCountManager (now seeded from API on load) for unread count
         final lastMessage = _unreadManager.getLastMessage(room.id);
-        final lastMessageTime = _unreadManager.getLastMessageTime(room.id) ??
+        final lastMessageTime =
+            _unreadManager.getLastMessageTime(room.id) ??
             (room.lastActive ?? room.updatedAt);
         final unreadCount = _unreadManager.getUnreadCount(room.id);
         // A chat is considered "opened" only when backend says there are NO unread messages
         final isOpened = unreadCount == 0 && _openedChats.contains(room.id);
 
         // For 1-to-1: use backend peer_user when available (source of truth)
-        final String contactName = (room.peerUser?.userName != null &&
+        final String contactName =
+            (room.peerUser?.userName != null &&
                 room.peerUser!.userName!.trim().isNotEmpty)
             ? room.peerUser!.userName!
             : room.name;
         final String contactId = room.peerUser?.userId != null
             ? room.peerUser!.userId.toString()
             : room.createdBy;
-        final String? contactAvatar = (room.peerUser?.avatar != null &&
+        final String? contactAvatar =
+            (room.peerUser?.avatar != null &&
                 room.peerUser!.avatar!.trim().isNotEmpty)
             ? room.peerUser!.avatar
             : null;
@@ -1387,7 +1356,8 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
           contactName: contactName,
           contactId: contactId,
           contactAvatar: contactAvatar,
-          lastMessage: lastMessage ??
+          lastMessage:
+              lastMessage ??
               'Tap to open chat', // Placeholder, no messages API call
           time: _formatTime(lastMessageTime),
           lastActive: lastMessageTime,
@@ -1403,7 +1373,8 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
           _chatHistory = initialChats;
         });
         developer.log(
-            '✅ [ChatHistoryTab] UI rendered immediately with ${initialChats.length} chats');
+          '✅ [ChatHistoryTab] UI rendered immediately with ${initialChats.length} chats',
+        );
       }
 
       // CRITICAL FIX: Do NOT fetch room info for every room on tab load
@@ -1416,7 +1387,8 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
       // REMOVED: _loadRoomInfoInBatches(rooms, companyId);
       // This prevents the API storm that causes 429 errors
       developer.log(
-          '✅ [ChatHistoryTab] Room list rendered - room info will load lazily (on-demand)');
+        '✅ [ChatHistoryTab] Room list rendered - room info will load lazily (on-demand)',
+      );
     } catch (e, stackTrace) {
       developer.log('❌ [ChatHistoryTab] Error loading chat history: $e');
       developer.log('   Stack trace: $stackTrace');
@@ -1443,25 +1415,31 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
 
     if (roomsNeedingInfo.isEmpty) {
       developer.log(
-          '✅ [ChatHistoryTab] All rooms already cached, skipping room info fetch');
+        '✅ [ChatHistoryTab] All rooms already cached, skipping room info fetch',
+      );
       return;
     }
 
     developer.log(
-        '🔄 [ChatHistoryTab] Loading room info for ${roomsNeedingInfo.length} rooms in batches (max $_maxConcurrentRequests concurrent)');
+      '🔄 [ChatHistoryTab] Loading room info for ${roomsNeedingInfo.length} rooms in batches (max $_maxConcurrentRequests concurrent)',
+    );
 
     // Process rooms in batches
     for (int i = 0; i < roomsNeedingInfo.length; i += _maxConcurrentRequests) {
       if (!mounted) break; // Stop if widget disposed
 
-      final batch =
-          roomsNeedingInfo.skip(i).take(_maxConcurrentRequests).toList();
+      final batch = roomsNeedingInfo
+          .skip(i)
+          .take(_maxConcurrentRequests)
+          .toList();
       developer.log(
-          '📦 [ChatHistoryTab] Processing batch ${(i ~/ _maxConcurrentRequests) + 1}: ${batch.length} rooms');
+        '📦 [ChatHistoryTab] Processing batch ${(i ~/ _maxConcurrentRequests) + 1}: ${batch.length} rooms',
+      );
 
       // Process batch in parallel (max 5 concurrent)
-      final batchFutures =
-          batch.map((room) => _loadRoomInfoForChat(room, companyId)).toList();
+      final batchFutures = batch
+          .map((room) => _loadRoomInfoForChat(room, companyId))
+          .toList();
 
       try {
         await Future.wait(batchFutures);
@@ -1484,7 +1462,8 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
     // Skip if already being fetched (deduplication)
     if (_pendingRoomInfoRequests.contains(room.id)) {
       developer.log(
-          '⏭️ [ChatHistoryTab] Room info already being fetched for ${room.id}, skipping');
+        '⏭️ [ChatHistoryTab] Room info already being fetched for ${room.id}, skipping',
+      );
       return;
     }
 
@@ -1507,20 +1486,22 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
       final roomInfoResponse = await _roomService
           .getRoomInfo(roomId: room.id, companyId: companyId)
           .timeout(
-        const Duration(seconds: 5), // Reduced timeout - fail fast
-        onTimeout: () {
-          developer.log(
-              '⏱️ [ChatHistoryTab] Timeout fetching room info for ${room.id}');
-          return ApiResponse.error('Request timeout', statusCode: 408);
-        },
-      );
+            const Duration(seconds: 5), // Reduced timeout - fail fast
+            onTimeout: () {
+              developer.log(
+                '⏱️ [ChatHistoryTab] Timeout fetching room info for ${room.id}',
+              );
+              return ApiResponse.error('Request timeout', statusCode: 408);
+            },
+          );
 
       _pendingRoomInfoRequests.remove(room.id);
 
       // Handle 429 rate limit errors
       if (roomInfoResponse.statusCode == 429) {
         developer.log(
-            '⚠️ [ChatHistoryTab] Rate limit (429) for room ${room.id}, stopping batch processing');
+          '⚠️ [ChatHistoryTab] Rate limit (429) for room ${room.id}, stopping batch processing',
+        );
         _lastRateLimitError = DateTime.now();
         // Don't retry - stop batch processing
         return;
@@ -1528,7 +1509,8 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
 
       if (!roomInfoResponse.success || roomInfoResponse.data == null) {
         developer.log(
-            '⚠️ [ChatHistoryTab] Failed to get room info for ${room.id}: ${roomInfoResponse.error}');
+          '⚠️ [ChatHistoryTab] Failed to get room info for ${room.id}: ${roomInfoResponse.error}',
+        );
         // Use basic room data (already shown in UI)
         return;
       }
@@ -1545,8 +1527,9 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
       _updateChatHistoryFromRoomInfo(room, roomInfo, companyId);
     } catch (e) {
       _pendingRoomInfoRequests.remove(room.id);
-      developer
-          .log('❌ [ChatHistoryTab] Error loading room info for ${room.id}: $e');
+      developer.log(
+        '❌ [ChatHistoryTab] Error loading room info for ${room.id}: $e',
+      );
       // Continue with basic room data (already shown)
     }
   }
@@ -1554,7 +1537,10 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
   /// Update chat history item with room info (name, avatar)
   /// PERFORMANCE OPTIMIZATION: No messages API call - use cached last message or placeholder
   void _updateChatHistoryFromRoomInfo(
-      Room room, RoomInfo roomInfo, int companyId) {
+    Room room,
+    RoomInfo roomInfo,
+    int companyId,
+  ) {
     if (!mounted) return;
 
     // For 1-to-1: prefer backend peer_user (source of truth), else derive from members
@@ -1604,7 +1590,8 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
     // PERFORMANCE OPTIMIZATION: Use cached last message from UnreadCountManager
     // Do NOT call messages API - that will be done when user opens the chat
     final lastMessage = _unreadManager.getLastMessage(room.id);
-    final lastMessageTime = _unreadManager.getLastMessageTime(room.id) ??
+    final lastMessageTime =
+        _unreadManager.getLastMessageTime(room.id) ??
         (roomInfo.lastActive ?? room.updatedAt);
     final unreadCount = _unreadManager.getUnreadCount(room.id);
     final isOpened = _openedChats.contains(room.id);
@@ -1630,7 +1617,8 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
         _chatHistory.sort((a, b) => b.lastActive.compareTo(a.lastActive));
       });
       developer.log(
-          '✅ [ChatHistoryTab] Updated chat history for room ${room.id} with room info');
+        '✅ [ChatHistoryTab] Updated chat history for room ${room.id} with room info',
+      );
     }
   }
 
@@ -1762,8 +1750,9 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
           role: '', // Can be enhanced with apartment number if available
           message: chat.lastMessage,
           time: chat.time,
-          unreadCount:
-              isOpened ? 0 : chat.unreadCount, // Hide unread count if opened
+          unreadCount: isOpened
+              ? 0
+              : chat.unreadCount, // Hide unread count if opened
           contact: contact, // Pass contact for avatar display
           isOpened: isOpened, // Pass opened status
           onTap: () {
@@ -1816,7 +1805,8 @@ class _ChatHistoryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final avatarUrl = _normalizeAvatarUrl(contact?.photoUrl);
     final preview = ActivityPreviewHelper.fromStored(message);
-    final baseMessage = preview.text.isEmpty ? 'No messages yet' : preview.text;
+    final noMessagesText = FlutterI18n.translate(context, 'No messages yet');
+    final baseMessage = preview.text.isEmpty ? noMessagesText : preview.text;
     // If chat has been opened before, always show last message (no count, no badge, no indicator)
     // If chat hasn't been opened, show count/new messages with badge and indicator (green, like group chat)
     String displayMessage = baseMessage;
@@ -1841,7 +1831,7 @@ class _ChatHistoryItem extends StatelessWidget {
         showBadge = true;
       } else if (unreadCount == 1) {
         // Exactly 1 message from receiver: show first 10 characters or "New message"
-        if (baseMessage.isNotEmpty && baseMessage != 'No messages yet') {
+        if (baseMessage.isNotEmpty && baseMessage != noMessagesText) {
           displayMessage = baseMessage.length > 10
               ? '${baseMessage.substring(0, 10)}...'
               : baseMessage;
@@ -1863,26 +1853,25 @@ class _ChatHistoryItem extends StatelessWidget {
     return Column(
       children: [
         ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
           leading: CircleAvatar(
             backgroundColor: const Color(0xffffebee),
             backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-            onBackgroundImageError:
-                avatarUrl != null
-                    ? (exception, stackTrace) {
-                        // Fallback to icon if image fails to load
-                      }
-                    : null,
+            onBackgroundImageError: avatarUrl != null
+                ? (exception, stackTrace) {
+                    // Fallback to icon if image fails to load
+                  }
+                : null,
             child: avatarUrl == null
-                ? Icon(
-                    Icons.person,
-                    color: const Color(0xffc62828),
-                  )
+                ? Icon(Icons.person, color: const Color(0xffc62828))
                 : null,
           ),
           title: Text(
-              name), // Receiver name as title (so user can identify whose chat it is)
+            name,
+          ), // Receiver name as title (so user can identify whose chat it is)
           subtitle: Row(
             children: [
               if (useMessagePreview && preview.hasIcon) ...[
@@ -1900,8 +1889,9 @@ class _ChatHistoryItem extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: showIndicator ? unreadAccent : Colors.grey.shade600,
-                    fontWeight:
-                        showIndicator ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: showIndicator
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                   ),
                 ),
               ),
@@ -1927,15 +1917,18 @@ class _ChatHistoryItem extends StatelessWidget {
                 style: TextStyle(
                   color: showIndicator ? unreadAccent : Colors.grey.shade600,
                   fontSize: 12,
-                  fontWeight:
-                      showIndicator ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: showIndicator
+                      ? FontWeight.w600
+                      : FontWeight.normal,
                 ),
               ),
               if (showBadge && unreadCount > 0) ...[
                 const SizedBox(height: 4),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: unreadAccent,
                     borderRadius: BorderRadius.circular(10),

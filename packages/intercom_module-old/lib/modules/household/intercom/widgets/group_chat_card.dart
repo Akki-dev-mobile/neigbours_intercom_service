@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:intl/intl.dart';
 import '../models/group_chat_model.dart';
 import '../../../../core/theme/colors.dart';
@@ -180,7 +181,11 @@ class GroupChatCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            group.lastMessage ?? 'No messages yet',
+                            group.lastMessage ??
+                                FlutterI18n.translate(
+                                  context,
+                                  'No messages yet',
+                                ),
                             style: TextStyle(
                               fontSize: 13,
                               color: group.isUnread

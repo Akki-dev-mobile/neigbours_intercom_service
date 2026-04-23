@@ -13,6 +13,7 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -1984,7 +1985,10 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
         surfaceTintColor: Colors.white,
         titleSpacing: 0,
         title: Text(
-          _isEditMode ? 'Update Group' : 'Create Group',
+          FlutterI18n.translate(
+            context,
+            _isEditMode ? 'Update Group' : 'Create Group',
+          ),
           style: GoogleFonts.montserrat(
             color: Colors.black,
             fontSize: 18,
@@ -2036,7 +2040,10 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                         ),
                       )
                     : Text(
-                        _isEditMode ? 'UPDATE' : 'CREATE',
+                        FlutterI18n.translate(
+                          context,
+                          _isEditMode ? 'UPDATE' : 'CREATE',
+                        ),
                         style: GoogleFonts.montserrat(
                           color: Colors.white,
                           fontSize: 14,
@@ -2106,7 +2113,10 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
-                                  'Group Information',
+                                  FlutterI18n.translate(
+                                    context,
+                                    'Group Information',
+                                  ),
                                   style: GoogleFonts.montserrat(
                                     color: Colors.white,
                                     fontSize: 18,
@@ -2123,7 +2133,10 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                           child: Text(
-                            'Select at least 2 members to create a new group.',
+                            FlutterI18n.translate(
+                              context,
+                              'Select at least 2 members to create a new group.',
+                            ),
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade600,
@@ -2165,7 +2178,10 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                       : Colors.black87,
                                 ),
                                 decoration: InputDecoration(
-                                  hintText: 'Enter group name',
+                                  hintText: FlutterI18n.translate(
+                                    context,
+                                    'Enter group name',
+                                  ),
                                   hintStyle: TextStyle(
                                     color: Colors.grey.shade400,
                                     fontSize: 14,
@@ -2222,7 +2238,10 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                       : Colors.black87,
                                 ),
                                 decoration: InputDecoration(
-                                  hintText: 'Enter group description',
+                                  hintText: FlutterI18n.translate(
+                                    context,
+                                    'Enter group description',
+                                  ),
                                   hintStyle: TextStyle(
                                     color: Colors.grey.shade400,
                                     fontSize: 14,
@@ -2307,7 +2326,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              'Selected Members (${_selectedMembers.length})',
+                              '${FlutterI18n.translate(context, 'Selected Members')} (${_selectedMembers.length})',
                               style: GoogleFonts.montserrat(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -2440,7 +2459,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            'Add Residents',
+                            FlutterI18n.translate(context, 'Add Residents'),
                             style: GoogleFonts.montserrat(
                               color: Colors.white,
                               fontSize: 16,
@@ -2930,7 +2949,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
-                  'Select Image Source',
+                  FlutterI18n.translate(context, 'Select Image Source'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -2944,7 +2963,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                 children: [
                   _buildImageSourceOption(
                     icon: Icons.camera_alt_rounded,
-                    label: 'Camera',
+                    label: FlutterI18n.translate(context, 'Camera'),
                     onTap: () {
                       Navigator.pop(context);
                       _pickGroupImage(ImageSource.camera);
@@ -2952,7 +2971,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                   ),
                   _buildImageSourceOption(
                     icon: Icons.photo_library_rounded,
-                    label: 'Gallery',
+                    label: FlutterI18n.translate(context, 'Gallery'),
                     onTap: () {
                       Navigator.pop(context);
                       _pickGroupImage(ImageSource.gallery);

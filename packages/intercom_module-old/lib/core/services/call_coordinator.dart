@@ -30,7 +30,8 @@ class CallCoordinator {
   String? get activeCallId => _activeCallId;
 
   bool tryLockOutgoingCallCreation() {
-    if (state.value != CallFlowState.idle) return false;
+    final s = state.value;
+    if (s != CallFlowState.idle && s != CallFlowState.ended) return false;
     if (_outgoingCreateInFlight) return false;
     _outgoingCreateInFlight = true;
     return true;
@@ -70,6 +71,7 @@ class CallCoordinator {
     bool fromBackground = false,
   }) async {
     state.value = CallFlowState.ended;
+    unlockOutgoingCallCreation();
     log('📞 [CallCoordinator] Call ended fromBackground=$fromBackground payload=$payload');
   }
 
