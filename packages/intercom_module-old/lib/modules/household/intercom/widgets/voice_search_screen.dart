@@ -42,10 +42,7 @@ class _VoiceSearchScreenState extends State<VoiceSearchScreen>
     )..repeat(reverse: true);
 
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
     _initializeSpeech();
@@ -244,7 +241,7 @@ class _VoiceSearchScreenState extends State<VoiceSearchScreen>
                             ),
                             child: Center(
                               child: AnimatedOscarIcon(
-                              size: 60,
+                                size: 60,
                                 showGlow: _isListening,
                                 animationSpeed: _isListening ? 1.5 : 1.0,
                               ),
