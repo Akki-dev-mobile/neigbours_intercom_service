@@ -5,6 +5,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/domain/entities/auth/access_token_response.dart';
 import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
+import 'package:flutter_onegate/services/notifications/push_notification_service.dart';
 import 'package:flutter_onegate/domain/entities/auth/company.dart';
 import 'package:flutter_onegate/domain/entities/gate/gate2.dart';
 import 'package:flutter_onegate/domain/use_cases/auth_usecase.dart';
@@ -327,6 +328,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       } else {
         throw Exception("UserInfo is null");
       }
+      // Fire-and-forget to avoid impacting login UX if notification setup fails.
+      unawaited(PushNotificationService.syncCurrentTokenWithBackend());
       emit(LoginInitial());
       // Always show society list after login so user can pick society every time
       if (companiesWithAccessToGate.isEmpty) {

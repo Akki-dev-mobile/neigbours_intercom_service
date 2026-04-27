@@ -60,6 +60,8 @@ class AuthService {
 
       log('🚀 Initiating Authorization and Token Exchange...');
       log('📱 Using authorizeAndExchangeCode for automatic PKCE handling');
+      log(
+          '🔍 [Auth] login flow using client_id=${AppAuthConfigManager.clientId}');
 
       // Use authorizeAndExchangeCode for automatic PKCE handling
       final AuthorizationTokenResponse result =
@@ -312,6 +314,8 @@ class AuthService {
         log('❌ No refresh token available');
         return false;
       }
+      log(
+          '🔍 [Auth] refresh flow using client_id=${AppAuthConfigManager.clientId}');
 
       final TokenResponse tokenResponse = await _appAuth.token(
         AppAuthConfigManager.getRefreshTokenRequest(refreshToken),

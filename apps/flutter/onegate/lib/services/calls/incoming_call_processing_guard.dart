@@ -47,4 +47,22 @@ class IncomingCallProcessingGuard {
     await prefs.remove(_timestampKey);
     log('🧹 [IncomingCallGuard] Cleared call_id=${callId ?? existingCallId ?? "-"}');
   }
+
+  /// Returns true when a fresh incoming guard lock exists for this call id.
+  /// Useful for background/killed terminal events where in-memory call state
+  /// may not still be `ringing`.
+  static Future<bool> isActive(
+    String callId, {
+    Duration ttl = const Duration(seconds: 60),
+  }) async {
+    if (callId.trim().isEmpty) return false;
+    final prefs = await SharedPreferences.getInstance();
+    final existingCallId = prefs.getString(_callIdKey);
+    final existingTimestamp = prefs.getInt(_timestampKey) ?? 0;
+    if (existingCallId != callId) return false;
+
+    final ageMs = DateTime.now().millisecondsSinceEpoch - existingTimestamp;
+    if (ageMs < 0 || ageMs > ttl.inMilliseconds) return false;
+    return true;
+  }
 }

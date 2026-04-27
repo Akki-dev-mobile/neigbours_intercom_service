@@ -51,7 +51,11 @@ import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpo
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
 import 'package:flutter_onegate/services/auth_service/token_notification_service.dart';
 import 'package:flutter_onegate/services/notifications/incoming_call_push_service.dart';
+import 'package:flutter_onegate/services/calls/callkit_service.dart';
+import 'package:flutter_onegate/services/calls/call_callback_ux_service.dart';
+import 'package:flutter_onegate/services/calls/pending_call_terminal_event_store.dart';
 import 'package:flutter_onegate/services/session_manager/user_session_manager.dart';
+import 'package:intercom_module/core/services/call_coordinator.dart';
 import 'package:flutter_onegate/presentation/widgets/session_expired_bottom_sheet.dart';
 import 'package:flutter_onegate/presentation/features/missed_approval/widget/time_provider.dart';
 import 'package:flutter_onegate/utils/shared_pref.dart';
@@ -184,6 +188,30 @@ Future<void> _initializeHive() async {
   }
 }
 
+Future<void> _applyPendingTerminalBeforeRunApp() async {
+  try {
+    final activeCallId = CallCoordinator.instance.activeCallId;
+    final pending = (activeCallId != null && activeCallId.trim().isNotEmpty)
+        ? await PendingCallTerminalEventStore.consumePendingCallEndedForCallId(
+            activeCallId,
+          )
+        : await PendingCallTerminalEventStore.consumePendingCallEnded();
+    if (pending == null || pending.isEmpty) return;
+    final callId =
+        pending['call_id']?.toString() ?? pending['callId']?.toString();
+    log(
+      '🔁 [CallCoordinator] Pre-runApp terminal replay call_id=${callId ?? "-"}',
+    );
+    await CallCoordinator.instance.handleCallEndedData(
+      pending,
+      fromBackground: true,
+    );
+    await CallKitService.instance.dismissIncomingUi(callId);
+  } catch (e) {
+    log('⚠️ [main] Failed pre-runApp terminal replay: $e');
+  }
+}
+
 void main() async {
   // Initialize SSL helper to bypass certificate validation
   SSLHelper.initialize();
@@ -287,6 +315,10 @@ void main() async {
   } catch (e) {
     log('❌ Error initializing Session Management Coordinator: $e');
   }
+
+  // Apply pending terminal call cleanup before first frame to avoid call UI flicker
+  // during cold start / killed-app recovery.
+  await _applyPendingTerminalBeforeRunApp();
 
   // Initialize NetworkLogManager and add interceptor to Dio (DEBUG ONLY)
   if (kDebugMode) {
@@ -421,6 +453,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    CallCallbackUxService.instance.bindNavigatorKey(navigatorKey);
 
     // Initialize session state listener
     _initializeSessionStateListener();
@@ -430,6 +463,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       final provider =
           Provider.of<InternetCheckProvider>(context, listen: false);
       provider.checkInternetAccess();
+      // Also replay any pending callback action after first frame so
+      // navigator/context are guaranteed to be available on cold start.
+      unawaited(_replayPendingCallbackActionOnResume());
     });
   }
 
@@ -513,6 +549,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void _handleAppResume() async {
     try {
       log('📱 Handling app resume - checking internet with delay');
+      unawaited(
+        CallKitService.instance.replayPendingAcceptIfAny(
+          source: 'app_resumed',
+        ),
+      );
+      unawaited(_replayPendingTerminalEventOnResume());
+      unawaited(_replayPendingCallbackActionOnResume());
       // Use delayed internet check to avoid false positives when resuming from sleep
       final provider =
           Provider.of<InternetCheckProvider>(context, listen: false);
@@ -527,6 +570,30 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     } catch (e) {
       log('❌ Error handling app resume: $e');
     }
+  }
+
+  Future<void> _replayPendingTerminalEventOnResume() async {
+    final activeCallId = CallCoordinator.instance.activeCallId;
+    final pending = (activeCallId != null && activeCallId.trim().isNotEmpty)
+        ? await PendingCallTerminalEventStore.consumePendingCallEndedForCallId(
+            activeCallId,
+          )
+        : await PendingCallTerminalEventStore.consumePendingCallEnded();
+    if (pending == null || pending.isEmpty) return;
+    final wasRinging = CallCoordinator.instance.state.value == CallFlowState.ringing;
+    final callId =
+        pending['call_id']?.toString() ?? pending['callId']?.toString() ?? '-';
+    log('🔁 [CallCoordinator] Replaying pending terminal on resume call_id=$callId');
+    await CallCoordinator.instance.handleCallEndedData(pending, fromBackground: true);
+    await CallKitService.instance.dismissIncomingUi(
+      callId == '-' ? null : callId,
+      showMissedNotification: wasRinging,
+      payload: pending,
+    );
+  }
+
+  Future<void> _replayPendingCallbackActionOnResume() async {
+    await CallCallbackUxService.instance.replayPendingIfAny(source: 'app_resumed');
   }
 
   /// Handle internet loss intelligently

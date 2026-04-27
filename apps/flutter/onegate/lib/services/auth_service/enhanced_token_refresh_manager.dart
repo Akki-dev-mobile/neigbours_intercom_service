@@ -56,6 +56,68 @@ class EnhancedTokenRefreshManager {
     return expiry?.toIso8601String() ?? 'opaque-or-no-exp';
   }
 
+  void _logAuthClientContext({
+    required String phase,
+    String? accessToken,
+    String? refreshToken,
+  }) {
+    final expectedClient = AppAuthConfigManager.clientId;
+    final expectedIssuerPrefix =
+        '${AppAuthConfigManager.frontendUrl}/realms/${AppAuthConfigManager.realm}';
+    final accessPayload = accessToken != null
+        ? JwtTokenUtility.parseJwtToken(accessToken)
+        : null;
+    final refreshPayload = refreshToken != null
+        ? JwtTokenUtility.parseJwtToken(refreshToken)
+        : null;
+    final accessClient =
+        accessPayload?['azp']?.toString() ?? accessPayload?['client_id']?.toString();
+    final refreshClient = refreshPayload?['azp']?.toString() ??
+        refreshPayload?['client_id']?.toString();
+    final accessIssuer = accessPayload?['iss']?.toString();
+    final refreshIssuer = refreshPayload?['iss']?.toString();
+
+    log(
+      '🔍 [Auth] $phase client_id(login/refresh) expected=$expectedClient '
+      'access_client=${accessClient ?? "unknown"} '
+      'refresh_client=${refreshClient ?? "unknown"}',
+    );
+    log(
+      '🔍 [Auth] $phase token issuer '
+      'access_iss=${accessIssuer ?? "unknown"} '
+      'refresh_iss=${refreshIssuer ?? "unknown"} '
+      'expected_prefix=$expectedIssuerPrefix',
+    );
+  }
+
+  bool _isRefreshTokenClientBindingValid(String refreshToken) {
+    final payload = JwtTokenUtility.parseJwtToken(refreshToken);
+    if (payload == null) {
+      // Opaque refresh token: cannot validate locally, allow backend validation.
+      return true;
+    }
+    final expectedClient = AppAuthConfigManager.clientId.trim();
+    final tokenClient =
+        (payload['azp']?.toString() ?? payload['client_id']?.toString() ?? '').trim();
+    final issuer = (payload['iss']?.toString() ?? '').trim();
+    final expectedIssuerPrefix =
+        '${AppAuthConfigManager.frontendUrl}/realms/${AppAuthConfigManager.realm}';
+    final issuerValid =
+        issuer.isNotEmpty && issuer.startsWith(expectedIssuerPrefix);
+    final clientValid = tokenClient.isNotEmpty && tokenClient == expectedClient;
+    if (!issuerValid || !clientValid) {
+      log(
+        '❌ [Auth] Refresh token binding mismatch: '
+        'token_client=${tokenClient.isEmpty ? "unknown" : tokenClient} '
+        'expected_client=$expectedClient '
+        'token_iss=${issuer.isEmpty ? "unknown" : issuer} '
+        'expected_iss_prefix=$expectedIssuerPrefix',
+      );
+      return false;
+    }
+    return true;
+  }
+
   /// Initialize the token refresh manager
   Future<void> initialize(GateStorage gateStorage) async {
     _gateStorage = gateStorage;
@@ -331,6 +393,24 @@ class EnhancedTokenRefreshManager {
             const RefreshTokenException('No refresh token available'),
             attempt,
             RefreshTokenFailureType.missingRefreshToken,
+          );
+          return false;
+        }
+
+        final accessToken = await _secureStorage.read(key: _accessTokenKey);
+        _logAuthClientContext(
+          phase: 'refresh_attempt',
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+        );
+        if (!_isRefreshTokenClientBindingValid(refreshToken)) {
+          await _handleRefreshTokenFailure(
+            const RefreshTokenException(
+              'Refresh token client binding mismatch',
+              type: RefreshTokenFailureType.refreshTokenInvalid,
+            ),
+            attempt,
+            RefreshTokenFailureType.refreshTokenInvalid,
           );
           return false;
         }

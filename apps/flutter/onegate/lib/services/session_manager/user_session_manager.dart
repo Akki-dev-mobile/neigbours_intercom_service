@@ -2,8 +2,13 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:flutter_onegate/data/datasources/gate_storage.dart';
 import 'package:flutter_onegate/services/auth_service/auth_service.dart';
+import 'package:flutter_onegate/services/calls/callkit_service.dart';
+import 'package:flutter_onegate/services/calls/call_callback_ux_service.dart';
+import 'package:flutter_onegate/services/calls/pending_call_callback_store.dart';
+import 'package:flutter_onegate/services/calls/pending_call_terminal_event_store.dart';
 import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
 import 'package:flutter_onegate/services/notifications/incoming_call_push_service.dart';
+import 'package:flutter_onegate/services/notifications/push_notification_service.dart';
 import 'package:flutter_onegate/services/intercom/onegate_intercom_bootstrap.dart';
 import 'package:flutter_onegate/services/session_manager/session_management_coordinator.dart';
 import 'package:intercom_module/core/services/call_websocket_service.dart';
@@ -328,6 +333,12 @@ class UserSessionManager {
       case UserSessionState.authenticated:
         log("✅ User session authenticated");
         _connectCallWebSocket();
+        unawaited(
+          CallKitService.instance.replayPendingAcceptIfAny(
+            source: 'session_authenticated',
+          ),
+        );
+        unawaited(_replayPendingTerminalEvent(source: 'session_authenticated'));
         unawaited(IncomingCallPushService.syncCurrentTokenWithBackend());
         break;
       case UserSessionState.unauthenticated:
@@ -386,10 +397,10 @@ class UserSessionManager {
   }
 
   Future<void> _handleCallWsEvent(Map<String, dynamic> payload) async {
-    final action = payload['action']?.toString().trim().toLowerCase();
+    final action = _normalizeEventAction(payload);
     if (action == null || action.isEmpty) return;
 
-    final callId = payload['call_id']?.toString();
+    final callId = _resolveCallId(payload);
     const incomingLike = <String>{
       'incoming_call',
       'call_initiated',
@@ -424,17 +435,155 @@ class UserSessionManager {
       );
       if (!result.success) {
         log('⚠️ [UserSessionManager] Failed to join Jitsi: ${result.message}');
+        // Critical recovery: if join fails, release stale "connecting" state
+        // so users can start a new call instead of seeing false "in progress".
+        await CallCoordinator.instance.markEnded(
+          reason: 'outgoing_accept_join_failed',
+        );
+        if (callId != null && callId.isNotEmpty) {
+          await OutgoingCallAcceptanceStore.clearForCallId(callId);
+        } else {
+          await OutgoingCallAcceptanceStore.clear();
+        }
       } else {
         await CallCoordinator.instance.markConnected(callId: callId);
       }
       return;
     }
 
-    if (action == 'call_declined' ||
-        action == 'call_rejected' ||
-        action == 'call_ended') {
+    if (action == 'call_callback') {
+      await PendingCallCallbackStore.save(payload);
+      await CallCallbackUxService.instance.replayPendingIfAny(
+        source: 'call_websocket',
+      );
+      return;
+    }
+
+    const terminalLike = <String>{
+      'call_declined',
+      'call_rejected',
+      'call_ended',
+      'ended',
+      'call_terminated',
+      'terminated',
+      'remote_ended',
+      'ended_by_caller',
+      'ended_by_receiver',
+      'declined',
+      'rejected',
+      'missed',
+      'timeout',
+      'caller_cancel',
+      'call_cancelled',
+      'call_canceled',
+      'cancelled',
+      'canceled',
+    };
+    if (terminalLike.contains(action)) {
+      log(
+        '📥 [CallWebSocketService] CALL_ENDED received call_id=${callId ?? "-"} '
+        'active=${CallCoordinator.instance.activeCallId ?? "-"} action=$action',
+      );
       await OutgoingCallAcceptanceStore.saveCallEnded(payload);
-      await CallCoordinator.instance.handleCallEndedData(payload);
+      await PushNotificationService.handleTerminalCallEvent(
+        payload,
+        source: 'call_websocket',
+        fromBackground: false,
+        normalizedAction: action,
+      );
+    }
+  }
+
+  Future<void> _replayPendingTerminalEvent({required String source}) async {
+    final activeCallId = CallCoordinator.instance.activeCallId;
+    final pending = (activeCallId != null && activeCallId.trim().isNotEmpty)
+        ? await PendingCallTerminalEventStore.consumePendingCallEndedForCallId(
+            activeCallId,
+          )
+        : await PendingCallTerminalEventStore.consumePendingCallEnded();
+    if (pending == null || pending.isEmpty) return;
+    final callId = _resolveCallId(pending) ?? '-';
+    log('🔁 [CallCoordinator] Replaying pending terminal call_id=$callId source=$source');
+    await CallCoordinator.instance
+        .handleCallEndedData(pending, fromBackground: true);
+    await CallKitService.instance
+        .dismissIncomingUi(callId == '-' ? null : callId);
+    await CallManager.instance.endFromRemote(reason: _terminalReason(pending));
+  }
+
+  String? _normalizeEventAction(Map<String, dynamic> payload) {
+    final raw = (payload['action'] ??
+            payload['event'] ??
+            payload['type'] ??
+            payload['status'] ??
+            payload['reason'])
+        ?.toString()
+        .trim();
+    if (raw == null || raw.isEmpty) return null;
+    final snake = raw
+        .replaceAllMapped(
+            RegExp(r'([a-z0-9])([A-Z])'), (m) => '${m.group(1)}_${m.group(2)}')
+        .replaceAll('-', '_')
+        .toLowerCase();
+    switch (snake) {
+      case 'call_ended':
+      case 'ended':
+      case 'hangup':
+      case 'ended_by_caller':
+      case 'ended_by_receiver':
+      case 'remote_ended':
+      case 'terminated':
+      case 'call_terminated':
+        return 'call_ended';
+      case 'declined':
+      case 'call_declined':
+      case 'receiver_declined':
+        return 'call_declined';
+      case 'rejected':
+      case 'call_rejected':
+        return 'call_rejected';
+      case 'caller_cancel':
+      case 'call_cancelled':
+      case 'call_canceled':
+      case 'cancelled':
+      case 'canceled':
+        return 'call_ended';
+      case 'missed':
+        return 'missed';
+      case 'timeout':
+        return 'timeout';
+      default:
+        return snake;
+    }
+  }
+
+  String? _resolveCallId(Map<String, dynamic> payload) {
+    final id = payload['call_id'] ??
+        payload['callId'] ??
+        payload['id'] ??
+        payload['uuid'];
+    final text = id?.toString().trim();
+    if (text == null || text.isEmpty) return null;
+    return text;
+  }
+
+  String _terminalReason(Map<String, dynamic> payload) {
+    final reason = payload['reason']?.toString().trim();
+    if (reason != null && reason.isNotEmpty) return reason;
+    final action = _normalizeEventAction(payload) ?? 'remote_ended';
+    switch (action) {
+      case 'declined':
+      case 'call_declined':
+        return 'declined';
+      case 'rejected':
+      case 'call_rejected':
+        return 'rejected';
+      case 'missed':
+        return 'missed';
+      case 'timeout':
+        return 'timeout';
+      default:
+        return 'remote_ended';
     }
   }
 

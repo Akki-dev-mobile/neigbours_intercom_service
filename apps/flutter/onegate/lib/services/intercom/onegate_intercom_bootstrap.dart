@@ -5,6 +5,7 @@ import 'package:flutter_onegate/main.dart';
 import 'package:flutter_onegate/services/auth_service/enhanced_token_refresh_manager.dart';
 import 'package:flutter_onegate/services/auth_service/jwt_token_utility.dart';
 import 'package:intercom_module/intercom_module.dart';
+import 'package:intercom_module/core/services/call_coordinator.dart';
 
 /// App-wide bootstrap for IntercomModule (OneGate).
 class OneGateIntercomBootstrap {
@@ -189,6 +190,19 @@ class OneGateIntercomAuthPort implements IntercomAuthPort {
 
   @override
   Future<void> onSessionExpired({String? reason}) async {
+    final coordinator = CallCoordinator.instance;
+    final callState = coordinator.state.value;
+    final hasActiveCall = coordinator.activeCallId?.trim().isNotEmpty == true;
+    final callInProgress = callState == CallFlowState.ringing ||
+        callState == CallFlowState.connecting ||
+        callState == CallFlowState.connected;
+    if (hasActiveCall || callInProgress) {
+      log(
+        '⏭️ [IntercomAuthPort] Suppressing session-expiry logout during call '
+        'state=$callState activeCallId=${coordinator.activeCallId} reason=${reason ?? "unknown"}',
+      );
+      return;
+    }
     log(
       '🚪 [IntercomAuthPort] onSessionExpired invoked; '
       'reason=${reason ?? 'unknown'}',

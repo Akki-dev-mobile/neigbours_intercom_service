@@ -8,7 +8,10 @@ import 'package:intercom_module/intercom_module.dart';
 import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class IntercomServicesLauncher {
-  static Future<void> open(BuildContext context) async {
+  static Future<void> open(
+    BuildContext context, {
+    Map<String, dynamic>? callbackPayload,
+  }) async {
     try {
       final tokenManager = EnhancedTokenRefreshManager();
       final gateStorage = GateStorage();
@@ -33,7 +36,10 @@ class IntercomServicesLauncher {
       if (!context.mounted) return;
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => const IntercomScreen(fromNeighborsCard: true),
+          builder: (_) => IntercomScreen(
+            fromNeighborsCard: true,
+            initialCallbackPayload: callbackPayload,
+          ),
         ),
       );
     } catch (e, st) {
