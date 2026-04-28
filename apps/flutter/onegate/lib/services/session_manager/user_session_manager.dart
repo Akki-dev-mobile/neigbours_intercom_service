@@ -119,12 +119,10 @@ class UserSessionManager {
       final isAuthenticated = await _authService.isAuthenticated();
 
       if (isAuthenticated) {
-        final sessionData = await _authService.getCurrentUserSession();
-        if (sessionData != null) {
-          _updateSessionState(UserSessionState.authenticated);
-        } else {
-          _updateSessionState(UserSessionState.unauthenticated);
-        }
+        // Treat token validity as the source of truth.
+        // `getCurrentUserSession()` can transiently return null during app/call
+        // lifecycle churn, which previously caused false unauthenticated flips.
+        _updateSessionState(UserSessionState.authenticated);
       } else {
         _updateSessionState(UserSessionState.unauthenticated);
       }
@@ -344,7 +342,7 @@ class UserSessionManager {
       case UserSessionState.unauthenticated:
         log("🚪 User session unauthenticated");
         _disconnectCallWebSocket();
-        _clearSessionData();
+        _handleConfirmedUnauthenticatedState();
         break;
       case UserSessionState.tokenExpired:
         log("⏰ User session token expired");
@@ -608,6 +606,24 @@ class UserSessionManager {
       log("✅ Session data cleared");
     } catch (e) {
       log("❌ Error clearing session data: $e");
+    }
+  }
+
+  /// Clear auth state only after a defensive recheck.
+  /// This prevents accidental logout loops from transient auth probes.
+  Future<void> _handleConfirmedUnauthenticatedState() async {
+    try {
+      final stillAuthenticated = await _authService.isAuthenticated();
+      if (stillAuthenticated) {
+        log(
+          "⏭️ [UserSessionManager] Ignoring transient unauthenticated state after recheck",
+        );
+        _updateSessionState(UserSessionState.authenticated);
+        return;
+      }
+      await _clearSessionData();
+    } catch (e) {
+      log("❌ Error handling unauthenticated transition: $e");
     }
   }
 

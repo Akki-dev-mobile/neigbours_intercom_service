@@ -127,6 +127,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'No internet connection available. Please check your network settings.';
 
   @override
+  String get noInternetConnectionFound => 'No internet connection found';
+
+  @override
   String get error => 'Error';
 
   @override
@@ -1395,6 +1398,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get alwaysAllowed => 'Always Allowed';
+
+  @override
+  String get imagePreview => 'Image Preview';
+
+  @override
+  String get reviewCapturedPhoto => 'Review your captured photo';
+
+  @override
+  String get retake => 'Retake';
+
+  @override
+  String get upload => 'Upload';
 
   @override
   String get retryIn => 'Retry in:';

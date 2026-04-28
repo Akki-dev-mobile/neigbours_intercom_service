@@ -79,13 +79,6 @@ class IncomingCallFcmReceiver : BroadcastReceiver() {
             return
         }
 
-        if (isAppInForeground(context)) {
-            // Foreground incoming path is handled by Flutter FirebaseMessaging.onMessage.
-            // Keep terminal handling above this return so we still close stale incoming UI
-            // if Flutter misses a foreground terminal payload.
-            return
-        }
-
         val incomingLike = setOf(
             "incoming_call",
             "call_ringing",
@@ -99,6 +92,26 @@ class IncomingCallFcmReceiver : BroadcastReceiver() {
         val isIncomingByShape =
             (action == null || action.isEmpty()) && callId.isNotEmpty() &&
                 (meetingId.isNotEmpty() || jitsiUrl.isNotEmpty())
+
+        if (isAppInForeground(context)) {
+            // Foreground incoming path is handled by Flutter FirebaseMessaging.onMessage.
+            // Some OEM/FCM combinations still flash a system heads-up for notification+data
+            // payloads; clear that transient tray notification in foreground only.
+            if (isIncomingByAction || isIncomingByShape) {
+                try {
+                    val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    nm.cancel(callId.hashCode())
+                    nm.cancelAll()
+                    Log.i(TAG, "Cleared transient foreground incoming notification callId=$callId")
+                } catch (t: Throwable) {
+                    Log.w(TAG, "Failed clearing foreground incoming notification callId=$callId", t)
+                }
+            }
+            // Keep terminal handling above this return so we still close stale incoming UI
+            // if Flutter misses a foreground terminal payload.
+            return
+        }
+
         if (!isIncomingByAction && !isIncomingByShape) return
 
         // Validate before guard start to avoid lock leaks.
@@ -374,6 +387,26 @@ class IncomingCallFcmReceiver : BroadcastReceiver() {
         val bundle = data.toBundle()
 
         val fullScreenIntent = CallkitIncomingActivity.getIntent(context, bundle)
+        fullScreenIntent.addFlags(
+            Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                Intent.FLAG_ACTIVITY_CLEAR_TOP,
+        )
+
+        // Prefer launching the call UI activity directly.
+        // This avoids showing an intermediate heads-up banner on some OEM builds.
+        try {
+            context.startActivity(fullScreenIntent)
+            Log.i(TAG, "Launched incoming call activity directly callId=$callId")
+            return
+        } catch (t: Throwable) {
+            Log.w(
+                TAG,
+                "Direct activity launch failed; falling back to full-screen notification callId=$callId",
+                t,
+            )
+        }
+
         val pendingIntent = PendingIntent.getActivity(
             context,
             callId.hashCode(),

@@ -53,6 +53,7 @@ class _SettingsHomeState extends State<SettingsHome> {
   String? selectedGateName;
   String? cameraValue;
   final _flutterKioskMode = FlutterKioskMode.instance();
+  bool _isNavigatingToVisitorSettings = false;
 
   // Temporary selection values for bottom sheets
   String? _tempCameraValue;
@@ -93,6 +94,29 @@ class _SettingsHomeState extends State<SettingsHome> {
       await _flutterKioskMode.start();
     } catch (e) {
       print("Error starting kiosk mode: $e");
+    }
+  }
+
+  Future<void> _openVisitorSettings() async {
+    if (_isNavigatingToVisitorSettings) return;
+
+    setState(() {
+      _isNavigatingToVisitorSettings = true;
+    });
+
+    try {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VisitorSettingsView(),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isNavigatingToVisitorSettings = false;
+        });
+      }
     }
   }
 
@@ -1523,22 +1547,24 @@ class _SettingsHomeState extends State<SettingsHome> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
 
-    return MyScrollView(
-      backButtonPressed: () {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => GateDashboardView(),
-          ),
-          (route) => false,
-        );
-      },
-      pageTitle: AppLocalizations.of(context)!.settings,
-      pageBody: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: isTablet ? 24 : 16,
-          vertical: isTablet ? 16 : 8,
-        ),
-        child: Column(
+    return Stack(
+      children: [
+        MyScrollView(
+          backButtonPressed: () {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => GateDashboardView(),
+              ),
+              (route) => false,
+            );
+          },
+          pageTitle: AppLocalizations.of(context)!.settings,
+          pageBody: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isTablet ? 24 : 16,
+              vertical: isTablet ? 16 : 8,
+            ),
+            child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1596,19 +1622,12 @@ class _SettingsHomeState extends State<SettingsHome> {
               ),
 
             // if (role == "admin" || role == "master")
-            PrimarySettingsTile(
-              icon: Icons.settings_accessibility,
-              title: AppLocalizations.of(context)!.visitorSettings,
-              subtitle: context.tr('Mark mandatory fields for visitors'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => VisitorSettingsView(),
-                  ),
-                );
-              },
-            ),
+              PrimarySettingsTile(
+                icon: Icons.settings_accessibility,
+                title: AppLocalizations.of(context)!.visitorSettings,
+                subtitle: context.tr('Mark mandatory fields for visitors'),
+                onTap: _openVisitorSettings,
+              ),
 
             PrimarySettingsTile(
               icon: Ionicons.time_outline,
@@ -1902,9 +1921,49 @@ class _SettingsHomeState extends State<SettingsHome> {
             ),
             // Add bottom spacing for better scrolling
             SizedBox(height: isTablet ? 120 : 100),
-          ],
+            ],
+          ),
         ),
-      ),
+        ),
+        if (_isNavigatingToVisitorSettings)
+          Positioned.fill(
+            child: AbsorbPointer(
+              child: Container(
+                color: Colors.black.withOpacity(0.25),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 22,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 26,
+                          height: 26,
+                          child: DashboardLoaderIcon(strokeWidth: 2.5),
+                        ),
+                        const SizedBox(width: 14),
+                        Text(
+                          context.tr('Loading'),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 

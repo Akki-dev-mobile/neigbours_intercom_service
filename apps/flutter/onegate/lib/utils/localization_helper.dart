@@ -158,6 +158,8 @@ class LocalizationHelper {
         'Search parcel by member, unit, or category...',
     'search parcel by member, unit, or category...':
         'Search parcel by member, unit, or category...',
+    'no parcels match "{query}". try a different keyword.':
+        'parcelNoResultsWithQuery',
     'approval timeout duration': 'Approval timeout duration',
     'seconds': 'seconds',
     'search staff by name, category, or phone number':
@@ -198,8 +200,23 @@ class LocalizationHelper {
         'Search by name, unit number, or building...',
     'search by name, unit number, or building...':
         'Search by name, unit number, or building...',
+    'search by name , unit number , or building ...':
+        'selectPageSearchPlaceholder',
     'no member found': 'No member found',
     'no results': 'No results',
+    'no results found': 'missedApprovalNoResultsTitle',
+    'no approvals match "{query}". try a different keyword.':
+        'missedApprovalNoResultsWithQuery',
+    'no approvals found.': 'missedApprovalNoResultsGeneric',
+    'no approvals found for {towername}.': 'missedApprovalNoResultsForTower',
+    'visitor has been allowed.': 'missedApprovalVisitorAllowed',
+    'visitor has been declined.': 'missedApprovalVisitorDeclined',
+    'approval is pending...': 'missedApprovalPending',
+    'delivery person has left the parcel.': 'missedApprovalDeliveryLeftParcel',
+    'visitor is allowed by gatekeeper.':
+        'missedApprovalVisitorAllowedByGatekeeper',
+    'please wait while we fetch pending approvals...':
+        'missedApprovalLoadingSubtitle',
     'please wait while we fetch available units':
         'Please wait while we fetch available units...',
     'please wait while we fetch available units...':

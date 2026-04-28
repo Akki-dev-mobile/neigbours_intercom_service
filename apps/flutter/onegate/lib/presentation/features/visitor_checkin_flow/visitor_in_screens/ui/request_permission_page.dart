@@ -70,6 +70,7 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   RequestType _requestType = RequestType.waiting;
   bool _isLoading = true;
   bool _isFetching = false;
+  bool _memberApprovalEnabled = false;
   Timer? _timer;
   final TimerService _timerService = TimerService();
   final _stateStreamController = StreamController<RequestType>.broadcast();
@@ -140,11 +141,23 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     _storeVisitorId();
 
     _startPolling(); // Start API polling as a fallback
+    _loadMemberApprovalSetting();
 
     if (widget.logID != null && widget.logID!.isNotEmpty) {
       _initializeTimer(int.parse(widget.logID!));
     }
     log("Visitor log data: ${widget.visitorLog?.toJson().toString()}");
+  }
+
+  Future<void> _loadMemberApprovalSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool? uiSetting = prefs.getBool('membersApproval');
+    final bool? legacySetting = prefs.getBool('member_approval');
+    _memberApprovalEnabled = uiSetting ?? legacySetting ?? false;
+    log(
+      "🔧 [RequestPermission] Member approval resolved: $_memberApprovalEnabled "
+      "(membersApproval=$uiSetting, member_approval=$legacySetting)",
+    );
   }
 
   // Store visitor ID in SharedPreferences
@@ -279,15 +292,37 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     });
 
     try {
-      final approvals =
-          await _remoteDataSource.fetchApprovals(logID: widget.logID!);
+      log(
+        '🔁 [RequestPermission] Polling approvals log_id=${widget.logID} is_secondary=false',
+      );
+      final approvals = await _remoteDataSource.fetchApprovals(
+        logID: widget.logID!,
+        isSecondary: false,
+      );
 
       if (approvals.isNotEmpty) {
         final approval = approvals.firstWhere(
             (approval) => approval.visitorLogId?.toString() == widget.logID);
 
-        final newRequestType =
-            _mapAllowStatusToRequestType(approval.allowStatus);
+        final bool isAutoApprovedBySelf = _isSuspiciousSelfFcmApproval(approval);
+        final bool isUntrustedAllowedWhenApprovalRequired =
+            _isUntrustedAllowedDecision(approval);
+        if (isAutoApprovedBySelf) {
+          log(
+            "⚠️ Ignoring suspicious auto-approval for log_id=${widget.logID} "
+            "(initiated_from=fcm, approved_by matches visitor name). Keeping waiting state.",
+          );
+        }
+        if (isUntrustedAllowedWhenApprovalRequired) {
+          log(
+            "⚠️ Ignoring untrusted allowed decision for log_id=${widget.logID} "
+            "(member approval enabled but approver/source is not credible). Keeping waiting state.",
+          );
+        }
+        final newRequestType = (isAutoApprovedBySelf ||
+                isUntrustedAllowedWhenApprovalRequired)
+            ? RequestType.waiting
+            : _mapAllowStatusToRequestType(approval.allowStatus);
 
         // Only update the stream if the status changes
         if (_requestType != newRequestType) {
@@ -326,6 +361,57 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
     }
   }
 
+  bool _isSuspiciousSelfFcmApproval(VisitorInfo approval) {
+    final status = _normalizeApprovalValue(approval.allowStatus);
+    if (status != 'allowed') return false;
+
+    final additional = approval.additionalDetails;
+    if (additional == null || additional.isEmpty) return false;
+
+    final initiatedFrom =
+        additional['initiated_from']?.toString().trim().toLowerCase();
+    final approvedBy = additional['approved_by']?.toString().trim();
+    final visitorName = approval.visitorName.trim();
+
+    if (initiatedFrom != 'fcm' ||
+        approvedBy == null ||
+        approvedBy.isEmpty ||
+        visitorName.isEmpty) {
+      return false;
+    }
+
+    return approvedBy.toLowerCase() == visitorName.toLowerCase();
+  }
+
+  bool _isUntrustedAllowedDecision(VisitorInfo approval) {
+    if (!_memberApprovalEnabled) return false;
+
+    final status = _normalizeApprovalValue(approval.allowStatus);
+    if (status != 'allowed') return false;
+
+    final additional = approval.additionalDetails ?? const <String, dynamic>{};
+    final initiatedFrom =
+        additional['initiated_from']?.toString().trim().toLowerCase() ?? '';
+    final approvedBy =
+        additional['approved_by']?.toString().trim().toLowerCase() ?? '';
+    final visitorName = approval.visitorName.trim().toLowerCase();
+    final memberName = approval.memberInfo.name.trim().toLowerCase();
+
+    // Trusted positive approvals when member-approval is required:
+    // - member app flow (initiated_from=fcm) where approver is the selected member
+    // - any flow where approver explicitly matches selected member
+    final bool approvedByMember =
+        memberName.isNotEmpty && approvedBy == memberName;
+    final bool trustedFcmMemberApproval = initiatedFrom == 'fcm' && approvedByMember;
+
+    if (trustedFcmMemberApproval || approvedByMember) {
+      return false;
+    }
+
+    // Keep waiting for a real member decision in all other "allowed" cases.
+    return true;
+  }
+
   bool _shouldStopPolling(RequestType type) {
     return type == RequestType.approved ||
         type == RequestType.rejected ||
@@ -346,24 +432,101 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   }
 
   RequestType _mapAllowStatusToRequestType(String? status) {
-    switch (status) {
+    final normalizedStatus = _normalizeApprovalValue(status);
+    switch (normalizedStatus) {
       case "allowed":
+      case "approved":
+        return RequestType.approved;
+      case "always_allowed":
+      case "always_allow":
+      case "allowed_by_gatekeeper":
+      case "allow_by_gatekeeper":
         return RequestType.approved;
       case "denied":
+      case "declined":
+      case "rejected":
+      case "reject":
         return RequestType.rejected;
       case "leave":
+      case "leave_at_gate":
+      case "left_at_gate":
         return RequestType.leaveAtGate;
       case "invalid":
+      case "not_reachable":
+      case "not_recheable":
         return RequestType.notRecheable;
       case "request":
         return RequestType.request;
       case "pending":
         return RequestType.waiting;
-      case "always_allowed":
-        return RequestType.allowByGatekeeper;
       default:
-        return RequestType.rejected;
+        return RequestType.waiting;
     }
+  }
+
+  String? _extractApprovalStatus(Map<String, dynamic> data) {
+    final candidates = <Object?>[
+      data['allowStatus'],
+      data['allow_status'],
+      data['status'],
+      data['action'],
+      data['event'],
+      data['response'],
+      data['decision'],
+      data['message'],
+    ];
+    for (final candidate in candidates) {
+      final normalized = _normalizeApprovalValue(candidate?.toString());
+      if (normalized != null && normalized.isNotEmpty) {
+        return normalized;
+      }
+    }
+    return null;
+  }
+
+  String _extractVisitorLogId(Map<String, dynamic> data) {
+    return (data['visitorLogId'] ??
+            data['visitor_log_id'] ??
+            data['log_id'] ??
+            data['visitorLogID'])
+        ?.toString() ??
+        '';
+  }
+
+  String? _normalizeApprovalValue(String? value) {
+    if (value == null) return null;
+    final normalized = value
+        .trim()
+        .toLowerCase()
+        .replaceAll('-', '_')
+        .replaceAll(' ', '_');
+
+    if (normalized.contains('always_allowed') ||
+        normalized.contains('always_allow') ||
+        normalized.contains('allowed_by_gatekeeper') ||
+        normalized.contains('allow_by_gatekeeper')) {
+      return 'always_allowed';
+    }
+    if (normalized.contains('leave_at_gate') ||
+        normalized.contains('left_at_gate')) {
+      return 'leave_at_gate';
+    }
+    if (normalized.contains('rejected') ||
+        normalized.contains('reject') ||
+        normalized.contains('denied') ||
+        normalized.contains('declined')) {
+      return 'rejected';
+    }
+    if (normalized.contains('approved') || normalized.contains('allowed')) {
+      return 'allowed';
+    }
+    if (normalized.contains('not_reachable') || normalized.contains('invalid')) {
+      return 'invalid';
+    }
+    if (normalized.contains('pending')) return 'pending';
+    if (normalized.contains('request')) return 'request';
+    if (normalized == 'leave') return 'leave';
+    return normalized;
   }
 
   bool _isUploading = false;
@@ -838,10 +1001,10 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
   void _handleApprovalUpdate(Map<String, dynamic> data) {
     if (widget.logID == null || widget.logID!.isEmpty) return;
 
-    final visitorLogId = data['visitorLogId']?.toString();
+    final visitorLogId = _extractVisitorLogId(data);
     if (visitorLogId == widget.logID) {
-      final newRequestType =
-          _mapAllowStatusToRequestType(data['allowStatus'].toLowerCase());
+      final resolvedStatus = _extractApprovalStatus(data);
+      final newRequestType = _mapAllowStatusToRequestType(resolvedStatus);
 
       setState(() {
         _requestType = newRequestType;
@@ -1843,29 +2006,15 @@ class _RequestPermissionPageState extends State<RequestPermissionPage> {
 
       log("📩 FCM Response message: $message");
 
-      // Update the request type based on the response
-      if (message.contains("always_allowed")) {
-        setState(() {
-          _requestType = RequestType.approved;
-          _stateStreamController.add(RequestType.approved);
-        });
-      } else if (message.contains("denied")) {
-        setState(() {
-          _requestType = RequestType.rejected;
-          _stateStreamController.add(RequestType.rejected);
-        });
-      } else if (message.contains("leave_at_gate")) {
-        setState(() {
-          _requestType = RequestType.leaveAtGate;
-          _stateStreamController.add(RequestType.leaveAtGate);
-        });
-      } else {
-        // For any other response, keep waiting
-        setState(() {
-          _requestType = RequestType.waiting;
-          _stateStreamController.add(RequestType.waiting);
-        });
-      }
+      // Normalize approval payload so old/new backend keys are both supported.
+      final resolvedStatus = responseData is Map<String, dynamic>
+          ? _extractApprovalStatus(responseData)
+          : _normalizeApprovalValue(message);
+      final resolvedType = _mapAllowStatusToRequestType(resolvedStatus);
+      setState(() {
+        _requestType = resolvedType;
+        _stateStreamController.add(resolvedType);
+      });
 
       // If we got a definitive response, stop polling
       if (_shouldStopPolling(_requestType)) {
@@ -2138,22 +2287,22 @@ class ImagePreviewDialog extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Image Preview',
-                          style: TextStyle(
+                          AppLocalizations.of(context).imagePreview,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Color(0xff2C2C2C),
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          'Review your captured photo',
-                          style: TextStyle(
+                          AppLocalizations.of(context).reviewCapturedPhoto,
+                          style: const TextStyle(
                             fontSize: 14,
                             color: Color(0xff6E6E6E),
                           ),
@@ -2243,9 +2392,9 @@ class ImagePreviewDialog extends StatelessWidget {
                           color: Colors.white,
                           size: 20,
                         ),
-                        label: const Text(
-                          'Retake',
-                          style: TextStyle(
+                        label: Text(
+                          AppLocalizations.of(context).retake,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
@@ -2298,9 +2447,9 @@ class ImagePreviewDialog extends StatelessWidget {
                           color: Colors.white,
                           size: 20,
                         ),
-                        label: const Text(
-                          'Upload',
-                          style: TextStyle(
+                        label: Text(
+                          AppLocalizations.of(context).upload,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
                             fontSize: 16,

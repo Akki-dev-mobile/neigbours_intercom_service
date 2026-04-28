@@ -9,6 +9,8 @@ class LoginInitial extends LoginState {}
 
 class LoginLoadingState extends LoginState {}
 
+class LoginNavigationLoadingState extends LoginState {}
+
 class LoginSuccessState extends LoginActionState {
   final AccessTokenResponse? accessTokenResponse;
   final List<Company?> companiesWithAccessToGate;

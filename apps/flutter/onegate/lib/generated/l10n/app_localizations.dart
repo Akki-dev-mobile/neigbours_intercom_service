@@ -314,6 +314,12 @@ abstract class AppLocalizations {
   /// **'No internet connection available. Please check your network settings.'**
   String get noInternetConnection;
 
+  /// No internet connection page title
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection found'**
+  String get noInternetConnectionFound;
+
   /// Error text
   ///
   /// In en, this message translates to:
@@ -2755,6 +2761,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Always Allowed'**
   String get alwaysAllowed;
+
+  /// Title for image preview dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Image Preview'**
+  String get imagePreview;
+
+  /// Subtitle for image preview dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Review your captured photo'**
+  String get reviewCapturedPhoto;
+
+  /// Button text for retaking a photo
+  ///
+  /// In en, this message translates to:
+  /// **'Retake'**
+  String get retake;
+
+  /// Button text for uploading a photo
+  ///
+  /// In en, this message translates to:
+  /// **'Upload'**
+  String get upload;
 
   /// Text shown with countdown timer
   ///

@@ -2,66 +2,26 @@ import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
-import 'package:flutter_onegate/presentation/features/dashboard/admin/pages/admin_dashboard_view.dart';
 import 'package:flutter_onegate/presentation/features/dashboard/gatekeeper/pages/gatekeeper_dashboard_view.dart';
-import 'package:flutter_onegate/presentation/features/gate_selection/ui/gate_selection_view.dart';
 import 'package:flutter_onegate/presentation/features/settings/pages/visitor_Settings_provider.dart';
 import 'package:flutter_onegate/presentation/features/visitor_checkin_flow/purpose/provider/purposeProvider.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class VisitorSettingsView extends StatefulWidget {
-  bool? comingfrom;
+  final bool? comingfrom;
 
-  VisitorSettingsView({super.key, this.comingfrom});
+  const VisitorSettingsView({super.key, this.comingfrom});
 
   @override
   State<VisitorSettingsView> createState() => _VisitorSettingsViewState();
 }
 
 class _VisitorSettingsViewState extends State<VisitorSettingsView> {
-  String? selectedGateName;
   final RemoteDataSource remoteDataSource = RemoteDataSource();
   bool _isSaving = false;
-
-  void initState() {
-    super.initState();
-    getSelectedGate();
-  }
-
-  Future<void> getSelectedGate() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      selectedGateName = prefs.getString('selected_gate');
-    });
-  }
-
-  Future<void> _handleBackNavigation() async {
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-      return;
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    final role = (prefs.getString('selected_role') ?? '').toLowerCase();
-
-    Widget destination;
-    if (role.contains('admin')) {
-      destination = const AdminDashboardView();
-    } else if ((selectedGateName ?? '').isNotEmpty) {
-      destination = const GateDashboardView();
-    } else {
-      destination = GateSelectionView();
-    }
-
-    if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => destination),
-    );
-  }
 
   // Helper method to get setting icons
   IconData _getSettingIcon(String settingType) {
@@ -266,13 +226,8 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
 
           return PopScope(
             canPop: false,
-            onPopInvokedWithResult: (didPop, result) {
-              if (didPop) return;
-              _handleBackNavigation();
-            },
             child: MyScrollView(
-              hasBackButton: widget.comingfrom == true ? false : true,
-              backButtonPressed: _handleBackNavigation,
+              hasBackButton: false,
               pageTitle: context.tr('Visitor Settings'),
               pageBody: Padding(
                 padding: EdgeInsets.symmetric(
@@ -830,7 +785,8 @@ class _VisitorSettingsViewState extends State<VisitorSettingsView> {
           ),
           SizedBox(height: isTablet ? 8 : 6),
           Text(
-            context.tr('Please wait while we fetch available visitor categories'),
+            context
+                .tr('Please wait while we fetch available visitor categories'),
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[600],

@@ -127,6 +127,9 @@ class AppLocalizationsHi extends AppLocalizations {
       'कोई इंटरनेट कनेक्शन उपलब्ध नहीं है। कृपया अपनी नेटवर्क सेटिंग्स जांचें।';
 
   @override
+  String get noInternetConnectionFound => 'इंटरनेट कनेक्शन नहीं मिला';
+
+  @override
   String get error => 'त्रुटि';
 
   @override
@@ -1397,6 +1400,18 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get alwaysAllowed => 'हमेशा अनुमति';
+
+  @override
+  String get imagePreview => 'छवि पूर्वावलोकन';
+
+  @override
+  String get reviewCapturedPhoto => 'अपनी कैप्चर की गई फोटो की समीक्षा करें';
+
+  @override
+  String get retake => 'फिर से लें';
+
+  @override
+  String get upload => 'अपलोड';
 
   @override
   String get retryIn => 'पुनः प्रयास करें:';

@@ -146,9 +146,13 @@ class MyAppLogin extends StatefulWidget {
   State<MyAppLogin> createState() => _MyAppLoginState1();
 }
 
+enum _NativeLoginSheet { society, role, gate }
+
 class _MyAppLoginState1 extends State<MyAppLogin> {
   late final LoginService _loginService;
   late final ValueNotifier<LoginState1> _loginState;
+  bool _isResolvingPostLoginNavigation = false;
+  _NativeLoginSheet? _activeNativeSheet;
 
   @override
   void initState() {
@@ -342,6 +346,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
   Future<void> _handleLogin() async {
     try {
       if (_isDisposed) return;
+      FocusManager.instance.primaryFocus?.unfocus();
       _safeUpdateState(_loginState.value.copyWith(isLoading: true));
 
       final userInfo = await _loginService.performLogin();
@@ -695,30 +700,40 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
           listener: (context, state) {
             if (!mounted) return;
             if (state is SocietySelectionState) {
+              _hidePostLoginTransition();
               SessionManagementCoordinator.setNavigatingToLogin(false);
               _showNativeSocietySelection(context, state);
             } else if (state is RoleSelectionState) {
+              _hidePostLoginTransition();
               _showNativeRoleSelection(context, state);
             } else if (state is GateSelectionState) {
               _showNativeGateSelection(context, state);
+            } else if (state is LoginErrorState) {
+              _hidePostLoginTransition();
             } else if (state is NavigateToAdminDashboardState) {
               SessionManagementCoordinator.setNavigatingToLogin(false);
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => VisitorSettingsView()),
+                MaterialPageRoute(builder: (_) => const VisitorSettingsView()),
               );
             } else if (state is NavigateToGatekeeperDashboardState) {
               SessionManagementCoordinator.setNavigatingToLogin(false);
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => VisitorSettingsView()),
+                MaterialPageRoute(builder: (_) => const VisitorSettingsView()),
               );
             }
           },
           child: BlocBuilder<LoginBloc, LoginState>(
-            buildWhen: (_, state) => state is LoginLoadingState,
+            buildWhen: (_, state) =>
+                state is LoginNavigationLoadingState ||
+                state is LoginErrorState,
             builder: (context, state) {
+              final showPostLoginTransition = _isResolvingPostLoginNavigation ||
+                  state is LoginNavigationLoadingState;
               return Scaffold(
                 backgroundColor: Colors.white,
-                body: const NativeLoginForm(),
+                body: showPostLoginTransition
+                    ? const _PostLoginTransitionView()
+                    : const NativeLoginForm(),
               );
             },
           ),
@@ -754,8 +769,13 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
 
   void _showNativeSocietySelection(
       BuildContext context, SocietySelectionState state) {
+    if (!_markNativeSheetActive(_NativeLoginSheet.society)) return;
+
     final raw = state.companiesWithAccessToGate;
-    if (raw is! List || raw.isEmpty) return;
+    if (raw is! List || raw.isEmpty) {
+      _clearNativeSheet(_NativeLoginSheet.society);
+      return;
+    }
     final companies = raw.whereType<Company>().toList();
     final societies = companies
         .map((c) => {
@@ -773,6 +793,7 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       builder: (ctx) => SocietySelectionSheet(
         societies: societies,
         onSelected: (map) {
+          if (!_consumeNativeSheet(_NativeLoginSheet.society)) return;
           Navigator.pop(ctx);
           final id = map['company_id']?.toString();
           final company = companies.cast<Company?>().firstWhere(
@@ -784,13 +805,18 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
           }
         },
       ),
-    );
+    ).whenComplete(() => _clearNativeSheet(_NativeLoginSheet.society));
   }
 
   void _showNativeRoleSelection(
       BuildContext context, RoleSelectionState state) {
+    if (!_markNativeSheetActive(_NativeLoginSheet.role)) return;
+
     final roles = state.roles.whereType<String>().toList();
-    if (roles.isEmpty) return;
+    if (roles.isEmpty) {
+      _clearNativeSheet(_NativeLoginSheet.role);
+      return;
+    }
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -800,19 +826,26 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       builder: (ctx) => RoleSelectionSheet(
         availableRoles: roles,
         onRoleSelected: (role) {
+          if (!_consumeNativeSheet(_NativeLoginSheet.role)) return;
+          _showPostLoginTransition();
           Navigator.pop(ctx);
           context.read<LoginBloc>().add(
                 RoleSelectionButtonPressedEvent(role.toLowerCase() == 'admin'),
               );
         },
       ),
-    );
+    ).whenComplete(() => _clearNativeSheet(_NativeLoginSheet.role));
   }
 
   void _showNativeGateSelection(
       BuildContext context, GateSelectionState state) {
+    if (!_markNativeSheetActive(_NativeLoginSheet.gate)) return;
+
     final gates = state.gates.whereType<Gate>().toList();
-    if (gates.isEmpty) return;
+    if (gates.isEmpty) {
+      _clearNativeSheet(_NativeLoginSheet.gate);
+      return;
+    }
     final gateMaps = gates.map((g) {
       final m = Map<String, dynamic>.from(g.toJson());
       m['gate_id'] = g.id;
@@ -827,6 +860,8 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
       builder: (ctx) => GateSelectionSheet(
         gates: gateMaps,
         onGateSelected: (map) {
+          if (!_consumeNativeSheet(_NativeLoginSheet.gate)) return;
+          _showPostLoginTransition();
           Navigator.pop(ctx);
           final gateMap = Map<String, dynamic>.from(map);
           gateMap['id'] = gateMap['gate_id'] ?? gateMap['id'];
@@ -834,7 +869,44 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
           context.read<LoginBloc>().add(GateSelectionButtonPressedEvent(gate));
         },
       ),
-    );
+    ).whenComplete(() => _clearNativeSheet(_NativeLoginSheet.gate));
+  }
+
+  bool _markNativeSheetActive(_NativeLoginSheet sheet) {
+    if (!mounted) return false;
+    if (_activeNativeSheet != null) {
+      log('Skipping duplicate native login sheet: $sheet '
+          '(active: $_activeNativeSheet)');
+      return false;
+    }
+    _activeNativeSheet = sheet;
+    return true;
+  }
+
+  bool _consumeNativeSheet(_NativeLoginSheet sheet) {
+    if (_activeNativeSheet != sheet) {
+      log('Ignoring duplicate native login sheet action: $sheet '
+          '(active: $_activeNativeSheet)');
+      return false;
+    }
+    _activeNativeSheet = null;
+    return true;
+  }
+
+  void _clearNativeSheet(_NativeLoginSheet sheet) {
+    if (_activeNativeSheet == sheet) {
+      _activeNativeSheet = null;
+    }
+  }
+
+  void _showPostLoginTransition() {
+    if (!mounted || _isResolvingPostLoginNavigation) return;
+    setState(() => _isResolvingPostLoginNavigation = true);
+  }
+
+  void _hidePostLoginTransition() {
+    if (!mounted || !_isResolvingPostLoginNavigation) return;
+    setState(() => _isResolvingPostLoginNavigation = false);
   }
 
   bool _isDisposed = false;
@@ -844,6 +916,18 @@ class _MyAppLoginState1 extends State<MyAppLogin> {
     _isDisposed = true;
     _loginState.dispose();
     super.dispose();
+  }
+}
+
+class _PostLoginTransitionView extends StatelessWidget {
+  const _PostLoginTransitionView();
+
+  @override
+  Widget build(BuildContext context) {
+    return DashboardLoader(
+      title: context.tr('Loading In-Out Book'),
+      subtitle: context.tr('dashboardPreparingVisitorLogs'),
+    );
   }
 }
 

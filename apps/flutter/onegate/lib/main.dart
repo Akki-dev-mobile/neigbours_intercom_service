@@ -698,8 +698,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         break;
       case UserSessionState.unauthenticated:
         log('🚪 User unauthenticated - navigating to login');
-        SessionManagementCoordinator.setNavigatingToLogin(true);
-        _navigateToLogin();
+        unawaited(_handleUnauthenticatedNavigation());
         break;
       case UserSessionState.authenticated:
         log('✅ User authenticated');
@@ -768,6 +767,36 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     if (context != null) {
       Navigator.of(context).pushNamedAndRemoveUntil(
         '/login',
+        (route) => false,
+      );
+    }
+  }
+
+  Future<void> _handleUnauthenticatedNavigation() async {
+    try {
+      final authService = GetIt.I<AuthService>();
+      final validAccessToken = await authService.getValidAccessToken();
+      if (validAccessToken != null && validAccessToken.isNotEmpty) {
+        log(
+          '⏭️ [Session] Transient unauthenticated state ignored; '
+          'routing via launcher to restore dashboard flow',
+        );
+        _navigateToLauncher();
+        return;
+      }
+    } catch (e) {
+      log('⚠️ [Session] token recheck failed before login navigation: $e');
+    }
+
+    SessionManagementCoordinator.setNavigatingToLogin(true);
+    _navigateToLogin();
+  }
+
+  void _navigateToLauncher() {
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const SplashView()),
         (route) => false,
       );
     }

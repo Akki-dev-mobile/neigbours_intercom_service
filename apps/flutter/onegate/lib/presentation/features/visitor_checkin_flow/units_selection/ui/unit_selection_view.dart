@@ -107,7 +107,6 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   String formattedInTime =
       DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
   String? approvalStatus;
-  bool? _membersApproval;
   late Future<void> _initializeFuture;
   bool _isLoading = false;
   bool _isConfirming = false;
@@ -172,8 +171,18 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   }
 
   Future<void> _loadVisitorSettings() async {
+    await _resolveMemberApprovalSetting();
+  }
+
+  Future<bool> _resolveMemberApprovalSetting() async {
     final prefs = await SharedPreferences.getInstance();
-    _membersApproval = prefs.getBool('membersApproval');
+    final bool? uiSetting = prefs.getBool('membersApproval');
+    final bool? legacySetting = prefs.getBool('member_approval');
+    final bool resolved = uiSetting ?? legacySetting ?? false;
+    log(
+      "🔧 Member approval setting resolved: $resolved (membersApproval=$uiSetting, member_approval=$legacySetting)",
+    );
+    return resolved;
   }
 
   @override
@@ -548,7 +557,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             _isSearching = false;
           });
           myFluttertoast(
-            msg: "Failed to search members",
+            msg: context.tr("Failed to search members"),
             backgroundColor: Colors.red,
           );
         }
@@ -560,7 +569,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           _isSearching = false;
         });
         myFluttertoast(
-          msg: "Error searching members: ${e.toString()}",
+          msg: context.tr("Error searching members: {error}",
+              params: {'error': e.toString()}),
           backgroundColor: Colors.red,
         );
       }
@@ -1719,7 +1729,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       log('Error during society office check-in: $e');
       if (mounted) {
         myFluttertoast(
-          msg: "Error during check-in. Please try again.",
+          msg: context.tr("Error during check-in. Please try again."),
           backgroundColor: Colors.red,
         );
       }
@@ -1746,9 +1756,16 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
       final visitorLogData = await _prepareVisitorLogData();
 
       if (selectedMembers.length == 1) {
-        // For express entry, member approval is always required (checked at entry point)
-        // For gatekeeper flow, check the setting
-        if (widget.selfcheckinFlow || _membersApproval == true) {
+        // Resolve at submit-time to avoid stale/null cached values.
+        final bool memberApprovalEnabled =
+            await _resolveMemberApprovalSetting();
+
+        // For express entry, keep approval required.
+        // For gatekeeper single-member flow, require approval only when settings say so.
+        final bool requireMemberApproval =
+            widget.selfcheckinFlow || memberApprovalEnabled;
+
+        if (requireMemberApproval) {
           await _handleSingleMemberFlow(visitorLogData);
         } else {
           await _handleDirectApproval(visitorLogData);
@@ -1768,7 +1785,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
 
   Future<void> _handleDirectApproval(VisitorLog visitorLogData) async {
     try {
-      await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
+      // Direct-approval flow: gatekeeper is intentionally allowing immediately.
+      await remoteDataSource.checkIn(visitorLogData, true);
 
       // For express entry flow, this should not happen as member approval is always required
       // This is only for gatekeeper flow when member approval is disabled
@@ -1856,7 +1874,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<void> _handleSingleMemberFlow(VisitorLog visitorLogData) async {
     try {
       if (!_isCheckedIn) {
-        await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
+        // Member-approval flow: keep visitor pending until member action.
+        await remoteDataSource.checkIn(visitorLogData, false);
         _isCheckedIn = true;
       }
 
@@ -1949,7 +1968,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
   Future<void> _handleMultiMemberFlow(VisitorLog visitorLogData) async {
     try {
       if (!_isCheckedIn) {
-        await remoteDataSource.checkIn(visitorLogData, statusallowed = true);
+        await remoteDataSource.checkIn(visitorLogData, true);
         _isCheckedIn = true;
       }
 
@@ -2088,8 +2107,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                   color: const Color(0xff212427),
                 ),
                 decoration: InputDecoration(
-                  hintText:
-                      context.tr('Search by name, unit number, or building...'),
+                  hintText: context.tr('selectPageSearchPlaceholder'),
                   hintStyle: TextStyle(
                     fontSize: isTablet ? 16 : 14,
                     color: const Color(0xff57636C),
@@ -2197,8 +2215,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                           filteredMembers.isEmpty
                               ? context.tr('No results')
                               : memberCount == 1
-                                  ? '1 member'
-                                  : '$memberCount members',
+                                  ? '1 ${context.tr('member')}'
+                                  : '$memberCount ${context.tr('members')}',
                           style: TextStyle(
                             fontSize: isTablet ? 14 : 12,
                             fontWeight: FontWeight.w600,
@@ -2229,7 +2247,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
           Padding(
             padding: EdgeInsets.only(bottom: isTablet ? 12 : 8),
             child: Text(
-              "Select Building",
+              context.tr("Select Building"),
               style: TextStyle(
                 fontSize: isTablet ? 16 : 14,
                 fontWeight: FontWeight.w600,
@@ -2470,7 +2488,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       ),
                       SizedBox(height: isTablet ? 28 : 22),
                       Text(
-                        'No Members Found',
+                        context.tr('No Members Found'),
                         style: TextStyle(
                           fontSize: isTablet ? 24 : 21,
                           fontWeight: FontWeight.w600,
@@ -2479,7 +2497,8 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
                       ),
                       SizedBox(height: isTablet ? 14 : 10),
                       Text(
-                        'No members match your search. Try a different keyword.',
+                        context.tr(
+                            'No members match your search. Try a different keyword.'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: isTablet ? 16 : 14,
@@ -2534,7 +2553,7 @@ class _UnitSelectionViewState extends State<UnitSelectionView> {
             ),
             SizedBox(height: isTablet ? 24 : 16),
             Text(
-              'Searching members...',
+              context.tr('Searching members...'),
               style: TextStyle(
                 fontSize: isTablet ? 16 : 14,
                 color: Colors.grey[600],

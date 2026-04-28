@@ -394,8 +394,13 @@ class _ParcelListState extends State<ParcelList> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                _capitalizeFirstLetter(
-                                    parcel['parcel_status'] ?? 'N/A'),
+                                (parcel['parcel_status']
+                                            ?.toString()
+                                            .toLowerCase() ==
+                                        'picked')
+                                    ? context.tr('Picked')
+                                    : _capitalizeFirstLetter(
+                                        parcel['parcel_status'] ?? 'N/A'),
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodySmall
@@ -622,7 +627,7 @@ class _ParcelListState extends State<ParcelList> {
                       Text(
                         searchQuery.trim().isNotEmpty
                             ? context.tr(
-                                'No parcels match "{query}". Try a different keyword.',
+                                'parcelNoResultsWithQuery',
                                 params: {'query': searchQuery},
                               )
                             : context.tr(

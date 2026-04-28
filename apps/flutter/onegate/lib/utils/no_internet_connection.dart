@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_onegate/common/internet_check_provider.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 
 class ErrorNoInternetPage extends StatefulWidget {
   const ErrorNoInternetPage({Key? key}) : super(key: key);
@@ -61,6 +62,7 @@ class _ErrorNoInternetPageState extends State<ErrorNoInternetPage>
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
+    final l10n = AppLocalizations.of(context);
 
     return WillPopScope(
       onWillPop: () async => false, // Prevent back navigation
@@ -132,7 +134,7 @@ class _ErrorNoInternetPageState extends State<ErrorNoInternetPage>
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'No Internet Connection',
+                      l10n.noInternetConnectionFound,
                       style: TextStyle(
                         fontSize: isTablet ? 28.0 : 24.0,
                         fontWeight: FontWeight.w600,
@@ -141,7 +143,7 @@ class _ErrorNoInternetPageState extends State<ErrorNoInternetPage>
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Please check your internet connection and try again.',
+                      l10n.noInternetConnection,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: isTablet ? 18.0 : 16.0,
@@ -252,7 +254,7 @@ class _ErrorNoInternetPageState extends State<ErrorNoInternetPage>
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Try Again',
+                                  l10n.tryAgain,
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: isTablet ? 16.0 : 14.0,

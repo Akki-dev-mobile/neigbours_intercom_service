@@ -183,6 +183,11 @@
   "@noInternetConnection": {
     "description": "No internet connection error message"
   },
+
+  "noInternetConnectionFound": "इंटरनेट कनेक्शन नहीं मिला",
+  "@noInternetConnectionFound": {
+    "description": "No internet connection page title"
+  },
   
   "error": "त्रुटि",
   "@error": {
@@ -2063,4 +2068,4 @@
   "@inactive": {
     "description": "Status text for inactive items"
   }
-} 
+}

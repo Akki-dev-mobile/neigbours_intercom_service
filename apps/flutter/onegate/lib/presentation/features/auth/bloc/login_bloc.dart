@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
@@ -23,6 +24,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final LoginUseCase _loginUseCase;
   final GateUseCase _gateUseCase;
   final PreferenceUtils _preferenceUtils = GetIt.I<PreferenceUtils>();
+  bool _isLoginInProgress = false;
 
   String _tr(String key, {Map<String, String>? params}) {
     final context = navigatorKey.currentContext;
@@ -42,6 +44,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   FutureOr<void> loginButtonPressedEvent(
       LoginButtonPressedEvent event, Emitter<LoginState> emit) async {
+    if (_isLoginInProgress) {
+      log("loginButtonPressedEvent ignored: login already in progress");
+      return;
+    }
+
+    _isLoginInProgress = true;
     print("loginButtonPressedEvent");
     emit(LoginLoadingState());
     try {
@@ -55,6 +63,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           message: e.toString(),
         ),
       );
+    } finally {
+      _isLoginInProgress = false;
     }
   }
 
@@ -124,7 +134,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       if (event.isAdmin) {
         final List<Gate> gates = await _preferenceUtils.getGatesList();
         if (gates.isEmpty) {
-          emit(LoginLoadingState());
+          emit(LoginNavigationLoadingState());
           final response = await _gateUseCase.gateList(companyId);
           final List<Gate> gates = response ?? [];
           print(
@@ -167,7 +177,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         // Gatekeeper: fetch gates and show gate selection
         final List<Gate> existingGates = await _preferenceUtils.getGatesList();
         if (existingGates.isEmpty) {
-          emit(LoginLoadingState());
+          emit(LoginNavigationLoadingState());
           final response = await _gateUseCase.gateList(companyId);
           final List<Gate> gateList = response ?? [];
           emit(LoginInitial());

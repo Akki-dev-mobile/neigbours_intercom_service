@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onegate/data/datasources/remote_datasource.dart';
+import 'package:flutter_onegate/generated/l10n/app_localizations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:pinput/pinput.dart';
@@ -387,7 +388,7 @@ class _ParcelDetailsState extends State<ParcelDetails> {
     // Add Check-In
     timelineItems.add(
       _buildTimelineTile(
-        "Parcel Check-in",
+        context.tr("Parcel Check-in"),
         _parseTime(widget.parcel['log_created_at']) ?? DateTime.now(),
         Icons.login,
         Colors.green,
@@ -401,7 +402,7 @@ class _ParcelDetailsState extends State<ParcelDetails> {
     if (widget.parcel['parcel_status'] != "pending") {
       timelineItems.add(
         _buildTimelineTile(
-          "Parcel Picked at",
+          context.tr("Parcel Picked at"),
           _parseTime(widget.parcel['log_verified_at']) ?? DateTime.now(),
           Icons.logout,
           Colors.red,
@@ -676,7 +677,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
   void validateOTP(String pin) {
     if (pin.length < 6) {
       setState(() {
-        errorText = "OTP must be 6 digits.";
+        errorText = AppLocalizations.of(context).pleaseEnter6DigitOTP;
       });
     } else {
       setState(() {
@@ -763,7 +764,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Verification Required',
+                              context.tr('Verification Required'),
                               style: Theme.of(context)
                                   .textTheme
                                   .titleLarge
@@ -776,7 +777,8 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Enter the 6-digit code to pick up parcel',
+                              context.tr(
+                                  'Enter the 6-digit code to pick up parcel'),
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium
@@ -864,7 +866,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'OTP Sent',
+                                context.tr('OTP Sent'),
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleSmall
@@ -875,7 +877,8 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Check your mobile for the verification code',
+                                context.tr(
+                                    'Check your mobile for the verification code'),
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodySmall
@@ -896,7 +899,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                   Column(
                     children: [
                       Text(
-                        'Enter Verification Code',
+                        context.tr('Enter Verification Code'),
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w700,
                               color: const Color(0xff212427),
@@ -906,7 +909,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Type the 6-digit code from your SMS',
+                        context.tr('Type the 6-digit code from your SMS'),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Colors.grey.shade600,
                               fontSize: 14,
@@ -1165,8 +1168,8 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                             const SizedBox(width: 8),
                             Text(
                               _timer == 0
-                                  ? 'Didn\'t receive the code?'
-                                  : 'Resend available in $_timer seconds',
+                                  ? context.tr('Didn\'t receive the code?')
+                                  : '${context.tr('Resend available in')} $_timer ${context.tr('seconds')}',
                               style: TextStyle(
                                 color: _timer == 0
                                     ? Colors.blue.shade700
@@ -1218,7 +1221,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        'Resend OTP',
+                                        context.tr('Resend OTP'),
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodyMedium
@@ -1297,7 +1300,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                                       ),
                                       const SizedBox(width: 12),
                                       Text(
-                                        'Verifying...',
+                                        context.tr('Verifying...'),
                                         style: Theme.of(context)
                                             .textTheme
                                             .titleMedium
@@ -1327,7 +1330,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
                                       ),
                                       const SizedBox(width: 10),
                                       Text(
-                                        'Verify & Pick Parcel',
+                                        context.tr('Verify & Pick Parcel'),
                                         style: Theme.of(context)
                                             .textTheme
                                             .titleMedium
@@ -1381,7 +1384,7 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
     String otp = widget.otpController.text;
     if (otp.length != 6) {
       setState(() {
-        errorText = context.tr('Please enter a valid 6-digit OTP.');
+        errorText = AppLocalizations.of(context).pleaseEnter6DigitOTP;
       });
       return;
     }
@@ -1410,14 +1413,15 @@ class _OtpBottomSheetState extends State<OtpBottomSheet> {
         (route) => false,
       );
     } catch (e) {
+      final l10n = AppLocalizations.of(context);
       setState(() {
-        errorText = context.tr('Invalid OTP. Please try again.');
+        errorText = l10n.otpVerificationFailedPleaseTryAgain;
         isSubmitting = false;
       });
 
       _showEnhancedErrorToast(
         title: context.tr('Verification Failed'),
-        message: context.tr('Invalid OTP entered. Please check and try again.'),
+        message: l10n.otpVerificationFailedPleaseTryAgain,
         icon: Icons.lock_outline,
       );
 

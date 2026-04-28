@@ -33,7 +33,9 @@ class CallKitService {
   DateTime? _lastMissedNotificationAt;
   static const Duration _missedNotificationDedupeWindow = Duration(seconds: 8);
   final Map<String, Timer> _incomingTerminalPollers = <String, Timer>{};
-  final Map<String, DateTime> _incomingTerminalPollStartedAt = <String, DateTime>{};
+  final Map<String, DateTime> _incomingTerminalPollStartedAt =
+      <String, DateTime>{};
+  final Set<String> _incomingTerminalPollAnsweredCallIds = <String>{};
   static const Duration _incomingTerminalPollDuration = Duration(seconds: 60);
 
   Future<void> initialize() async {
@@ -92,6 +94,9 @@ class CallKitService {
         'call_type': callType,
         'caller_name': callerName,
         'caller_phone': callerPhone,
+        // We post a richer app-managed missed notification with callback.
+        // Skip plugin's timeout-generated missed notification to avoid duplicates.
+        'onegate_managed_missed_notification': true,
         'meeting_id':
             _stringValue(data['meeting_id']) ?? _stringValue(data['meetingId']),
         'meetingId':
@@ -103,8 +108,8 @@ class CallKitService {
         'image': image,
       },
       missedCallNotification: const NotificationParams(
-        showNotification: true,
-        isShowCallback: true,
+        showNotification: false,
+        isShowCallback: false,
         subtitle: 'Missed call',
         callbackText: 'Call back',
       ),
@@ -114,12 +119,14 @@ class CallKitService {
         incomingCallNotificationChannelName: incomingCallChannelName,
         missedCallNotificationChannelName: missedCallChannelName,
         ringtonePath: 'incoming_call',
+        // Keep custom incoming template enabled so swipe-up affordance/animation
+        // and call UI styling are rendered by the native callkit screen.
         isCustomNotification: true,
         isShowLogo: true,
         logoUrl: 'assets/media/images/oneapptm.png',
-        backgroundColor: '#FDE7E7',
+        backgroundColor: '#F26D6D',
         actionColor: '#4CAF50',
-        textColor: '#7A1E1E',
+        textColor: '#FFFFFF',
       ),
     );
 
@@ -177,7 +184,8 @@ class CallKitService {
       (timer) async {
         final startedAt = _incomingTerminalPollStartedAt[callId];
         if (startedAt == null ||
-            DateTime.now().difference(startedAt) > _incomingTerminalPollDuration) {
+            DateTime.now().difference(startedAt) >
+                _incomingTerminalPollDuration) {
           _stopIncomingTerminalPoll(callId);
           return;
         }
@@ -185,7 +193,11 @@ class CallKitService {
           final call = await CallService.instance.getCall(numericCallId);
           if (call == null) return;
           final status = call.status;
-          if (status == CallStatus.initiated || status == CallStatus.answered) {
+          if (status == CallStatus.answered) {
+            _incomingTerminalPollAnsweredCallIds.add(callId);
+            return;
+          }
+          if (status == CallStatus.initiated) {
             return;
           }
           log(
@@ -200,9 +212,15 @@ class CallKitService {
                 : (status == CallStatus.missed ? 'missed' : 'call_ended'),
           };
           final isDeclinedByUser = status == CallStatus.declined;
+          final shouldShowMissedNotification =
+              _shouldShowMissedNotificationForPolledTerminal(
+            callId: callId,
+            status: status,
+          );
           await dismissIncomingUi(
             callId,
-            showMissedNotification: !isDeclinedByUser,
+            showMissedNotification:
+                !isDeclinedByUser && shouldShowMissedNotification,
             payload: terminalPayload,
           );
           if (isDeclinedByUser) {
@@ -220,8 +238,9 @@ class CallKitService {
           );
           await PendingIncomingAcceptStore.clear();
           await IncomingCallProcessingGuard.clear(callId);
-          if (!isDeclinedByUser) {
-            await CallCallbackUxService.instance.handleRemoteTerminalForCallback(
+          if (!isDeclinedByUser && shouldShowMissedNotification) {
+            await CallCallbackUxService.instance
+                .handleRemoteTerminalForCallback(
               terminalPayload,
               source: 'incoming_terminal_poll',
             );
@@ -237,6 +256,31 @@ class CallKitService {
   void _stopIncomingTerminalPoll(String callId) {
     _incomingTerminalPollers.remove(callId)?.cancel();
     _incomingTerminalPollStartedAt.remove(callId);
+    _incomingTerminalPollAnsweredCallIds.remove(callId);
+  }
+
+  bool _shouldShowMissedNotificationForPolledTerminal({
+    required String callId,
+    required CallStatus status,
+  }) {
+    if (status == CallStatus.declined) return false;
+    if (_incomingTerminalPollAnsweredCallIds.contains(callId)) return false;
+    if (CallCoordinator.instance.isAcceptingIncomingHandoff ||
+        CallCoordinator.instance.state.value == CallFlowState.connecting ||
+        CallCoordinator.instance.state.value == CallFlowState.connected) {
+      return false;
+    }
+
+    final activeCallId = CallCoordinator.instance.activeCallId?.trim();
+    final matchesActiveCall = activeCallId == null ||
+        activeCallId.isEmpty ||
+        activeCallId == callId.trim();
+    if (matchesActiveCall &&
+        CallCoordinator.instance.state.value == CallFlowState.ringing) {
+      return true;
+    }
+
+    return status == CallStatus.missed;
   }
 
   bool _isDuplicateMissedNotification(String callId) {
@@ -279,18 +323,19 @@ class CallKitService {
           log('⚠️ [CallKitService] callback identity enrich failed call_id=$callId: $e');
         }
       }
-      final callerName = _stringValue(data['caller_name'], fallback: 'Missed call');
-      final callerPhone = _stringValue(data['caller_phone'], fallback: 'OneGate');
+      final callerName =
+          _resolveMissedCallDisplayName(data, fallback: 'Missed call');
       final image =
           _stringValue(data['image']) ?? _stringValue(data['image_avatar_url']);
-      final action = _stringValue(data['action']) ?? _stringValue(data['status']);
+      final action =
+          _stringValue(data['action']) ?? _stringValue(data['status']);
       final subtitle = _terminalSubtitle(action);
       final params = CallKitParams(
         id: callId,
         nameCaller: callerName,
         appName: 'OneGate',
         avatar: image,
-        handle: callerPhone,
+        handle: '',
         type: 0,
         duration: 0,
         textAccept: 'Call back',
@@ -358,7 +403,8 @@ class CallKitService {
         }
         await PendingIncomingAcceptStore.save(payload);
         try {
-          final handled = await _processAcceptPayload(payload, source: 'callkit_event');
+          final handled =
+              await _processAcceptPayload(payload, source: 'callkit_event');
           if (!handled) {
             log(
               '⏳ [CallKitService] Accept deferred call_id=$callId '
@@ -392,7 +438,11 @@ class CallKitService {
         return;
       case 'actionCallTimeout':
         await PendingIncomingAcceptStore.clear();
-        await dismissIncomingUi(callId);
+        await dismissIncomingUi(
+          callId,
+          showMissedNotification: true,
+          payload: payload,
+        );
         await CallCoordinator.instance.markEnded(
           reason: 'callkit_timeout',
           callId: callId,
@@ -437,7 +487,8 @@ class CallKitService {
     Map<String, dynamic> payload, {
     required String source,
   }) async {
-    final callId = payload['call_id']?.toString() ?? payload['callId']?.toString() ?? '';
+    final callId =
+        payload['call_id']?.toString() ?? payload['callId']?.toString() ?? '';
     if (callId.isEmpty) return false;
 
     try {
@@ -497,5 +548,28 @@ class CallKitService {
       return 'Declined by user';
     }
     return 'Missed call';
+  }
+
+  String? _resolveMissedCallDisplayName(
+    Map<String, dynamic> data, {
+    String? fallback,
+  }) {
+    final callerName = _stringValue(data['caller_name']);
+    if (callerName != null && !_looksLikePhoneNumber(callerName)) {
+      return callerName;
+    }
+    final fromUser = data['from_user'];
+    if (fromUser is Map) {
+      final nestedName = _stringValue(Map<String, dynamic>.from(fromUser)['name']);
+      if (nestedName != null && !_looksLikePhoneNumber(nestedName)) {
+        return nestedName;
+      }
+    }
+    return fallback;
+  }
+
+  bool _looksLikePhoneNumber(String value) {
+    final normalized = value.replaceAll(RegExp(r'[^0-9]'), '');
+    return normalized.length >= 7;
   }
 }

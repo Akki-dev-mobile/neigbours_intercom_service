@@ -2861,13 +2861,10 @@ class RemoteDataSource {
       // Step 1: Fetch and update gate information using helper method
       final gateInfo = await fetchAndUpdateGateInfo('approvals');
       final rawGateName = gateInfo['gateName']!;
-
-      // Format gate name to ensure consistent "TOWER NO XX" format
-      final selectedGateName = _formatGateName(rawGateName);
-      // Note: Gate name is dynamically fetched and formatted to match API requirements
+      final formattedGateName = _formatGateName(rawGateName);
 
       log("🎯 APPROVALS - Raw gate name: '$rawGateName'");
-      log("🎯 APPROVALS - Formatted gate name: '$selectedGateName'");
+      log("🎯 APPROVALS - Formatted gate name: '$formattedGateName'");
 
       // Step 2: Get company ID (keep existing logic)
       final resolvedCompanyId = await gateStorage.getSocietyId();
@@ -2880,27 +2877,30 @@ class RemoteDataSource {
       final String fromDate = currentDate;
       final String toDate = currentDate;
 
-      // Construct Request Body
-      final Map<String, dynamic> requestBody = {
+      // Construct base request body and gate fallback candidates.
+      final Map<String, dynamic> baseRequestBody = {
         "company_id": resolvedCompanyId,
-        "in_gate": selectedGateName,
         "from_date": fromDate,
         "to_date": toDate,
-        "is_secondary": isSecondary ?? true,
+        "is_secondary": isSecondary ?? false,
       };
-
       if (logID != null) {
-        requestBody["log_id"] = logID;
+        baseRequestBody["log_id"] = logID;
+        // Compatibility: some backends expect visitor_log_id instead of log_id.
+        baseRequestBody["visitor_log_id"] = logID;
       }
 
-      log("🔍 Step 3: APPROVALS REQUEST BODY:");
-      log("📦 in_gate parameter: '${requestBody['in_gate']}'");
-      log("📦 company_id parameter: '${requestBody['company_id']}'");
-      log("📦 from_date parameter: '${requestBody['from_date']}'");
-      log("📦 to_date parameter: '${requestBody['to_date']}'");
-      log("📦 Complete request body: ${jsonEncode(requestBody)}");
-      log("🌐 Sending approvals request with updated gate context to: $baseUrl");
-      log("📅 Date range: ${requestBody['from_date']} to ${requestBody['to_date']} (current date)");
+      final List<String> gateCandidates = <String>[];
+      final rawTrimmed = rawGateName.trim();
+      if (rawTrimmed.isNotEmpty) {
+        gateCandidates.add(rawTrimmed);
+      }
+      final formattedTrimmed = formattedGateName.trim();
+      if (formattedTrimmed.isNotEmpty &&
+          !gateCandidates
+              .any((g) => g.toLowerCase() == formattedTrimmed.toLowerCase())) {
+        gateCandidates.add(formattedTrimmed);
+      }
 
       // Try to refresh token before making the request
       String? accessToken;
@@ -2917,31 +2917,86 @@ class RemoteDataSource {
           }
         }
 
-        final response = await http.post(
-          Uri.parse(baseUrl),
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer $accessToken",
-          },
-          body: jsonEncode(requestBody),
-        );
+        final List<bool> secondaryCandidates = <bool>[
+          if (isSecondary != null) isSecondary else false,
+          if (isSecondary == null) true,
+        ];
 
-        if (response.statusCode == 200) {
-          final Map<String, dynamic> responseData = jsonDecode(response.body);
-          log("Response data: $responseData");
-          if (!responseData.containsKey('data')) {
-            log("🚨 API Response does not contain 'data' key.");
-            return [];
+        final List<Map<String, dynamic>> requestBodies = <Map<String, dynamic>>[];
+        for (final secondary in secondaryCandidates.toSet()) {
+          for (final gate in gateCandidates) {
+            requestBodies.add(<String, dynamic>{
+              ...baseRequestBody,
+              "is_secondary": secondary,
+              "in_gate": gate,
+            });
           }
+        }
+        // Fallback: if log_id is present, retry without in_gate so backend can
+        // resolve by id even when gate naming differs.
+        if (logID != null) {
+          for (final secondary in secondaryCandidates.toSet()) {
+            requestBodies.add(<String, dynamic>{
+              ...baseRequestBody,
+              "is_secondary": secondary,
+            });
+          }
+        }
+        if (requestBodies.isEmpty) {
+          requestBodies.add(<String, dynamic>{...baseRequestBody});
+        }
 
-          final List<dynamic> data = responseData['data'];
-          if (data.isEmpty) {
-            log("🚫 No approvals found in response.");
+        List<dynamic>? approvalsData;
+        for (int i = 0; i < requestBodies.length; i++) {
+          final requestBody = requestBodies[i];
+          log("🔍 Step 3: APPROVALS REQUEST BODY [attempt ${i + 1}/${requestBodies.length}]");
+          log("📦 in_gate parameter: '${requestBody['in_gate'] ?? "<omitted>"}'");
+          log("📦 company_id parameter: '${requestBody['company_id']}'");
+          log("📦 from_date parameter: '${requestBody['from_date']}'");
+          log("📦 to_date parameter: '${requestBody['to_date']}'");
+          log("📦 Complete request body: ${jsonEncode(requestBody)}");
+          log("🌐 Sending approvals request with updated gate context to: $baseUrl");
+          log("📅 Date range: ${requestBody['from_date']} to ${requestBody['to_date']} (current date)");
+
+          final response = await http.post(
+            Uri.parse(baseUrl),
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer $accessToken",
+            },
+            body: jsonEncode(requestBody),
+          );
+
+          if (response.statusCode == 200) {
+            final Map<String, dynamic> responseData = jsonDecode(response.body);
+            log("Response data [attempt ${i + 1}]: $responseData");
+            if (!responseData.containsKey('data')) {
+              log("🚨 API Response does not contain 'data' key.");
+              continue;
+            }
+            final List<dynamic> data = responseData['data'];
+            if (data.isEmpty) {
+              log("🚫 No approvals found in response [attempt ${i + 1}].");
+              continue;
+            }
+            approvalsData = data;
+            break;
+          } else if (response.statusCode == 401) {
+            await _handleAuthError("Expired refresh token");
             return [];
+          } else {
+            _handleErrorResponse();
+            throw Exception(
+                '❌ Failed to fetch approvals: ${response.statusCode}, ${response.body}');
           }
+        }
+
+        if (approvalsData == null || approvalsData.isEmpty) {
+          return [];
+        }
 
           // ✅ Parse the API Response to a List of VisitorInfo Objects
-          final List<VisitorInfo> visitorList = data.map((json) {
+          final List<VisitorInfo> visitorList = approvalsData.map((json) {
             List<UnitDetails> parsedUnitDetails = [];
 
             try {
@@ -3033,16 +3088,6 @@ class RemoteDataSource {
             );
           }).toList();
           return visitorList;
-        } else if (response.statusCode == 401) {
-          // Handle authentication error
-          await _handleAuthError("Expired refresh token");
-          return [];
-        } else {
-          _handleErrorResponse();
-
-          throw Exception(
-              '❌ Failed to fetch approvals: ${response.statusCode}, ${response.body}');
-        }
       } catch (e) {
         log("❌ Error refreshing token: $e");
         // Handle authentication error

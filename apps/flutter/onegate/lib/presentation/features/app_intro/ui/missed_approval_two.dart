@@ -895,7 +895,7 @@ class ApprovalsList extends StatelessWidget {
                         ),
                         SizedBox(height: isTablet ? 28 : 22),
                         Text(
-                          'No Results Found',
+                          context.tr('missedApprovalNoResultsTitle'),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: isTablet ? 24 : 21,
@@ -906,8 +906,14 @@ class ApprovalsList extends StatelessWidget {
                         SizedBox(height: isTablet ? 14 : 10),
                         Text(
                           searchQuery.isNotEmpty
-                              ? 'No approvals match "$searchQuery". Try a different keyword.'
-                              : 'No approvals found for $towerName.',
+                              ? context.tr(
+                                  'missedApprovalNoResultsWithQuery',
+                                  params: {'query': searchQuery},
+                                )
+                              : context.tr(
+                                  'missedApprovalNoResultsForTower',
+                                  params: {'towerName': towerName},
+                                ),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: isTablet ? 16 : 14,
@@ -1768,7 +1774,7 @@ class TimerActionSectionState extends State<TimerActionSection> {
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
-                              "Delivery person has left the parcel.",
+                              context.tr("missedApprovalDeliveryLeftParcel"),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -1805,8 +1811,8 @@ class TimerActionSectionState extends State<TimerActionSection> {
                                       )
                                     : const Icon(Icons.camera_alt),
                                 label: Text(_isUploading
-                                    ? "Uploading..."
-                                    : "Capture Image"),
+                                    ? context.tr("Uploading...")
+                                    : context.tr("captureImage")),
                               ),
                             ],
                           ),
@@ -1823,7 +1829,9 @@ class TimerActionSectionState extends State<TimerActionSection> {
                         color: Colors.green, size: 15),
                     const SizedBox(width: 8),
                     Text(
-                      "Visitor has been allowed.",
+                      allowStatus == "allowed_by_gatekeeper"
+                          ? context.tr("missedApprovalVisitorAllowedByGatekeeper")
+                          : context.tr("missedApprovalVisitorAllowed"),
                       style: Theme.of(context).textTheme.labelMedium!.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.green.shade700,
@@ -1839,7 +1847,7 @@ class TimerActionSectionState extends State<TimerActionSection> {
                     const Icon(Icons.cancel, color: Colors.red, size: 15),
                     const SizedBox(width: 8),
                     Text(
-                      "Visitor has been declined.",
+                      context.tr("missedApprovalVisitorDeclined"),
                       style: Theme.of(context).textTheme.labelMedium!.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.red.shade700,
@@ -1859,7 +1867,7 @@ class TimerActionSectionState extends State<TimerActionSection> {
                             color: Colors.orange, size: 15),
                         const SizedBox(width: 8),
                         Text(
-                          "Approval is pending...",
+                          context.tr("missedApprovalPending"),
                           style:
                               Theme.of(context).textTheme.labelMedium!.copyWith(
                                     fontWeight: FontWeight.bold,

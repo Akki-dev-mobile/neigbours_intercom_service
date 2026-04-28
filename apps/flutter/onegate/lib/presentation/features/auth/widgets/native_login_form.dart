@@ -80,6 +80,7 @@ class _NativeLoginFormState extends State<NativeLoginForm> {
 
   void _submit() {
     if (!_isFormValid) return;
+    FocusManager.instance.primaryFocus?.unfocus();
     final normalizedMobile = _normalizeMobileWithCountryCode(
         _usernameController.text, _selectedDialCode);
     context.read<LoginBloc>().add(

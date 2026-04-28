@@ -1565,6 +1565,7 @@
   "staffSearchHint": "Search staff by name, category, or phone...",
   "staffNoSearchMatch": "No staff members match your search. Try a different keyword.",
   "parcelSearchHint": "Search parcel by member, unit, or category...",
+  "parcelNoResultsWithQuery": "No parcels match \"{query}\". Try a different keyword.",
   "parcelNoItemsToday": "No parcels found today.",
   "qrCheckinDescription": "Scan your QR code for instant check-in. Most convenient method for regular visitors.",
   "passcodeCheckinDescription": "Use your passcode for quick and secure check-in without OTP verification.",
@@ -1755,5 +1756,44 @@
   "visitorDetailsCheckIn": "Check In",
   "visitorDetailsApprovedBy": "Approved By",
   "visitorDetailsGuestPreApprovedByMember": "Guest pre-approved by member",
-  "visitorDetailsCall": "Call"
+  "visitorDetailsCall": "Call",
+  "Delivery person has left the parcel.": "Delivery person has left the parcel.",
+  "Visitor has been allowed.": "Visitor has been allowed.",
+  "Visitor is Allowed By Gatekeeper.": "Visitor is Allowed By Gatekeeper.",
+  "Approval is pending...": "Approval is pending...",
+  "Verification Required": "Verification Required",
+  "Enter the 6-digit code to pick up parcel": "Enter the 6-digit code to pick up parcel",
+  "OTP Sent": "OTP Sent",
+  "Check your mobile for the verification code": "Check your mobile for the verification code",
+  "Enter Verification Code": "Enter Verification Code",
+  "Type the 6-digit code from your SMS": "Type the 6-digit code from your SMS",
+  "Didn't receive the code?": "Didn't receive the code?",
+  "Resend available in": "Resend available in",
+  "Verify & Pick Parcel": "Verify & Pick Parcel",
+  "Select Building": "Select Building",
+  "No Members Found": "No Members Found",
+  "No members match your search. Try a different keyword.": "No members match your search. Try a different keyword.",
+  "Searching members...": "Searching members...",
+  "Parcel Check-in": "Parcel Check-in",
+  "Parcel Picked at": "Parcel Picked at",
+  "Picked": "Picked",
+  "No Results Found": "No Results Found",
+  "No approvals match \"{query}\". Try a different keyword.": "No approvals match \"{query}\". Try a different keyword.",
+  "No approvals found.": "No approvals found.",
+  "No approvals found for {towerName}.": "No approvals found for {towerName}.",
+  "Visitor has been declined.": "Visitor has been declined.",
+  "Search by name , unit number , or building ...": "Search by name, unit number, or building...",
+  "OTP must be 6 digits.": "OTP must be 6 digits.",
+  "Error during check-in. Please try again.": "Error during check-in. Please try again."
+  ,"selectPageSearchPlaceholder": "Search by name, unit number, or building..."
+  ,"missedApprovalLoadingSubtitle": "Please wait while we fetch pending approvals..."
+  ,"missedApprovalNoResultsTitle": "No Results Found"
+  ,"missedApprovalNoResultsWithQuery": "No approvals match \"{query}\". Try a different keyword."
+  ,"missedApprovalNoResultsGeneric": "No approvals found."
+  ,"missedApprovalNoResultsForTower": "No approvals found for {towerName}."
+  ,"missedApprovalVisitorAllowed": "Visitor has been allowed."
+  ,"missedApprovalVisitorDeclined": "Visitor has been declined."
+  ,"missedApprovalPending": "Approval is pending..."
+  ,"missedApprovalDeliveryLeftParcel": "Delivery person has left the parcel."
+  ,"missedApprovalVisitorAllowedByGatekeeper": "Visitor is Allowed By Gatekeeper."
 }

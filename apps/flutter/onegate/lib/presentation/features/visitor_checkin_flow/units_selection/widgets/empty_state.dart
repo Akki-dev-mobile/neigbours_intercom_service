@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_onegate/utils/localization_helper.dart';
 
 class EmptyState extends StatelessWidget {
   const EmptyState();
@@ -52,7 +53,7 @@ class EmptyState extends StatelessWidget {
                       ),
                       SizedBox(height: isTablet ? 28 : 22),
                       Text(
-                        'No Members Found',
+                        context.tr('No Members Found'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: isTablet ? 24 : 21,
@@ -62,7 +63,8 @@ class EmptyState extends StatelessWidget {
                       ),
                       SizedBox(height: isTablet ? 14 : 10),
                       Text(
-                        'No members match your search. Try a different keyword.',
+                        context.tr(
+                            'No members match your search. Try a different keyword.'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: isTablet ? 16 : 14,

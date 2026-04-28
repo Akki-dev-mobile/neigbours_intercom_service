@@ -183,6 +183,11 @@
   "@noInternetConnection": {
     "description": "No internet connection error message"
   },
+
+  "noInternetConnectionFound": "No internet connection found",
+  "@noInternetConnectionFound": {
+    "description": "No internet connection page title"
+  },
   
   "error": "Error",
   "@error": {
@@ -2564,6 +2569,26 @@
   "alwaysAllowed": "Always Allowed",
   "@alwaysAllowed": {
     "description": "Status text for always allowed visitors"
+  },
+
+  "imagePreview": "Image Preview",
+  "@imagePreview": {
+    "description": "Title for image preview dialog"
+  },
+
+  "reviewCapturedPhoto": "Review your captured photo",
+  "@reviewCapturedPhoto": {
+    "description": "Subtitle for image preview dialog"
+  },
+
+  "retake": "Retake",
+  "@retake": {
+    "description": "Button text for retaking a photo"
+  },
+
+  "upload": "Upload",
+  "@upload": {
+    "description": "Button text for uploading a photo"
   },
 
   "retryIn": "Retry in:",

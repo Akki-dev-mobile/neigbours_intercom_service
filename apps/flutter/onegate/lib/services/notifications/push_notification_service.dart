@@ -235,7 +235,9 @@ class PushNotificationService {
           );
           return;
         }
-        if (action != null && _terminalLikeActions.contains(action) && hasCallId) {
+        if (action != null &&
+            _terminalLikeActions.contains(action) &&
+            hasCallId) {
           await handleTerminalCallEvent(
             data,
             source: source,
@@ -261,6 +263,10 @@ class PushNotificationService {
 
       await _initializeAndroidNotifications();
       await CallKitService.instance.initialize();
+      await _clearTransientCallLikeTrayNotification(
+        source: source,
+        fromBackground: fromBackground,
+      );
 
       try {
         await OneGateIntercomBootstrap.ensureConfigured();
@@ -333,7 +339,20 @@ class PushNotificationService {
         await LocalTerminalOriginStore.wasRecentlyEmittedLocally(callId);
     final isDeclinedByUser =
         _isDeclinedByUser(payload, normalizedAction: action);
-    final shouldOfferMissedCallback = !isLocalTerminal && !isDeclinedByUser;
+    final coordinatorStateBeforeTerminal = CallCoordinator.instance.state.value;
+    final activeCallIdBeforeTerminal = CallCoordinator.instance.activeCallId;
+    final isAcceptingIncomingHandoff =
+        CallCoordinator.instance.isAcceptingIncomingHandoff;
+    final shouldOfferMissedCallback = shouldOfferMissedCallbackForTerminal(
+      payload: payload,
+      callId: callId,
+      normalizedAction: action,
+      isLocalTerminal: isLocalTerminal,
+      isDeclinedByUser: isDeclinedByUser,
+      coordinatorState: coordinatorStateBeforeTerminal,
+      activeCallId: activeCallIdBeforeTerminal,
+      isAcceptingIncomingHandoff: isAcceptingIncomingHandoff,
+    );
 
     log(
       '📥 [PushNotificationService][$source] terminal event received '
@@ -341,6 +360,7 @@ class PushNotificationService {
       'status=${payload['status'] ?? "-"} reason=${payload['reason'] ?? "-"} '
       'ended_by=${payload['ended_by'] ?? payload['endedBy'] ?? "-"} '
       'fromBackground=$fromBackground localOrigin=$isLocalTerminal declinedByUser=$isDeclinedByUser '
+      'stateBeforeTerminal=${coordinatorStateBeforeTerminal.name} activeBeforeTerminal=${activeCallIdBeforeTerminal ?? "-"} '
       'showMissedCallback=$shouldOfferMissedCallback',
     );
 
@@ -414,6 +434,28 @@ class PushNotificationService {
 
     _localNotificationsInitialized = true;
     log('✅ [PushNotificationService] Android notification channels ready');
+  }
+
+  static Future<void> _clearTransientCallLikeTrayNotification({
+    required String source,
+    required bool fromBackground,
+  }) async {
+    try {
+      // Best-effort cleanup:
+      // when backend sends notification+data payload for incoming calls, Android
+      // can briefly show a system tray heads-up before custom call UI appears.
+      // We only clear in active app flow to avoid suppressing genuine background
+      // notifications users may rely on.
+      if (fromBackground) return;
+      await _localNotifications.cancelAll();
+      log(
+        '🧹 [PushNotificationService][$source] Cleared transient tray notifications before incoming UI',
+      );
+    } catch (e) {
+      log(
+        '⚠️ [PushNotificationService][$source] Failed to clear transient tray notifications: $e',
+      );
+    }
   }
 
   static Future<String?> _getCurrentToken({required bool rotateOnce}) async {
@@ -581,7 +623,13 @@ class PushNotificationService {
       return true;
     }
 
-    for (final key in const <String>['action', 'event', 'type', 'status', 'reason']) {
+    for (final key in const <String>[
+      'action',
+      'event',
+      'type',
+      'status',
+      'reason'
+    ]) {
       final raw = payload[key]?.toString().trim();
       if (raw == null || raw.isEmpty) continue;
       final snake = raw
@@ -592,6 +640,59 @@ class PushNotificationService {
           .replaceAll('-', '_')
           .toLowerCase();
       if (declinedLike.contains(snake)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @visibleForTesting
+  static bool shouldOfferMissedCallbackForTerminal({
+    required Map<String, dynamic> payload,
+    required String callId,
+    required String? normalizedAction,
+    required bool isLocalTerminal,
+    required bool isDeclinedByUser,
+    required CallFlowState coordinatorState,
+    required String? activeCallId,
+    required bool isAcceptingIncomingHandoff,
+  }) {
+    if (isLocalTerminal || isDeclinedByUser) return false;
+    if (isAcceptingIncomingHandoff ||
+        coordinatorState == CallFlowState.connecting ||
+        coordinatorState == CallFlowState.connected) {
+      return false;
+    }
+
+    final normalizedCallId = callId.trim();
+    final normalizedActiveCallId = activeCallId?.trim();
+    final matchesActiveCall = normalizedActiveCallId == null ||
+        normalizedActiveCallId.isEmpty ||
+        normalizedActiveCallId == normalizedCallId;
+    if (matchesActiveCall && coordinatorState == CallFlowState.ringing) {
+      return true;
+    }
+
+    return _isExplicitUnansweredTerminal(payload, normalizedAction);
+  }
+
+  static bool _isExplicitUnansweredTerminal(
+    Map<String, dynamic> payload,
+    String? normalizedAction,
+  ) {
+    if (normalizedAction == 'missed' || normalizedAction == 'timeout') {
+      return true;
+    }
+
+    for (final key in const <String>[
+      'action',
+      'event',
+      'type',
+      'status',
+      'reason'
+    ]) {
+      final normalized = _normalizeAction(payload[key]?.toString());
+      if (normalized == 'missed' || normalized == 'timeout') {
         return true;
       }
     }

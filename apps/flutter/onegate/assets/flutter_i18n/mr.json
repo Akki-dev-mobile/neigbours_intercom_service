@@ -1565,6 +1565,7 @@
   "staffSearchHint": "नाव, श्रेणी किंवा फोनद्वारे कर्मचारी शोधा...",
   "staffNoSearchMatch": "तुमच्या शोधाशी कोणताही कर्मचारी जुळत नाही. कृपया दुसरा कीवर्ड वापरून पाहा.",
   "parcelSearchHint": "सदस्य, युनिट किंवा श्रेणीनुसार पार्सल शोधा...",
+  "parcelNoResultsWithQuery": "\"{query}\" शी कोणतेही पार्सल जुळत नाही. दुसरा कीवर्ड वापरून पाहा.",
   "parcelNoItemsToday": "आज कोणतेही पार्सल सापडले नाही.",
   "qrCheckinDescription": "तत्काळ चेक-इनसाठी तुमचा QR कोड स्कॅन करा. नियमित अभ्यागतांसाठी ही सर्वात सोयीची पद्धत आहे.",
   "passcodeCheckinDescription": "OTP पडताळणीशिवाय जलद आणि सुरक्षित चेक-इनसाठी तुमचा पासकोड वापरा.",
@@ -1755,5 +1756,44 @@
   "visitorDetailsCheckIn": "चेक इन",
   "visitorDetailsApprovedBy": "द्वारे मंजूर",
   "visitorDetailsGuestPreApprovedByMember": "अभ्यागताला सदस्याकडून पूर्व-मंजुरी देण्यात आली",
-  "visitorDetailsCall": "कॉल करा"
+  "visitorDetailsCall": "कॉल करा",
+  "Delivery person has left the parcel.": "डिलिव्हरी व्यक्तीने पार्सल सोडले आहे.",
+  "Visitor has been allowed.": "अभ्यागताला परवानगी दिली आहे.",
+  "Visitor is Allowed By Gatekeeper.": "अभ्यागताला गेटकीपरने परवानगी दिली आहे.",
+  "Approval is pending...": "मंजुरी प्रलंबित आहे...",
+  "Verification Required": "सत्यापन आवश्यक",
+  "Enter the 6-digit code to pick up parcel": "पार्सल घेण्यासाठी 6 अंकी कोड टाका",
+  "OTP Sent": "ओटीपी पाठवला आहे",
+  "Check your mobile for the verification code": "सत्यापन कोडसाठी तुमचा मोबाईल तपासा",
+  "Enter Verification Code": "सत्यापन कोड टाका",
+  "Type the 6-digit code from your SMS": "तुमच्या एसएमएसमधील 6 अंकी कोड टाका",
+  "Didn't receive the code?": "कोड मिळाला नाही?",
+  "Resend available in": "पुन्हा पाठवणे उपलब्ध",
+  "Verify & Pick Parcel": "सत्यापित करा आणि पार्सल घ्या",
+  "Select Building": "इमारत निवडा",
+  "No Members Found": "कोणतेही सदस्य सापडले नाहीत",
+  "No members match your search. Try a different keyword.": "तुमच्या शोधाशी कोणताही सदस्य जुळत नाही. कृपया दुसरा कीवर्ड वापरून पाहा.",
+  "Searching members...": "सदस्य शोधत आहे...",
+  "Parcel Check-in": "पार्सल चेक-इन",
+  "Parcel Picked at": "पार्सल घेतले",
+  "Picked": "घेतले",
+  "No Results Found": "कोणतेही निकाल सापडले नाहीत",
+  "No approvals match \"{query}\". Try a different keyword.": "\"{query}\" शी कोणतीही मंजुरी जुळत नाही. कृपया दुसरा कीवर्ड वापरून पाहा.",
+  "No approvals found.": "कोणतीही मंजुरी सापडली नाही.",
+  "No approvals found for {towerName}.": "{towerName} साठी कोणतीही मंजुरी सापडली नाही.",
+  "Visitor has been declined.": "अभ्यागताला नकार देण्यात आला आहे.",
+  "Search by name , unit number , or building ...": "नाव, युनिट क्रमांक किंवा इमारतीनुसार शोधा...",
+  "OTP must be 6 digits.": "ओटीपी 6 अंकी असावा.",
+  "Error during check-in. Please try again.": "चेक-इन दरम्यान त्रुटी आली. कृपया पुन्हा प्रयत्न करा."
+  ,"selectPageSearchPlaceholder": "नाव, युनिट क्रमांक किंवा इमारतीनुसार शोधा..."
+  ,"missedApprovalLoadingSubtitle": "कृपया थांबा, आम्ही प्रलंबित मंजुरी आणत आहोत..."
+  ,"missedApprovalNoResultsTitle": "कोणतेही निकाल सापडले नाहीत"
+  ,"missedApprovalNoResultsWithQuery": "\"{query}\" शी कोणतीही मंजुरी जुळत नाही. कृपया दुसरा कीवर्ड वापरून पाहा."
+  ,"missedApprovalNoResultsGeneric": "कोणतीही मंजुरी सापडली नाही."
+  ,"missedApprovalNoResultsForTower": "{towerName} साठी कोणतीही मंजुरी सापडली नाही."
+  ,"missedApprovalVisitorAllowed": "अभ्यागताला परवानगी दिली आहे."
+  ,"missedApprovalVisitorDeclined": "अभ्यागताला नकार देण्यात आला आहे."
+  ,"missedApprovalPending": "मंजुरी प्रलंबित आहे..."
+  ,"missedApprovalDeliveryLeftParcel": "डिलिव्हरी व्यक्तीने पार्सल सोडले आहे."
+  ,"missedApprovalVisitorAllowedByGatekeeper": "अभ्यागताला गेटकीपरने परवानगी दिली आहे."
 }
