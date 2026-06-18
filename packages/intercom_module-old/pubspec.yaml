@@ -44,7 +44,7 @@ dependencies:
   speech_to_text: ^7.0.0
   google_fonts: ^6.3.0
   common_widgets:
-    path: ../../libs/flutter/common/common-widgets
+    path: ../../../../libs/flutter/common/common-widgets
 
 dev_dependencies:
   flutter_test:
