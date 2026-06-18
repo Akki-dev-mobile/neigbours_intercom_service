@@ -380,10 +380,11 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
     }
 
     if ((toUserId == null || toUserId.isEmpty) && !hasPhone) {
+      final ui = IntercomUiStringsScope.of(context);
       EnhancedToast.error(
         context,
-        title: 'Cannot Make Call',
-        message: 'No valid call identifier for ${contact.name}',
+        title: ui.cannotMakeCall,
+        message: ui.noValidCallIdentifierMessage(contact.name),
       );
       return;
     }
@@ -391,10 +392,11 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
     // Single-flight outgoing call creation gate (prevents duplicate call IDs).
     final locked = CallCoordinator.instance.tryLockOutgoingCallCreation();
     if (!locked) {
+      final ui = IntercomUiStringsScope.of(context);
       EnhancedToast.error(
         context,
-        title: 'Call In Progress',
-        message: 'Please finish the current call before starting a new one.',
+        title: ui.callInProgress,
+        message: ui.callInProgressMessage,
       );
       return;
     }
@@ -461,10 +463,11 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
         if (result.permissionsDenied) {
           _showPermissionDeniedDialog(result.message ?? result.error ?? '');
         } else {
+          final ui = IntercomUiStringsScope.of(context);
           EnhancedToast.error(
             context,
-            title: 'Call Failed',
-            message: result.message ?? result.error ?? 'Unknown error',
+            title: ui.callFailed,
+            message: result.message ?? result.error ?? ui.unknownError,
           );
         }
       }
@@ -477,9 +480,10 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
         _selectedCallType = null;
       });
 
+      final ui = IntercomUiStringsScope.of(context);
       EnhancedToast.error(
         context,
-        title: 'Call Failed',
+        title: ui.callFailed,
         message: e.toString(),
       );
     }
@@ -519,6 +523,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
   }
 
   void _showPermissionDeniedDialog(String message) {
+    final ui = IntercomUiStringsScope.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -529,14 +534,14 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
               color: Colors.orange.shade700,
             ),
             const SizedBox(width: 8),
-            const Text('Permissions Required'),
+            Text(ui.permissionsRequired),
           ],
         ),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(ui.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -546,7 +551,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
             ),
-            child: const Text('Open Settings'),
+            child: Text(ui.openSettings),
           ),
         ],
       ),

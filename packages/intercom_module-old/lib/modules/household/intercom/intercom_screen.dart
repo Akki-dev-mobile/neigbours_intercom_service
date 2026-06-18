@@ -120,7 +120,7 @@ class _IntercomScreenState extends State<IntercomScreen>
     final callerName =
         payload['caller_name']?.toString().trim().isNotEmpty == true
             ? payload['caller_name'].toString().trim()
-            : 'Contact';
+            : widget.uiStrings.contactFallback;
     final callerPhone = payload['caller_phone']?.toString();
     final contact = IntercomContact(
       id: payload['caller_user_id']?.toString() ??
@@ -217,7 +217,7 @@ class _IntercomScreenState extends State<IntercomScreen>
 
   @override
   Widget build(BuildContext context) {
-    final pageTitle = widget.screenTitle ?? 'Intercom';
+    final pageTitle = widget.screenTitle ?? widget.uiStrings.defaultScreenTitle;
 
     return IntercomUiStringsScope(
       strings: widget.uiStrings,
@@ -249,7 +249,7 @@ class _IntercomScreenState extends State<IntercomScreen>
                   onPressed: () {
                     _showCallHistory();
                   },
-                  tooltip: 'Chat History',
+                  tooltip: widget.uiStrings.chatHistoryTooltip,
                 ),
               ],
       ),
@@ -316,11 +316,13 @@ class _IntercomScreenState extends State<IntercomScreen>
   }
 
   void _showCallHistory() {
-    // Navigate to full page instead of bottom sheet
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const CallHistoryPage(),
+        builder: (context) => IntercomUiStringsScope(
+          strings: widget.uiStrings,
+          child: const CallHistoryPage(),
+        ),
         fullscreenDialog: true,
       ),
     );
@@ -366,6 +368,8 @@ class _CallHistoryPageState extends State<CallHistoryPage>
 
   @override
   Widget build(BuildContext context) {
+    final ui = IntercomUiStringsScope.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white, // White background for the page
       appBar: AppBar(
@@ -378,16 +382,16 @@ class _CallHistoryPageState extends State<CallHistoryPage>
           color: Colors.black,
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Chats & Calls History',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700),
+        title: Text(
+          ui.chatsAndCallsHistory,
+          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700),
         ),
       ),
       body: Column(
         children: [
           ResponsiveTabBar(
             controller: _tabController,
-            tabLabels: const ['Chats', 'Calls'],
+            tabLabels: [ui.chatsTab, ui.callsTab],
             tabIcons: const [Icons.chat, Icons.call],
             currentIndex: _currentIndex,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -448,13 +452,15 @@ class IntercomSearchDelegate extends SearchDelegate<String> {
 
   @override
   Widget buildResults(BuildContext context) {
-    return const Center(child: Text('Search not implemented in this demo'));
+    final ui = IntercomUiStringsScope.of(context);
+    return Center(child: Text(ui.searchNotImplemented));
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
-    return const Center(
-      child: Text('Type to search for residents, committee, or groups'),
+    final ui = IntercomUiStringsScope.of(context);
+    return Center(
+      child: Text(ui.searchHint),
     );
   }
 }
@@ -525,6 +531,8 @@ class _CallsEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ui = IntercomUiStringsScope.of(context);
+
     return Center(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -558,7 +566,7 @@ class _CallsEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'No call history',
+              ui.noCallHistory,
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -568,7 +576,7 @@ class _CallsEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Your call history will appear here',
+              ui.callHistoryEmpty,
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 14,
@@ -590,6 +598,7 @@ class _CallHistoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ui = IntercomUiStringsScope.of(context);
     final status = entry.status;
 
     // Treat "Calling" (initiated but never connected) as a Missed call in UI.
@@ -598,7 +607,7 @@ class _CallHistoryItem extends StatelessWidget {
     final isDeclined = status == CallStatus.declined;
 
     final callTypeLabel = entry.callType.displayName;
-    final statusLabel = showAsMissed ? 'Missed' : status.displayName;
+    final statusLabel = showAsMissed ? ui.missedCall : status.displayName;
 
     // Icon: use missed icons for missed/declined, arrows otherwise.
     final IconData statusIcon;
@@ -779,6 +788,9 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
   final Set<String> _roomInfoPrefetchRequested = {};
   bool _isLoaderDialogShown = false;
   Set<String> _openedChats = {}; // Track which chats have been opened
+
+  IntercomUiStrings get _ui =>
+      mounted ? IntercomUiStringsScope.of(context) : IntercomUiStrings.defaults;
 
   // WebSocket state
   StreamSubscription<WebSocketMessage>? _wsMessageSubscription;
@@ -1131,7 +1143,7 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
             roomId: room.id,
             contactName: room.name,
             contactId: room.createdBy,
-            lastMessage: 'No messages yet',
+            lastMessage: _ui.noMessagesYet,
             time: _formatTime(room.lastActive ?? room.updatedAt),
             lastActive: room.lastActive ?? room.updatedAt,
             unreadCount: 0,
@@ -1149,7 +1161,7 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
       if (roomInfo.peerUser != null) {
         otherMemberName = roomInfo.peerUser!.userName?.trim().isNotEmpty == true
             ? roomInfo.peerUser!.userName
-            : 'Unknown User';
+            : _ui.unknownUser;
         otherMemberId = roomInfo.peerUser!.userId != null
             ? roomInfo.peerUser!.userId.toString()
             : null;
@@ -1164,19 +1176,19 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
               (m) => !m.isCurrentUser(_currentUserId),
               orElse: () => roomInfo.members.first,
             );
-            otherMemberName = otherMember.username ?? 'Unknown User';
+            otherMemberName = otherMember.username ?? _ui.unknownUser;
             otherMemberId = otherMember.userId;
             otherMemberAvatar = otherMember.avatar;
           } catch (e) {
             if (roomInfo.members.isNotEmpty) {
               otherMemberName =
-                  roomInfo.members.first.username ?? 'Unknown User';
+                  roomInfo.members.first.username ?? _ui.unknownUser;
               otherMemberId = roomInfo.members.first.userId;
               otherMemberAvatar = roomInfo.members.first.avatar;
             }
           }
         } else if (roomInfo.members.isNotEmpty) {
-          otherMemberName = roomInfo.members.first.username ?? 'Unknown User';
+          otherMemberName = roomInfo.members.first.username ?? _ui.unknownUser;
           otherMemberId = roomInfo.members.first.userId;
           otherMemberAvatar = roomInfo.members.first.avatar;
         }
@@ -1187,7 +1199,7 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
         // Messages will be loaded when user opens the chat
         // Use cached last message from UnreadCountManager or placeholder
         final lastMessage =
-            _unreadManager.getLastMessage(room.id) ?? 'Tap to open chat';
+            _unreadManager.getLastMessage(room.id) ?? _ui.tapToOpenChat;
         final lastMessageTime =
             _unreadManager.getLastMessageTime(room.id) ??
             (roomInfo.lastActive ?? room.updatedAt);
@@ -1404,7 +1416,7 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
           contactAvatar: contactAvatar,
           lastMessage:
               lastMessage ??
-              'Tap to open chat', // Placeholder, no messages API call
+              _ui.tapToOpenChat, // Placeholder, no messages API call
           time: _formatTime(lastMessageTime),
           lastActive: lastMessageTime,
           unreadCount: isOpened ? 0 : unreadCount,
@@ -1648,7 +1660,7 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
       contactId: otherMemberId,
       contactAvatar: otherMemberAvatar, // Now includes avatar from room info
       lastMessage:
-          lastMessage ?? 'Tap to open chat', // Use cached or placeholder
+          lastMessage ?? _ui.tapToOpenChat, // Use cached or placeholder
       time: _formatTime(lastMessageTime),
       lastActive: lastMessageTime,
       unreadCount: isOpened ? 0 : unreadCount,
@@ -1680,6 +1692,7 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
 
   /// Build empty state for chat tab (same UI as committee tab)
   Widget _buildChatEmptyState() {
+    final ui = _ui;
     return Center(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -1713,7 +1726,7 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No chat history',
+              ui.noChatHistory,
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -1723,7 +1736,7 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Your chat conversations will appear here',
+              ui.chatHistoryEmpty,
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 14,
@@ -1757,9 +1770,9 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
       // Today - show time
       return DateFormat('h:mm a').format(istTime);
     } else if (difference.inDays == 1) {
-      return 'Yesterday';
+      return _ui.yesterday;
     } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
+      return _ui.daysAgo(difference.inDays);
     } else {
       return DateFormat('MMM d').format(istTime);
     }
@@ -1849,9 +1862,11 @@ class _ChatHistoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ui = IntercomUiStringsScope.of(context);
     final avatarUrl = _normalizeAvatarUrl(contact?.photoUrl);
     final preview = ActivityPreviewHelper.fromStored(message);
-    final baseMessage = preview.text.isEmpty ? 'No messages yet' : preview.text;
+    final baseMessage =
+        preview.text.isEmpty ? ui.noMessagesYet : preview.text;
     // If chat has been opened before, always show last message (no count, no badge, no indicator)
     // If chat hasn't been opened, show count/new messages with badge and indicator (green, like group chat)
     String displayMessage = baseMessage;
@@ -1876,12 +1891,12 @@ class _ChatHistoryItem extends StatelessWidget {
         showBadge = true;
       } else if (unreadCount == 1) {
         // Exactly 1 message from receiver: show first 10 characters or "New message"
-        if (baseMessage.isNotEmpty && baseMessage != 'No messages yet') {
+        if (baseMessage.isNotEmpty && baseMessage != ui.noMessagesYet) {
           displayMessage = baseMessage.length > 10
               ? '${baseMessage.substring(0, 10)}...'
               : baseMessage;
         } else {
-          displayMessage = 'New message';
+          displayMessage = ui.newMessage;
         }
         showIndicator = true;
         showBadge = true;
