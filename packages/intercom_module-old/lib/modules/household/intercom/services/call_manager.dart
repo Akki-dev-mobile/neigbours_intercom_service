@@ -3,10 +3,12 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import '../../../../core/services/call_coordinator.dart';
 import '../../../../core/services/keycloak_service.dart';
 import '../../../../core/utils/profile_data_helper.dart';
 import '../../../../utils/storage/sso_storage.dart';
 import '../models/call_model.dart';
+import '../models/call_status.dart';
 import '../models/call_type.dart';
 import 'call_service.dart';
 import 'jitsi_call_controller.dart';
@@ -407,8 +409,99 @@ class CallManager {
   }
 
   /// Open app settings for the user to enable permissions
-  Future<bool> openAppSettings() async {
+  Future<bool> openAppSettingsPage() async {
     return await openAppSettings();
+  }
+
+  /// Join Jitsi after the callee accepts an outgoing call.
+  Future<CallResult> joinOutgoingCallWhenAccepted(
+    Map<String, dynamic> payload, {
+    required String displayName,
+    String? avatarUrl,
+    String? userEmail,
+  }) async {
+    try {
+      final call = await _resolveCallFromPayload(payload);
+      if (call == null) {
+        return CallResult.failure(
+          error: 'Unable to resolve call',
+          message: 'Missing call details for accepted outgoing call',
+        );
+      }
+
+      await CallCoordinator.instance.handleOutgoingCallAcceptedData(payload);
+
+      final permissionResult = await _checkAndRequestPermissions(call.callType);
+      if (!permissionResult.granted) {
+        return CallResult.failure(
+          error: 'Permissions required',
+          message: permissionResult.message,
+          permissionsDenied: true,
+        );
+      }
+
+      await _jitsiController.joinCall(
+        call: call,
+        displayName: displayName,
+        avatarUrl: avatarUrl,
+        userEmail: userEmail,
+      );
+
+      await CallCoordinator.instance.markConnected(callId: call.id.toString());
+      return CallResult.success(call: call);
+    } catch (e, stackTrace) {
+      log('❌ [CallManager] joinOutgoingCallWhenAccepted failed: $e',
+          name: 'CallManager');
+      log('   Stack trace: $stackTrace', name: 'CallManager');
+      return CallResult.failure(
+        error: 'Failed to join accepted call',
+        message: e.toString(),
+      );
+    }
+  }
+
+  /// End an active call from a remote terminal signal.
+  Future<void> endFromRemote({String? reason}) async {
+    try {
+      if (isCallInProgress) {
+        await _jitsiController.hangUp();
+      }
+    } catch (e, st) {
+      log('⚠️ [CallManager] endFromRemote hangUp failed: $e', stackTrace: st);
+    } finally {
+      await CallCoordinator.instance.markEnded(reason: reason ?? 'remote_end');
+    }
+  }
+
+  Future<Call?> _resolveCallFromPayload(Map<String, dynamic> payload) async {
+    final callIdRaw =
+        payload['call_id'] ?? payload['callId'] ?? payload['id'];
+    final callId = int.tryParse(callIdRaw?.toString() ?? '');
+    if (callId == null) return null;
+
+    final fromApi = await _callService.getCall(callId);
+    if (fromApi != null) return fromApi;
+
+    final meetingId =
+        payload['meeting_id']?.toString().trim().isNotEmpty == true
+            ? payload['meeting_id'].toString().trim()
+            : payload['meetingId']?.toString().trim().isNotEmpty == true
+                ? payload['meetingId'].toString().trim()
+                : callId.toString();
+
+    final callType = CallType.tryFromString(
+          payload['call_type']?.toString() ?? payload['callType']?.toString(),
+        ) ??
+        CallType.audio;
+
+    return Call(
+      id: callId,
+      meetingId: meetingId,
+      jitsiMeetingUrl: payload['jitsi_url']?.toString() ??
+          payload['jitsi_meeting_url']?.toString(),
+      callType: callType,
+      status: CallStatus.initiated,
+    );
   }
 }
 

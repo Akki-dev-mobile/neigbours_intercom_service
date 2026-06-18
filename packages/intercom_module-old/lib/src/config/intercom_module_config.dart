@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -15,6 +16,8 @@ class IntercomModuleConfig {
   final IntercomEndpoints endpoints;
   final http.Client? httpClient;
   final String? appPackageName;
+  final GlobalKey<NavigatorState>? navigatorKey;
+  final bool includePackageNameOnCallWebSocket;
 
   const IntercomModuleConfig({
     required this.authPort,
@@ -23,6 +26,8 @@ class IntercomModuleConfig {
     required this.endpoints,
     this.httpClient,
     this.appPackageName,
+    this.navigatorKey,
+    this.includePackageNameOnCallWebSocket = true,
   });
 
   factory IntercomModuleConfig.cubeOne({
@@ -31,6 +36,8 @@ class IntercomModuleConfig {
     IntercomUploadPort? uploadPort,
     http.Client? httpClient,
     String? appPackageName,
+    GlobalKey<NavigatorState>? navigatorKey,
+    bool includePackageNameOnCallWebSocket = true,
   }) {
     return IntercomModuleConfig(
       authPort: authPort,
@@ -39,6 +46,8 @@ class IntercomModuleConfig {
       endpoints: IntercomEndpoints.cubeOne,
       httpClient: httpClient,
       appPackageName: appPackageName,
+      navigatorKey: navigatorKey,
+      includePackageNameOnCallWebSocket: includePackageNameOnCallWebSocket,
     );
   }
 }

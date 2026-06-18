@@ -156,9 +156,11 @@ class CallWebSocketService {
 
     final query = <String>[];
     query.add('token=${Uri.encodeComponent(token)}');
-    final packageName = AppConstants.appPackageName;
-    if (packageName != null && packageName.trim().isNotEmpty) {
-      query.add('package_name=${Uri.encodeComponent(packageName.trim())}');
+    if (AppConstants.includePackageNameOnCallWebSocket) {
+      final packageName = AppConstants.appPackageName;
+      if (packageName != null && packageName.trim().isNotEmpty) {
+        query.add('package_name=${Uri.encodeComponent(packageName.trim())}');
+      }
     }
 
     return '$scheme://${uri.host}$portSuffix$wsPath?${query.join('&')}';

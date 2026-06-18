@@ -27,6 +27,9 @@ import '../../../../core/constants.dart';
 class JitsiCallController {
   static JitsiCallController? _instance;
 
+  static const String joinFailedUserMessage =
+      'Unable to join the call. Please try again.';
+
   final JitsiMeet _jitsiMeet = JitsiMeet();
   final CallService _callService = CallService.instance;
 
@@ -131,7 +134,12 @@ class JitsiCallController {
       await _updateBackendStatus(CallStatus.ended);
       _cleanup();
 
-      _emitState(CallState.error, error: e.toString());
+      _emitState(
+        CallState.joinFailed,
+        error: e.toString(),
+        userMessage: joinFailedUserMessage,
+        failureReason: 'join_exception',
+      );
       rethrow;
     }
   }
@@ -493,11 +501,20 @@ class JitsiCallController {
   }
 
   /// Emit state change event
-  void _emitState(CallState state, {String? error}) {
+  void _emitState(
+    CallState state, {
+    String? error,
+    String? userMessage,
+    String? jitsiEvent,
+    String? failureReason,
+  }) {
     _callStateController.add(CallStateEvent(
       state: state,
       call: _activeCall,
       error: error,
+      userMessage: userMessage,
+      jitsiEvent: jitsiEvent,
+      failureReason: failureReason,
     ));
   }
 
@@ -527,6 +544,7 @@ enum CallState {
   ended,
   missed,
   error,
+  joinFailed,
 }
 
 /// Call state event for stream
@@ -534,10 +552,16 @@ class CallStateEvent {
   final CallState state;
   final Call? call;
   final String? error;
+  final String? userMessage;
+  final String? jitsiEvent;
+  final String? failureReason;
 
   CallStateEvent({
     required this.state,
     this.call,
     this.error,
+    this.userMessage,
+    this.jitsiEvent,
+    this.failureReason,
   });
 }
