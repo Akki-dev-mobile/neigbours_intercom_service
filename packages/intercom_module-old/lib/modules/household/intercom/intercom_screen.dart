@@ -57,12 +57,16 @@ class IntercomScreen extends StatefulWidget {
   final bool showGatekeeperTab;
   final bool fromOneGateCard;
   final bool fromNeighborsCard;
+  final Map<String, dynamic>? initialCallbackPayload;
+  final String? screenTitle;
 
   const IntercomScreen({
     Key? key,
     this.showGatekeeperTab = true,
     this.fromOneGateCard = false,
     this.fromNeighborsCard = false,
+    this.initialCallbackPayload,
+    this.screenTitle,
   }) : super(key: key);
 
   @override
@@ -161,8 +165,10 @@ class _IntercomScreenState extends State<IntercomScreen>
 
   @override
   Widget build(BuildContext context) {
+    final screenTitle = widget.screenTitle ?? 'Intercom';
+
     return AppScaffold.internal(
-      title: 'Intercom',
+      title: screenTitle,
       customAppBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -173,8 +179,8 @@ class _IntercomScreenState extends State<IntercomScreen>
           color: Colors.black,
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Intercom',
+        title: Text(
+          screenTitle,
           style: const TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.w700,

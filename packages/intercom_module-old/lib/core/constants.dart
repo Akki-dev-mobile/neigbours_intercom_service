@@ -10,4 +10,7 @@ class AppConstants {
   static String get jitsiServerUrl => IntercomModule.config.endpoints.jitsiServerUrl;
 
   static String? get appPackageName => IntercomModule.config.appPackageName;
+
+  static bool get includePackageNameOnCallWebSocket =>
+      IntercomModule.config.includePackageNameOnCallWebSocket;
 }
