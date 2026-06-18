@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../../../src/config/intercom_ui_strings.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/widgets/app_loader.dart';
 import '../../../../core/widgets/enhanced_toast.dart';
@@ -82,6 +83,8 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final ui = IntercomUiStringsScope.of(context);
+
     return PopScope(
       canPop: !_isLoading,
       child: Container(
@@ -99,7 +102,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header
-                _buildHeader(),
+                _buildHeader(ui),
 
                 const SizedBox(height: 16),
 
@@ -116,7 +119,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
                 const SizedBox(height: 24),
 
                 // Call type options
-                if (_isLoading) _buildLoadingState() else _buildCallOptions(),
+                if (_isLoading) _buildLoadingState(ui) else _buildCallOptions(ui),
 
                 const SizedBox(height: 16),
               ],
@@ -127,7 +130,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(IntercomUiStrings ui) {
     return Row(
       children: [
         Container(
@@ -143,10 +146,10 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
           ),
         ),
         const SizedBox(width: 12),
-        const Expanded(
+        Expanded(
           child: Text(
-            'Start a Call',
-            style: TextStyle(
+            ui.startCall,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
@@ -240,39 +243,37 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
     );
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildLoadingState(IntercomUiStrings ui) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 32),
         child: AppLoader(
           size: 120,
           title: _selectedCallType != null
-              ? 'Starting ${_selectedCallType!.displayName}...'
-              : 'Connecting...',
+              ? ui.startingCallLabel(_selectedCallType!.displayName)
+              : ui.connecting,
         ),
       ),
     );
   }
 
-  Widget _buildCallOptions() {
+  Widget _buildCallOptions(IntercomUiStrings ui) {
     return Column(
       children: [
-        // Audio call option
         _buildCallOption(
           icon: Icons.phone_in_talk,
-          title: 'Audio Call',
-          subtitle: 'Voice only',
+          title: ui.audioCall,
+          subtitle: ui.audioCallSubtitle,
           color: Colors.green,
           callType: CallType.audio,
         ),
 
         const SizedBox(height: 12),
 
-        // Video call option
         _buildCallOption(
           icon: Icons.videocam,
-          title: 'Video Call',
-          subtitle: 'Video & voice',
+          title: ui.videoCall,
+          subtitle: ui.videoCallSubtitle,
           color: Colors.blue,
           callType: CallType.video,
         ),

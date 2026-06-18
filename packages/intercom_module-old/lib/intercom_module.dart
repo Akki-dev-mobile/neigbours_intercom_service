@@ -1,6 +1,7 @@
 library intercom_module;
 
 export 'src/config/intercom_module_config.dart';
+export 'src/config/intercom_ui_strings.dart';
 export 'src/di/intercom_providers.dart';
 export 'src/ports/intercom_ports.dart';
 

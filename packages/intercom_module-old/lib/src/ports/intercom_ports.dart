@@ -114,8 +114,8 @@ class IntercomEndpoints {
     societyBackendBaseUrl: 'https://societybackend.cubeone.in/api',
     apiGatewayBaseUrl: 'https://apigw.cubeone.in/api',
     gateApiBaseUrl: 'https://gateapi.cubeone.in/api',
-    roomServiceBaseUrl: 'http://13.201.27.102:7071/api/v1',
-    callServiceBaseUrl: 'https://meetservice.cubeone.in/api/v1',
+    roomServiceBaseUrl: 'https://apigw.cubeone.in/chatapp/api/v1',
+    callServiceBaseUrl: 'https://apigw.cubeone.in/meet-service/api/v1',
     jitsiServerUrl: 'collab.cubeone.in',
   );
 

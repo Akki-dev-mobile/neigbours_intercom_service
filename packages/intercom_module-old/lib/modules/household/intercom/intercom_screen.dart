@@ -21,6 +21,7 @@ import 'tabs/groups_tab.dart';
 import 'models/call_history_entry.dart';
 import 'models/call_status.dart';
 import 'models/intercom_contact.dart';
+import '../../../../src/config/intercom_ui_strings.dart';
 import 'widgets/call_bottom_sheet.dart';
 import 'models/room_message_model.dart';
 import 'models/room_model.dart';
@@ -60,6 +61,7 @@ class IntercomScreen extends StatefulWidget {
   final bool fromNeighborsCard;
   final Map<String, dynamic>? initialCallbackPayload;
   final String? screenTitle;
+  final IntercomUiStrings uiStrings;
 
   const IntercomScreen({
     Key? key,
@@ -68,6 +70,7 @@ class IntercomScreen extends StatefulWidget {
     this.fromNeighborsCard = false,
     this.initialCallbackPayload,
     this.screenTitle,
+    this.uiStrings = IntercomUiStrings.defaults,
   }) : super(key: key);
 
   @override
@@ -80,6 +83,7 @@ class _IntercomScreenState extends State<IntercomScreen>
   int _currentIndex = 0;
   late List<String> _tabTitles;
   late List<IconData> _tabIcons;
+  int? _groupsTabIndex;
   // ValueNotifier to notify tabs when they become visible
   final ValueNotifier<int> _activeTabNotifier = ValueNotifier<int>(0);
 
@@ -157,25 +161,26 @@ class _IntercomScreenState extends State<IntercomScreen>
   }
 
   void _initializeTabs() {
+    final ui = widget.uiStrings;
+    _groupsTabIndex = null;
+
     if (widget.fromNeighborsCard) {
-      // When accessed from Neighbors Card, show Residents, Committee and Groups tabs
-      _tabTitles = ['Residents', 'Committee', 'Groups'];
+      _tabTitles = [ui.residents, ui.committee, ui.groups];
+      _groupsTabIndex = 2;
       _tabIcons = [
         Icons.people_rounded,
         Icons.groups_rounded,
         Icons.chat_rounded,
       ];
     } else if (widget.fromOneGateCard) {
-      // When accessed from OneGate Card, show only Gatekeepers tab
-      _tabTitles = ['Gatekeepers', 'Society Office', 'Lobbies'];
+      _tabTitles = [ui.gatekeepers, ui.societyOffice, ui.lobbies];
       _tabIcons = [
         Icons.security_rounded,
         Icons.business_rounded,
         Icons.meeting_room_rounded,
       ];
     } else if (widget.showGatekeeperTab) {
-      // Normal mode with gatekeeper tab
-      _tabTitles = ['Posts', 'Residents', 'Committee', 'Gatekeepers'];
+      _tabTitles = [ui.posts, ui.residents, ui.committee, ui.gatekeepers];
       _tabIcons = [
         Icons.forum_rounded,
         Icons.people_rounded,
@@ -183,8 +188,7 @@ class _IntercomScreenState extends State<IntercomScreen>
         Icons.security_rounded,
       ];
     } else {
-      // Normal mode without gatekeeper tab
-      _tabTitles = ['Posts', 'Residents', 'Committee'];
+      _tabTitles = [ui.posts, ui.residents, ui.committee];
       _tabIcons = [
         Icons.forum_rounded,
         Icons.people_rounded,
@@ -201,21 +205,23 @@ class _IntercomScreenState extends State<IntercomScreen>
     super.dispose();
   }
 
-  // Check if Groups tab is currently selected
   bool get _isGroupsTabSelected {
-    if (_tabTitles.isEmpty ||
+    if (_groupsTabIndex == null ||
+        _tabTitles.isEmpty ||
         _currentIndex < 0 ||
         _currentIndex >= _tabTitles.length) {
       return false;
     }
-    return _tabTitles[_currentIndex] == 'Groups';
+    return _currentIndex == _groupsTabIndex;
   }
 
   @override
   Widget build(BuildContext context) {
     final pageTitle = widget.screenTitle ?? 'Intercom';
 
-    return AppScaffold.internal(
+    return IntercomUiStringsScope(
+      strings: widget.uiStrings,
+      child: AppScaffold.internal(
       title: pageTitle,
       customAppBar: AppBar(
         backgroundColor: Colors.white,
@@ -271,6 +277,7 @@ class _IntercomScreenState extends State<IntercomScreen>
             ),
           ),
         ],
+      ),
       ),
     );
   }
