@@ -21,6 +21,7 @@ import 'tabs/groups_tab.dart';
 import 'models/call_history_entry.dart';
 import 'models/call_status.dart';
 import 'models/intercom_contact.dart';
+import 'widgets/call_bottom_sheet.dart';
 import 'models/room_message_model.dart';
 import 'models/room_model.dart';
 import 'models/room_info_model.dart';
@@ -93,8 +94,55 @@ class _IntercomScreenState extends State<IntercomScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _activeTabNotifier.value = _tabController.index;
+        _maybeOpenInitialCallback();
       }
     });
+  }
+
+  Future<void> _maybeOpenInitialCallback() async {
+    final payload = widget.initialCallbackPayload;
+    if (payload == null || payload.isEmpty || !mounted) return;
+
+    final callId = int.tryParse(
+      (payload['call_id'] ??
+              payload['callId'] ??
+              payload['id'] ??
+              payload['uuid'])
+          ?.toString() ??
+          '',
+    );
+    if (callId == null) return;
+
+    final callerName =
+        payload['caller_name']?.toString().trim().isNotEmpty == true
+            ? payload['caller_name'].toString().trim()
+            : 'Contact';
+    final callerPhone = payload['caller_phone']?.toString();
+    final contact = IntercomContact(
+      id: payload['caller_user_id']?.toString() ??
+          payload['from_user_id']?.toString() ??
+          (callerPhone != null ? 'phone:$callerPhone' : 'callback:$callId'),
+      name: callerName,
+      phoneNumber: callerPhone,
+      type: IntercomContactType.resident,
+    );
+
+    String displayName = 'User';
+    try {
+      final userData = await KeycloakService.getUserData();
+      final name = userData?['name'] ?? userData?['preferred_username'];
+      if (name != null && name.toString().trim().isNotEmpty) {
+        displayName = name.toString().trim();
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+    await CallBottomSheet.show(
+      context: context,
+      contact: contact,
+      displayName: displayName,
+      callbackCallId: callId,
+    );
   }
 
   void _handleTabChange() {
@@ -165,10 +213,10 @@ class _IntercomScreenState extends State<IntercomScreen>
 
   @override
   Widget build(BuildContext context) {
-    final screenTitle = widget.screenTitle ?? 'Intercom';
+    final pageTitle = widget.screenTitle ?? 'Intercom';
 
     return AppScaffold.internal(
-      title: screenTitle,
+      title: pageTitle,
       customAppBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -180,7 +228,7 @@ class _IntercomScreenState extends State<IntercomScreen>
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          screenTitle,
+          pageTitle,
           style: const TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.w700,
