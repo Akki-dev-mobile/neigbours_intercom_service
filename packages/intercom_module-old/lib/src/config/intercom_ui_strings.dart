@@ -21,7 +21,7 @@ class IntercomUiStrings {
     this.videoCallSubtitle = 'Video & voice',
     this.connecting = 'Connecting...',
     this.startingCallLabelBuilder,
-    this.defaultScreenTitle = 'Intercom',
+    this.defaultScreenTitle = 'Chat & Call',
     this.chatHistoryTooltip = 'Chat History',
     this.chatsAndCallsHistory = 'Chats & Calls History',
     this.chatsTab = 'Chats',
