@@ -58,6 +58,23 @@ import 'widgets/whatsapp_audio_message.dart';
 import 'video_player_screen.dart';
 import 'widgets/forward_to_sheet.dart';
 import 'models/forward_payload.dart';
+import '../../../../src/runtime/intercom_runtime_cache.dart';
+
+Future<int?> resolveIntercomCompanyId(
+  ApiService apiService, {
+  WidgetRef? ref,
+}) async {
+  final fromApi = await apiService.getSelectedSocietyId();
+  if (fromApi != null) return fromApi;
+  final cached = IntercomRuntimeCache.selectedSocietyId;
+  if (cached != null) return cached;
+  if (ref == null) return null;
+  try {
+    return ref.read(selectedFlatProvider).selectedSociety?.socId;
+  } catch (_) {
+    return null;
+  }
+}
 
 class GroupChatScreen extends ConsumerStatefulWidget {
   final GroupChat group;
@@ -376,26 +393,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       await _fetchMessagesInReadOnlyMode();
       return;
     }
-    // PERFORMANCE OPTIMIZATION: Get companyId from provider directly (synchronous)
-    // This avoids async API call that may trigger token refresh
-    int? companyId;
-    try {
-      final selectedFlatState = ref.read(selectedFlatProvider);
-      companyId = selectedFlatState.selectedSociety?.socId;
-    } catch (e) {
-      debugPrint(
-        '⚠️ [GroupChatScreen] Error getting companyId from provider: $e',
-      );
-    }
-
-    // Fallback to async API only if provider doesn't have it (shouldn't happen)
-    if (companyId == null) {
-      try {
-        companyId = await _apiService.getSelectedSocietyId();
-      } catch (e) {
-        debugPrint('⚠️ [GroupChatScreen] Error getting companyId from API: $e');
-      }
-    }
+    // Resolve company_id from context port / cache / Riverpod (in that order).
+    final companyId = await resolveIntercomCompanyId(_apiService, ref: ref);
 
     if (companyId == null) {
       // If companyId not available, still try to open room (will fail gracefully)
@@ -1375,19 +1374,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       _currentOffset = 0;
       _hasMoreMessages = true;
 
-      // PERFORMANCE OPTIMIZATION: Get company_id synchronously from provider
-      // This avoids async API calls that may trigger token refresh
-      final selectedFlatState = ref.read(selectedFlatProvider);
-      int? companyId = selectedFlatState.selectedSociety?.socId;
-
-      // Fallback to async API only if provider doesn't have it
-      if (companyId == null) {
-        try {
-          companyId = await _apiService.getSelectedSocietyId();
-        } catch (e) {
-          debugPrint('⚠️ [GroupChatScreen] Error getting companyId: $e');
-        }
-      }
+      final companyId = await resolveIntercomCompanyId(_apiService, ref: ref);
 
       if (companyId == null) {
         if (!loadInBackground && mounted) {
@@ -2677,9 +2664,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     });
 
     try {
-      // Get company_id for API call from selectedFlatProvider
-      final selectedFlatState = ref.read(selectedFlatProvider);
-      final companyId = selectedFlatState.selectedSociety?.socId;
+      final companyId = await resolveIntercomCompanyId(_apiService, ref: ref);
       if (companyId == null) {
         if (mounted) {
           setState(() {
@@ -13846,9 +13831,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
       final imageFile = File(image.path);
 
-      // Get company_id (society ID) from selectedFlatProvider - required for the API
-      final selectedFlatState = ref.read(selectedFlatProvider);
-      final companyId = selectedFlatState.selectedSociety?.socId;
+      final companyId =
+          await resolveIntercomCompanyId(ApiService.instance, ref: ref);
       if (companyId == null) {
         if (mounted) {
           EnhancedToast.error(
@@ -14037,6 +14021,7 @@ class _AddMemberScreen extends ConsumerStatefulWidget {
 
 class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
   final IntercomService _intercomService = IntercomService();
+  final ApiService _apiService = ApiService.instance;
   final RoomService _roomService = RoomService.instance;
   final SocietyBackendApiService _societyBackendApiService =
       SocietyBackendApiService.instance;
@@ -14100,8 +14085,8 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
     try {
       // Get existing room members (only on first load)
       if (reset) {
-        final selectedFlatStateForRoom = ref.read(selectedFlatProvider);
-        final companyId = selectedFlatStateForRoom.selectedSociety?.socId;
+        final companyId =
+            await resolveIntercomCompanyId(_apiService, ref: ref);
         if (companyId != null) {
           final roomInfoResponse = await _roomService.getRoomInfo(
             roomId: widget.roomId,
@@ -14118,9 +14103,8 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
         }
       }
 
-      // Get the selected society ID from selectedFlatProvider
-      final selectedFlatState = ref.read(selectedFlatProvider);
-      final societyId = selectedFlatState.selectedSociety?.socId;
+      final societyId =
+          await resolveIntercomCompanyId(_apiService, ref: ref);
       if (societyId == null) {
         if (mounted) {
           setState(() {

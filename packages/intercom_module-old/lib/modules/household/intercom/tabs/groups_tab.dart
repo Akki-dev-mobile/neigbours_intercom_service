@@ -2486,10 +2486,12 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     NavigationHelper.pushRoute(
       context,
       MaterialPageRoute(
-        builder: (context) => GroupChatScreen(
-          group: group,
-          currentUserId: _currentUserId!,
-          currentUserNumericId: _currentUserNumericId,
+        builder: (context) => ProviderScope(
+          child: GroupChatScreen(
+            group: group,
+            currentUserId: _currentUserId!,
+            currentUserNumericId: _currentUserNumericId,
+          ),
         ),
       ),
     ).then((_) {
@@ -2532,7 +2534,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const CreateGroupPage(),
+            const ProviderScope(child: CreateGroupPage()),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(0.0, 1.0);
           const end = Offset.zero;
@@ -2615,7 +2617,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            CreateGroupPage(groupToEdit: group),
+            ProviderScope(child: CreateGroupPage(groupToEdit: group)),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(0.0, 1.0);
           const end = Offset.zero;
