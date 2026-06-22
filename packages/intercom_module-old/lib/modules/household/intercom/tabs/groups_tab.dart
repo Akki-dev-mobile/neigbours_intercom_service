@@ -13,6 +13,7 @@ import '../../../../core/widgets/onegate_global_loader.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/keycloak_service.dart';
+import '../../../../core/constants.dart';
 import '../../../../core/storage/storage_service.dart';
 import '../models/intercom_contact.dart';
 import '../models/group_chat_model.dart';
@@ -27,7 +28,6 @@ import '../utils/activity_preview_helper.dart';
 import '../../../../core/models/api_response.dart';
 import '../group_chat_screen.dart';
 import '../widgets/voice_search_screen.dart';
-import '../create_group_screen.dart';
 import '../pages/create_group_page.dart';
 import '../../../../screens/neighbour_screen.dart';
 import '../../providers/selected_flat_provider.dart';
@@ -646,7 +646,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           debugPrint(
               '🔄 [GroupsTab] Group update detected - immediately calling API (bypassing cache and throttling)');
           debugPrint(
-              '📡 [GroupsTab] API: GET http://13.201.27.102:7071/api/v1/rooms/all?company_id=$currentCompanyId&chat_type=group&is_member=true');
+              '📡 [GroupsTab] API: GET ${AppConstants.roomServiceBaseUrl}/rooms/all?company_id=$currentCompanyId&chat_type=group&is_member=true');
           GroupsTab._groupUpdated = false; // Reset flag
 
           // CRITICAL FIX: Don't clear cache - optimistic updates might already be in _groups
@@ -693,7 +693,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         debugPrint(
             '🔄 [GroupsTab] Tab tapped - calling API to fetch fresh groups (will respect throttling)');
         debugPrint(
-            '📡 [GroupsTab] API: GET http://13.201.27.102:7071/api/v1/rooms/all?company_id=$currentCompanyId&chat_type=group&is_member=true');
+            '📡 [GroupsTab] API: GET ${AppConstants.roomServiceBaseUrl}/rooms/all?company_id=$currentCompanyId&chat_type=group&is_member=true');
 
         // Small delay to ensure widget is fully built (cancellable with generation check)
         final scheduledGeneration = _activationGeneration;
@@ -1620,12 +1620,11 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 
       // Call API to get rooms where user is a member
       // This endpoint returns ONLY rooms where the current user is already a member
-      // API Endpoint: GET http://13.201.27.102:7071/api/v1/rooms/all?company_id={companyId}&chat_type=group&is_member=true
-      // This matches the curl command format provided
+      // API Endpoint: GET {roomServiceBaseUrl}/rooms/all?company_id={companyId}&chat_type=group&is_member=true
       debugPrint(
           '📡 [GroupsTab] Calling API to fetch group rooms for company_id: $companyId');
       debugPrint(
-          '🌐 [GroupsTab] API URL: http://13.201.27.102:7071/api/v1/rooms/all?company_id=$companyId&chat_type=group&is_member=true');
+          '🌐 [GroupsTab] API URL: ${AppConstants.roomServiceBaseUrl}/rooms/all?company_id=$companyId&chat_type=group&is_member=true');
       debugPrint(
           '🔑 [GroupsTab] Using Authorization: Bearer <token> (handled by RoomService)');
       final response = await _roomService.getAllRooms(
@@ -1781,8 +1780,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         // Notify parent that loading is complete
 
         // Verify we're showing the right data - check company_id again
-        final verifySelectedFlatState = ref.read(selectedFlatProvider);
-        final verifyCompanyId = verifySelectedFlatState.selectedSociety?.socId;
+        final verifyCompanyId = await _apiService.getSelectedSocietyId();
         if (verifyCompanyId != null && verifyCompanyId != companyId) {
           debugPrint(
               '⚠️ [GroupsTab] WARNING: Company changed during load! Requested: $companyId, Current: $verifyCompanyId');
@@ -2529,20 +2527,6 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
   }
 
   void _navigateToCreateGroup() async {
-    // Get available contacts
-    final availableContacts = _getMockMembers();
-
-    // Check if there are available contacts
-    if (availableContacts.isEmpty) {
-      // Show error if no contacts are available
-      EnhancedToast.error(
-        context,
-        title: 'No Contacts',
-        message: 'No contacts available to create a group',
-      );
-      return;
-    }
-
     // Navigate to create group page with page route transition
     final result = await NavigationHelper.pushRoute(
       context,
@@ -3886,29 +3870,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
   }
 
   void _handleCreateGroup() {
-    if (_currentUserId == null) {
-      EnhancedToast.error(
-        context,
-        title: 'Error',
-        message: 'User ID not available. Please try again.',
-      );
-      return;
-    }
-    NavigationHelper.pushRoute(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CreateGroupScreen(
-          availableContacts: _getMockMembers(),
-          currentUserId: _currentUserId!,
-        ),
-      ),
-    ).then((newGroup) {
-      if (newGroup != null && newGroup is GroupChat) {
-        setState(() {
-          _groups.insert(0, newGroup);
-        });
-      }
-    });
+    _navigateToCreateGroup();
   }
 
   void _showGroupInfoBottomSheet(GroupChat group) async {
@@ -3937,9 +3899,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     );
 
     try {
-      // Get company_id for API call from selectedFlatProvider
-      final selectedFlatState = ref.read(selectedFlatProvider);
-      final companyId = selectedFlatState.selectedSociety?.socId;
+      final companyId = await _apiService.getSelectedSocietyId();
       if (companyId == null) {
         if (mounted) {
           Navigator.pop(context);

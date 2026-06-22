@@ -494,9 +494,9 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
         }
       }
 
-      // Get company_id (society ID) from selectedFlatProvider
-      final selectedFlatState = ref.read(selectedFlatProvider);
-      final companyId = selectedFlatState.selectedSociety?.socId;
+      // Prefer context port (OneGate gate storage); fallback to sync cache.
+      final companyId = await _apiService.getSelectedSocietyId() ??
+          ref.read(selectedFlatProvider).selectedSociety?.socId;
       if (companyId == null) {
         setState(() {
           _isCreating = false;
@@ -1273,9 +1273,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
   /// is still considered successful.
   Future<void> _uploadRoomPhotoSilently(String roomId, File photoFile) async {
     try {
-      // Get company_id (society ID) from selectedFlatProvider - required for the new API
-      final selectedFlatState = ref.read(selectedFlatProvider);
-      final companyId = selectedFlatState.selectedSociety?.socId;
+      final companyId = await _apiService.getSelectedSocietyId() ??
+          ref.read(selectedFlatProvider).selectedSociety?.socId;
       if (companyId == null) {
         debugPrint(
           '⚠️ [CreateGroup] Cannot upload photo: company_id not available',
