@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:common_widgets/common_widgets.dart';
 import '../../../../core/theme/colors.dart';
 import '../models/intercom_contact.dart';
 import '../chat_screen.dart';
-import '../widgets/voice_search_screen.dart';
+import '../widgets/voice_search_launcher.dart';
 import '../services/intercom_service.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/enhanced_toast.dart';
@@ -26,12 +25,13 @@ import '../services/committee_member_cache.dart';
 import '../../../../core/services/keycloak_service.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../widgets/call_bottom_sheet.dart';
+import '../../../../src/config/chat_call_i18n.dart';
 
 class CommitteeTab extends ConsumerStatefulWidget {
   final ValueNotifier<int>? activeTabNotifier;
   final int? tabIndex;
   final ValueNotifier<bool>?
-      loadingNotifier; // Notify parent when loading state changes
+  loadingNotifier; // Notify parent when loading state changes
 
   const CommitteeTab({
     Key? key,
@@ -68,8 +68,6 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
   // Data for committee members
   List<IntercomContact> _committeeMembers = [];
   final TextEditingController _searchController = TextEditingController();
-  final stt.SpeechToText _speech = stt.SpeechToText();
-  bool _isListening = false;
   String _searchQuery = '';
   List<IntercomContact> _filteredMembers = [];
   bool _isLoading = true;
@@ -108,7 +106,6 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
-    _initializeSpeech();
     _loadCurrentUserIds();
     // Initialize tab activation (handles initial load and listener setup)
     initializeTabActivation();
@@ -161,14 +158,16 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
       if (hasValidCache) {
         final cacheAge = DateTime.now().difference(_cachedData!.timestamp);
         debugPrint(
-            '✅ [CommitteeTab] Cache is valid (age: ${cacheAge.inSeconds}s), skipping API call');
+          '✅ [CommitteeTab] Cache is valid (age: ${cacheAge.inSeconds}s), skipping API call',
+        );
 
         // CRITICAL FIX: Always ensure state is restored, even if cache is valid
         // When returning from Group chat, state might be cleared even though cache exists
         // Re-render cached data to ensure UI is updated (handles navigation back scenario)
         if (_committeeMembers.isEmpty || _filteredMembers.isEmpty) {
           debugPrint(
-              '🔄 [CommitteeTab] State is empty but cache is valid, re-rendering cached data (returning from navigation)');
+            '🔄 [CommitteeTab] State is empty but cache is valid, re-rendering cached data (returning from navigation)',
+          );
           _renderCachedDataIfAvailable();
         }
 
@@ -183,12 +182,14 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
       if (_cachedData != null &&
           (_committeeMembers.isEmpty || _filteredMembers.isEmpty)) {
         debugPrint(
-            '🔄 [CommitteeTab] Cache expired but state is empty, showing expired cache while loading fresh data');
+          '🔄 [CommitteeTab] Cache expired but state is empty, showing expired cache while loading fresh data',
+        );
         _renderCachedDataIfAvailable(); // Show expired cache as fallback
       }
 
       debugPrint(
-          '🔄 [CommitteeTab] Cache expired/missing, triggering API call (will respect throttling)');
+        '🔄 [CommitteeTab] Cache expired/missing, triggering API call (will respect throttling)',
+      );
       _checkCacheAndLoad();
     });
   }
@@ -203,7 +204,8 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
   void _renderCachedDataIfAvailable() {
     if (_cachedData == null) {
       debugPrint(
-          'ℹ️ [CommitteeTab] No cached data available for immediate rendering');
+        'ℹ️ [CommitteeTab] No cached data available for immediate rendering',
+      );
       return; // No cached data
     }
 
@@ -211,7 +213,8 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
     // This prevents blank UI. Network fetch will refresh if needed.
     if (_cachedData!.members.isNotEmpty) {
       debugPrint(
-          '✅ [CommitteeTab] Rendering cached data immediately on activation (${_cachedData!.members.length} members)');
+        '✅ [CommitteeTab] Rendering cached data immediately on activation (${_cachedData!.members.length} members)',
+      );
 
       if (mounted) {
         setState(() {
@@ -237,7 +240,8 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
         (_committeeMembers.isEmpty || _filteredMembers.isEmpty) &&
         _cachedData != null) {
       debugPrint(
-          '🔄 [CommitteeTab] didChangeDependencies: State is empty but cache exists, restoring cached data');
+        '🔄 [CommitteeTab] didChangeDependencies: State is empty but cache exists, restoring cached data',
+      );
       _renderCachedDataIfAvailable();
     }
 
@@ -254,7 +258,8 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
       if (currentCompanyId != null &&
           currentCompanyId != _lastLoadedCompanyId) {
         debugPrint(
-            '🔄 [CommitteeTab] Company changed from $_lastLoadedCompanyId to $currentCompanyId - Clearing cache and reloading');
+          '🔄 [CommitteeTab] Company changed from $_lastLoadedCompanyId to $currentCompanyId - Clearing cache and reloading',
+        );
 
         // Clear cache and reset state
         final oldCompanyId = _lastLoadedCompanyId;
@@ -310,7 +315,8 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
         final remainingSeconds =
             (_minRequestInterval - timeSinceLastRequest).inSeconds;
         debugPrint(
-            '⏸️ [CommitteeTab] Request throttled (${remainingSeconds}s remaining)');
+          '⏸️ [CommitteeTab] Request throttled (${remainingSeconds}s remaining)',
+        );
         return; // Ignore request - too soon after last one
       }
     }
@@ -340,7 +346,8 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
       // Cache invalid or missing - load fresh data
       // This ensures committee members API is called when cache is expired or missing
       debugPrint(
-          '📡 [CommitteeTab] Cache expired/missing, loading committee members from API...');
+        '📡 [CommitteeTab] Cache expired/missing, loading committee members from API...',
+      );
       await _loadCommitteeMembers(token: token);
     } catch (e) {
       debugPrint('❌ [CommitteeTab] Error checking cache: $e');
@@ -360,7 +367,6 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
     _wsMessageSubscription?.cancel();
     _wsConnectionSubscription?.cancel();
     _searchController.dispose();
-    _speech.stop();
     // Clean up tab activation listener
     disposeTabActivation();
     super.dispose();
@@ -379,15 +385,15 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
     );
 
     // Listen to connection state changes
-    _wsConnectionSubscription = _chatService.connectionStateStream.listen(
-      (isConnected) {
-        if (mounted) {
-          setState(() {
-            _isWebSocketConnected = isConnected;
-          });
-        }
-      },
-    );
+    _wsConnectionSubscription = _chatService.connectionStateStream.listen((
+      isConnected,
+    ) {
+      if (mounted) {
+        setState(() {
+          _isWebSocketConnected = isConnected;
+        });
+      }
+    });
 
     // Initialize connection status
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -407,20 +413,23 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
     if (roomId == null || roomId.isEmpty) return;
 
     // Handle unread_count_update events from WebSocket
-    final messageType = wsMessage.type?.toLowerCase() ??
+    final messageType =
+        wsMessage.type?.toLowerCase() ??
         wsMessage.data?['type']?.toString().toLowerCase();
     if (messageType == 'unread_count_update' ||
         wsMessage.messageTypeEnum == WebSocketMessageType.unreadCountUpdate) {
       final updateRoomId = roomId ?? wsMessage.data?['room_id']?.toString();
       final userId = wsMessage.userId ?? wsMessage.data?['user_id']?.toString();
-      final unreadCount = wsMessage.data?['unread_count'] as int? ??
+      final unreadCount =
+          wsMessage.data?['unread_count'] as int? ??
           (wsMessage.data?['unread_count'] is String
               ? int.tryParse(wsMessage.data!['unread_count'] as String)
               : null);
 
       if (updateRoomId != null && userId != null && unreadCount != null) {
         developer.log(
-            '📊 [CommitteeTab] Received unread_count_update: room=$updateRoomId, user=$userId, count=$unreadCount');
+          '📊 [CommitteeTab] Received unread_count_update: room=$updateRoomId, user=$userId, count=$unreadCount',
+        );
 
         // Update local unread count manager if this is for current user
         bool isForCurrentUser = false;
@@ -448,8 +457,9 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
       return; // Don't process unread_count_update as messages
     }
 
-    developer
-        .log('📨 [CommitteeTab] Received WebSocket message for room: $roomId');
+    developer.log(
+      '📨 [CommitteeTab] Received WebSocket message for room: $roomId',
+    );
 
     // Get contact ID for this room
     final contactId = _unreadManager.getContactIdForRoom(roomId);
@@ -487,7 +497,8 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
 
   /// Check if a WebSocket message is a system message (should not increment unread count)
   bool _isSystemMessageFromWebSocket(WebSocketMessage wsMessage) {
-    final messageType = wsMessage.messageType?.toLowerCase() ??
+    final messageType =
+        wsMessage.messageType?.toLowerCase() ??
         wsMessage.data?['message_type']?.toString().toLowerCase();
     final eventType = wsMessage.data?['event_type']?.toString().toLowerCase();
 
@@ -563,38 +574,34 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
     return preview.text;
   }
 
-  Future<void> _initializeSpeech() async {
-    bool available = await _speech.initialize(
-      onStatus: (status) {
-        if (status == 'done' || status == 'notListening') {
-          if (mounted) {
-            setState(() {
-              _isListening = false;
-            });
-          }
-        }
-      },
-      onError: (error) {
+  Future<void> _startListening() async {
+    await VoiceSearchLauncher.open(
+      context,
+      onTextRecognized: (text) {
         if (mounted) {
           setState(() {
-            _isListening = false;
+            _searchController.text = text;
+            _searchController.selection = TextSelection.fromPosition(
+              TextPosition(offset: text.length),
+            );
+            _searchQuery = text;
+            _filterMembers();
           });
-          EnhancedToast.error(
-            context,
-            title: 'Speech Recognition Error',
-            message: error.errorMsg,
-          );
+        }
+      },
+      onFinalResult: (text) {
+        if (mounted) {
+          setState(() {
+            _searchController.text = text;
+            _searchController.selection = TextSelection.fromPosition(
+              TextPosition(offset: text.length),
+            );
+            _searchQuery = text;
+            _filterMembers();
+          });
         }
       },
     );
-
-    if (!available && mounted) {
-      EnhancedToast.warning(
-        context,
-        title: 'Speech Recognition',
-        message: 'Speech recognition is not available on this device.',
-      );
-    }
   }
 
   void _onSearchChanged() {
@@ -613,65 +620,12 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
         final matchesName = member.name.toLowerCase().contains(query);
         final matchesRole =
             member.role != null && member.role!.toLowerCase().contains(query);
-        final matchesPhone = member.phoneNumber != null &&
+        final matchesPhone =
+            member.phoneNumber != null &&
             member.phoneNumber!.toLowerCase().contains(query);
 
         return matchesName || matchesRole || matchesPhone;
       }).toList();
-    }
-  }
-
-  // Start voice listening
-  Future<void> _startListening() async {
-    final result = await NavigationHelper.pushRoute<String>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => VoiceSearchScreen(
-          onTextRecognized: (text) {
-            // Update search field with recognized text in real-time
-            if (mounted) {
-              setState(() {
-                _searchController.text = text;
-                _searchController.selection = TextSelection.fromPosition(
-                  TextPosition(offset: text.length),
-                );
-                _searchQuery = text;
-                _filterMembers();
-              });
-            }
-          },
-          onFinalResult: (text) {
-            // Final result - set text and filter
-            if (mounted) {
-              setState(() {
-                _searchController.text = text;
-                _searchController.selection = TextSelection.fromPosition(
-                  TextPosition(offset: text.length),
-                );
-                _searchQuery = text;
-                _filterMembers();
-              });
-            }
-          },
-        ),
-      ),
-    );
-
-    // Update state after returning from voice search screen
-    if (mounted && result != null) {
-      setState(() {
-        _isListening = false;
-      });
-    }
-  }
-
-  // Stop voice listening
-  void _stopListening() {
-    _speech.stop();
-    if (mounted) {
-      setState(() {
-        _isListening = false;
-      });
     }
   }
 
@@ -701,7 +655,8 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
       // We have cached data - UI is already visible
       // Load fresh data in background without blocking
       debugPrint(
-          '🔄 [CommitteeTab] Loading fresh data in background (UI already visible with ${_committeeMembers.length} members)');
+        '🔄 [CommitteeTab] Loading fresh data in background (UI already visible with ${_committeeMembers.length} members)',
+      );
     }
 
     try {
@@ -715,7 +670,8 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
       // Check token validity before updating state
       if (!token.isValid(lifecycleController.generation)) {
         debugPrint(
-            '⏹️ [CommitteeTab] Tab became inactive during load, discarding result');
+          '⏹️ [CommitteeTab] Tab became inactive during load, discarding result',
+        );
         return;
       }
 
@@ -756,11 +712,13 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
           // Handle rate limit gracefully
           if (_committeeMembers.isNotEmpty) {
             debugPrint(
-                '✅ [CommitteeTab] Rate limited (429) - showing cached data (${_committeeMembers.length} members)');
+              '✅ [CommitteeTab] Rate limited (429) - showing cached data (${_committeeMembers.length} members)',
+            );
             // Silently use cached data - no error toast
           } else {
             debugPrint(
-                '⚠️ [CommitteeTab] Rate limited (429) - no cached data, will retry silently');
+              '⚠️ [CommitteeTab] Rate limited (429) - no cached data, will retry silently',
+            );
             // Don't show toast - just log it and let the system retry
             // The user will see the loading state, and data will load when retry succeeds
           }
@@ -770,13 +728,14 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
           if (_committeeMembers.isEmpty) {
             EnhancedToast.error(
               context,
-              title: 'Error',
-              message: 'Failed to load committee members: ${e.toString()}',
+              title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+              message: chatCallTr(context, 'chatCall_failedToLoadCommitteeMembers', fallback: 'Failed to load committee members: {error}', params: {'error': e.toString()}),
             );
           } else {
             // If we have cached data, show a less intrusive error
             debugPrint(
-                '⚠️ [CommitteeTab] Failed to refresh committee members: $e');
+              '⚠️ [CommitteeTab] Failed to refresh committee members: $e',
+            );
           }
         }
       }
@@ -805,16 +764,14 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const OneGateGlobalLoader(
-        title: 'Loading Committee',
-        subtitle: 'Fetching committee members...',
+      return OneGateGlobalLoader(
+        title: chatCallTr(context, 'chatCall_loadingCommittee', fallback: 'Loading Committee'),
+        subtitle: chatCallTr(context, 'chatCall_fetchingCommitteeMembers', fallback: 'Fetching committee members...'),
       );
     }
     return SafeArea(
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-        ),
+        decoration: const BoxDecoration(color: Colors.white),
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: Column(
@@ -842,19 +799,19 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                  // Header with gradient
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xffc62828), Color(0xffff8a80)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(24),
-                        topRight: Radius.circular(24),
+                      // Header with gradient
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xffc62828), Color(0xffff8a80)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(24),
+                            topRight: Radius.circular(24),
                           ),
                         ),
                         child: Stack(
@@ -871,7 +828,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
-                                  'Committee Members',
+                                  chatCallTr(context, 'chatCall_committeeMembersTitle', fallback: 'Committee Members'),
                                   style: GoogleFonts.montserrat(
                                     color: Colors.white,
                                     fontSize: 16,
@@ -891,7 +848,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Contact your society committee members for society-related matters.',
+                              chatCallTr(context, 'chatCall_contactCommitteeInfo', fallback: 'Contact your society committee members for society-related matters.'),
                               style: GoogleFonts.montserrat(
                                 color: Colors.grey.shade800,
                                 fontSize: 14,
@@ -913,7 +870,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
-                                    'Total: ${_committeeMembers.length}',
+                                    chatCallTr(context, 'chatCall_totalCount', fallback: 'Total: {count}', params: {'count': '${_committeeMembers.length}'}),
                                     style: GoogleFonts.montserrat(
                                       color: const Color(0xffc62828),
                                       fontSize: 11,
@@ -940,8 +897,9 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                                           shape: BoxShape.circle,
                                           boxShadow: [
                                             BoxShadow(
-                                              color: const Color(0xff43a047)
-                                                  .withOpacity(0.3),
+                                              color: const Color(
+                                                0xff43a047,
+                                              ).withOpacity(0.3),
                                               blurRadius: 4,
                                               spreadRadius: 1,
                                             ),
@@ -950,7 +908,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        'Available: ${_committeeMembers.where((m) => m.status == IntercomContactStatus.online).length}',
+                                        chatCallTr(context, 'chatCall_availableCount', fallback: 'Available: {count}', params: {'count': '${_committeeMembers.where((m) => m.status == IntercomContactStatus.online).length}'}),
                                         style: GoogleFonts.montserrat(
                                           color: const Color(0xff43a047),
                                           fontSize: 11,
@@ -994,7 +952,11 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
-                          hintText: 'Search committee members...',
+                          hintText: chatCallTr(
+                            context,
+                            'chatCall_searchCommitteeMembersHint',
+                            fallback: 'Search committee members...',
+                          ),
                           hintStyle: TextStyle(
                             color: Colors.grey.shade400,
                             fontSize: 14,
@@ -1010,16 +972,17 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: Icon(
-                          _isListening ? Icons.mic : Icons.mic_none,
-                          color: _isListening
-                              ? Colors.red
-                              : const Color(0xffc62828),
+                        icon: const Icon(
+                          Icons.mic_none,
+                          color: Color(0xffc62828),
                           size: 20,
                         ),
-                        onPressed:
-                            _isListening ? _stopListening : _startListening,
-                        tooltip: 'Voice Search',
+                        onPressed: _startListening,
+                        tooltip: chatCallTr(
+                          context,
+                          'chatCall_voiceSearch',
+                          fallback: 'Voice Search',
+                        ),
                       ),
                     ),
                   ],
@@ -1028,26 +991,28 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
 
               // Committee members list with enhanced cards
               _isLoading
-                  ? const OneGateGlobalLoader(
-                      title: 'Loading Committee',
-                      subtitle: 'Fetching committee members...',
+                  ? OneGateGlobalLoader(
+                      title: chatCallTr(context, 'chatCall_loadingCommittee', fallback: 'Loading Committee'),
+                      subtitle: chatCallTr(context, 'chatCall_fetchingCommitteeMembers', fallback: 'Fetching committee members...'),
                     )
                   : (_searchQuery.isEmpty
-                              ? _committeeMembers
-                              : _filteredMembers)
-                          .isEmpty
-                      ? _buildEmptyState()
-                      : Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            children: (_searchQuery.isEmpty
+                            ? _committeeMembers
+                            : _filteredMembers)
+                        .isEmpty
+                  ? _buildEmptyState()
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        children:
+                            (_searchQuery.isEmpty
                                     ? _committeeMembers
                                     : _filteredMembers)
                                 .map((member) {
-                              return _buildCommitteeMemberCard(member);
-                            }).toList(),
-                          ),
-                        ),
+                                  return _buildCommitteeMemberCard(member);
+                                })
+                                .toList(),
+                      ),
+                    ),
 
               const SizedBox(height: 20), // Bottom padding
             ],
@@ -1097,7 +1062,8 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(25),
-                            child: (member.photoUrl != null &&
+                            child:
+                                (member.photoUrl != null &&
                                     member.photoUrl!.isNotEmpty)
                                 ? Image.network(
                                     member.photoUrl!,
@@ -1136,10 +1102,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                             decoration: BoxDecoration(
                               color: _getStatusColor(member.status),
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 2,
-                              ),
+                              border: Border.all(color: Colors.white, width: 2),
                               boxShadow: const [
                                 BoxShadow(
                                   color: Colors.black12,
@@ -1176,7 +1139,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                member.role ?? 'Committee Member',
+                                member.role ?? chatCallTr(context, 'chatCall_committeeMember', fallback: 'Committee Member'),
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: 13,
@@ -1188,7 +1151,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                           if (member.unit != null) ...[
                             const SizedBox(height: 2),
                             Text(
-                              'Unit ${member.unit}',
+                              chatCallTr(context, 'chatCall_unitLabel', fallback: 'Unit {unit}', params: {'unit': '${member.unit}'}),
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: 13,
@@ -1200,7 +1163,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                             Padding(
                               padding: const EdgeInsets.only(top: 2),
                               child: Text(
-                                'Not a oneapp user',
+                                chatCallTr(context, 'chatCall_notAOneappUser', fallback: 'Not a oneapp user'),
                                 style: TextStyle(
                                   color: Colors.orange.shade700,
                                   fontSize: 12,
@@ -1217,16 +1180,20 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                         onPressed: () =>
                             OneAppShare.shareInvite(name: member.name),
                         icon: const Icon(Icons.person_add_alt_1, size: 16),
-                        label: const Text(
-                          'Invite',
+                        label: Text(
+                          chatCallTr(context, 'chatCall_invite', fallback: 'Invite'),
                           style: TextStyle(
-                              fontSize: 12, fontWeight: FontWeight.w600),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -1253,7 +1220,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                               : Colors.blue.shade600,
                         ),
                         label: Text(
-                          'Chat',
+                          chatCallTr(context, 'chatCall_chat', fallback: 'Chat'),
                           style: TextStyle(
                             color: !member.hasUserId
                                 ? Colors.grey.shade400
@@ -1272,14 +1239,11 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
                         ),
                       ),
                     ),
-                    Container(
-                      height: 24,
-                      width: 1,
-                      color: Colors.black12,
-                    ),
+                    Container(height: 24, width: 1, color: Colors.black12),
                     Expanded(
                       child: TextButton(
-                        onPressed: (!member.hasUserId ||
+                        onPressed:
+                            (!member.hasUserId ||
                                 _callStartingContactIds.contains(member.id))
                             ? null
                             : () => _onCallPressed(member),
@@ -1352,15 +1316,15 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
   String _getStatusText(IntercomContactStatus? status) {
     switch (status) {
       case IntercomContactStatus.online:
-        return 'Online';
+        return chatCallTr(context, 'chatCall_online', fallback: 'Online');
       case IntercomContactStatus.busy:
-        return 'Busy';
+        return chatCallTr(context, 'chatCall_busy', fallback: 'Busy');
       case IntercomContactStatus.away:
-        return 'Away';
+        return chatCallTr(context, 'chatCall_away', fallback: 'Away');
       case IntercomContactStatus.offline:
-        return 'Offline';
+        return chatCallTr(context, 'chatCall_offline', fallback: 'Offline');
       default:
-        return 'Offline';
+        return chatCallTr(context, 'chatCall_offline', fallback: 'Offline');
     }
   }
 
@@ -1404,7 +1368,8 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
     try {
       final userData = await KeycloakService.getUserData();
       if (userData != null) {
-        displayName = userData['name'] as String? ??
+        displayName =
+            userData['name'] as String? ??
             userData['preferred_username'] as String? ??
             'User';
         userEmail = userData['email'] as String?;
@@ -1415,13 +1380,15 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
 
     if (!mounted) return;
 
-    unawaited(CallBottomSheet.show(
-      context: context,
-      contact: contact,
-      displayName: displayName,
-      avatarUrl: avatarUrl,
-      userEmail: userEmail,
-    ));
+    unawaited(
+      CallBottomSheet.show(
+        context: context,
+        contact: contact,
+        displayName: displayName,
+        avatarUrl: avatarUrl,
+        userEmail: userEmail,
+      ),
+    );
   }
 
   Future<void> _onCallPressed(IntercomContact contact) async {
@@ -1476,8 +1443,8 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'No committee members available',
+            Text(
+              chatCallTr(context, 'chatCall_noCommitteeMembersAvailable', fallback: 'No committee members available'),
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -1487,7 +1454,7 @@ class _CommitteeTabState extends ConsumerState<CommitteeTab>
             ),
             const SizedBox(height: 8),
             Text(
-              'Committee members will appear here when available',
+              chatCallTr(context, 'chatCall_committeeMembersWillAppear', fallback: 'Committee members will appear here when available'),
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 14,

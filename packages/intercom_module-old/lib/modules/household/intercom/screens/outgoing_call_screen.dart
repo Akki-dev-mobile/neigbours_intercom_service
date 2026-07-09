@@ -13,6 +13,7 @@ import '../models/call_model.dart';
 import '../models/call_status.dart';
 import '../services/call_history_service.dart';
 import '../services/call_service.dart';
+import '../../../../src/config/chat_call_i18n.dart';
 
 class OutgoingCallScreen extends StatefulWidget {
   final Call call;
@@ -52,7 +53,8 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen> {
   String get _displayName {
     final trimmed = widget.calleeName.trim();
     if (trimmed.isNotEmpty) return trimmed;
-    return widget.calleePhone ?? 'Unknown';
+    return widget.calleePhone ??
+        chatCallTr(context, 'chatCall_unknown', fallback: 'Unknown');
   }
 
   String get _initials {
@@ -88,11 +90,20 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen> {
     CallCoordinator.instance.state.addListener(_onCoordinatorState);
 
     // Poll for pending accept (e.g. FCM was handled in background isolate and persisted).
-    _acceptPollTimer = Timer.periodic(const Duration(seconds: 2), _pollPendingAccept);
+    _acceptPollTimer = Timer.periodic(
+      const Duration(seconds: 2),
+      _pollPendingAccept,
+    );
     // Poll for pending call_ended (receiver rejected while FCM was in background).
-    _endedPollTimer = Timer.periodic(const Duration(seconds: 2), _pollPendingEnded);
+    _endedPollTimer = Timer.periodic(
+      const Duration(seconds: 2),
+      _pollPendingEnded,
+    );
     // Fallback: poll backend call status so we connect even if FCM is never received.
-    _statusPollTimer = Timer.periodic(const Duration(seconds: 3), _pollCallStatus);
+    _statusPollTimer = Timer.periodic(
+      const Duration(seconds: 3),
+      _pollCallStatus,
+    );
   }
 
   @override
@@ -123,7 +134,8 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen> {
         'action': 'call_accepted',
         'call_id': call.id.toString(),
         'meeting_id': call.meetingId,
-        'jitsi_url': call.jitsiMeetingUrl ?? 'https://${AppConstants.jitsiServerUrl}',
+        'jitsi_url':
+            call.jitsiMeetingUrl ?? 'https://${AppConstants.jitsiServerUrl}',
         'call_type': call.callType.value,
         'status': 'answered',
       };
@@ -140,7 +152,8 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen> {
     if (!mounted || _isEnding || !_isActiveCallForThisScreen) return;
     if (CallCoordinator.instance.state.value != CallFlowState.ringing) return;
     // Prefer per-call key (backend may have saved under our call id).
-    Map<String, dynamic>? pending = await OutgoingCallAcceptanceStore.takeIfFreshForCallId(_callId);
+    Map<String, dynamic>? pending =
+        await OutgoingCallAcceptanceStore.takeIfFreshForCallId(_callId);
     // Fallback: legacy single slot or any per-call key (e.g. accept saved under other id).
     if (pending == null || pending.isEmpty) {
       pending = await OutgoingCallAcceptanceStore.takeIfFresh();
@@ -183,8 +196,11 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen> {
     if (CallCoordinator.instance.state.value != CallFlowState.ringing) return;
     final pending = await OutgoingCallAcceptanceStore.takeCallEndedIfFresh();
     if (pending == null || pending.isEmpty) return;
-    final payloadCallId = pending['call_id']?.toString() ?? pending['callId']?.toString();
-    if (payloadCallId != null && payloadCallId.trim().isNotEmpty && payloadCallId.trim() != _callId.trim()) {
+    final payloadCallId =
+        pending['call_id']?.toString() ?? pending['callId']?.toString();
+    if (payloadCallId != null &&
+        payloadCallId.trim().isNotEmpty &&
+        payloadCallId.trim() != _callId.trim()) {
       await OutgoingCallAcceptanceStore.saveCallEnded(pending);
       return;
     }
@@ -223,10 +239,13 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen> {
     }
   }
 
+  static const String _outgoingRingtoneAsset =
+      'assets/media/audio/phone_ringing.mp3';
+
   Future<void> _startRingtone() async {
     try {
       await _ringtonePlayer.setLoopMode(LoopMode.one);
-      await _ringtonePlayer.setAsset('assets/sound/phone_ringing.mp3');
+      await _ringtonePlayer.setAsset(_outgoingRingtoneAsset);
       await _ringtonePlayer.play();
     } catch (e) {
       log('⚠️ [OutgoingCall] Failed to start ringtone: $e');
@@ -274,9 +293,12 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen> {
 
     // Cleanup in background; must not block or throw.
     unawaited(
-      CallCoordinator.instance.markEnded().then((_) {}, onError: (e, st) {
-        log('⚠️ [OutgoingCall] markEnded failed: $e');
-      }),
+      CallCoordinator.instance.markEnded().then(
+        (_) {},
+        onError: (e, st) {
+          log('⚠️ [OutgoingCall] markEnded failed: $e');
+        },
+      ),
     );
 
     final terminalStatus = _resolveTerminalStatus(reason);
@@ -288,20 +310,25 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen> {
             status: terminalStatus,
             endedAt: DateTime.now(),
           )
-          .then((_) {}, onError: (e, st) {
-        log('⚠️ [OutgoingCall] Failed to update local call history: $e');
-      }),
+          .then(
+            (_) {},
+            onError: (e, st) {
+              log('⚠️ [OutgoingCall] Failed to update local call history: $e');
+            },
+          ),
     );
 
     unawaited(
       CallService.instance
-          .updateCallStatus(
-            callId: widget.call.id,
-            status: terminalStatus,
-          )
-          .then((_) {}, onError: (e, st) {
-        log('⚠️ [OutgoingCall] Failed to notify backend ($terminalStatus): $e');
-      }),
+          .updateCallStatus(callId: widget.call.id, status: terminalStatus)
+          .then(
+            (_) {},
+            onError: (e, st) {
+              log(
+                '⚠️ [OutgoingCall] Failed to notify backend ($terminalStatus): $e',
+              );
+            },
+          ),
     );
   }
 
@@ -336,10 +363,25 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 12),
-                    Image.asset(
-                      'assets/icons/oneapp_icon.png',
-                      width: 64,
-                      height: 64,
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      padding: const EdgeInsets.all(10),
+                      child: Image.asset(
+                        'assets/media/images/onegate.png',
+                        package: 'intercom_module',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Image.asset(
+                          'assets/media/images/onegate.png',
+                          package: 'intercom_module',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 20),
                     const Spacer(flex: 1),
@@ -364,8 +406,16 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen> {
                     const SizedBox(height: 10),
                     Text(
                       widget.call.callType.isVideo
-                          ? 'Calling (video)'
-                          : 'Calling (audio)',
+                          ? chatCallTr(
+                              context,
+                              'chatCall_callingVideo',
+                              fallback: 'Calling (video)',
+                            )
+                          : chatCallTr(
+                              context,
+                              'chatCall_callingAudio',
+                              fallback: 'Calling (audio)',
+                            ),
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.75),
                         fontSize: 16,
@@ -374,10 +424,16 @@ class _OutgoingCallScreenState extends State<OutgoingCallScreen> {
                     ),
                     const Spacer(flex: 3),
                     _EndButton(
-                      label: 'Cancel',
+                      label: chatCallTr(
+                        context,
+                        'chatCall_cancel',
+                        fallback: 'Cancel',
+                      ),
                       icon: Icons.call_end,
                       color: const Color(0xFFFF4D4D),
-                      onTap: _isEnding ? null : () => _cancelCall(reason: 'user'),
+                      onTap: _isEnding
+                          ? null
+                          : () => _cancelCall(reason: 'user'),
                     ),
                     const SizedBox(height: 26),
                   ],
@@ -395,16 +451,14 @@ class _CalleeAvatar extends StatelessWidget {
   final String initials;
   final String? avatarUrl;
 
-  const _CalleeAvatar({
-    required this.initials,
-    required this.avatarUrl,
-  });
+  const _CalleeAvatar({required this.initials, required this.avatarUrl});
 
   @override
   Widget build(BuildContext context) {
     const double radius = 56;
     final resolved = avatarUrl?.trim();
-    final hasAvatar = resolved != null &&
+    final hasAvatar =
+        resolved != null &&
         resolved.isNotEmpty &&
         (resolved.startsWith('http://') || resolved.startsWith('https://'));
 

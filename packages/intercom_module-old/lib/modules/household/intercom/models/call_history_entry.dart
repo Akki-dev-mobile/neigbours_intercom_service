@@ -72,21 +72,26 @@ class CallHistoryEntry extends Equatable {
     final endedAtString = json['ended_at'] as String?;
     final durationSeconds = json['duration_seconds'] as int?;
 
-    final initiatedAt =
-        initiatedAtString != null ? DateTime.tryParse(initiatedAtString) : null;
-    final endedAt =
-        endedAtString != null ? DateTime.tryParse(endedAtString) : null;
-    final duration =
-        durationSeconds != null ? Duration(seconds: durationSeconds) : null;
+    final initiatedAt = initiatedAtString != null
+        ? DateTime.tryParse(initiatedAtString)
+        : null;
+    final endedAt = endedAtString != null
+        ? DateTime.tryParse(endedAtString)
+        : null;
+    final duration = durationSeconds != null
+        ? Duration(seconds: durationSeconds)
+        : null;
 
     return CallHistoryEntry(
       callId: json['call_id'] as int,
       contactName: json['contact_name'] as String? ?? 'Unknown',
       contactPhone: json['contact_phone'] as String? ?? 'Unknown',
       contactAvatar: json['contact_avatar'] as String?,
-      callType: CallType.tryFromString(json['call_type'] as String?) ??
+      callType:
+          CallType.tryFromString(json['call_type'] as String?) ??
           CallType.audio,
-      status: CallStatus.tryFromString(json['status'] as String?) ??
+      status:
+          CallStatus.tryFromString(json['status'] as String?) ??
           CallStatus.ended,
       initiatedAt: initiatedAt ?? DateTime.now(),
       endedAt: endedAt,
@@ -97,15 +102,15 @@ class CallHistoryEntry extends Equatable {
 
   @override
   List<Object?> get props => [
-        callId,
-        contactName,
-        contactPhone,
-        contactAvatar,
-        callType,
-        status,
-        initiatedAt,
-        endedAt,
-        duration,
-        isOutgoing,
-      ];
+    callId,
+    contactName,
+    contactPhone,
+    contactAvatar,
+    callType,
+    status,
+    initiatedAt,
+    endedAt,
+    duration,
+    isOutgoing,
+  ];
 }

@@ -54,8 +54,9 @@ class _WhatsAppAudioMessageState extends State<WhatsAppAudioMessage>
 
   void _setupAudioListeners() {
     // Listen to position changes - update if this message is playing
-    _positionSubscription =
-        widget.audioPlayer.positionStream.listen((position) {
+    _positionSubscription = widget.audioPlayer.positionStream.listen((
+      position,
+    ) {
       if (mounted && widget.isPlaying) {
         setState(() {
           _currentPosition = position;
@@ -64,8 +65,9 @@ class _WhatsAppAudioMessageState extends State<WhatsAppAudioMessage>
     });
 
     // Listen to duration changes - update when available
-    _durationSubscription =
-        widget.audioPlayer.durationStream.listen((duration) {
+    _durationSubscription = widget.audioPlayer.durationStream.listen((
+      duration,
+    ) {
       if (mounted && duration != null) {
         setState(() {
           _totalDuration = duration;
@@ -141,8 +143,8 @@ class _WhatsAppAudioMessageState extends State<WhatsAppAudioMessage>
     // Show position - always show current position when playing, otherwise show 0:00
     final displayPosition =
         widget.isPlaying && _currentPosition.inMilliseconds > 0
-            ? _currentPosition
-            : Duration.zero;
+        ? _currentPosition
+        : Duration.zero;
 
     // WhatsApp colors: green for sent messages, grey for received
     final backgroundColor = widget.isFromMe
@@ -153,10 +155,7 @@ class _WhatsAppAudioMessageState extends State<WhatsAppAudioMessage>
         : const Color(0xFF34B7F1); // Light blue
 
     return Container(
-      constraints: const BoxConstraints(
-        maxWidth: 280,
-        minWidth: 200,
-      ),
+      constraints: const BoxConstraints(maxWidth: 280, minWidth: 200),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: backgroundColor,
@@ -190,10 +189,7 @@ class _WhatsAppAudioMessageState extends State<WhatsAppAudioMessage>
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Waveform visualization
-                SizedBox(
-                  height: 20,
-                  child: _buildWaveform(progressColor),
-                ),
+                SizedBox(height: 20, child: _buildWaveform(progressColor)),
                 const SizedBox(height: 4),
                 // Duration and progress
                 Row(

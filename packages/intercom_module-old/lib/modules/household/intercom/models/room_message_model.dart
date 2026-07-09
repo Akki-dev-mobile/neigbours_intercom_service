@@ -19,7 +19,7 @@ class RoomMessage {
   final int? snapshotUserId; // Numeric user ID from snapshot_user_id field
   final String? replyTo; // ID of the message this is replying to
   final List<MessageReaction>
-      reactions; // Reactions included in the API response
+  reactions; // Reactions included in the API response
   final String? messageType; // Message type: "text", "system", "event", etc.
   final String? eventType; // Event type: "user_left", "message_deleted", etc.
   final bool isForwarded; // Indicates forwarded messages
@@ -134,8 +134,9 @@ class RoomMessage {
               final snapshotMap = userSnapshot is Map<String, dynamic>
                   ? userSnapshot
                   : <String, dynamic>{
-                      ...userSnapshot
-                          .map((key, value) => MapEntry(key.toString(), value))
+                      ...userSnapshot.map(
+                        (key, value) => MapEntry(key.toString(), value),
+                      ),
                     };
               final snapshotUserName = snapshotMap['user_name']?.toString();
               if (snapshotUserName != null && snapshotUserName.isNotEmpty) {
@@ -156,16 +157,20 @@ class RoomMessage {
         final isUserPrefixedUuid = senderName.startsWith('user_');
         // Check if it matches UUID pattern (8-4-4-4-12 format with hyphens)
         final uuidPattern = RegExp(
-            r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
-            caseSensitive: false);
+          r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+          caseSensitive: false,
+        );
         final isUuidFormat = uuidPattern.hasMatch(senderName);
         // Also check if it's "user_" followed by UUID
-        final isUserUuid = isUserPrefixedUuid &&
+        final isUserUuid =
+            isUserPrefixedUuid &&
             senderName.length > 36 && // "user_" (5) + UUID (36) = 41
             uuidPattern.hasMatch(senderName.substring(5));
 
         if (isUuidFormat || isUserUuid || isUserPrefixedUuid) {
-          log('⚠️ [RoomMessage] Rejected UUID-like senderName: $senderName, using "User" instead');
+          log(
+            '⚠️ [RoomMessage] Rejected UUID-like senderName: $senderName, using "User" instead',
+          );
           senderName = 'User';
         }
       }
@@ -174,7 +179,8 @@ class RoomMessage {
       // API now includes 'avatar' field directly, also check user_snapshot
       String? senderAvatar;
       // Try direct 'avatar' field first (now guaranteed in API response)
-      senderAvatar = raw['avatar']?.toString() ??
+      senderAvatar =
+          raw['avatar']?.toString() ??
           raw['sender_avatar']?.toString() ??
           raw['photo_url']?.toString() ??
           raw['user_avatar']?.toString();
@@ -186,10 +192,12 @@ class RoomMessage {
           final snapshotMap = userSnapshot is Map<String, dynamic>
               ? userSnapshot
               : <String, dynamic>{
-                  ...userSnapshot
-                      .map((key, value) => MapEntry(key.toString(), value))
+                  ...userSnapshot.map(
+                    (key, value) => MapEntry(key.toString(), value),
+                  ),
                 };
-          senderAvatar = snapshotMap['avatar']?.toString() ??
+          senderAvatar =
+              snapshotMap['avatar']?.toString() ??
               snapshotMap['photo_url']?.toString() ??
               snapshotMap['sender_avatar']?.toString();
         }
@@ -292,7 +300,8 @@ class RoomMessage {
       if ((replyTo == null || replyTo.isEmpty) && raw['data'] != null) {
         final data = raw['data'];
         if (data is Map) {
-          replyTo = data['reply_to']?.toString() ??
+          replyTo =
+              data['reply_to']?.toString() ??
               data['parent_message_id']?.toString() ??
               data['reply_to_id']?.toString();
         }
@@ -471,8 +480,11 @@ class RoomMessage {
       );
     } catch (e, stackTrace) {
       // Log the error and the problematic JSON for debugging
-      log('⚠️ [RoomMessage] Error parsing from JSON: $e',
-          error: e, stackTrace: stackTrace);
+      log(
+        '⚠️ [RoomMessage] Error parsing from JSON: $e',
+        error: e,
+        stackTrace: stackTrace,
+      );
       log('⚠️ [RoomMessage] Problematic JSON: $json');
 
       // Preserve isForwarded even on parse error so forwarded state is not lost on re-entry
@@ -485,9 +497,10 @@ class RoomMessage {
           final innerMap = inner is Map<String, dynamic>
               ? inner
               : <String, dynamic>{
-                  ...inner.map((k, v) => MapEntry(k.toString(), v))
+                  ...inner.map((k, v) => MapEntry(k.toString(), v)),
                 };
-          rawF = innerMap['is_forwarded'] ??
+          rawF =
+              innerMap['is_forwarded'] ??
               innerMap['forwarded'] ??
               innerMap['forward'];
         }

@@ -27,8 +27,7 @@ class IntercomUiStrings {
     this.chatsTab = 'Chats',
     this.callsTab = 'Calls',
     this.searchNotImplemented = 'Search not implemented in this demo',
-    this.searchHint =
-        'Type to search for residents, committee, or groups',
+    this.searchHint = 'Type to search for residents, committee, or groups',
     this.noCallHistory = 'No call history',
     this.callHistoryEmpty = 'Your call history will appear here',
     this.noChatHistory = 'No chat history',
@@ -38,8 +37,18 @@ class IntercomUiStrings {
     this.unknownUser = 'Unknown User',
     this.contactFallback = 'Contact',
     this.missedCall = 'Missed',
+    this.inCall = 'In Call',
+    this.declinedCall = 'Declined',
+    this.endedCall = 'Ended',
+    this.callingCall = 'Calling...',
+    this.loadingChat = 'Loading Chat',
+    this.loadingChatSubtitle = 'Fetching messages...',
     this.yesterday = 'Yesterday',
     this.newMessage = 'New message',
+    this.newMessagesCountBuilder,
+    this.durationSecondsBuilder,
+    this.durationMinutesBuilder,
+    this.durationMinutesSecondsBuilder,
     this.cannotMakeCall = 'Cannot Make Call',
     this.callInProgress = 'Call In Progress',
     this.callInProgressMessage =
@@ -85,8 +94,19 @@ class IntercomUiStrings {
   final String unknownUser;
   final String contactFallback;
   final String missedCall;
+  final String inCall;
+  final String declinedCall;
+  final String endedCall;
+  final String callingCall;
+  final String loadingChat;
+  final String loadingChatSubtitle;
   final String yesterday;
   final String newMessage;
+  final String Function(int count)? newMessagesCountBuilder;
+  final String Function(int seconds)? durationSecondsBuilder;
+  final String Function(int minutes)? durationMinutesBuilder;
+  final String Function(int minutes, int seconds)?
+  durationMinutesSecondsBuilder;
   final String cannotMakeCall;
   final String callInProgress;
   final String callInProgressMessage;
@@ -106,8 +126,20 @@ class IntercomUiStrings {
       noValidCallIdentifierBuilder?.call(contactName) ??
       'No valid call identifier for $contactName';
 
-  String daysAgo(int days) =>
-      daysAgoBuilder?.call(days) ?? '$days days ago';
+  String newMessagesCount(int count) =>
+      newMessagesCountBuilder?.call(count) ?? '$count new messages';
+
+  String durationSeconds(int seconds) =>
+      durationSecondsBuilder?.call(seconds) ?? '${seconds}s';
+
+  String durationMinutes(int minutes) =>
+      durationMinutesBuilder?.call(minutes) ?? '${minutes}m';
+
+  String durationMinutesSeconds(int minutes, int seconds) =>
+      durationMinutesSecondsBuilder?.call(minutes, seconds) ??
+      '${minutes}m ${seconds}s';
+
+  String daysAgo(int days) => daysAgoBuilder?.call(days) ?? '$days days ago';
 }
 
 /// Makes [IntercomUiStrings] available to intercom tabs and call UI widgets.
@@ -121,8 +153,8 @@ class IntercomUiStringsScope extends InheritedWidget {
   final IntercomUiStrings strings;
 
   static IntercomUiStrings of(BuildContext context) {
-    final scope =
-        context.dependOnInheritedWidgetOfExactType<IntercomUiStringsScope>();
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<IntercomUiStringsScope>();
     return scope?.strings ?? IntercomUiStrings.defaults;
   }
 

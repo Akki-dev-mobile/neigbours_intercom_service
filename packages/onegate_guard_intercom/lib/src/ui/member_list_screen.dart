@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../api/guard_intercom_api.dart';
 import '../guard_intercom_config.dart';
+import '../i18n/guard_intercom_i18n.dart';
 
 class GuardIntercomMemberListScreen extends StatefulWidget {
   const GuardIntercomMemberListScreen({
@@ -57,7 +58,16 @@ class _GuardIntercomMemberListScreenState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load members: $e')),
+        SnackBar(
+          content: Text(
+            guardIntercomTr(
+              context,
+              'chatCall_failedToLoadMembersWithError',
+              fallback: 'Failed to load members: $e',
+              params: {'error': '$e'},
+            ),
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -70,17 +80,19 @@ class _GuardIntercomMemberListScreenState
       _filteredUnits.value = _allUnits.where((unit) {
         final u = (unit is Map) ? unit : const {};
         final flat = (u['unit_flat_number']?.toString() ?? '').toLowerCase();
-        final building = (u['soc_building_name']?.toString() ?? '').toLowerCase();
+        final building =
+            (u['soc_building_name']?.toString() ?? '').toLowerCase();
         final members = u['member_details'] ?? const [];
 
         final matchInUnit = flat.contains(query) || building.contains(query);
-        final matchInMembers = (members is List) && members.any((m) {
-          if (m is! Map) return false;
-          final name =
-              '${m['member_first_name'] ?? ''} ${m['member_last_name'] ?? ''}'
-                  .toLowerCase();
-          return name.contains(query);
-        });
+        final matchInMembers = (members is List) &&
+            members.any((m) {
+              if (m is! Map) return false;
+              final name =
+                  '${m['member_first_name'] ?? ''} ${m['member_last_name'] ?? ''}'
+                      .toLowerCase();
+              return name.contains(query);
+            });
 
         return matchInUnit || matchInMembers;
       }).toList();
@@ -96,17 +108,40 @@ class _GuardIntercomMemberListScreenState
       final uri = Uri(scheme: 'tel', path: mobile);
       final launched = await launchUrl(uri);
       if (!launched) {
-        throw Exception('Dialer not available');
+        throw Exception(
+          guardIntercomTr(
+            context,
+            'chatCall_dialerNotAvailable',
+            fallback: 'Dialer not available',
+          ),
+        );
       }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Opening dialer...')),
+        SnackBar(
+          content: Text(
+            guardIntercomTr(
+              context,
+              'chatCall_openingDialer',
+              fallback: 'Opening dialer...',
+            ),
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error initiating call: $e')),
+        SnackBar(
+          content: Text(
+            guardIntercomTr(
+              context,
+              'chatCall_errorInitiatingCallWithError',
+              fallback: 'Error initiating call: $e',
+              params: {'error': '$e'},
+            ),
+          ),
+        ),
       );
     }
   }
@@ -117,7 +152,11 @@ class _GuardIntercomMemberListScreenState
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Search by name or flat',
+          hintText: guardIntercomTr(
+            context,
+            'chatCall_searchByNameOrFlat',
+            fallback: 'Search by name or flat',
+          ),
           hintStyle: TextStyle(color: Colors.grey[500]),
           prefixIcon: const Icon(Icons.search, color: Colors.black),
           suffixIcon: _searchController.text.isNotEmpty
@@ -164,7 +203,12 @@ class _GuardIntercomMemberListScreenState
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text(
-            '${memberList.length} member(s)',
+            guardIntercomTr(
+              context,
+              'chatCall_membersCountGeneric',
+              fallback: '${memberList.length} member(s)',
+              params: {'count': '${memberList.length}'},
+            ),
             style: TextStyle(color: Colors.grey[600]),
           ),
         ),
@@ -257,7 +301,11 @@ class _GuardIntercomMemberListScreenState
                   Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
                   const SizedBox(height: 16),
                   Text(
-                    'No members found',
+                    guardIntercomTr(
+                      context,
+                      'chatCall_noMembersFound',
+                      fallback: 'No members found',
+                    ),
                     style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                   ),
                 ],
@@ -286,8 +334,12 @@ class _GuardIntercomMemberListScreenState
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Intercom',
+        title: Text(
+          guardIntercomTr(
+            context,
+            'chatCall_intercomTitle',
+            fallback: 'Intercom',
+          ),
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: false,

@@ -27,6 +27,7 @@ import '../../../core/theme/colors.dart';
 import '../../../core/widgets/enhanced_toast.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/loading_dialog.dart';
+import '../../../core/widgets/onegate_global_loader.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/keycloak_service.dart';
 import 'models/intercom_contact.dart';
@@ -48,7 +49,9 @@ import 'video_player_screen.dart';
 import 'widgets/whatsapp_video_message.dart';
 import 'widgets/whatsapp_audio_message.dart';
 import 'widgets/forward_to_sheet.dart';
+import 'widgets/chat_wallpaper_background.dart';
 import 'models/forward_payload.dart';
+import '../../../src/config/chat_call_i18n.dart';
 
 class ChatScreen extends StatefulWidget {
   final IntercomContact contact;
@@ -56,6 +59,7 @@ class ChatScreen extends StatefulWidget {
   final bool returnToHistory; // If true, back button navigates to history page
   final List<String>? forwardMessageIds; // Message IDs to forward on open
   final List<ForwardPayload>? forwardPayloads; // Payload data to show instantly
+  final VoidCallback? onInitialLoadComplete;
 
   const ChatScreen({
     Key? key,
@@ -65,6 +69,7 @@ class ChatScreen extends StatefulWidget {
         false, // Default to false to maintain existing behavior
     this.forwardMessageIds,
     this.forwardPayloads,
+    this.onInitialLoadComplete,
   }) : super(key: key);
 
   @override
@@ -76,7 +81,7 @@ class _ChatScreenState extends State<ChatScreen>
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _messageFocusNode = FocusNode();
   late IntercomContact
-      _contact; // Local copy of contact to support state updates (presence)
+  _contact; // Local copy of contact to support state updates (presence)
   static const double _emojiPickerHeight = 300.0;
   List<ChatMessage> _messages = [];
   final ScrollController _scrollController = ScrollController();
@@ -115,6 +120,7 @@ class _ChatScreenState extends State<ChatScreen>
   bool _forwardPlaceholdersInserted = false;
   bool _forwardIntentHandled = false;
   bool _forwardIntentInFlight = false;
+  bool _initialLoadCompleteNotified = false;
   ChatMessage? _replyingTo;
   late AnimationController _waveformController;
   List<double> _waveformData = [];
@@ -127,10 +133,7 @@ class _ChatScreenState extends State<ChatScreen>
   // Download progress tracking
   final Set<String> _videoDownloadInProgress = {};
   final Map<String, double> _videoDownloadProgress = {};
-  final RegExp _urlRegex = RegExp(
-    r'https?://[^\s]+',
-    caseSensitive: false,
-  );
+  final RegExp _urlRegex = RegExp(r'https?://[^\s]+', caseSensitive: false);
 
   // WebSocket state
   StreamSubscription<WebSocketMessage>? _wsMessageSubscription;
@@ -145,7 +148,7 @@ class _ChatScreenState extends State<ChatScreen>
   bool _isAtBottom = true; // Track if user is at bottom for auto-scroll
   String? _currentRoomId; // Store the room_id for this 1-to-1 chat
   String?
-      _memberName; // Store the member name (person you're chatting with) - not your own name
+  _memberName; // Store the member name (person you're chatting with) - not your own name
   String? _memberAvatar; // Store the member avatar URL from API
   // Avatar cache (like group chat) - maps user IDs to avatar URLs
   final Map<String, String?> _memberAvatarCache = {};
@@ -160,8 +163,9 @@ class _ChatScreenState extends State<ChatScreen>
   bool _isOpeningRoom = false;
   DateTime? _lastApiCallTime;
   int _rateLimitRetryCount = 0;
-  static const Duration _minApiCallInterval =
-      Duration(seconds: 2); // Minimum 2 seconds between API calls
+  static const Duration _minApiCallInterval = Duration(
+    seconds: 2,
+  ); // Minimum 2 seconds between API calls
 
   // REQUEST DEDUPLICATION: Track in-flight room creation to prevent duplicates
   // Key: contactId, Value: Future<String?> (roomId)
@@ -172,19 +176,23 @@ class _ChatScreenState extends State<ChatScreen>
   Timer? _presenceTimer; // Timer to periodically fetch user presence
 
   final Set<String> _reactionsFetchInProgress = {}; // Track ongoing fetches
-  static const Duration _reactionFetchMinInterval =
-      Duration(milliseconds: 500); // Minimum 500ms between reaction fetches
-  static const Duration _reactionFetchCooldown =
-      Duration(seconds: 30); // 30s cooldown after 429
+  static const Duration _reactionFetchMinInterval = Duration(
+    milliseconds: 500,
+  ); // Minimum 500ms between reaction fetches
+  static const Duration _reactionFetchCooldown = Duration(
+    seconds: 30,
+  ); // 30s cooldown after 429
 
   // Reaction update rate limiting (PUT/POST)
   DateTime? _lastReactionUpdateTime;
   DateTime? _reactionUpdateCooldownUntil; // Cooldown after 429 error on update
   final Set<String> _reactionsUpdateInProgress = {}; // Track ongoing updates
-  static const Duration _reactionUpdateMinInterval =
-      Duration(milliseconds: 1000); // Minimum 1s between reaction updates
-  static const Duration _reactionUpdateCooldown =
-      Duration(seconds: 30); // 30s cooldown after 429
+  static const Duration _reactionUpdateMinInterval = Duration(
+    milliseconds: 1000,
+  ); // Minimum 1s between reaction updates
+  static const Duration _reactionUpdateCooldown = Duration(
+    seconds: 30,
+  ); // 30s cooldown after 429
 
   @override
   void initState() {
@@ -198,6 +206,9 @@ class _ChatScreenState extends State<ChatScreen>
 
     _pendingForwardMessageIds = widget.forwardMessageIds;
     _pendingForwardPayloads = widget.forwardPayloads;
+    if (widget.roomId != null && widget.roomId!.isNotEmpty) {
+      _currentRoomId = widget.roomId;
+    }
     _waveformController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -231,6 +242,28 @@ class _ChatScreenState extends State<ChatScreen>
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }
     });
+
+    if (_hasPendingForward) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _kickOffPendingForward();
+      });
+    }
+  }
+
+  bool get _hasPendingForward =>
+      _pendingForwardMessageIds != null &&
+      _pendingForwardMessageIds!.isNotEmpty;
+
+  void _kickOffPendingForward() {
+    if (!_hasPendingForward ||
+        _forwardIntentHandled ||
+        _forwardIntentInFlight) {
+      return;
+    }
+    if (_currentRoomId == null) return;
+    _insertForwardPlaceholders();
+    unawaited(_maybeSendPendingForwardMessages());
   }
 
   /// Fetch contact presence status
@@ -275,7 +308,9 @@ class _ChatScreenState extends State<ChatScreen>
         if (_contact.status != status ||
             _contact.isOnline != isOnline ||
             _contact.lastSeenAt != lastSeen) {
-          log('👤 [ChatScreen] Updating presence: $isOnline ($status) - Last seen: $lastSeen');
+          log(
+            '👤 [ChatScreen] Updating presence: $isOnline ($status) - Last seen: $lastSeen',
+          );
           setState(() {
             _contact = _contact.copyWith(
               status: status,
@@ -325,18 +360,22 @@ class _ChatScreenState extends State<ChatScreen>
 
     // Get unread messages from other users that haven't been processed yet
     final unreadMessagesFromOthers = _messages
-        .where((message) => !message.isMe && 
-            message.status != MessageStatus.seen &&
-            // CRITICAL: Skip messages already in-flight or completed
-            !_readReceiptInFlight.contains(message.id) &&
-            !_readReceiptCompleted.contains(message.id))
+        .where(
+          (message) =>
+              !message.isMe &&
+              message.status != MessageStatus.seen &&
+              // CRITICAL: Skip messages already in-flight or completed
+              !_readReceiptInFlight.contains(message.id) &&
+              !_readReceiptCompleted.contains(message.id),
+        )
         .toList();
 
     if (unreadMessagesFromOthers.isEmpty) return;
 
     // Mark the most recent unread message as read (simplified approach)
     // In a more sophisticated implementation, you'd check which messages are actually visible
-    final messageToMark = unreadMessagesFromOthers.last; // Most recent unread message
+    final messageToMark =
+        unreadMessagesFromOthers.last; // Most recent unread message
 
     // Add a small delay to avoid marking messages the user just glanced at
     Future.delayed(const Duration(milliseconds: 1000), () {
@@ -350,15 +389,15 @@ class _ChatScreenState extends State<ChatScreen>
   /// CRITICAL FIX: Added deduplication to prevent 429 rate limit errors
   Future<void> _markMessageAsRead(String messageId) async {
     // CRITICAL: Check if already in-flight or completed to prevent duplicate requests
-    if (_readReceiptInFlight.contains(messageId) || 
+    if (_readReceiptInFlight.contains(messageId) ||
         _readReceiptCompleted.contains(messageId)) {
       log('ℹ️ [ChatScreen] Skipping duplicate read receipt for: $messageId');
       return;
     }
-    
+
     // Mark as in-flight to prevent concurrent requests for same message
     _readReceiptInFlight.add(messageId);
-    
+
     try {
       final response = await _chatService.markMessageAsRead(messageId);
       if (response.success) {
@@ -378,7 +417,9 @@ class _ChatScreenState extends State<ChatScreen>
           });
         }
       } else {
-        log('⚠️ [ChatScreen] Failed to mark message as read: ${response.error}');
+        log(
+          '⚠️ [ChatScreen] Failed to mark message as read: ${response.error}',
+        );
         // Don't add to completed - allow retry later
       }
     } catch (e) {
@@ -412,7 +453,9 @@ class _ChatScreenState extends State<ChatScreen>
                   setState(() {
                     _currentUserId = subStr; // UUID for chat
                   });
-                  log('✅ [ChatScreen] Current user UUID loaded: $subStr (decoded from token)');
+                  log(
+                    '✅ [ChatScreen] Current user UUID loaded: $subStr (decoded from token)',
+                  );
                 }
               } else {
                 log('⚠️ [ChatScreen] Sub field is not a valid UUID: $subStr');
@@ -445,7 +488,9 @@ class _ChatScreenState extends State<ChatScreen>
                   setState(() {
                     _currentUserId = subStr;
                   });
-                  log('✅ [ChatScreen] Current user UUID loaded from getUserInfo: $subStr');
+                  log(
+                    '✅ [ChatScreen] Current user UUID loaded from getUserInfo: $subStr',
+                  );
                 }
               }
             }
@@ -470,7 +515,9 @@ class _ChatScreenState extends State<ChatScreen>
                   setState(() {
                     _currentUserId = subStr;
                   });
-                  log('✅ [ChatScreen] Current user UUID loaded from getUserData: $subStr');
+                  log(
+                    '✅ [ChatScreen] Current user UUID loaded from getUserData: $subStr',
+                  );
                 }
               }
             }
@@ -488,8 +535,12 @@ class _ChatScreenState extends State<ChatScreen>
             setState(() {
               _currentUserId = userId.toString();
             });
-            log('⚠️ [ChatScreen] Using fallback user ID (may be numeric): $userId');
-            log('⚠️ [ChatScreen] WARNING: UUID not available, 1-to-1 chat may not work properly');
+            log(
+              '⚠️ [ChatScreen] Using fallback user ID (may be numeric): $userId',
+            );
+            log(
+              '⚠️ [ChatScreen] WARNING: UUID not available, 1-to-1 chat may not work properly',
+            );
           }
         } catch (e) {
           log('⚠️ [ChatScreen] Error getting fallback user ID: $e');
@@ -523,7 +574,9 @@ class _ChatScreenState extends State<ChatScreen>
                   setState(() {
                     _currentUserNumericId = parsed;
                   });
-                  log('✅ [ChatScreen] Current numeric user ID loaded: $parsed (from: $candidateStr)');
+                  log(
+                    '✅ [ChatScreen] Current numeric user ID loaded: $parsed (from: $candidateStr)',
+                  );
                   break;
                 }
               }
@@ -543,8 +596,9 @@ class _ChatScreenState extends State<ChatScreen>
     if (str == null || str.isEmpty) return false;
     // UUID format: 8-4-4-4-12 hex digits with dashes
     final uuidRegex = RegExp(
-        r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
-        caseSensitive: false);
+      r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+      caseSensitive: false,
+    );
     return uuidRegex.hasMatch(str);
   }
 
@@ -615,30 +669,30 @@ class _ChatScreenState extends State<ChatScreen>
     );
 
     // Listen to connection state changes
-    _wsConnectionSubscription = _chatService.connectionStateStream.listen(
-      (isConnected) {
-        if (mounted) {
-          final wasConnected = _isWebSocketConnected;
-          setState(() {
-            _isWebSocketConnected = isConnected;
-          });
+    _wsConnectionSubscription = _chatService.connectionStateStream.listen((
+      isConnected,
+    ) {
+      if (mounted) {
+        final wasConnected = _isWebSocketConnected;
+        setState(() {
+          _isWebSocketConnected = isConnected;
+        });
 
-          // Show user-friendly messages for connection changes
-          if (isConnected && !wasConnected) {
-            log('✅ WebSocket connected - Real-time messaging active');
-            if (mounted) {
-              EnhancedToast.success(
-                context,
-                title: 'Connected',
-                message: 'Real-time messaging is now active',
-              );
-            }
-          } else if (!isConnected && wasConnected) {
-            log('⚠️ WebSocket disconnected - Real-time messaging unavailable');
+        // Show user-friendly messages for connection changes
+        if (isConnected && !wasConnected) {
+          log('✅ WebSocket connected - Real-time messaging active');
+          if (mounted) {
+            EnhancedToast.success(
+              context,
+              title: chatCallTr(context, 'chatCall_connected', fallback: 'Connected'),
+              message: chatCallTr(context, 'chatCall_realtimeActive', fallback: 'Real-time messaging is now active'),
+            );
           }
+        } else if (!isConnected && wasConnected) {
+          log('⚠️ WebSocket disconnected - Real-time messaging unavailable');
         }
-      },
-    );
+      }
+    });
 
     // Initialize connection status
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -696,8 +750,9 @@ class _ChatScreenState extends State<ChatScreen>
   void _setupMessageSync() {
     // Sync messages every 60 seconds (increased from 30s to reduce API calls)
     // Only sync if WebSocket is not connected or if we haven't received messages recently
-    _messageSyncTimer =
-        Timer.periodic(const Duration(seconds: 60), (timer) async {
+    _messageSyncTimer = Timer.periodic(const Duration(seconds: 60), (
+      timer,
+    ) async {
       if (!mounted || _isLoading || _isOpeningRoom) return;
 
       // Skip sync if WebSocket is connected (real-time updates are working)
@@ -736,8 +791,9 @@ class _ChatScreenState extends State<ChatScreen>
           if (latestMessages.isNotEmpty) {
             // Check if we have any new messages
             final latestMessageId = latestMessages.first.id;
-            final hasNewMessage =
-                !_messages.any((m) => m.id == latestMessageId);
+            final hasNewMessage = !_messages.any(
+              (m) => m.id == latestMessageId,
+            );
 
             if (hasNewMessage) {
               // We have new messages, refresh the full list
@@ -799,7 +855,9 @@ class _ChatScreenState extends State<ChatScreen>
       // API calls can proceed without waiting, improving instant response
       // If _currentUserId is null, it will be available later from token decoding
       if (_currentUserId == null) {
-        log('ℹ️ [ChatScreen] Current user ID not yet loaded, proceeding anyway (will load in background)');
+        log(
+          'ℹ️ [ChatScreen] Current user ID not yet loaded, proceeding anyway (will load in background)',
+        );
         // Continue - don't block API calls
       }
 
@@ -810,132 +868,155 @@ class _ChatScreenState extends State<ChatScreen>
       if (widget.roomId != null && _isUuid(widget.roomId!)) {
         roomIdToFetch = widget.roomId;
         _currentRoomId = widget.roomId;
-        log('✅ [ChatScreen] Using provided roomId from chat history for RoomInfo: $roomIdToFetch');
+        log(
+          '✅ [ChatScreen] Using provided roomId from chat history for RoomInfo: $roomIdToFetch',
+        );
       } else if (_currentRoomId != null && _isUuid(_currentRoomId)) {
         roomIdToFetch = _currentRoomId;
         log('✅ [ChatScreen] Using cached roomId for RoomInfo: $roomIdToFetch');
       } else if (_isUuid(widget.contact.id)) {
         // Check if contact.id is a valid room ID
         roomIdToFetch = widget.contact.id;
-        log('✅ [ChatScreen] Using contact.id as roomId for RoomInfo: $roomIdToFetch');
+        log(
+          '✅ [ChatScreen] Using contact.id as roomId for RoomInfo: $roomIdToFetch',
+        );
       }
 
       // PERFORMANCE OPTIMIZATION: Start RoomInfo call with timeout, completely non-blocking (like GroupChatScreen)
       // Open room immediately without waiting for RoomInfo - it will load in background
       if (roomIdToFetch != null) {
-        log('🔄 [ChatScreen] Fetching RoomInfo (background, 2s timeout): $roomIdToFetch');
+        log(
+          '🔄 [ChatScreen] Fetching RoomInfo (background, 2s timeout): $roomIdToFetch',
+        );
 
         // Start RoomInfo call with short timeout, completely non-blocking
         RoomService.instance
-            .getRoomInfo(
-          roomId: roomIdToFetch,
-          companyId: companyId,
-        )
+            .getRoomInfo(roomId: roomIdToFetch, companyId: companyId)
             .timeout(
-          const Duration(seconds: 2), // Very short timeout - fail fast
-          onTimeout: () {
-            log('⏱️ [ChatScreen] RoomInfo timeout after 2s - continuing without it');
-            return ApiResponse.error('Request timeout', statusCode: 408);
-          },
-        ).then((roomInfoResponse) {
-          // Process RoomInfo response in background (non-blocking)
-          if (roomInfoResponse.success &&
-              roomInfoResponse.data != null &&
-              mounted) {
-            final roomInfo = roomInfoResponse.data!;
+              const Duration(seconds: 2), // Very short timeout - fail fast
+              onTimeout: () {
+                log(
+                  '⏱️ [ChatScreen] RoomInfo timeout after 2s - continuing without it',
+                );
+                return ApiResponse.error('Request timeout', statusCode: 408);
+              },
+            )
+            .then((roomInfoResponse) {
+              // Process RoomInfo response in background (non-blocking)
+              if (roomInfoResponse.success &&
+                  roomInfoResponse.data != null &&
+                  mounted) {
+                final roomInfo = roomInfoResponse.data!;
 
-            // For 1-to-1 chats: use backend peer_user when available (source of truth), else derive from members.
-            if (roomInfo.memberCount == 2 && roomInfo.members.length == 2) {
-              log('✅ [ChatScreen] RoomInfo shows 1-to-1 chat with 2 members');
+                // For 1-to-1 chats: use backend peer_user when available (source of truth), else derive from members.
+                if (roomInfo.memberCount == 2 && roomInfo.members.length == 2) {
+                  log(
+                    '✅ [ChatScreen] RoomInfo shows 1-to-1 chat with 2 members',
+                  );
 
-              if (roomInfo.peerUser != null) {
-                // Backend returns peer_user for 1-to-1; use it for title and avatar
-                _memberName =
-                    roomInfo.peerUser!.userName?.trim().isNotEmpty == true
+                  if (roomInfo.peerUser != null) {
+                    // Backend returns peer_user for 1-to-1; use it for title and avatar
+                    _memberName =
+                        roomInfo.peerUser!.userName?.trim().isNotEmpty == true
                         ? roomInfo.peerUser!.userName!
                         : widget.contact.name;
-                _memberAvatar =
-                    roomInfo.peerUser!.avatar?.trim().isNotEmpty == true
+                    _memberAvatar =
+                        roomInfo.peerUser!.avatar?.trim().isNotEmpty == true
                         ? roomInfo.peerUser!.avatar
                         : null;
-                log('✅ [ChatScreen] Using peer_user from API: $_memberName');
-                if (_memberAvatar != null && _memberAvatar!.isNotEmpty) {
-                  if (roomInfo.peerUser!.userId != null) {
-                    _memberAvatarCache[roomInfo.peerUser!.userId.toString()] =
-                        _memberAvatar;
-                  }
-                }
-                for (final member in roomInfo.members) {
-                  if (member.avatar != null &&
-                      member.avatar!.isNotEmpty &&
-                      member.userId.isNotEmpty) {
-                    _memberAvatarCache[member.userId] = member.avatar;
-                    if (member.numericUserId != null) {
-                      _memberAvatarCache[member.numericUserId.toString()] =
-                          member.avatar;
-                      _numericIdToUuidMap[member.numericUserId!] =
-                          member.userId;
-                    }
-                  }
-                }
-                if (mounted) setState(() {});
-              } else if (_currentUserId != null) {
-                try {
-                  final otherMember = roomInfo.members.firstWhere(
-                    (m) => !m.isCurrentUser(_currentUserId),
-                    orElse: () => roomInfo.members.first,
-                  );
-                  _memberName = otherMember.username ?? widget.contact.name;
-                  _memberAvatar = otherMember.avatar;
-                  log('✅ [ChatScreen] Found other member name: $_memberName (async)');
-                  if (_memberAvatar != null && _memberAvatar!.isNotEmpty) {
-                    if (otherMember.userId.isNotEmpty) {
-                      _memberAvatarCache[otherMember.userId] = _memberAvatar;
-                    }
-                    if (otherMember.numericUserId != null) {
-                      _memberAvatarCache[otherMember.numericUserId.toString()] =
-                          _memberAvatar;
-                      _numericIdToUuidMap[otherMember.numericUserId!] =
-                          otherMember.userId;
-                    }
-                  }
-                  for (final member in roomInfo.members) {
-                    if (member.avatar != null &&
-                        member.avatar!.isNotEmpty &&
-                        member.userId.isNotEmpty) {
-                      _memberAvatarCache[member.userId] = member.avatar;
-                      if (member.numericUserId != null) {
-                        _memberAvatarCache[member.numericUserId.toString()] =
-                            member.avatar;
-                        _numericIdToUuidMap[member.numericUserId!] =
-                            member.userId;
+                    log(
+                      '✅ [ChatScreen] Using peer_user from API: $_memberName',
+                    );
+                    if (_memberAvatar != null && _memberAvatar!.isNotEmpty) {
+                      if (roomInfo.peerUser!.userId != null) {
+                        _memberAvatarCache[roomInfo.peerUser!.userId
+                                .toString()] =
+                            _memberAvatar;
                       }
                     }
+                    for (final member in roomInfo.members) {
+                      if (member.avatar != null &&
+                          member.avatar!.isNotEmpty &&
+                          member.userId.isNotEmpty) {
+                        _memberAvatarCache[member.userId] = member.avatar;
+                        if (member.numericUserId != null) {
+                          _memberAvatarCache[member.numericUserId.toString()] =
+                              member.avatar;
+                          _numericIdToUuidMap[member.numericUserId!] =
+                              member.userId;
+                        }
+                      }
+                    }
+                    if (mounted) setState(() {});
+                  } else if (_currentUserId != null) {
+                    try {
+                      final otherMember = roomInfo.members.firstWhere(
+                        (m) => !m.isCurrentUser(_currentUserId),
+                        orElse: () => roomInfo.members.first,
+                      );
+                      _memberName = otherMember.username ?? widget.contact.name;
+                      _memberAvatar = otherMember.avatar;
+                      log(
+                        '✅ [ChatScreen] Found other member name: $_memberName (async)',
+                      );
+                      if (_memberAvatar != null && _memberAvatar!.isNotEmpty) {
+                        if (otherMember.userId.isNotEmpty) {
+                          _memberAvatarCache[otherMember.userId] =
+                              _memberAvatar;
+                        }
+                        if (otherMember.numericUserId != null) {
+                          _memberAvatarCache[otherMember.numericUserId
+                                  .toString()] =
+                              _memberAvatar;
+                          _numericIdToUuidMap[otherMember.numericUserId!] =
+                              otherMember.userId;
+                        }
+                      }
+                      for (final member in roomInfo.members) {
+                        if (member.avatar != null &&
+                            member.avatar!.isNotEmpty &&
+                            member.userId.isNotEmpty) {
+                          _memberAvatarCache[member.userId] = member.avatar;
+                          if (member.numericUserId != null) {
+                            _memberAvatarCache[member.numericUserId
+                                    .toString()] =
+                                member.avatar;
+                            _numericIdToUuidMap[member.numericUserId!] =
+                                member.userId;
+                          }
+                        }
+                      }
+                      if (mounted) setState(() {});
+                    } catch (e) {
+                      log('⚠️ [ChatScreen] Error finding other member: $e');
+                    }
                   }
-                  if (mounted) setState(() {});
-                } catch (e) {
-                  log('⚠️ [ChatScreen] Error finding other member: $e');
                 }
               }
-            }
-          }
-        }).catchError((e) {
-          log('⚠️ [ChatScreen] RoomInfo error (non-blocking): $e');
-          // Continue - will use contact name as fallback
-        });
+            })
+            .catchError((e) {
+              log('⚠️ [ChatScreen] RoomInfo error (non-blocking): $e');
+              // Continue - will use contact name as fallback
+            });
 
         // PERFORMANCE OPTIMIZATION: Open room immediately without waiting for RoomInfo
         // This matches GroupChatScreen behavior - screen shows immediately, data loads in background
-        log('🚀 [ChatScreen] Opening room immediately (RoomInfo in background, messages loading async)');
+        log(
+          '🚀 [ChatScreen] Opening room immediately (RoomInfo in background, messages loading async)',
+        );
         _openRoom();
       } else {
         // No room ID yet - will determine during _openRoom()
-        log('⚠️ [ChatScreen] No room ID available yet for RoomInfo, will fetch after room is determined');
+        log(
+          '⚠️ [ChatScreen] No room ID available yet for RoomInfo, will fetch after room is determined',
+        );
         _memberName = widget.contact.name;
         _memberAvatar = null;
 
         // Open room immediately - will determine room ID and fetch RoomInfo if needed
-        log('🚀 [ChatScreen] Opening room immediately (will determine room ID)');
+        log(
+          '🚀 [ChatScreen] Opening room immediately (will determine room ID)',
+        );
         _openRoom();
       }
     } catch (e) {
@@ -974,19 +1055,25 @@ class _ChatScreenState extends State<ChatScreen>
 
       // Double-check after debounce - might have been cancelled or already opened
       if (_isOpeningRoom || !mounted) {
-        log('⏸️ [ChatScreen] _openRoom cancelled during debounce or widget not mounted');
+        log(
+          '⏸️ [ChatScreen] _openRoom cancelled during debounce or widget not mounted',
+        );
         return;
       }
     } else {
       // Initial load - no debounce, call API instantly
-      log('⚡ [ChatScreen] Initial load - calling messages API instantly (no debounce)');
+      log(
+        '⚡ [ChatScreen] Initial load - calling messages API instantly (no debounce)',
+      );
     }
 
     // Rate limiting: Check if enough time has passed since last API call
     if (_lastApiCallTime != null) {
       final timeSinceLastCall = DateTime.now().difference(_lastApiCallTime!);
       if (timeSinceLastCall < _minApiCallInterval) {
-        log('⏸️ [ChatScreen] Rate limiting: ${_minApiCallInterval.inSeconds - timeSinceLastCall.inSeconds}s remaining before next API call');
+        log(
+          '⏸️ [ChatScreen] Rate limiting: ${_minApiCallInterval.inSeconds - timeSinceLastCall.inSeconds}s remaining before next API call',
+        );
         // Wait for the remaining time
         await Future.delayed(_minApiCallInterval - timeSinceLastCall);
       }
@@ -1000,7 +1087,9 @@ class _ChatScreenState extends State<ChatScreen>
     // For refresh: preserve all existing messages
     // For reopen: preserve messages if they exist (e.g., when reopening with same roomId)
     final existingMessages = List<ChatMessage>.from(_messages);
-    log('📋 [ChatScreen] Preserving ${existingMessages.length} existing messages (isRefresh: $isRefresh)');
+    log(
+      '📋 [ChatScreen] Preserving ${existingMessages.length} existing messages (isRefresh: $isRefresh)',
+    );
 
     // PERFORMANCE OPTIMIZATION: Don't show loader dialog on first load (like GroupChatScreen)
     // UI is already visible from initState, messages load in background
@@ -1030,7 +1119,7 @@ class _ChatScreenState extends State<ChatScreen>
           setState(() {
             _isLoading = false;
             _hasError = true;
-            _errorMessage = 'Please select a society first';
+            _errorMessage = chatCallTr(context, 'chatCall_pleaseSelectSociety', fallback: 'Please select a society first');
           });
           _hideLoaderDialog();
         }
@@ -1046,16 +1135,24 @@ class _ChatScreenState extends State<ChatScreen>
       // CRITICAL: If roomId was provided from chat history, use it directly to restore chat
       // This matches group chat behavior where widget.group.id is always available
       if (widget.roomId != null && _isUuid(widget.roomId!)) {
-        log('✅ [ChatScreen] Using provided roomId from chat history: ${widget.roomId}');
-        log('   This will restore chat by calling messages API: GET /api/v1/rooms/${widget.roomId}/messages');
-        log('   Preserving ${existingMessages.length} existing messages during load');
+        log(
+          '✅ [ChatScreen] Using provided roomId from chat history: ${widget.roomId}',
+        );
+        log(
+          '   This will restore chat by calling messages API: GET /api/v1/rooms/${widget.roomId}/messages',
+        );
+        log(
+          '   Preserving ${existingMessages.length} existing messages during load',
+        );
         roomId = widget.roomId;
         _currentRoomId = widget.roomId;
         roomExists = true; // Assume room exists if provided from history
 
         // Register room-to-contact mapping and clear unread count
-        await UnreadCountManager.instance
-            .mapRoomToContact(widget.roomId!, widget.contact.id);
+        await UnreadCountManager.instance.mapRoomToContact(
+          widget.roomId!,
+          widget.contact.id,
+        );
         await UnreadCountManager.instance.clearUnreadCount(widget.roomId!);
       }
       // Otherwise, try cached room_id or find/create it
@@ -1063,8 +1160,16 @@ class _ChatScreenState extends State<ChatScreen>
         roomId = _currentRoomId;
 
         if (roomId == null) {
-          log('🔍 [ChatScreen] Determining room_id for contact: ${widget.contact.id}');
-          log('   Contact ID type: ${_isNumeric(widget.contact.id) ? "numeric" : _isUuid(widget.contact.id) ? "UUID" : "unknown"}');
+          log(
+            '🔍 [ChatScreen] Determining room_id for contact: ${widget.contact.id}',
+          );
+          log(
+            '   Contact ID type: ${_isNumeric(widget.contact.id)
+                ? "numeric"
+                : _isUuid(widget.contact.id)
+                ? "UUID"
+                : "unknown"}',
+          );
 
           // If contact.id is UUID, first check if it exists as a room
           // If not, search for existing 1-to-1 room with this contact
@@ -1075,12 +1180,16 @@ class _ChatScreenState extends State<ChatScreen>
             // Cache will return in-flight request if Chat History tab already called /rooms
             // This eliminates the API burst that causes 429 errors
             final roomsResponse = await _chatService.fetchRooms(
-                companyId: companyId, chatType: '1-1');
+              companyId: companyId,
+              chatType: '1-1',
+            );
 
             // CRITICAL: Handle 429 gracefully - don't proceed with room creation if fetch failed
             if (!roomsResponse.success) {
               if (roomsResponse.statusCode == 429) {
-                log('⚠️ [ChatScreen] 429 error when fetching rooms - not attempting room creation');
+                log(
+                  '⚠️ [ChatScreen] 429 error when fetching rooms - not attempting room creation',
+                );
                 log('   Will wait for cache to populate from Chat History tab');
                 // Don't create room if /rooms call failed with 429
                 // Wait and retry later, or use cached data if available
@@ -1088,30 +1197,38 @@ class _ChatScreenState extends State<ChatScreen>
                   setState(() {
                     _isLoading = false;
                     _hasError = true;
-                    _errorMessage =
-                        'Too many requests. Please wait a moment and try again.';
+                    _errorMessage = chatCallTr(context, 'chatCall_tooManyRequests', fallback: 'Too many requests. Please wait a moment and try again.');
                   });
                 }
                 _isOpeningRoom = false;
                 return;
               }
-              log('⚠️ [ChatScreen] Failed to fetch rooms: ${roomsResponse.error}');
+              log(
+                '⚠️ [ChatScreen] Failed to fetch rooms: ${roomsResponse.error}',
+              );
               // Continue - will try to create room if needed (but not on 429)
             }
 
             if (roomsResponse.success && roomsResponse.data != null) {
-              roomExists = roomsResponse.data!
-                  .any((room) => room.id == widget.contact.id);
+              roomExists = roomsResponse.data!.any(
+                (room) => room.id == widget.contact.id,
+              );
               if (roomExists) {
-                log('   Room exists with contact ID as room ID: ${widget.contact.id}');
+                log(
+                  '   Room exists with contact ID as room ID: ${widget.contact.id}',
+                );
                 roomId = widget.contact.id;
               } else {
-                log('   Room does not exist with contact ID - searching for existing 1-to-1 room');
+                log(
+                  '   Room does not exist with contact ID - searching for existing 1-to-1 room',
+                );
                 // Search for existing 1-to-1 room with this contact (similar to numeric IDs)
                 final currentUserUuid = _currentUserId;
                 if (currentUserUuid != null && _isUuid(currentUserUuid)) {
                   final rooms = roomsResponse.data!;
-                  log('   Searching through ${rooms.length} rooms for 1-to-1 room...');
+                  log(
+                    '   Searching through ${rooms.length} rooms for 1-to-1 room...',
+                  );
 
                   Room? foundRoom;
                   int checked = 0;
@@ -1120,7 +1237,9 @@ class _ChatScreenState extends State<ChatScreen>
                   for (final room in rooms) {
                     if (!_isUuid(room.id) || checked >= maxCheck) {
                       if (checked >= maxCheck) {
-                        log('   Reached max check limit ($maxCheck), stopping search');
+                        log(
+                          '   Reached max check limit ($maxCheck), stopping search',
+                        );
                       }
                       break;
                     }
@@ -1143,8 +1262,9 @@ class _ChatScreenState extends State<ChatScreen>
                         // Also check if the other member matches the contact UUID
                         if (roomData.memberCount == 2 &&
                             roomData.members.length == 2 &&
-                            roomData.members
-                                .any((m) => m.userId == currentUserUuid)) {
+                            roomData.members.any(
+                              (m) => m.userId == currentUserUuid,
+                            )) {
                           // Check if the other member matches the contact UUID
                           final otherMember = roomData.members.firstWhere(
                             (m) => m.userId != currentUserUuid,
@@ -1152,7 +1272,9 @@ class _ChatScreenState extends State<ChatScreen>
                           );
                           if (otherMember.userId == widget.contact.id) {
                             foundRoom = room;
-                            log('   Found existing 1-to-1 room with contact UUID: ${room.id}');
+                            log(
+                              '   Found existing 1-to-1 room with contact UUID: ${room.id}',
+                            );
                             break;
                           }
                         }
@@ -1161,7 +1283,9 @@ class _ChatScreenState extends State<ChatScreen>
                       // If rate limit error, stop searching
                       if (e.toString().contains('429') ||
                           e.toString().contains('rate limit')) {
-                        log('⚠️ [ChatScreen] Rate limit error during room search, stopping');
+                        log(
+                          '⚠️ [ChatScreen] Rate limit error during room search, stopping',
+                        );
                         break;
                       }
                       // Continue searching other rooms for other errors
@@ -1174,54 +1298,71 @@ class _ChatScreenState extends State<ChatScreen>
                     roomExists = true;
                     log('✅ [ChatScreen] Found existing 1-to-1 room: $roomId');
                   } else {
-                    log('⚠️ [ChatScreen] No existing 1-to-1 room found after checking $checked rooms');
+                    log(
+                      '⚠️ [ChatScreen] No existing 1-to-1 room found after checking $checked rooms',
+                    );
                     roomId = null; // Will trigger room creation below
                   }
                 } else {
-                  log('⚠️ [ChatScreen] Current user UUID not available, cannot search for 1-to-1 room');
+                  log(
+                    '⚠️ [ChatScreen] Current user UUID not available, cannot search for 1-to-1 room',
+                  );
                   roomId = null; // Will trigger room creation below
                 }
               }
             } else {
-              log('⚠️ [ChatScreen] Failed to fetch rooms list, will try to create room');
+              log(
+                '⚠️ [ChatScreen] Failed to fetch rooms list, will try to create room',
+              );
               roomId = null; // Will trigger room creation below
             }
           } else if (_isNumeric(widget.contact.id)) {
             // For numeric contact IDs, try to find existing 1-to-1 room
-            log('⚠️ [ChatScreen] Contact ID is numeric - searching for existing 1-to-1 room');
+            log(
+              '⚠️ [ChatScreen] Contact ID is numeric - searching for existing 1-to-1 room',
+            );
 
             final currentUserUuid = _currentUserId;
             if (currentUserUuid == null || !_isUuid(currentUserUuid)) {
-              log('❌ [ChatScreen] Current user UUID not available, cannot find 1-to-1 room');
+              log(
+                '❌ [ChatScreen] Current user UUID not available, cannot find 1-to-1 room',
+              );
               roomId = null;
             } else {
               // CRITICAL FIX: Reuse cached rooms (via RoomsCache) - prevents duplicate API calls
               // Use 1-1 filter to get only 1-to-1 rooms (faster, less data)
               final roomsResponse = await _chatService.fetchRooms(
-                  companyId: companyId, chatType: '1-1');
+                companyId: companyId,
+                chatType: '1-1',
+              );
 
               // CRITICAL: Handle 429 gracefully - don't create room if fetch failed with 429
               if (!roomsResponse.success) {
                 if (roomsResponse.statusCode == 429) {
-                  log('⚠️ [ChatScreen] 429 error when fetching rooms (numeric ID) - not attempting room creation');
+                  log(
+                    '⚠️ [ChatScreen] 429 error when fetching rooms (numeric ID) - not attempting room creation',
+                  );
                   if (mounted) {
                     setState(() {
                       _isLoading = false;
                       _hasError = true;
-                      _errorMessage =
-                          'Too many requests. Please wait a moment and try again.';
+                      _errorMessage = chatCallTr(context, 'chatCall_tooManyRequests', fallback: 'Too many requests. Please wait a moment and try again.');
                     });
                   }
                   _isOpeningRoom = false;
                   return;
                 }
-                log('⚠️ [ChatScreen] Failed to fetch rooms: ${roomsResponse.error}');
+                log(
+                  '⚠️ [ChatScreen] Failed to fetch rooms: ${roomsResponse.error}',
+                );
               }
 
               if (roomsResponse.success && roomsResponse.data != null) {
                 final rooms = roomsResponse.data!;
 
-                log('   Searching through ${rooms.length} rooms for 1-to-1 room...');
+                log(
+                  '   Searching through ${rooms.length} rooms for 1-to-1 room...',
+                );
 
                 // Find 1-to-1 room (2 members, includes current user)
                 // OPTIMIZATION: Reduce API calls by limiting search and adding delays
@@ -1233,7 +1374,9 @@ class _ChatScreenState extends State<ChatScreen>
                 for (final room in rooms) {
                   if (!_isUuid(room.id) || checked >= maxCheck) {
                     if (checked >= maxCheck) {
-                      log('   Reached max check limit ($maxCheck), stopping search');
+                      log(
+                        '   Reached max check limit ($maxCheck), stopping search',
+                      );
                     }
                     break;
                   }
@@ -1259,15 +1402,18 @@ class _ChatScreenState extends State<ChatScreen>
                         if (member.numericUserId != null) {
                           _numericIdToUuidMap[member.numericUserId!] =
                               member.userId;
-                          log('   📝 Mapped numeric ID ${member.numericUserId} to UUID ${member.userId}');
+                          log(
+                            '   📝 Mapped numeric ID ${member.numericUserId} to UUID ${member.userId}',
+                          );
                         }
                       }
 
                       // Check if it's a 1-to-1 room (2 members) and includes current user
                       if (roomData.memberCount == 2 &&
                           roomData.members.length == 2 &&
-                          roomData.members
-                              .any((m) => m.userId == currentUserUuid)) {
+                          roomData.members.any(
+                            (m) => m.userId == currentUserUuid,
+                          )) {
                         // CRITICAL: Verify the other member matches the contact ID
                         // Find the other member (not the current user)
                         final otherMember = roomData.members.firstWhere(
@@ -1281,15 +1427,20 @@ class _ChatScreenState extends State<ChatScreen>
                         bool memberMatches = false;
 
                         // Check if contact ID is numeric - match with numericUserId
-                        final contactIdNumeric =
-                            int.tryParse(widget.contact.id);
+                        final contactIdNumeric = int.tryParse(
+                          widget.contact.id,
+                        );
                         if (contactIdNumeric != null &&
                             otherMember.numericUserId != null) {
                           memberMatches =
                               otherMember.numericUserId == contactIdNumeric;
                           if (memberMatches) {
-                            log('   ✅ Found matching 1-to-1 room (numeric match): ${room.id}');
-                            log('      Other member numericUserId: ${otherMember.numericUserId} matches contact ID: ${widget.contact.id}');
+                            log(
+                              '   ✅ Found matching 1-to-1 room (numeric match): ${room.id}',
+                            );
+                            log(
+                              '      Other member numericUserId: ${otherMember.numericUserId} matches contact ID: ${widget.contact.id}',
+                            );
                           }
                         }
 
@@ -1298,8 +1449,12 @@ class _ChatScreenState extends State<ChatScreen>
                           memberMatches =
                               otherMember.userId == widget.contact.id;
                           if (memberMatches) {
-                            log('   ✅ Found matching 1-to-1 room (UUID match): ${room.id}');
-                            log('      Other member userId: ${otherMember.userId} matches contact ID: ${widget.contact.id}');
+                            log(
+                              '   ✅ Found matching 1-to-1 room (UUID match): ${room.id}',
+                            );
+                            log(
+                              '      Other member userId: ${otherMember.userId} matches contact ID: ${widget.contact.id}',
+                            );
                           }
                         }
 
@@ -1315,8 +1470,12 @@ class _ChatScreenState extends State<ChatScreen>
                             if (mappedUuid != null &&
                                 mappedUuid == otherMember.userId) {
                               memberMatches = true;
-                              log('   ✅ Found matching 1-to-1 room (mapped numeric->UUID): ${room.id}');
-                              log('      Contact numeric ID: ${widget.contact.id} maps to member UUID: ${otherMember.userId}');
+                              log(
+                                '   ✅ Found matching 1-to-1 room (mapped numeric->UUID): ${room.id}',
+                              );
+                              log(
+                                '      Contact numeric ID: ${widget.contact.id} maps to member UUID: ${otherMember.userId}',
+                              );
                             }
                           }
 
@@ -1330,8 +1489,12 @@ class _ChatScreenState extends State<ChatScreen>
                             if (memberMappedUuid != null &&
                                 memberMappedUuid == widget.contact.id) {
                               memberMatches = true;
-                              log('   ✅ Found matching 1-to-1 room (mapped UUID->numeric): ${room.id}');
-                              log('      Member numeric ID: ${otherMember.numericUserId} maps to contact UUID: ${widget.contact.id}');
+                              log(
+                                '   ✅ Found matching 1-to-1 room (mapped UUID->numeric): ${room.id}',
+                              );
+                              log(
+                                '      Member numeric ID: ${otherMember.numericUserId} maps to contact UUID: ${widget.contact.id}',
+                              );
                             }
                           }
                         }
@@ -1340,9 +1503,15 @@ class _ChatScreenState extends State<ChatScreen>
                           foundRoom = room;
                           break;
                         } else {
-                          log('   ⚠️ Found 1-to-1 room but member mismatch: ${room.id}');
-                          log('      Other member: numericUserId=${otherMember.numericUserId}, userId=${otherMember.userId}');
-                          log('      Contact ID: ${widget.contact.id} (type: ${_isUuid(widget.contact.id) ? "UUID" : "numeric"})');
+                          log(
+                            '   ⚠️ Found 1-to-1 room but member mismatch: ${room.id}',
+                          );
+                          log(
+                            '      Other member: numericUserId=${otherMember.numericUserId}, userId=${otherMember.userId}',
+                          );
+                          log(
+                            '      Contact ID: ${widget.contact.id} (type: ${_isUuid(widget.contact.id) ? "UUID" : "numeric"})',
+                          );
                           // Continue searching for the correct room
                         }
                       }
@@ -1351,7 +1520,9 @@ class _ChatScreenState extends State<ChatScreen>
                     // If rate limit error, stop searching
                     if (e.toString().contains('429') ||
                         e.toString().contains('rate limit')) {
-                      log('⚠️ [ChatScreen] Rate limit error during room search, stopping');
+                      log(
+                        '⚠️ [ChatScreen] Rate limit error during room search, stopping',
+                      );
                       break;
                     }
                     // Continue searching other rooms for other errors
@@ -1364,13 +1535,17 @@ class _ChatScreenState extends State<ChatScreen>
                   roomExists = true;
                   log('✅ [ChatScreen] Found existing 1-to-1 room: $roomId');
                 } else {
-                  log('⚠️ [ChatScreen] No existing 1-to-1 room found after checking $checked rooms');
+                  log(
+                    '⚠️ [ChatScreen] No existing 1-to-1 room found after checking $checked rooms',
+                  );
                   roomId = null;
                 }
               }
             }
           } else {
-            log('❌ [ChatScreen] Contact ID format unknown: ${widget.contact.id}');
+            log(
+              '❌ [ChatScreen] Contact ID format unknown: ${widget.contact.id}',
+            );
             roomId = null;
           }
 
@@ -1392,14 +1567,18 @@ class _ChatScreenState extends State<ChatScreen>
             // CRITICAL FIX: Reuse cached rooms - cache will return existing Future if in-flight
             // No need to fetch again - cache handles deduplication
             final roomsResponse = await _chatService.fetchRooms(
-                companyId: companyId, chatType: '1-1');
+              companyId: companyId,
+              chatType: '1-1',
+            );
 
             // Handle 429 gracefully - use cached roomId even if fetch failed
             if (roomsResponse.success && roomsResponse.data != null) {
               roomExists = roomsResponse.data!.any((room) => room.id == roomId);
             } else if (roomsResponse.statusCode == 429) {
               // On 429, assume room exists (we have cached roomId)
-              log('⚠️ [ChatScreen] 429 when validating cached room - assuming room exists');
+              log(
+                '⚠️ [ChatScreen] 429 when validating cached room - assuming room exists',
+              );
               roomExists = true; // Use cached roomId despite 429
             }
           }
@@ -1410,35 +1589,45 @@ class _ChatScreenState extends State<ChatScreen>
       // Backend requires room_id in WebSocket connection URL (HTTP 400 if missing)
       // If we don't have UUID, create room in background first
       if (roomId == null || !_isUuid(roomId)) {
-        log('⚠️ [ChatScreen] No valid UUID room_id found for contact: ${widget.contact.id}');
+        log(
+          '⚠️ [ChatScreen] No valid UUID room_id found for contact: ${widget.contact.id}',
+        );
 
         // Try to create room for both numeric and UUID contact IDs
         if (_isNumeric(widget.contact.id) || _isUuid(widget.contact.id)) {
-          final contactIdType =
-              _isNumeric(widget.contact.id) ? 'numeric' : 'UUID';
-          log('   Contact has $contactIdType ID - creating 1-to-1 room in background...');
+          final contactIdType = _isNumeric(widget.contact.id)
+              ? 'numeric'
+              : 'UUID';
+          log(
+            '   Contact has $contactIdType ID - creating 1-to-1 room in background...',
+          );
 
           // REQUEST DEDUPLICATION: Check if room creation is already in-flight for this contact
           final contactId = widget.contact.id;
           final inFlightCreation = _inFlightRoomCreations[contactId];
           if (inFlightCreation != null) {
-            log('⏸️ [ChatScreen] Room creation already in-flight for contact $contactId - awaiting existing request');
+            log(
+              '⏸️ [ChatScreen] Room creation already in-flight for contact $contactId - awaiting existing request',
+            );
             try {
               final newRoomId = await inFlightCreation;
               if (newRoomId != null) {
                 roomId = newRoomId;
                 roomExists = true;
                 _currentRoomId = newRoomId;
-                log('✅ [ChatScreen] Room creation completed (deduplicated): $newRoomId');
+                log(
+                  '✅ [ChatScreen] Room creation completed (deduplicated): $newRoomId',
+                );
                 // Continue with room opening below
               } else {
-                log('⚠️ [ChatScreen] In-flight room creation failed - will not retry');
+                log(
+                  '⚠️ [ChatScreen] In-flight room creation failed - will not retry',
+                );
                 if (mounted) {
                   setState(() {
                     _isLoading = false;
                     _hasError = true;
-                    _errorMessage =
-                        'Failed to create chat room. Please try again later.';
+                    _errorMessage = chatCallTr(context, 'chatCall_failedToCreateChatRoomPlease', fallback: 'Failed to create chat room. Please try again.');
                   });
                 }
                 _isOpeningRoom = false;
@@ -1455,37 +1644,45 @@ class _ChatScreenState extends State<ChatScreen>
               final contactIdForRoom = widget.contact.numericUserId != null
                   ? widget.contact.numericUserId!.toString()
                   : widget.contact.id;
-              final createFuture = RoomService.instance.createOneToOneRoom(
-                contactName: widget.contact.name,
-                contactId: contactIdForRoom,
-                companyId: companyId,
-                contactPhone: widget.contact.phoneNumber,
-              )
+              final createFuture = RoomService.instance
+                  .createOneToOneRoom(
+                    contactName: widget.contact.name,
+                    contactId: contactIdForRoom,
+                    companyId: companyId,
+                    contactPhone: widget.contact.phoneNumber,
+                  )
                   .then((createResponse) {
-                // Remove from in-flight when complete
-                _inFlightRoomCreations.remove(contactId);
+                    // Remove from in-flight when complete
+                    _inFlightRoomCreations.remove(contactId);
 
-                if (createResponse.success && createResponse.data != null) {
-                  return createResponse.data!;
-                } else {
-                  // Handle 429 gracefully - don't fail hard
-                  if (createResponse.statusCode == 429) {
-                    log('⚠️ [ChatScreen] 429 when creating room - will retry later');
-                    return null; // Return null on 429, will retry
-                  }
-                  log('❌ [ChatScreen] Failed to create 1-to-1 room: ${createResponse.error}');
-                  log('   statusCode: ${createResponse.statusCode}, message: ${createResponse.message}');
-                  return null;
-                }
-              }).catchError((e, stackTrace) {
-                // Remove from in-flight on error
-                _inFlightRoomCreations.remove(contactId);
-                log('❌ [ChatScreen] Exception creating 1-to-1 room: $e');
-                if (stackTrace != null) {
-                  log('   Stack: $stackTrace');
-                }
-                return null;
-              });
+                    if (createResponse.success && createResponse.data != null) {
+                      return createResponse.data!;
+                    } else {
+                      // Handle 429 gracefully - don't fail hard
+                      if (createResponse.statusCode == 429) {
+                        log(
+                          '⚠️ [ChatScreen] 429 when creating room - will retry later',
+                        );
+                        return null; // Return null on 429, will retry
+                      }
+                      log(
+                        '❌ [ChatScreen] Failed to create 1-to-1 room: ${createResponse.error}',
+                      );
+                      log(
+                        '   statusCode: ${createResponse.statusCode}, message: ${createResponse.message}',
+                      );
+                      return null;
+                    }
+                  })
+                  .catchError((e, stackTrace) {
+                    // Remove from in-flight on error
+                    _inFlightRoomCreations.remove(contactId);
+                    log('❌ [ChatScreen] Exception creating 1-to-1 room: $e');
+                    if (stackTrace != null) {
+                      log('   Stack: $stackTrace');
+                    }
+                    return null;
+                  });
 
               // Mark as in-flight (for deduplication)
               _inFlightRoomCreations[contactId] = createFuture;
@@ -1493,7 +1690,9 @@ class _ChatScreenState extends State<ChatScreen>
               final newRoomId = await createFuture;
 
               if (newRoomId != null) {
-                log('✅ [ChatScreen] 1-to-1 room created successfully: $newRoomId');
+                log(
+                  '✅ [ChatScreen] 1-to-1 room created successfully: $newRoomId',
+                );
                 roomId = newRoomId;
                 roomExists = true;
                 _currentRoomId = newRoomId;
@@ -1501,12 +1700,10 @@ class _ChatScreenState extends State<ChatScreen>
 
                 // IMPORTANT: Invalidate 1-1 rooms cache so Chat & Calls History
                 // sees this new chat immediately after user navigates back.
-                if (companyId != null) {
-                  ChatService.instance.invalidateRoomsCache(
-                    companyId: companyId,
-                    chatType: '1-1',
-                  );
-                }
+                ChatService.instance.invalidateRoomsCache(
+                  companyId: companyId,
+                  chatType: '1-1',
+                );
 
                 // Continue to openRoom() below with the new UUID
               } else {
@@ -1515,8 +1712,7 @@ class _ChatScreenState extends State<ChatScreen>
                   setState(() {
                     _isLoading = false;
                     _hasError = true;
-                    _errorMessage =
-                        'Failed to create chat room. Please try again later.';
+                    _errorMessage = chatCallTr(context, 'chatCall_failedToCreateChatRoomPlease', fallback: 'Failed to create chat room. Please try again.');
                   });
                   _hideLoaderDialog();
                 }
@@ -1531,7 +1727,7 @@ class _ChatScreenState extends State<ChatScreen>
                 setState(() {
                   _isLoading = false;
                   _hasError = true;
-                  _errorMessage = 'Failed to create chat room: $e';
+                  _errorMessage = chatCallTr(context, 'chatCall_failedToCreateChatRoom', fallback: 'Failed to create chat room: {error}', params: {'error': '$e'});
                 });
                 _hideLoaderDialog();
               }
@@ -1546,8 +1742,7 @@ class _ChatScreenState extends State<ChatScreen>
             setState(() {
               _isLoading = false;
               _hasError = true;
-              _errorMessage =
-                  'Unable to start chat. Contact identifier is missing or invalid.';
+              _errorMessage = chatCallTr(context, 'chatCall_unableToStartChat', fallback: 'Unable to start chat. Contact identifier is missing or invalid.');
             });
             _hideLoaderDialog();
           }
@@ -1561,17 +1756,27 @@ class _ChatScreenState extends State<ChatScreen>
       // CRITICAL: Store room_id before calling openRoom (like group chat stores widget.group.id)
       _currentRoomId = roomId!;
 
+      if (_hasPendingForward) {
+        _kickOffPendingForward();
+      }
+
       // Register room-to-contact mapping for unread count tracking
-      await UnreadCountManager.instance
-          .mapRoomToContact(roomId!, widget.contact.id);
+      await UnreadCountManager.instance.mapRoomToContact(
+        roomId,
+        widget.contact.id,
+      );
       // Clear unread count when opening chat
-      await UnreadCountManager.instance.clearUnreadCount(roomId!);
+      await UnreadCountManager.instance.clearUnreadCount(roomId);
 
       // Load saved wallpaper for this room after roomId is set
       _loadSavedWallpaper();
 
-      log('🔌 [ChatScreen] Opening room with UUID: $_currentRoomId (like group chat uses widget.group.id)');
-      log('📡 [ChatScreen] Calling messages API: GET /api/v1/rooms/$_currentRoomId/messages?company_id=$companyId&limit=$_messagesPerPage&offset=0');
+      log(
+        '🔌 [ChatScreen] Opening room with UUID: $_currentRoomId (like group chat uses widget.group.id)',
+      );
+      log(
+        '📡 [ChatScreen] Calling messages API: GET /api/v1/rooms/$_currentRoomId/messages?company_id=$companyId&limit=$_messagesPerPage&offset=0',
+      );
 
       // Reset pagination state (like group chat)
       _currentOffset = 0;
@@ -1594,12 +1799,12 @@ class _ChatScreenState extends State<ChatScreen>
               if (roomInfo.peerUser != null) {
                 _memberName =
                     roomInfo.peerUser!.userName?.trim().isNotEmpty == true
-                        ? roomInfo.peerUser!.userName!
-                        : widget.contact.name;
+                    ? roomInfo.peerUser!.userName!
+                    : widget.contact.name;
                 _memberAvatar =
                     roomInfo.peerUser!.avatar?.trim().isNotEmpty == true
-                        ? roomInfo.peerUser!.avatar
-                        : null;
+                    ? roomInfo.peerUser!.avatar
+                    : null;
                 log('✅ [ChatScreen] Using peer_user from API: $_memberName');
                 if (mounted) setState(() {});
               } else if (_currentUserId != null) {
@@ -1610,7 +1815,9 @@ class _ChatScreenState extends State<ChatScreen>
                   );
                   _memberName = otherMember.username ?? widget.contact.name;
                   _memberAvatar = otherMember.avatar;
-                  log('✅ [ChatScreen] Found other member name: $_memberName (not current user name)');
+                  log(
+                    '✅ [ChatScreen] Found other member name: $_memberName (not current user name)',
+                  );
                   if (_memberAvatar != null && _memberAvatar!.isNotEmpty) {
                     log('✅ [ChatScreen] Found member avatar: $_memberAvatar');
                   } else {
@@ -1624,13 +1831,17 @@ class _ChatScreenState extends State<ChatScreen>
                   if (mounted) setState(() {});
                 }
               } else {
-                log('⚠️ [ChatScreen] Current user ID not available for member identification');
+                log(
+                  '⚠️ [ChatScreen] Current user ID not available for member identification',
+                );
                 _memberName = widget.contact.name;
                 _memberAvatar = null;
                 if (mounted) setState(() {});
               }
             } else {
-              log('⚠️ [ChatScreen] RoomInfo shows ${roomInfo.memberCount} members (expected 2 for 1-to-1 chat)');
+              log(
+                '⚠️ [ChatScreen] RoomInfo shows ${roomInfo.memberCount} members (expected 2 for 1-to-1 chat)',
+              );
               _memberName = widget.contact.name;
               _memberAvatar = null;
               if (mounted) {
@@ -1679,55 +1890,60 @@ class _ChatScreenState extends State<ChatScreen>
       // PERFORMANCE OPTIMIZATION: Check cache first before API call
       if (cachedMessages != null) {
         // Use cached messages - render immediately
-        log('✅ [ChatScreen] Using cached messages (${cachedMessages.length} messages)');
+        log(
+          '✅ [ChatScreen] Using cached messages (${cachedMessages.length} messages)',
+        );
         roomMessages = cachedMessages;
 
         // Still need to open room for WebSocket connection, but don't wait for messages
         // Open room in background (non-blocking)
         _chatService
             .openRoom(
-          roomId: _currentRoomId!,
-          isMember: false,
-          companyId: companyId,
-          limit: _messagesPerPage,
-          offset: _currentOffset,
-          allowNewRoom: !roomExists,
-        )
+              roomId: _currentRoomId!,
+              isMember: false,
+              companyId: companyId,
+              limit: _messagesPerPage,
+              offset: _currentOffset,
+              allowNewRoom: !roomExists,
+            )
             .then((openRoomResponse) {
-          // Update cache if we got fresh messages
-          if (openRoomResponse.success &&
-              openRoomResponse.data != null &&
-              mounted) {
-            final freshMessages = openRoomResponse.data!;
-            if (freshMessages.isNotEmpty) {
-              messageCache.cacheMessages(
-                _currentRoomId!,
-                companyId,
-                _currentOffset,
-                _messagesPerPage,
-                freshMessages,
-              );
-              // Check if we have new messages not in cache
-              final newMessageIds = freshMessages.map((m) => m.id).toSet();
-              final cachedMessageIds = cachedMessages.map((m) => m.id).toSet();
-              if (newMessageIds.difference(cachedMessageIds).isNotEmpty) {
-                // We have new messages - reload by calling _fetchRoomInfoAndOpenRoom again
-                // But only if we're not already loading
-                if (!_isLoading && !_isOpeningRoom && mounted) {
-                  _fetchRoomInfoAndOpenRoom();
+              // Update cache if we got fresh messages
+              if (openRoomResponse.success &&
+                  openRoomResponse.data != null &&
+                  mounted) {
+                final freshMessages = openRoomResponse.data!;
+                if (freshMessages.isNotEmpty) {
+                  messageCache.cacheMessages(
+                    _currentRoomId!,
+                    companyId,
+                    _currentOffset,
+                    _messagesPerPage,
+                    freshMessages,
+                  );
+                  // Check if we have new messages not in cache
+                  final newMessageIds = freshMessages.map((m) => m.id).toSet();
+                  final cachedMessageIds = cachedMessages
+                      .map((m) => m.id)
+                      .toSet();
+                  if (newMessageIds.difference(cachedMessageIds).isNotEmpty) {
+                    // We have new messages - reload by calling _fetchRoomInfoAndOpenRoom again
+                    // But only if we're not already loading
+                    if (!_isLoading && !_isOpeningRoom && mounted) {
+                      _fetchRoomInfoAndOpenRoom();
 
-                  WidgetsBinding.instance.addObserver(this);
-                  _messageFocusNode.addListener(() {
-                    if (_messageFocusNode.hasFocus) {
-                      WidgetsBinding.instance
-                          .addPostFrameCallback((_) => _scrollToBottom());
+                      WidgetsBinding.instance.addObserver(this);
+                      _messageFocusNode.addListener(() {
+                        if (_messageFocusNode.hasFocus) {
+                          WidgetsBinding.instance.addPostFrameCallback(
+                            (_) => _scrollToBottom(),
+                          );
+                        }
+                      });
                     }
-                  });
+                  }
                 }
               }
-            }
-          }
-        });
+            });
         // Create a success response for cached messages
         response = ApiResponse.success(roomMessages);
       } else {
@@ -1780,13 +1996,21 @@ class _ChatScreenState extends State<ChatScreen>
 
       // Handle response
       if (roomMessages.isNotEmpty) {
-        log('📥 [ChatScreen] Received ${roomMessages.length} messages from API');
+        log(
+          '📥 [ChatScreen] Received ${roomMessages.length} messages from API',
+        );
         if (roomMessages.isNotEmpty) {
-          log('   First message (oldest): ${roomMessages.first.createdAt} - ${roomMessages.first.body.isEmpty ? "(empty)" : roomMessages.first.body.substring(0, roomMessages.first.body.length > 30 ? 30 : roomMessages.first.body.length)}');
-          log('   Last message (newest): ${roomMessages.last.createdAt} - ${roomMessages.last.body.isEmpty ? "(empty)" : roomMessages.last.body.substring(0, roomMessages.last.body.length > 30 ? 30 : roomMessages.last.body.length)}');
+          log(
+            '   First message (oldest): ${roomMessages.first.createdAt} - ${roomMessages.first.body.isEmpty ? "(empty)" : roomMessages.first.body.substring(0, roomMessages.first.body.length > 30 ? 30 : roomMessages.first.body.length)}',
+          );
+          log(
+            '   Last message (newest): ${roomMessages.last.createdAt} - ${roomMessages.last.body.isEmpty ? "(empty)" : roomMessages.last.body.substring(0, roomMessages.last.body.length > 30 ? 30 : roomMessages.last.body.length)}',
+          );
         }
         for (final rm in roomMessages) {
-          log('   Message ID: ${rm.id}, Created: ${rm.createdAt}, Content: ${rm.body.isEmpty ? "(empty)" : rm.body.substring(0, rm.body.length > 30 ? 30 : rm.body.length)}, ReplyTo: ${rm.replyTo ?? "null"}');
+          log(
+            '   Message ID: ${rm.id}, Created: ${rm.createdAt}, Content: ${rm.body.isEmpty ? "(empty)" : rm.body.substring(0, rm.body.length > 30 ? 30 : rm.body.length)}, ReplyTo: ${rm.replyTo ?? "null"}',
+          );
         }
 
         // Cache avatars from messages API response (like group chat)
@@ -1808,14 +2032,18 @@ class _ChatScreenState extends State<ChatScreen>
               // If still not found, use numeric ID as fallback (but log warning)
               if (senderUuid == null) {
                 senderUuid = rm.senderId; // Keep numeric as fallback
-                log('⚠️ [ChatScreen] Could not find UUID for numeric senderId ${rm.senderId}, using numeric as fallback');
+                log(
+                  '⚠️ [ChatScreen] Could not find UUID for numeric senderId ${rm.senderId}, using numeric as fallback',
+                );
               }
             }
 
             // Cache with UUID (primary) and numeric ID (fallback)
-            if (senderUuid != null && senderUuid.isNotEmpty) {
+            if (senderUuid.isNotEmpty) {
               _memberAvatarCache[senderUuid] = rm.senderAvatar;
-              log('✅ [ChatScreen] Cached avatar with UUID $senderUuid for senderId ${rm.senderId}: ${rm.senderAvatar}');
+              log(
+                '✅ [ChatScreen] Cached avatar with UUID $senderUuid for senderId ${rm.senderId}: ${rm.senderAvatar}',
+              );
             }
 
             // Also cache with original senderId (numeric) as fallback
@@ -1847,7 +2075,9 @@ class _ChatScreenState extends State<ChatScreen>
           // In 1-to-1 chats, filter out system messages
           final isSystemMessage = _isSystemMessage(rm);
           if (isSystemMessage) {
-            log('🚫 [ChatScreen] Filtering out system message: ${rm.body.substring(0, rm.body.length > 50 ? 50 : rm.body.length)}');
+            log(
+              '🚫 [ChatScreen] Filtering out system message: ${rm.body.substring(0, rm.body.length > 50 ? 50 : rm.body.length)}',
+            );
             return false; // Filter out system messages
           }
           return true; // Keep regular messages
@@ -1936,17 +2166,24 @@ class _ChatScreenState extends State<ChatScreen>
                     }
 
                     final mimeType = bodyJson['mime_type']?.toString();
-                    final isVideoByMime = mimeType != null &&
+                    final isVideoByMime =
+                        mimeType != null &&
                         mimeType.toLowerCase().startsWith('video');
-                    final isVideoByExtension =
-                        isVideoFile(documentUrl, documentName);
-                    final isAudioByMime = mimeType != null &&
+                    final isVideoByExtension = isVideoFile(
+                      documentUrl,
+                      documentName,
+                    );
+                    final isAudioByMime =
+                        mimeType != null &&
                         mimeType.toLowerCase().startsWith('audio');
-                    final isAudioByExtension =
-                        isAudioFile(documentUrl, documentName);
+                    final isAudioByExtension = isAudioFile(
+                      documentUrl,
+                      documentName,
+                    );
 
                     if (isAudioByMime || isAudioByExtension) {
-                      audioUrl = bodyJson['file_url']?.toString() ??
+                      audioUrl =
+                          bodyJson['file_url']?.toString() ??
                           bodyJson['fileUrl']?.toString() ??
                           bodyJson['audio_url']?.toString() ??
                           bodyJson['url']?.toString();
@@ -1956,7 +2193,8 @@ class _ChatScreenState extends State<ChatScreen>
                       videoUrl = null;
                       audioUrl = normalizeUrl(audioUrl);
                     } else if (isVideoByMime || isVideoByExtension) {
-                      videoUrl = bodyJson['file_url']?.toString() ??
+                      videoUrl =
+                          bodyJson['file_url']?.toString() ??
                           bodyJson['fileUrl']?.toString() ??
                           bodyJson['video_url']?.toString() ??
                           bodyJson['url']?.toString();
@@ -1980,7 +2218,8 @@ class _ChatScreenState extends State<ChatScreen>
                     audioUrl = normalizeUrl(audioUrl);
                     break;
                   case 'video':
-                    videoUrl = bodyJson['file_url']?.toString() ??
+                    videoUrl =
+                        bodyJson['file_url']?.toString() ??
                         bodyJson['fileUrl']?.toString() ??
                         bodyJson['video_url']?.toString() ??
                         bodyJson['url']?.toString();
@@ -1991,10 +2230,14 @@ class _ChatScreenState extends State<ChatScreen>
                     break;
                 }
               } else {
-                log('⚠️ [ChatScreen] bodyJson parsed as null for message ${rm.id}');
+                log(
+                  '⚠️ [ChatScreen] bodyJson parsed as null for message ${rm.id}',
+                );
               }
             } catch (e, stackTrace) {
-              log('❌ [ChatScreen] Failed to parse message ${rm.id} body as JSON: $e');
+              log(
+                '❌ [ChatScreen] Failed to parse message ${rm.id} body as JSON: $e',
+              );
               log('   Stack trace: $stackTrace');
               if ((rm.messageType == 'voice' || rm.messageType == 'audio') &&
                   (content.trim().startsWith('http://') ||
@@ -2066,13 +2309,16 @@ class _ChatScreenState extends State<ChatScreen>
         final allMessagesForLookup = [
           ...existingMessages,
           ..._messages,
-          ...chatMessagesWithoutReply
+          ...chatMessagesWithoutReply,
         ];
         final chatMessages = chatMessagesWithoutReply.map((cm) {
-          final roomMessage =
-              filteredRoomMessages.firstWhere((rm) => rm.id == cm.id);
+          final roomMessage = filteredRoomMessages.firstWhere(
+            (rm) => rm.id == cm.id,
+          );
           if (roomMessage.replyTo != null && roomMessage.replyTo!.isNotEmpty) {
-            log('🔍 [ChatScreen] Resolving replyTo for message ${cm.id}: looking for ${roomMessage.replyTo}');
+            log(
+              '🔍 [ChatScreen] Resolving replyTo for message ${cm.id}: looking for ${roomMessage.replyTo}',
+            );
             // Track this replied-to message ID
             repliedToMessageIds.add(roomMessage.replyTo!);
 
@@ -2082,7 +2328,9 @@ class _ChatScreenState extends State<ChatScreen>
               repliedToMessage = allMessagesForLookup.firstWhere(
                 (m) => m.id == roomMessage.replyTo,
               );
-              log('✅ [ChatScreen] Found replied-to message: ${repliedToMessage.id} - "${repliedToMessage.text.substring(0, repliedToMessage.text.length > 20 ? 20 : repliedToMessage.text.length)}"');
+              log(
+                '✅ [ChatScreen] Found replied-to message: ${repliedToMessage.id} - "${repliedToMessage.text.substring(0, repliedToMessage.text.length > 20 ? 20 : repliedToMessage.text.length)}"',
+              );
             } catch (e) {
               // Message not found in loaded messages
               // Try to find it in the API response first
@@ -2105,10 +2353,14 @@ class _ChatScreenState extends State<ChatScreen>
                   status: MessageStatus.delivered,
                   reactions: repliedToRoomMessage.reactions,
                 );
-                log('✅ [ChatScreen] Found replied-to message in API response: ${repliedToMessage.id}');
+                log(
+                  '✅ [ChatScreen] Found replied-to message in API response: ${repliedToMessage.id}',
+                );
               } catch (e2) {
                 // Message not in this batch - try to load older messages to find it
-                log('⚠️ [ChatScreen] Reply target message ${roomMessage.replyTo} not in current batch. Will try to load older messages.');
+                log(
+                  '⚠️ [ChatScreen] Reply target message ${roomMessage.replyTo} not in current batch. Will try to load older messages.',
+                );
 
                 // Schedule async fetch of older messages to find the replied-to message
                 // This ensures the reply preview is populated even if the message is in an older batch
@@ -2122,11 +2374,15 @@ class _ChatScreenState extends State<ChatScreen>
                   timestamp: DateTime.now().subtract(const Duration(hours: 1)),
                   isDeleted: false,
                 );
-                log('⚠️ [ChatScreen] Created temporary placeholder for reply target: ${repliedToMessage.id}');
+                log(
+                  '⚠️ [ChatScreen] Created temporary placeholder for reply target: ${repliedToMessage.id}',
+                );
               }
             }
             final messageWithReply = cm.copyWith(replyTo: repliedToMessage);
-            log('✅ [ChatScreen] Message ${messageWithReply.id} now has replyTo: ${messageWithReply.replyTo != null ? messageWithReply.replyTo!.id : "null"}');
+            log(
+              '✅ [ChatScreen] Message ${messageWithReply.id} now has replyTo: ${messageWithReply.replyTo != null ? messageWithReply.replyTo!.id : "null"}',
+            );
             return messageWithReply;
           }
           return cm;
@@ -2142,17 +2398,22 @@ class _ChatScreenState extends State<ChatScreen>
         for (final existingMessage in allExistingMessages) {
           // Preserve if it's a replied-to message or if it's not in the new batch
           final isRepliedTo = repliedToMessageIds.contains(existingMessage.id);
-          final isInNewBatch =
-              chatMessages.any((m) => m.id == existingMessage.id);
+          final isInNewBatch = chatMessages.any(
+            (m) => m.id == existingMessage.id,
+          );
 
           if (isRepliedTo && !isInNewBatch) {
             preservedRepliedToMessages.add(existingMessage);
-            log('✅ [ChatScreen] Preserving replied-to message from existing messages: ${existingMessage.id}');
+            log(
+              '✅ [ChatScreen] Preserving replied-to message from existing messages: ${existingMessage.id}',
+            );
           } else if (!isInNewBatch) {
             // Preserve existing messages that aren't in the new batch (for both refresh and reopen)
             // This ensures messages aren't lost when reopening or refreshing
             preservedRepliedToMessages.add(existingMessage);
-            log('✅ [ChatScreen] Preserving existing message (not in new batch): ${existingMessage.id}');
+            log(
+              '✅ [ChatScreen] Preserving existing message (not in new batch): ${existingMessage.id}',
+            );
           }
         }
 
@@ -2168,20 +2429,25 @@ class _ChatScreenState extends State<ChatScreen>
         finalMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
         log('✅ [ChatScreen] Converted to ${chatMessages.length} ChatMessages');
-        log('   Preserved ${preservedRepliedToMessages.length} existing messages');
+        log(
+          '   Preserved ${preservedRepliedToMessages.length} existing messages',
+        );
         log('   Total messages after merge: ${finalMessages.length}');
         // Log messages with replies for debugging
         for (final cm in finalMessages) {
           if (cm.replyTo != null) {
-            log('   📎 Message ${cm.id} has replyTo: ${cm.replyTo!.id} - "${cm.replyTo!.text.substring(0, cm.replyTo!.text.length > 20 ? 20 : cm.replyTo!.text.length)}"');
+            log(
+              '   📎 Message ${cm.id} has replyTo: ${cm.replyTo!.id} - "${cm.replyTo!.text.substring(0, cm.replyTo!.text.length > 20 ? 20 : cm.replyTo!.text.length)}"',
+            );
           }
         }
 
         // Check if there are more messages (like group chat)
         // Use the actual limit used (which might be doubled for initial load)
         // Use filteredRoomMessages length for pagination check (after filtering system messages)
-        final actualLimit =
-            _currentOffset == 0 ? _messagesPerPage * 2 : _messagesPerPage;
+        final actualLimit = _currentOffset == 0
+            ? _messagesPerPage * 2
+            : _messagesPerPage;
         _hasMoreMessages = filteredRoomMessages.length >= actualLimit;
 
         setState(() {
@@ -2194,7 +2460,9 @@ class _ChatScreenState extends State<ChatScreen>
 
         // Reactions are already included in the messages API response
         // No need to fetch them separately
-        log('✅ [ChatScreen] Reactions included in API response - no separate fetch needed');
+        log(
+          '✅ [ChatScreen] Reactions included in API response - no separate fetch needed',
+        );
 
         // Scroll to bottom after messages are loaded
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2219,8 +2487,12 @@ class _ChatScreenState extends State<ChatScreen>
         // Don't set _currentRoomId to null if we have a valid UUID
         // CRITICAL: Preserve existing messages if we have them (for reopening scenarios)
         if (_currentRoomId != null && _isUuid(_currentRoomId)) {
-          log('⚠️ [ChatScreen] openRoom failed, but we have UUID room_id: $_currentRoomId');
-          log('   Keeping room_id and preserving ${existingMessages.length} existing messages');
+          log(
+            '⚠️ [ChatScreen] openRoom failed, but we have UUID room_id: $_currentRoomId',
+          );
+          log(
+            '   Keeping room_id and preserving ${existingMessages.length} existing messages',
+          );
           log('   Attempting to fetch messages directly as fallback...');
 
           // CRITICAL: Try to fetch messages directly as fallback
@@ -2236,14 +2508,20 @@ class _ChatScreenState extends State<ChatScreen>
 
             if (messagesResponse.success && messagesResponse.data != null) {
               final roomMessages = messagesResponse.data!;
-              log('✅ [ChatScreen] Successfully fetched ${roomMessages.length} messages directly (fallback)');
+              log(
+                '✅ [ChatScreen] Successfully fetched ${roomMessages.length} messages directly (fallback)',
+              );
 
               // Mark room as read when user opens chat
               try {
                 await _roomService.markRoomAsRead(_currentRoomId!);
-                log('✅ [ChatScreen] Room marked as read (fallback path): $_currentRoomId');
+                log(
+                  '✅ [ChatScreen] Room marked as read (fallback path): $_currentRoomId',
+                );
               } catch (e) {
-                log('⚠️ [ChatScreen] Failed to mark room as read (fallback): $e');
+                log(
+                  '⚠️ [ChatScreen] Failed to mark room as read (fallback): $e',
+                );
                 // Non-critical - continue even if mark-as-read fails
               }
 
@@ -2267,11 +2545,12 @@ class _ChatScreenState extends State<ChatScreen>
               final Set<String> repliedToMessageIds = {};
               final allMessagesForLookup = [
                 ...existingMessages,
-                ...chatMessagesWithoutReply
+                ...chatMessagesWithoutReply,
               ];
               final chatMessages = chatMessagesWithoutReply.map((cm) {
-                final roomMessage =
-                    roomMessages.firstWhere((rm) => rm.id == cm.id);
+                final roomMessage = roomMessages.firstWhere(
+                  (rm) => rm.id == cm.id,
+                );
                 if (roomMessage.replyTo != null &&
                     roomMessage.replyTo!.isNotEmpty) {
                   repliedToMessageIds.add(roomMessage.replyTo!);
@@ -2286,8 +2565,9 @@ class _ChatScreenState extends State<ChatScreen>
                       id: roomMessage.replyTo!,
                       text: 'Loading original message...',
                       isMe: false,
-                      timestamp:
-                          DateTime.now().subtract(const Duration(hours: 1)),
+                      timestamp: DateTime.now().subtract(
+                        const Duration(hours: 1),
+                      ),
                       isDeleted: false,
                     );
                   }
@@ -2299,8 +2579,9 @@ class _ChatScreenState extends State<ChatScreen>
               // Preserve existing messages that aren't in the new batch
               final preservedMessages = <ChatMessage>[];
               for (final existingMessage in existingMessages) {
-                final isInNewBatch =
-                    chatMessages.any((m) => m.id == existingMessage.id);
+                final isInNewBatch = chatMessages.any(
+                  (m) => m.id == existingMessage.id,
+                );
                 if (!isInNewBatch) {
                   preservedMessages.add(existingMessage);
                 }
@@ -2334,10 +2615,13 @@ class _ChatScreenState extends State<ChatScreen>
               // Try to connect WebSocket after successfully fetching messages
               Future.delayed(const Duration(milliseconds: 500), () async {
                 if (mounted && _currentRoomId != null) {
-                  log('🔌 [ChatScreen] Attempting WebSocket connection after fallback message fetch');
+                  log(
+                    '🔌 [ChatScreen] Attempting WebSocket connection after fallback message fetch',
+                  );
                   // Ensure membership and connect WebSocket
-                  final isMember =
-                      await _chatService.ensureMembership(_currentRoomId!);
+                  final isMember = await _chatService.ensureMembership(
+                    _currentRoomId!,
+                  );
                   if (isMember) {
                     await _chatService.initializeWebSocket();
                     // WebSocket join will happen automatically when messages are sent/received
@@ -2347,19 +2631,23 @@ class _ChatScreenState extends State<ChatScreen>
 
               return; // Successfully loaded messages via fallback
             } else {
-              log('⚠️ [ChatScreen] Direct message fetch also failed: ${messagesResponse.error}');
+              log(
+                '⚠️ [ChatScreen] Direct message fetch also failed: ${messagesResponse.error}',
+              );
             }
           } catch (e) {
             log('⚠️ [ChatScreen] Exception during fallback message fetch: $e');
           }
 
           // If fallback also failed, preserve existing messages
-          log('   Fallback failed - preserving ${existingMessages.length} existing messages');
+          log(
+            '   Fallback failed - preserving ${existingMessages.length} existing messages',
+          );
           final messagesToPreserve = existingMessages.isNotEmpty
               ? existingMessages
               : _messages.isNotEmpty
-                  ? _messages
-                  : <ChatMessage>[];
+              ? _messages
+              : <ChatMessage>[];
 
           if (mounted) {
             setState(() {
@@ -2373,18 +2661,21 @@ class _ChatScreenState extends State<ChatScreen>
                 _isUuid(widget.contact.id)) &&
             (response.statusCode == 400 || response.statusCode == 404)) {
           // For numeric or UUID contact IDs without room, try to create room now
-          final contactIdType =
-              _isNumeric(widget.contact.id) ? 'numeric' : 'UUID';
-          log('⚠️ [ChatScreen] openRoom failed for $contactIdType contact ID - creating room now');
+          final contactIdType = _isNumeric(widget.contact.id)
+              ? 'numeric'
+              : 'UUID';
+          log(
+            '⚠️ [ChatScreen] openRoom failed for $contactIdType contact ID - creating room now',
+          );
 
           try {
-            final createResponse =
-                await RoomService.instance.createOneToOneRoom(
-              contactName: widget.contact.name,
-              contactId: widget.contact.id,
-              companyId: companyId!,
-              contactPhone: widget.contact.phoneNumber,
-            );
+            final createResponse = await RoomService.instance
+                .createOneToOneRoom(
+                  contactName: widget.contact.name,
+                  contactId: widget.contact.id,
+                  companyId: companyId,
+                  contactPhone: widget.contact.phoneNumber,
+                );
 
             if (createResponse.success && createResponse.data != null) {
               final newRoomId = createResponse.data!;
@@ -2399,17 +2690,24 @@ class _ChatScreenState extends State<ChatScreen>
                 });
                 _hideLoaderDialog();
 
+                _insertForwardPlaceholders();
+                await _maybeSendPendingForwardMessages();
+
                 // Try to connect WebSocket with the new room_id
                 // CRITICAL: Check membership first before connecting with UUID
                 Future.delayed(const Duration(milliseconds: 500), () async {
                   if (mounted && _currentRoomId != null) {
-                    log('🔌 [ChatScreen] Connecting WebSocket with newly created room: $_currentRoomId');
-                    log('   Validating membership first before connecting with UUID');
+                    log(
+                      '🔌 [ChatScreen] Connecting WebSocket with newly created room: $_currentRoomId',
+                    );
+                    log(
+                      '   Validating membership first before connecting with UUID',
+                    );
                     await _chatService.openRoom(
                       roomId: _currentRoomId!,
                       isMember:
                           false, // Always validate membership first - backend handles deduplication
-                      companyId: companyId!,
+                      companyId: companyId,
                       limit: 0, // Don't fetch messages, just connect WebSocket
                       offset: 0,
                       allowNewRoom: false,
@@ -2418,12 +2716,14 @@ class _ChatScreenState extends State<ChatScreen>
                 });
               }
             } else {
-              log('❌ [ChatScreen] Failed to create room: ${createResponse.error}');
+              log(
+                '❌ [ChatScreen] Failed to create room: ${createResponse.error}',
+              );
               _handleMessageError(response.statusCode, response.displayError);
             }
           } catch (e) {
             log('❌ [ChatScreen] Exception creating room: $e');
-            _handleMessageError(0, 'Failed to create chat room: $e');
+            _handleMessageError(0, chatCallTr(context, 'chatCall_failedToCreateChatRoom', fallback: 'Failed to create chat room: {error}', params: {'error': '$e'}));
           }
         } else {
           // For other errors, show error
@@ -2435,9 +2735,12 @@ class _ChatScreenState extends State<ChatScreen>
     } catch (e) {
       if (!mounted) return;
       log('❌ [ChatScreen] Error opening room: $e');
-      _handleMessageError(0, 'An unexpected error occurred: $e');
+      _handleMessageError(0, chatCallTr(context, 'chatCall_unexpectedError', fallback: 'An unexpected error occurred: {error}', params: {'error': '$e'}));
     } finally {
       _isOpeningRoom = false;
+      if (!isRefresh) {
+        _notifyInitialLoadComplete();
+      }
     }
   }
 
@@ -2517,7 +2820,9 @@ class _ChatScreenState extends State<ChatScreen>
       lookupUuid = _numericIdToUuidMap[numericId];
       if (lookupUuid != null) {
         avatar = _memberAvatarCache[lookupUuid];
-        log('🔍 [ChatScreen] _getAvatarForSender: converted numeric $numericId to UUID $lookupUuid, found=${avatar != null}');
+        log(
+          '🔍 [ChatScreen] _getAvatarForSender: converted numeric $numericId to UUID $lookupUuid, found=${avatar != null}',
+        );
       }
     }
 
@@ -2534,7 +2839,9 @@ class _ChatScreenState extends State<ChatScreen>
       if (numericId != null) {
         avatar = _memberAvatarCache[numericId.toString()];
         if (avatar != null && avatar.isNotEmpty) {
-          log('🔍 [ChatScreen] _getAvatarForSender: found avatar via reverse lookup (UUID -> numeric $numericId)');
+          log(
+            '🔍 [ChatScreen] _getAvatarForSender: found avatar via reverse lookup (UUID -> numeric $numericId)',
+          );
         }
       }
     }
@@ -2549,7 +2856,9 @@ class _ChatScreenState extends State<ChatScreen>
           avatar = _memberAvatarCache[uuid];
           if (avatar != null && avatar.isNotEmpty) {
             lookupUuid = uuid;
-            log('🔍 [ChatScreen] _getAvatarForSender: found avatar via snapshotUserId -> UUID mapping');
+            log(
+              '🔍 [ChatScreen] _getAvatarForSender: found avatar via snapshotUserId -> UUID mapping',
+            );
           }
         }
       }
@@ -2567,7 +2876,9 @@ class _ChatScreenState extends State<ChatScreen>
           (isUuid && contactId == normalizedSenderId)) {
         avatar = widget.contact.photoUrl ?? _memberAvatar;
         if (avatar != null && avatar.isNotEmpty) {
-          log('✅ [ChatScreen] _getAvatarForSender: Found avatar from widget.contact: $avatar');
+          log(
+            '✅ [ChatScreen] _getAvatarForSender: Found avatar from widget.contact: $avatar',
+          );
           // Cache it for future lookups
           if (normalizedSenderId.isNotEmpty) {
             _memberAvatarCache[normalizedSenderId] = avatar;
@@ -2593,7 +2904,9 @@ class _ChatScreenState extends State<ChatScreen>
             _memberAvatarCache[widget.contact.id] == null ||
             _memberAvatarCache[widget.contact.id]!.isEmpty) {
           _memberAvatarCache[widget.contact.id] = _memberAvatar;
-          log('✅ [ChatScreen] Cached avatar from _memberAvatar: ${widget.contact.id} -> $_memberAvatar');
+          log(
+            '✅ [ChatScreen] Cached avatar from _memberAvatar: ${widget.contact.id} -> $_memberAvatar',
+          );
         }
       }
       // Also cache with widget.contact.photoUrl if available
@@ -2620,13 +2933,16 @@ class _ChatScreenState extends State<ChatScreen>
     }
 
     if (wsMessage.roomId != _currentRoomId) {
-      log('⚠️ [ChatScreen] Ignoring message - different room_id: ${wsMessage.roomId} (current: $_currentRoomId)');
+      log(
+        '⚠️ [ChatScreen] Ignoring message - different room_id: ${wsMessage.roomId} (current: $_currentRoomId)',
+      );
       return;
     }
 
     // Handle typing events from WebSocket (when backend supports it)
     // Check for typing events in the type field or data.type field
-    final messageType = wsMessage.type?.toLowerCase() ??
+    final messageType =
+        wsMessage.type?.toLowerCase() ??
         wsMessage.data?['type']?.toString().toLowerCase();
     if (messageType == 'typing') {
       final typingUserId =
@@ -2643,13 +2959,16 @@ class _ChatScreenState extends State<ChatScreen>
         wsMessage.messageTypeEnum == WebSocketMessageType.unreadCountUpdate) {
       final roomId = wsMessage.roomId ?? wsMessage.data?['room_id']?.toString();
       final userId = wsMessage.userId ?? wsMessage.data?['user_id']?.toString();
-      final unreadCount = wsMessage.data?['unread_count'] as int? ??
+      final unreadCount =
+          wsMessage.data?['unread_count'] as int? ??
           (wsMessage.data?['unread_count'] is String
               ? int.tryParse(wsMessage.data!['unread_count'] as String)
               : null);
 
       if (roomId != null && userId != null && unreadCount != null) {
-        log('📊 [ChatScreen] Received unread_count_update: room=$roomId, user=$userId, count=$unreadCount');
+        log(
+          '📊 [ChatScreen] Received unread_count_update: room=$roomId, user=$userId, count=$unreadCount',
+        );
 
         // Update local unread count manager if this is for current user
         if (userId == _currentUserId) {
@@ -2657,9 +2976,13 @@ class _ChatScreenState extends State<ChatScreen>
             await UnreadCountManager.instance.clearUnreadCount(roomId);
           } else {
             // Set the unread count directly (backend is source of truth)
-            await UnreadCountManager.instance
-                .setUnreadCount(roomId, unreadCount);
-            log('📊 [ChatScreen] Unread count updated to $unreadCount for room $roomId');
+            await UnreadCountManager.instance.setUnreadCount(
+              roomId,
+              unreadCount,
+            );
+            log(
+              '📊 [ChatScreen] Unread count updated to $unreadCount for room $roomId',
+            );
           }
         }
       }
@@ -2675,7 +2998,9 @@ class _ChatScreenState extends State<ChatScreen>
       final userId = wsMessage.userId ?? wsMessage.data?['user_id']?.toString();
       final readAt = wsMessage.data?['read_at'];
 
-      log('📖 [ChatScreen] Read receipt received: message=$messageId, user=$userId, readAt=$readAt');
+      log(
+        '📖 [ChatScreen] Read receipt received: message=$messageId, user=$userId, readAt=$readAt',
+      );
 
       if (messageId != null && mounted) {
         // Update message status to "seen" (blue checkmarks)
@@ -2700,7 +3025,9 @@ class _ChatScreenState extends State<ChatScreen>
       final messageId = wsMessage.data?['message_id']?.toString();
       final userId = wsMessage.userId ?? wsMessage.data?['user_id']?.toString();
 
-      log('🚚 [ChatScreen] Delivered receipt received: message=$messageId, user=$userId');
+      log(
+        '🚚 [ChatScreen] Delivered receipt received: message=$messageId, user=$userId',
+      );
 
       if (messageId != null && mounted) {
         // Update message status to "delivered" (double grey checkmarks)
@@ -2712,7 +3039,9 @@ class _ChatScreenState extends State<ChatScreen>
               _messages[index] = _messages[index].copyWith(
                 status: MessageStatus.delivered,
               );
-              log('✅ [ChatScreen] Updated message to DELIVERED status: $messageId');
+              log(
+                '✅ [ChatScreen] Updated message to DELIVERED status: $messageId',
+              );
             }
           }
         });
@@ -2721,7 +3050,9 @@ class _ChatScreenState extends State<ChatScreen>
       return; // Don't process delivered_receipt as regular message
     }
 
-    log('✅ [ChatScreen] Processing WebSocket message for room: ${wsMessage.roomId}');
+    log(
+      '✅ [ChatScreen] Processing WebSocket message for room: ${wsMessage.roomId}',
+    );
 
     // Convert WebSocket message to ChatMessage
     // Handle messages with or without data field
@@ -2736,7 +3067,9 @@ class _ChatScreenState extends State<ChatScreen>
         content = wsMessage.data!['content']?.toString() ?? '';
       }
 
-      log('📥 [ChatScreen] WebSocket message received - content length: ${content.length}, data keys: ${wsMessage.data?.keys.toList() ?? []}');
+      log(
+        '📥 [ChatScreen] WebSocket message received - content length: ${content.length}, data keys: ${wsMessage.data?.keys.toList() ?? []}',
+      );
 
       // Extract snapshot_user_id from WebSocket data if available
       int? snapshotUserId;
@@ -2754,14 +3087,16 @@ class _ChatScreenState extends State<ChatScreen>
       }
 
       // Extract reply_to from WebSocket message data
-      final replyToId = wsMessage.data?['reply_to']?.toString() ??
+      final replyToId =
+          wsMessage.data?['reply_to']?.toString() ??
           wsMessage.data?['parent_message_id']?.toString();
 
       // Extract and cache avatar from WebSocket message data if available (like group chat)
       // Check multiple possible fields: avatar, photo_url, sender_avatar, user_avatar
       String? avatarUrl;
       if (wsMessage.data != null) {
-        avatarUrl = wsMessage.data!['avatar']?.toString() ??
+        avatarUrl =
+            wsMessage.data!['avatar']?.toString() ??
             wsMessage.data!['photo_url']?.toString() ??
             wsMessage.data!['sender_avatar']?.toString() ??
             wsMessage.data!['user_avatar']?.toString();
@@ -2773,10 +3108,12 @@ class _ChatScreenState extends State<ChatScreen>
             final snapshotMap = userSnapshot is Map<String, dynamic>
                 ? userSnapshot
                 : <String, dynamic>{
-                    ...userSnapshot
-                        .map((key, value) => MapEntry(key.toString(), value))
+                    ...userSnapshot.map(
+                      (key, value) => MapEntry(key.toString(), value),
+                    ),
                   };
-            avatarUrl = snapshotMap['avatar']?.toString() ??
+            avatarUrl =
+                snapshotMap['avatar']?.toString() ??
                 snapshotMap['photo_url']?.toString();
           }
         }
@@ -2787,7 +3124,9 @@ class _ChatScreenState extends State<ChatScreen>
             wsMessage.userId != null) {
           // Cache with WebSocket userId (could be UUID or numeric)
           _memberAvatarCache[wsMessage.userId!] = avatarUrl;
-          log('✅ [ChatScreen] Cached avatar from WebSocket for ${wsMessage.userId}: $avatarUrl');
+          log(
+            '✅ [ChatScreen] Cached avatar from WebSocket for ${wsMessage.userId}: $avatarUrl',
+          );
 
           // Also try to cache with snapshotUserId if available in data
           if (wsMessage.data != null) {
@@ -2798,7 +3137,9 @@ class _ChatScreenState extends State<ChatScreen>
                     ? snapshotUserIdValue.toString()
                     : snapshotUserIdValue.toString();
                 _memberAvatarCache[snapshotUserId] = avatarUrl;
-                log('✅ [ChatScreen] Also cached avatar with snapshotUserId from WebSocket: $snapshotUserId');
+                log(
+                  '✅ [ChatScreen] Also cached avatar with snapshotUserId from WebSocket: $snapshotUserId',
+                );
               }
             } catch (e) {
               // Ignore errors
@@ -2826,12 +3167,15 @@ class _ChatScreenState extends State<ChatScreen>
       // Reject UUID-like strings and "user_" prefixed UUIDs
       // Check for: UUID format (contains dashes and is long), or "user_" prefix followed by UUID
       final isUuidLike = senderName.contains('-') && senderName.length > 30;
-      final isUserPrefixedUuid = senderName.startsWith('user_') &&
+      final isUserPrefixedUuid =
+          senderName.startsWith('user_') &&
           senderName.length > 36 && // "user_" (5) + UUID (36) = 41
           senderName.substring(5).contains('-');
 
       if (isUuidLike || isUserPrefixedUuid) {
-        log('⚠️ [ChatScreen] Rejected UUID-like senderName: $senderName, using contact name instead');
+        log(
+          '⚠️ [ChatScreen] Rejected UUID-like senderName: $senderName, using contact name instead',
+        );
         senderName = widget.contact.name;
       }
 
@@ -2870,20 +3214,26 @@ class _ChatScreenState extends State<ChatScreen>
       final isUuidFormat = messageId.contains('-') && messageId.length > 30;
       if (!isUuidFormat && int.tryParse(messageId) != null) {
         // Numeric ID - log warning but process it (backend might accept it)
-        log('⚠️ [ChatScreen] WebSocket message ID is numeric (not UUID): $messageId - reactions may fail');
+        log(
+          '⚠️ [ChatScreen] WebSocket message ID is numeric (not UUID): $messageId - reactions may fail',
+        );
       }
 
       // CRITICAL: If message ID is still empty or invalid, skip this message
       // Backend must provide valid UUID message ID for reactions to work
       if (messageId.isEmpty) {
-        log('⚠️ [ChatScreen] WebSocket message has no ID, cannot process message');
+        log(
+          '⚠️ [ChatScreen] WebSocket message has no ID, cannot process message',
+        );
         return; // Skip messages without ID
       }
 
       // Extract sender avatar from WebSocket if available (already extracted above)
       final senderAvatar = avatarUrl;
 
-      log('📨 [ChatScreen] Processing WebSocket message: id=$messageId, senderId=${wsMessage.userId}, senderName=$senderName, hasAvatar=${senderAvatar != null}');
+      log(
+        '📨 [ChatScreen] Processing WebSocket message: id=$messageId, senderId=${wsMessage.userId}, senderName=$senderName, hasAvatar=${senderAvatar != null}',
+      );
 
       // Extract message_type and event_type from WebSocket data
       final messageType = wsMessage.data?['message_type']?.toString();
@@ -2893,7 +3243,8 @@ class _ChatScreenState extends State<ChatScreen>
       if ((content.isEmpty || content.trim().isEmpty) &&
           wsMessage.data != null) {
         final data = wsMessage.data!;
-        final fileUrl = data['file_url']?.toString() ??
+        final fileUrl =
+            data['file_url']?.toString() ??
             data['fileUrl']?.toString() ??
             data['url']?.toString() ??
             data['audio_url']?.toString();
@@ -2911,7 +3262,9 @@ class _ChatScreenState extends State<ChatScreen>
             if (durationMs != null) 'duration_ms': durationMs,
           };
           content = jsonEncode(synthesized);
-          log('🧩 [ChatScreen] Synthesized content from ws.data for missing body');
+          log(
+            '🧩 [ChatScreen] Synthesized content from ws.data for missing body',
+          );
         }
       }
 
@@ -2950,7 +3303,8 @@ class _ChatScreenState extends State<ChatScreen>
 
       bool isForwarded = false;
       // Prefer explicit flags
-      final forwardedRaw = wsMessage.data?['is_forwarded'] ??
+      final forwardedRaw =
+          wsMessage.data?['is_forwarded'] ??
           wsMessage.data?['forwarded'] ??
           wsMessage.data?['forward'];
       if (forwardedRaw != null) {
@@ -3005,7 +3359,9 @@ class _ChatScreenState extends State<ChatScreen>
       // FILTER: For 1-to-1 chats, filter out system messages like "joined the group"
       final isSystemMessage = _isSystemMessage(roomMessage);
       if (isSystemMessage) {
-        log('🚫 [ChatScreen] Filtering out system message from WebSocket: ${roomMessage.body.substring(0, roomMessage.body.length > 50 ? 50 : roomMessage.body.length)}');
+        log(
+          '🚫 [ChatScreen] Filtering out system message from WebSocket: ${roomMessage.body.substring(0, roomMessage.body.length > 50 ? 50 : roomMessage.body.length)}',
+        );
         return; // Skip system messages in 1-to-1 chats
       }
 
@@ -3028,12 +3384,15 @@ class _ChatScreenState extends State<ChatScreen>
             id: roomMessage.replyTo!,
             text: 'Original message', // Placeholder text that won't break UI
             isMe: false,
-            timestamp: DateTime.now()
-                .subtract(const Duration(hours: 1)), // Placeholder time
+            timestamp: DateTime.now().subtract(
+              const Duration(hours: 1),
+            ), // Placeholder time
             isDeleted:
                 false, // Don't mark as deleted - this preserves reply display
           );
-          log('⚠️ [ChatScreen] Reply target message ${roomMessage.replyTo} not found in loaded messages (WebSocket). Using placeholder.');
+          log(
+            '⚠️ [ChatScreen] Reply target message ${roomMessage.replyTo} not found in loaded messages (WebSocket). Using placeholder.',
+          );
         }
       }
 
@@ -3048,15 +3407,21 @@ class _ChatScreenState extends State<ChatScreen>
       String? videoUrl;
       bool isVideo = false;
 
-      log('🔍 [ChatScreen] WebSocket message parsing - messageType: $messageType, content length: ${content.length}');
-      log('   Content preview: ${content.length > 100 ? content.substring(0, 100) : content}');
+      log(
+        '🔍 [ChatScreen] WebSocket message parsing - messageType: $messageType, content length: ${content.length}',
+      );
+      log(
+        '   Content preview: ${content.length > 100 ? content.substring(0, 100) : content}',
+      );
 
       if (messageType == 'image' ||
           messageType == 'file' ||
           messageType == 'voice' ||
           messageType == 'audio' ||
           messageType == 'video') {
-        log('📎 [ChatScreen] Processing file message - messageType: $messageType');
+        log(
+          '📎 [ChatScreen] Processing file message - messageType: $messageType',
+        );
         try {
           // Try to parse content as JSON
           final bodyJson = jsonDecode(content) as Map<String, dynamic>?;
@@ -3067,22 +3432,30 @@ class _ChatScreenState extends State<ChatScreen>
 
             if (messageType == 'image') {
               imageUrl = bodyJson['file_url']?.toString();
-              log('   Extracted imageUrl: ${imageUrl != null ? (imageUrl!.length > 50 ? imageUrl!.substring(0, 50) + "..." : imageUrl) : "null"}');
+              log(
+                '   Extracted imageUrl: ${imageUrl != null ? (imageUrl.length > 50 ? imageUrl.substring(0, 50) + "..." : imageUrl) : "null"}',
+              );
 
               // Also try alternative field names
               if (imageUrl == null || imageUrl.isEmpty) {
-                imageUrl = bodyJson['image_url']?.toString() ??
+                imageUrl =
+                    bodyJson['image_url']?.toString() ??
                     bodyJson['url']?.toString() ??
                     bodyJson['imageUrl']?.toString();
-                log('   Tried alternative fields, imageUrl: ${imageUrl != null ? "found" : "still null"}');
+                log(
+                  '   Tried alternative fields, imageUrl: ${imageUrl != null ? "found" : "still null"}',
+                );
               }
 
               // Transform localhost URLs to proper server URLs
               if (imageUrl != null && imageUrl.isNotEmpty) {
-                final transformedUrl =
-                    RoomService.transformLocalhostUrl(imageUrl);
+                final transformedUrl = RoomService.transformLocalhostUrl(
+                  imageUrl,
+                );
                 if (transformedUrl != imageUrl) {
-                  log('🔄 [ChatScreen] Transformed imageUrl from localhost: $imageUrl -> $transformedUrl');
+                  log(
+                    '🔄 [ChatScreen] Transformed imageUrl from localhost: $imageUrl -> $transformedUrl',
+                  );
                   imageUrl = transformedUrl;
                 }
               }
@@ -3121,10 +3494,12 @@ class _ChatScreenState extends State<ChatScreen>
 
               // If mime indicates audio/video, treat accordingly instead of document
               final mimeType = bodyJson['mime_type']?.toString();
-              final isVideoByMime = mimeType != null &&
+              final isVideoByMime =
+                  mimeType != null &&
                   mimeType.toLowerCase().startsWith('video');
               final isVideoByExtension = isVideoFile(documentUrl, documentName);
-              final isAudioByMime = mimeType != null &&
+              final isAudioByMime =
+                  mimeType != null &&
                   mimeType.toLowerCase().startsWith('audio');
               final isAudioByExtension = isAudioFile(documentUrl, documentName);
 
@@ -3146,43 +3521,51 @@ class _ChatScreenState extends State<ChatScreen>
                 isDocument = false;
                 isVideo = false;
                 videoUrl = null;
-                if (audioUrl != null && audioUrl!.isNotEmpty) {
-                  audioUrl = RoomService.transformLocalhostUrl(audioUrl!);
+                if (audioUrl != null && audioUrl.isNotEmpty) {
+                  audioUrl = RoomService.transformLocalhostUrl(audioUrl);
                 }
               } else if (isVideoByMime || isVideoByExtension) {
                 videoUrl = documentUrl;
                 videoUrl ??= bodyJson['url']?.toString();
                 videoUrl ??= bodyJson['fileUrl']?.toString();
                 videoUrl ??= bodyJson['video_url']?.toString();
-                isVideo = videoUrl != null && videoUrl!.isNotEmpty;
+                isVideo = videoUrl != null && videoUrl.isNotEmpty;
                 isDocument = false;
                 audioUrl = null;
-                if (videoUrl != null && videoUrl!.isNotEmpty) {
-                  videoUrl = RoomService.transformLocalhostUrl(videoUrl!);
+                if (videoUrl != null && videoUrl.isNotEmpty) {
+                  videoUrl = RoomService.transformLocalhostUrl(videoUrl);
                 }
               } else {
                 // Only set as document if it's not video or audio
                 isDocument = documentUrl != null && documentUrl.isNotEmpty;
               }
 
-              log('   Extracted documentUrl: ${documentUrl != null ? (documentUrl!.length > 50 ? documentUrl!.substring(0, 50) + "..." : documentUrl) : "null"}');
+              log(
+                '   Extracted documentUrl: ${documentUrl != null ? (documentUrl.length > 50 ? documentUrl.substring(0, 50) + "..." : documentUrl) : "null"}',
+              );
               log('   Extracted documentName: $documentName');
               log('   Extracted documentType: $documentType');
 
               // Also try alternative field names
               if (documentUrl == null || documentUrl.isEmpty) {
-                documentUrl = bodyJson['document_url']?.toString() ??
+                documentUrl =
+                    bodyJson['document_url']?.toString() ??
                     bodyJson['url']?.toString() ??
                     bodyJson['documentUrl']?.toString();
-                log('   Tried alternative fields, documentUrl: ${documentUrl != null ? "found" : "still null"}');
+                log(
+                  '   Tried alternative fields, documentUrl: ${documentUrl != null ? "found" : "still null"}',
+                );
               }
 
               // Transform localhost URLs to proper server URLs
               if (documentUrl != null && documentUrl.isNotEmpty) {
-                final transformedUrl =
-                    RoomService.transformLocalhostUrl(documentUrl);
+                final transformedUrl = RoomService.transformLocalhostUrl(
+                  documentUrl,
+                );
                 if (transformedUrl != documentUrl) {
-                  log('🔄 [ChatScreen] Transformed documentUrl from localhost: $documentUrl -> $transformedUrl');
+                  log(
+                    '🔄 [ChatScreen] Transformed documentUrl from localhost: $documentUrl -> $transformedUrl',
+                  );
                   documentUrl = transformedUrl;
                 }
               }
@@ -3203,24 +3586,31 @@ class _ChatScreenState extends State<ChatScreen>
                 }
               }
 
-              if (audioUrl != null && audioUrl!.isNotEmpty) {
-                final transformedUrl =
-                    RoomService.transformLocalhostUrl(audioUrl!);
+              if (audioUrl != null && audioUrl.isNotEmpty) {
+                final transformedUrl = RoomService.transformLocalhostUrl(
+                  audioUrl,
+                );
                 if (transformedUrl != audioUrl) {
-                  log('🔄 [ChatScreen] Transformed audioUrl from localhost: $audioUrl -> $transformedUrl');
+                  log(
+                    '🔄 [ChatScreen] Transformed audioUrl from localhost: $audioUrl -> $transformedUrl',
+                  );
                   audioUrl = transformedUrl;
                 }
               }
             } else if (messageType == 'video') {
-              videoUrl = bodyJson['file_url']?.toString() ??
+              videoUrl =
+                  bodyJson['file_url']?.toString() ??
                   bodyJson['url']?.toString() ??
                   bodyJson['video_url']?.toString();
-              isVideo = videoUrl != null && videoUrl!.isNotEmpty;
-              if (videoUrl != null && videoUrl!.isNotEmpty) {
-                final transformedUrl =
-                    RoomService.transformLocalhostUrl(videoUrl!);
+              isVideo = videoUrl != null && videoUrl.isNotEmpty;
+              if (videoUrl != null && videoUrl.isNotEmpty) {
+                final transformedUrl = RoomService.transformLocalhostUrl(
+                  videoUrl,
+                );
                 if (transformedUrl != videoUrl) {
-                  log('🔄 [ChatScreen] Transformed videoUrl from localhost: $videoUrl -> $transformedUrl');
+                  log(
+                    '🔄 [ChatScreen] Transformed videoUrl from localhost: $videoUrl -> $transformedUrl',
+                  );
                   videoUrl = transformedUrl;
                 }
               }
@@ -3230,9 +3620,13 @@ class _ChatScreenState extends State<ChatScreen>
           }
         } catch (e, stackTrace) {
           // Body is not JSON, treat as regular text message
-          log('❌ [ChatScreen] Failed to parse WebSocket content as JSON for message $messageId: $e');
+          log(
+            '❌ [ChatScreen] Failed to parse WebSocket content as JSON for message $messageId: $e',
+          );
           log('   Stack trace: $stackTrace');
-          log('   Content that failed to parse: ${content.length > 200 ? content.substring(0, 200) + "..." : content}');
+          log(
+            '   Content that failed to parse: ${content.length > 200 ? content.substring(0, 200) + "..." : content}',
+          );
 
           // Try to extract URL from content even if it's not valid JSON
           // Sometimes the content might be a plain URL or malformed JSON
@@ -3242,13 +3636,13 @@ class _ChatScreenState extends State<ChatScreen>
             if (messageType == 'image') {
               imageUrl = content.trim();
               // Transform localhost URLs
-              if (imageUrl != null && imageUrl.isNotEmpty) {
+              if (imageUrl.isNotEmpty) {
                 imageUrl = RoomService.transformLocalhostUrl(imageUrl);
               }
             } else if (messageType == 'file') {
               documentUrl = content.trim();
               // Transform localhost URLs
-              if (documentUrl != null && documentUrl.isNotEmpty) {
+              if (documentUrl.isNotEmpty) {
                 documentUrl = RoomService.transformLocalhostUrl(documentUrl);
               }
               isDocument = true;
@@ -3260,9 +3654,10 @@ class _ChatScreenState extends State<ChatScreen>
 
         // FINAL FALLBACK: if still no audioUrl and messageType is audio/voice, try pulling from WebSocket data directly
         if ((messageType == 'voice' || messageType == 'audio') &&
-            (audioUrl == null || audioUrl!.isEmpty) &&
+            (audioUrl == null || audioUrl.isEmpty) &&
             wsMessage.data != null) {
-          audioUrl = wsMessage.data!['file_url']?.toString() ??
+          audioUrl =
+              wsMessage.data!['file_url']?.toString() ??
               wsMessage.data!['fileUrl']?.toString() ??
               wsMessage.data!['url']?.toString() ??
               wsMessage.data!['audio_url']?.toString();
@@ -3277,8 +3672,8 @@ class _ChatScreenState extends State<ChatScreen>
             }
           }
 
-          if (audioUrl != null && audioUrl!.isNotEmpty) {
-            audioUrl = RoomService.transformLocalhostUrl(audioUrl!);
+          if (audioUrl != null && audioUrl.isNotEmpty) {
+            audioUrl = RoomService.transformLocalhostUrl(audioUrl);
             log('✅ [ChatScreen] Fallback audioUrl extracted from ws.data');
           }
         }
@@ -3286,7 +3681,9 @@ class _ChatScreenState extends State<ChatScreen>
         log('ℹ️ [ChatScreen] Not a file message - messageType: $messageType');
       }
 
-      log('✅ [ChatScreen] Final extracted URLs - imageUrl: ${imageUrl != null ? "present" : "null"}, documentUrl: ${documentUrl != null ? "present" : "null"}, audioUrl: ${audioUrl != null ? "present" : "null"}, videoUrl: ${videoUrl != null ? "present" : "null"}');
+      log(
+        '✅ [ChatScreen] Final extracted URLs - imageUrl: ${imageUrl != null ? "present" : "null"}, documentUrl: ${documentUrl != null ? "present" : "null"}, audioUrl: ${audioUrl != null ? "present" : "null"}, videoUrl: ${videoUrl != null ? "present" : "null"}',
+      );
 
       // Determine text to display - hide JSON if we have file URLs
       String displayText = roomMessage.isDeleted ? '' : roomMessage.body;
@@ -3328,7 +3725,8 @@ class _ChatScreenState extends State<ChatScreen>
         editedAt: roomMessage.editedAt,
         isDeleted: roomMessage.isDeleted,
         status: isFromCurrentUser
-            ? MessageStatus.delivered // Show delivered for current user
+            ? MessageStatus
+                  .delivered // Show delivered for current user
             : MessageStatus.seen, // Show seen for receiver
         isOnline: widget.contact.status == IntercomContactStatus.online,
         reactions: roomMessage.reactions, // Reactions included in API response
@@ -3348,7 +3746,9 @@ class _ChatScreenState extends State<ChatScreen>
       );
 
       // CRITICAL: Log the final message state to debug rendering issues
-      log('📝 [ChatScreen] Created ChatMessage: id=${chatMessage.id}, imageUrl=${chatMessage.imageUrl != null ? "present (${chatMessage.imageUrl!.length} chars)" : "null"}, documentUrl=${chatMessage.documentUrl != null ? "present (${chatMessage.documentUrl!.length} chars)" : "null"}, isDocument=${chatMessage.isDocument}');
+      log(
+        '📝 [ChatScreen] Created ChatMessage: id=${chatMessage.id}, imageUrl=${chatMessage.imageUrl != null ? "present (${chatMessage.imageUrl!.length} chars)" : "null"}, documentUrl=${chatMessage.documentUrl != null ? "present (${chatMessage.documentUrl!.length} chars)" : "null"}, isDocument=${chatMessage.isDocument}',
+      );
 
       // Check if message already exists (prevent duplicates)
       // CRITICAL: Match by ID, or by content/file URL for current user's optimistic messages
@@ -3388,13 +3788,17 @@ class _ChatScreenState extends State<ChatScreen>
 
         // CRITICAL FIX: Tightened timestamp window from 10s to 3s
         // This prevents matching unrelated messages sent close together
-        final timeDiff =
-            m.timestamp.difference(chatMessage.timestamp).inSeconds.abs();
+        final timeDiff = m.timestamp
+            .difference(chatMessage.timestamp)
+            .inSeconds
+            .abs();
         if (timeDiff > 3) {
           return false; // Too far apart in time
         }
 
-        log('🔍 [ChatScreen] Potential match - timeDiff: ${timeDiff}s, checking content...');
+        log(
+          '🔍 [ChatScreen] Potential match - timeDiff: ${timeDiff}s, checking content...',
+        );
 
         // Match by file URLs (most reliable for media messages)
         if (chatMessage.imageUrl != null && chatMessage.imageUrl!.isNotEmpty) {
@@ -3407,7 +3811,9 @@ class _ChatScreenState extends State<ChatScreen>
         if (chatMessage.documentUrl != null &&
             chatMessage.documentUrl!.isNotEmpty) {
           if (m.documentUrl == chatMessage.documentUrl) {
-            log('✅ [ChatScreen] Matched by documentUrl: ${chatMessage.documentUrl}');
+            log(
+              '✅ [ChatScreen] Matched by documentUrl: ${chatMessage.documentUrl}',
+            );
             return true;
           }
         }
@@ -3429,7 +3835,9 @@ class _ChatScreenState extends State<ChatScreen>
         // Match by text content (for text messages)
         if (chatMessage.text.isNotEmpty && m.text.isNotEmpty) {
           if (chatMessage.text.trim() == m.text.trim()) {
-            log('✅ [ChatScreen] Matched by text content: "${chatMessage.text}"');
+            log(
+              '✅ [ChatScreen] Matched by text content: "${chatMessage.text}"',
+            );
             return true;
           }
         }
@@ -3437,7 +3845,9 @@ class _ChatScreenState extends State<ChatScreen>
         // CRITICAL FIX: Handle empty text messages (voice notes, files without caption)
         // If both have empty text and same timestamp (within 2s), likely same message
         if (chatMessage.text.isEmpty && m.text.isEmpty && timeDiff <= 2) {
-          log('✅ [ChatScreen] Matched by empty text + close timestamp (${timeDiff}s)');
+          log(
+            '✅ [ChatScreen] Matched by empty text + close timestamp (${timeDiff}s)',
+          );
           return true;
         }
 
@@ -3472,7 +3882,9 @@ class _ChatScreenState extends State<ChatScreen>
         }
 
         // No match found
-        log('❌ [ChatScreen] No match found for message (timeDiff: ${timeDiff}s)');
+        log(
+          '❌ [ChatScreen] No match found for message (timeDiff: ${timeDiff}s)',
+        );
         return false;
       });
 
@@ -3481,8 +3893,9 @@ class _ChatScreenState extends State<ChatScreen>
         if (mounted) {
           setState(() {
             // Insert message in correct chronological order
-            final insertIndex = _messages
-                .indexWhere((m) => m.timestamp.isAfter(chatMessage.timestamp));
+            final insertIndex = _messages.indexWhere(
+              (m) => m.timestamp.isAfter(chatMessage.timestamp),
+            );
             if (insertIndex == -1) {
               _messages.add(chatMessage);
             } else {
@@ -3511,7 +3924,9 @@ class _ChatScreenState extends State<ChatScreen>
               if (!mounted) return;
               try {
                 await _chatService.markMessageAsRead(chatMessage.id);
-                log('📖 [ChatScreen] Auto-marked message as read: ${chatMessage.id}');
+                log(
+                  '📖 [ChatScreen] Auto-marked message as read: ${chatMessage.id}',
+                );
               } catch (e) {
                 log('⚠️ [ChatScreen] Failed to auto-mark message as read: $e');
               }
@@ -3562,8 +3977,9 @@ class _ChatScreenState extends State<ChatScreen>
           if (!isEditedMessage && chatMessage.isMe) {
             Future.delayed(const Duration(milliseconds: 500), () {
               if (mounted) {
-                final index =
-                    _messages.indexWhere((m) => m.id == chatMessage.id);
+                final index = _messages.indexWhere(
+                  (m) => m.id == chatMessage.id,
+                );
                 if (index != -1) {
                   setState(() {
                     _messages[index] = _messages[index].copyWith(
@@ -3575,10 +3991,13 @@ class _ChatScreenState extends State<ChatScreen>
                   // In real implementation, this should be based on actual read receipt from backend
                   Future.delayed(const Duration(seconds: 1), () {
                     if (mounted) {
-                      final seenIndex =
-                          _messages.indexWhere((m) => m.id == chatMessage.id);
+                      final seenIndex = _messages.indexWhere(
+                        (m) => m.id == chatMessage.id,
+                      );
                       if (seenIndex != -1) {
-                        log('✅ [ChatScreen] Updating message status to SEEN (green double check icon): ${chatMessage.id}');
+                        log(
+                          '✅ [ChatScreen] Updating message status to SEEN (green double check icon): ${chatMessage.id}',
+                        );
                         setState(() {
                           _messages[seenIndex] = _messages[seenIndex].copyWith(
                             status: MessageStatus
@@ -3638,7 +4057,9 @@ class _ChatScreenState extends State<ChatScreen>
           return;
         }
 
-        log('📥 [ChatScreen] Loaded ${roomMessages.length} older messages (offset: $_currentOffset)');
+        log(
+          '📥 [ChatScreen] Loaded ${roomMessages.length} older messages (offset: $_currentOffset)',
+        );
 
         // Cache the messages for future use
         if (roomMessages.isNotEmpty) {
@@ -3676,7 +4097,7 @@ class _ChatScreenState extends State<ChatScreen>
         // Second pass: resolve replyTo references (check both existing and new messages)
         final allMessagesForLookup = [
           ..._messages,
-          ...newChatMessagesWithoutReply
+          ...newChatMessagesWithoutReply,
         ];
         final newChatMessages = newChatMessagesWithoutReply.map((cm) {
           final roomMessage = roomMessages.firstWhere((rm) => rm.id == cm.id);
@@ -3696,12 +4117,15 @@ class _ChatScreenState extends State<ChatScreen>
                 text:
                     'Original message', // Placeholder text that won't break UI
                 isMe: false,
-                timestamp: DateTime.now()
-                    .subtract(const Duration(hours: 1)), // Placeholder time
+                timestamp: DateTime.now().subtract(
+                  const Duration(hours: 1),
+                ), // Placeholder time
                 isDeleted:
                     false, // Don't mark as deleted - this preserves reply display
               );
-              log('⚠️ [ChatScreen] Reply target message ${roomMessage.replyTo} not found in loaded messages (pagination). Using placeholder.');
+              log(
+                '⚠️ [ChatScreen] Reply target message ${roomMessage.replyTo} not found in loaded messages (pagination). Using placeholder.',
+              );
             }
             return cm.copyWith(replyTo: repliedToMessage);
           }
@@ -3726,7 +4150,9 @@ class _ChatScreenState extends State<ChatScreen>
           _currentOffset += newChatMessages.length;
         });
 
-        log('✅ [ChatScreen] Inserted ${newChatMessages.length} older messages at beginning. Total: ${_messages.length}');
+        log(
+          '✅ [ChatScreen] Inserted ${newChatMessages.length} older messages at beginning. Total: ${_messages.length}',
+        );
 
         // Maintain scroll position after inserting older messages (like group chat)
         if (_scrollController.hasClients) {
@@ -3752,18 +4178,26 @@ class _ChatScreenState extends State<ChatScreen>
   /// Fetch replied-to message from older messages (matches group chat behavior)
   /// This ensures reply previews are populated even when the replied-to message is in an older batch
   Future<void> _fetchRepliedToMessage(
-      String replyToId, String replyMessageId) async {
+    String replyToId,
+    String replyMessageId,
+  ) async {
     try {
-      log('🔄 [ChatScreen] Fetching replied-to message: $replyToId for reply: $replyMessageId');
+      log(
+        '🔄 [ChatScreen] Fetching replied-to message: $replyToId for reply: $replyMessageId',
+      );
 
       final companyId = await _apiService.getSelectedSocietyId();
       if (companyId == null) {
-        log('⚠️ [ChatScreen] Cannot fetch replied-to message: company_id not available');
+        log(
+          '⚠️ [ChatScreen] Cannot fetch replied-to message: company_id not available',
+        );
         return;
       }
 
       if (_currentRoomId == null || !_isUuid(_currentRoomId)) {
-        log('⚠️ [ChatScreen] Cannot fetch replied-to message: room_id not available');
+        log(
+          '⚠️ [ChatScreen] Cannot fetch replied-to message: room_id not available',
+        );
         return;
       }
 
@@ -3774,9 +4208,11 @@ class _ChatScreenState extends State<ChatScreen>
       // Load messages in batches to find the replied-to message
       // CRITICAL: Also check offset 0 (initial batch) in case it wasn't found during initial load
       // This handles cases where the message might have been missed due to UUID/numeric ID mismatch
-      for (int offset = 0;
-          offset < _messagesPerPage * 5;
-          offset += _messagesPerPage) {
+      for (
+        int offset = 0;
+        offset < _messagesPerPage * 5;
+        offset += _messagesPerPage
+      ) {
         // Check cache first
         final cachedMessages = messageCache.getCachedMessages(
           _currentRoomId!,
@@ -3788,7 +4224,9 @@ class _ChatScreenState extends State<ChatScreen>
         List<RoomMessage> roomMessages;
         if (cachedMessages != null) {
           // Use cached messages
-          log('✅ [ChatScreen] Using cached messages for replied-to search (offset: $offset)');
+          log(
+            '✅ [ChatScreen] Using cached messages for replied-to search (offset: $offset)',
+          );
           roomMessages = cachedMessages;
         } else {
           // No cache - fetch from API
@@ -3826,17 +4264,16 @@ class _ChatScreenState extends State<ChatScreen>
           // CRITICAL: Use UUID/numeric compatibility for matching
           try {
             final normalizedReplyToId = replyToId.trim().toLowerCase();
-            final repliedToRoomMessage = roomMessages.firstWhere(
-              (rm) {
-                final normalizedRmId = rm.id.trim().toLowerCase();
-                return normalizedRmId == normalizedReplyToId ||
-                    rm.id == replyToId;
-              },
-            );
+            final repliedToRoomMessage = roomMessages.firstWhere((rm) {
+              final normalizedRmId = rm.id.trim().toLowerCase();
+              return normalizedRmId == normalizedReplyToId ||
+                  rm.id == replyToId;
+            });
 
             // Found it! Convert and update the reply
-            final isFromCurrentUser =
-                _isMessageFromCurrentUser(repliedToRoomMessage);
+            final isFromCurrentUser = _isMessageFromCurrentUser(
+              repliedToRoomMessage,
+            );
             final repliedToChatMessage = ChatMessage(
               id: repliedToRoomMessage.id,
               text: repliedToRoomMessage.isDeleted
@@ -3854,34 +4291,42 @@ class _ChatScreenState extends State<ChatScreen>
             // CRITICAL: Also ensure the replied-to message is in the message list
             if (mounted) {
               setState(() {
-                final replyIndex =
-                    _messages.indexWhere((m) => m.id == replyMessageId);
+                final replyIndex = _messages.indexWhere(
+                  (m) => m.id == replyMessageId,
+                );
                 if (replyIndex != -1) {
                   _messages[replyIndex] = _messages[replyIndex].copyWith(
                     replyTo: repliedToChatMessage,
                   );
-                  log('✅ [ChatScreen] Updated reply message ${replyMessageId} with found replied-to message: ${repliedToChatMessage.id}');
+                  log(
+                    '✅ [ChatScreen] Updated reply message ${replyMessageId} with found replied-to message: ${repliedToChatMessage.id}',
+                  );
                 }
 
                 // CRITICAL: Ensure the replied-to message is also in the message list
                 // This ensures it's visible when re-entering the chat
-                final repliedToIndex = _messages
-                    .indexWhere((m) => m.id == repliedToChatMessage.id);
+                final repliedToIndex = _messages.indexWhere(
+                  (m) => m.id == repliedToChatMessage.id,
+                );
                 if (repliedToIndex == -1) {
                   // Insert the replied-to message in chronological order
                   int insertIndex = _messages.length;
                   for (int i = 0; i < _messages.length; i++) {
-                    if (_messages[i]
-                        .timestamp
-                        .isAfter(repliedToChatMessage.timestamp)) {
+                    if (_messages[i].timestamp.isAfter(
+                      repliedToChatMessage.timestamp,
+                    )) {
                       insertIndex = i;
                       break;
                     }
                   }
                   _messages.insert(insertIndex, repliedToChatMessage);
-                  log('✅ [ChatScreen] Added replied-to message to message list: ${repliedToChatMessage.id} at index $insertIndex');
+                  log(
+                    '✅ [ChatScreen] Added replied-to message to message list: ${repliedToChatMessage.id} at index $insertIndex',
+                  );
                 } else {
-                  log('✅ [ChatScreen] Replied-to message already in list: ${repliedToChatMessage.id}');
+                  log(
+                    '✅ [ChatScreen] Replied-to message already in list: ${repliedToChatMessage.id}',
+                  );
                 }
               });
             }
@@ -3897,7 +4342,9 @@ class _ChatScreenState extends State<ChatScreen>
         }
       }
 
-      log('⚠️ [ChatScreen] Could not find replied-to message $replyToId in older messages');
+      log(
+        '⚠️ [ChatScreen] Could not find replied-to message $replyToId in older messages',
+      );
     } catch (e) {
       log('❌ [ChatScreen] Error fetching replied-to message: $e');
     }
@@ -3913,32 +4360,45 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
+  void _notifyInitialLoadComplete() {
+    if (_initialLoadCompleteNotified || widget.onInitialLoadComplete == null) {
+      return;
+    }
+    _initialLoadCompleteNotified = true;
+    widget.onInitialLoadComplete!();
+  }
+
   /// Handle message loading errors
   void _handleMessageError(int? statusCode, String? errorMessage) {
+    if (_hasPendingForward && _currentRoomId != null) {
+      _kickOffPendingForward();
+      return;
+    }
+
     setState(() {
       _isLoading = false;
       _hasError = true;
-      _errorMessage = errorMessage ?? 'Failed to load messages';
+      _errorMessage = errorMessage ?? chatCallTr(context, 'chatCall_failedToLoadMessagesShort', fallback: 'Failed to load messages');
     });
     _hideLoaderDialog();
 
     if (statusCode == 401) {
       EnhancedToast.error(
         context,
-        title: 'Authentication Error',
-        message: 'Your session has expired. Please login again.',
+        title: chatCallTr(context, 'chatCall_authError', fallback: 'Authentication Error'),
+        message: chatCallTr(context, 'chatCall_sessionExpired', fallback: 'Your session has expired. Please login again.'),
       );
     } else if (statusCode == 403) {
       EnhancedToast.error(
         context,
-        title: 'Access Denied',
-        message: 'You are not authorized to access this chat',
+        title: chatCallTr(context, 'chatCall_accessDenied', fallback: 'Access Denied'),
+        message: chatCallTr(context, 'chatCall_youAreNotAuthorizedToAccess', fallback: 'You are not authorized to access this chat'),
       );
     } else if (statusCode == 404) {
       EnhancedToast.error(
         context,
-        title: 'Chat Not Found',
-        message: 'This chat does not exist',
+        title: chatCallTr(context, 'chatCall_chatNotFound', fallback: 'Chat Not Found'),
+        message: chatCallTr(context, 'chatCall_thisChatDoesNotExist', fallback: 'This chat does not exist'),
       );
     } else if (statusCode == 429) {
       // Rate limit error - too many requests
@@ -3946,17 +4406,19 @@ class _ChatScreenState extends State<ChatScreen>
       final backoffSeconds = _calculateBackoffSeconds(_rateLimitRetryCount);
 
       setState(() {
-        _errorMessage = 'Too many requests. Please try again later.';
+        _errorMessage = chatCallTr(context, 'chatCall_tooManyRequestsTryLater', fallback: 'Too many requests. Please try again later.');
       });
 
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message:
             'Too many requests. Please wait ${backoffSeconds}s before retrying.',
       );
 
-      log('⚠️ [ChatScreen] Rate limit error (429). Retry count: $_rateLimitRetryCount, Backoff: ${backoffSeconds}s');
+      log(
+        '⚠️ [ChatScreen] Rate limit error (429). Retry count: $_rateLimitRetryCount, Backoff: ${backoffSeconds}s',
+      );
 
       // Auto-retry after backoff period
       Future.delayed(Duration(seconds: backoffSeconds), () {
@@ -3968,19 +4430,19 @@ class _ChatScreenState extends State<ChatScreen>
     } else if (statusCode == 500) {
       EnhancedToast.error(
         context,
-        title: 'Server Error',
-        message: 'Unable to load messages. Please try again.',
+        title: chatCallTr(context, 'chatCall_serverErrorTitle', fallback: 'Server Error'),
+        message: chatCallTr(context, 'chatCall_unableToLoadMessages', fallback: 'Unable to load messages. Please try again.'),
       );
     } else if (statusCode == 0) {
       EnhancedToast.error(
         context,
-        title: 'Network Error',
-        message: 'Unable to connect. Please check your internet connection.',
+        title: chatCallTr(context, 'chatCall_networkError', fallback: 'Network Error'),
+        message: chatCallTr(context, 'chatCall_checkConnection', fallback: 'Unable to connect. Please check your internet connection.'),
       );
     } else {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: errorMessage ?? 'Failed to load messages',
       );
     }
@@ -4109,7 +4571,9 @@ class _ChatScreenState extends State<ChatScreen>
     // Match group chat pattern: Always use UUID room_id (like group chat uses widget.group.id)
     // If _currentRoomId is not available, try to create room first
     if (_currentRoomId == null || !_isUuid(_currentRoomId)) {
-      log('⚠️ [ChatScreen] No valid UUID room_id available - creating room now');
+      log(
+        '⚠️ [ChatScreen] No valid UUID room_id available - creating room now',
+      );
 
       // Try to create room if we have numeric or UUID contact ID
       if (_isNumeric(widget.contact.id) || _isUuid(widget.contact.id)) {
@@ -4123,8 +4587,8 @@ class _ChatScreenState extends State<ChatScreen>
               });
               EnhancedToast.error(
                 context,
-                title: 'Error',
-                message: 'Please select a society first',
+                title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+                message: chatCallTr(context, 'chatCall_pleaseSelectSociety', fallback: 'Please select a society first'),
               );
             }
             return;
@@ -4146,7 +4610,9 @@ class _ChatScreenState extends State<ChatScreen>
             _currentRoomId = newRoomId;
 
             // CRITICAL: Check membership first before connecting with UUID
-            log('🔌 [ChatScreen] Validating membership first before connecting WebSocket with UUID: $_currentRoomId');
+            log(
+              '🔌 [ChatScreen] Validating membership first before connecting WebSocket with UUID: $_currentRoomId',
+            );
             await _chatService.openRoom(
               roomId: _currentRoomId!,
               isMember:
@@ -4159,15 +4625,17 @@ class _ChatScreenState extends State<ChatScreen>
 
             log('✅ [ChatScreen] WebSocket connected, ready to send message');
           } else {
-            log('❌ [ChatScreen] Failed to create room: ${createResponse.error}');
+            log(
+              '❌ [ChatScreen] Failed to create room: ${createResponse.error}',
+            );
             if (mounted) {
               setState(() {
                 _messages.removeWhere((m) => m.id == tempMessageId);
               });
               EnhancedToast.error(
                 context,
-                title: 'Error',
-                message: 'Failed to create chat room. Please try again.',
+                title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+                message: chatCallTr(context, 'chatCall_failedToCreateChatRoomPlease', fallback: 'Failed to create chat room. Please try again.'),
               );
             }
             return;
@@ -4180,23 +4648,25 @@ class _ChatScreenState extends State<ChatScreen>
             });
             EnhancedToast.error(
               context,
-              title: 'Error',
-              message: 'Failed to create chat room: $e',
+              title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+              message: chatCallTr(context, 'chatCall_failedToCreateChatRoom', fallback: 'Failed to create chat room: {error}', params: {'error': '$e'}),
             );
           }
           return;
         }
       } else {
         // Contact ID format is unknown - cannot create room
-        log('❌ [ChatScreen] Cannot send message - no valid UUID room_id available and contact ID format is unknown');
+        log(
+          '❌ [ChatScreen] Cannot send message - no valid UUID room_id available and contact ID format is unknown',
+        );
         if (mounted) {
           setState(() {
             _messages.removeWhere((m) => m.id == tempMessageId);
           });
           EnhancedToast.error(
             context,
-            title: 'Error',
-            message: 'Chat room not ready. Please wait and try again.',
+            title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+            message: chatCallTr(context, 'chatCall_chatRoomNotReadyPleaseWait', fallback: 'Chat room not ready. Please wait and try again.'),
           );
         }
         return;
@@ -4224,8 +4694,8 @@ class _ChatScreenState extends State<ChatScreen>
 
         EnhancedToast.error(
           context,
-          title: 'Failed to send',
-          message: 'Please check your connection and try again',
+          title: chatCallTr(context, 'chatCall_failedToSend', fallback: 'Failed to send'),
+          message: chatCallTr(context, 'chatCall_failedToSendRetry', fallback: 'Please check your connection and try again'),
         );
       }
     }
@@ -4235,7 +4705,9 @@ class _ChatScreenState extends State<ChatScreen>
 
   /// Handle back button press (both app back button and system back button)
   Future<void> _handleBackButton() async {
-    log('🔙 [ChatScreen] Back button pressed, returnToHistory: ${widget.returnToHistory}');
+    log(
+      '🔙 [ChatScreen] Back button pressed, returnToHistory: ${widget.returnToHistory}',
+    );
 
     if (_isSelectionMode) {
       _clearSelection();
@@ -4250,7 +4722,9 @@ class _ChatScreenState extends State<ChatScreen>
     if (widget.returnToHistory) {
       // Navigate to history page instead of just popping
       // Use NavigationHelper to work with GoRouter (page-based routing)
-      log('🔙 [ChatScreen] Navigating to CallHistoryPage using NavigationHelper');
+      log(
+        '🔙 [ChatScreen] Navigating to CallHistoryPage using NavigationHelper',
+      );
       NavigationHelper.replaceWithWidget(
         context,
         (context) => const CallHistoryPage(),
@@ -4320,11 +4794,11 @@ class _ChatScreenState extends State<ChatScreen>
               // Preview member avatar when tapped
               final baseAvatarUrl =
                   (_memberAvatar != null && _memberAvatar!.isNotEmpty)
-                      ? _memberAvatar!
-                      : (widget.contact.photoUrl != null &&
-                              widget.contact.photoUrl!.isNotEmpty
-                          ? widget.contact.photoUrl!
-                          : null);
+                  ? _memberAvatar!
+                  : (widget.contact.photoUrl != null &&
+                            widget.contact.photoUrl!.isNotEmpty
+                        ? widget.contact.photoUrl!
+                        : null);
 
               if (baseAvatarUrl != null) {
                 final previewUrl = _getHighResAvatarUrl(baseAvatarUrl);
@@ -4336,20 +4810,23 @@ class _ChatScreenState extends State<ChatScreen>
               radius: 16,
               backgroundImage:
                   (_memberAvatar != null && _memberAvatar!.isNotEmpty)
-                      ? NetworkImage(_memberAvatar!)
-                      : (widget.contact.photoUrl != null &&
-                              widget.contact.photoUrl!.isNotEmpty
-                          ? NetworkImage(widget.contact.photoUrl!)
-                          : null),
+                  ? NetworkImage(_memberAvatar!)
+                  : (widget.contact.photoUrl != null &&
+                            widget.contact.photoUrl!.isNotEmpty
+                        ? NetworkImage(widget.contact.photoUrl!)
+                        : null),
               onBackgroundImageError:
                   ((_memberAvatar != null && _memberAvatar!.isNotEmpty) ||
-                          (widget.contact.photoUrl != null &&
-                              widget.contact.photoUrl!.isNotEmpty))
-                      ? (exception, stackTrace) {
-                          log('⚠️ [ChatScreen] Failed to load avatar image: $exception');
-                        }
-                      : null,
-              child: (_memberAvatar == null || _memberAvatar!.isEmpty) &&
+                      (widget.contact.photoUrl != null &&
+                          widget.contact.photoUrl!.isNotEmpty))
+                  ? (exception, stackTrace) {
+                      log(
+                        '⚠️ [ChatScreen] Failed to load avatar image: $exception',
+                      );
+                    }
+                  : null,
+              child:
+                  (_memberAvatar == null || _memberAvatar!.isEmpty) &&
                       (widget.contact.photoUrl == null ||
                           widget.contact.photoUrl!.isEmpty)
                   ? Text(
@@ -4371,7 +4848,8 @@ class _ChatScreenState extends State<ChatScreen>
               children: [
                 Text(
                   _memberName ??
-                      widget.contact
+                      widget
+                          .contact
                           .name, // Show member name (person you're chatting with), not user name
                   style: const TextStyle(
                     color: Colors.black,
@@ -4408,23 +4886,35 @@ class _ChatScreenState extends State<ChatScreen>
         PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert, color: Colors.black),
           itemBuilder: (context) => [
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'clear',
               child: Row(
                 children: [
-                  Icon(Icons.delete_outline, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('Clear Chat'),
+                  const Icon(Icons.delete_outline, color: Colors.red),
+                  const SizedBox(width: 8),
+                  Text(
+                    chatCallTr(
+                      context,
+                      'chatCall_clearChat',
+                      fallback: 'Clear Chat',
+                    ),
+                  ),
                 ],
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'customize',
               child: Row(
                 children: [
-                  Icon(Icons.palette, color: Colors.blue),
-                  SizedBox(width: 8),
-                  Text('Customize Chat'),
+                  const Icon(Icons.palette, color: Colors.blue),
+                  const SizedBox(width: 8),
+                  Text(
+                    chatCallTr(
+                      context,
+                      'chatCall_customizeChat',
+                      fallback: 'Customize Chat',
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -4464,21 +4954,20 @@ class _ChatScreenState extends State<ChatScreen>
       },
       child: AppScaffold.internal(
         // 1-to-1: signed-in user = sender, selected contact = receiver; title = receiver's name
-        title: _memberName ??
+        title:
+            _memberName ??
             widget
-                .contact.name, // Receiver's name (person you're chatting with)
-        customAppBar:
-            _isSelectionMode ? _buildSelectionAppBar() : _buildDefaultAppBar(),
+                .contact
+                .name, // Receiver's name (person you're chatting with)
+        customAppBar: _isSelectionMode
+            ? _buildSelectionAppBar()
+            : _buildDefaultAppBar(),
         body: _isBlocked
             ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.block,
-                      size: 64,
-                      color: Colors.red,
-                    ),
+                    const Icon(Icons.block, size: 64, color: Colors.red),
                     const SizedBox(height: 16),
                     Text(
                       'You have blocked ${widget.contact.name}',
@@ -4488,8 +4977,7 @@ class _ChatScreenState extends State<ChatScreen>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'You will not receive messages from this user',
+                    Text(chatCallTr(context, 'chatCall_youWillNotReceiveMessagesFrom', fallback: 'You will not receive messages from this user'),
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey.shade600,
@@ -4502,7 +4990,13 @@ class _ChatScreenState extends State<ChatScreen>
                           _isBlocked = false;
                         });
                       },
-                      child: const Text('Unblock User'),
+                      child: Text(
+                        chatCallTr(
+                          context,
+                          'chatCall_unblockUser',
+                          fallback: 'Unblock User',
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -4529,8 +5023,7 @@ class _ChatScreenState extends State<ChatScreen>
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: Text(
-                                  'Reconnecting... Messages may be delayed',
+                                child: Text(chatCallTr(context, 'chatCall_reconnectingMessagesMayBeDelayed', fallback: 'Reconnecting... Messages may be delayed'),
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.orange.shade800,
@@ -4542,120 +5035,95 @@ class _ChatScreenState extends State<ChatScreen>
                         ),
                       // Chat messages
                       Expanded(
-                        child: Builder(builder: (context) {
-                          final bottomInset =
-                              MediaQuery.of(context).viewInsets.bottom;
-                          final emojiHeight =
-                              _showEmojiPicker ? _emojiPickerHeight : 0.0;
-                          final listPadding = EdgeInsets.fromLTRB(
-                            16,
-                            16,
-                            16,
-                            16 + bottomInset + emojiHeight + 120,
-                          );
-                          return Listener(
-                            behavior: HitTestBehavior.translucent,
-                            onPointerDown: (_) => _dismissEmojiAndKeyboard(),
-                            child: Stack(
-                              children: [
-                                // Background image layer
-                                Positioned.fill(
-                                  child: Container(
-                                    color: const Color(
-                                        0xFFF0F2F5), // Base color to prevent blank spaces
-                                    child: _chatWallpaperImage != null
-                                        ? Opacity(
-                                            opacity:
-                                                0.75, // Same opacity as group chat
-                                            child: Image.file(
-                                              _chatWallpaperImage!,
-                                              fit: BoxFit.cover,
-                                              errorBuilder:
-                                                  (context, error, stackTrace) {
-                                                return const SizedBox.shrink();
-                                              },
-                                            ),
-                                          )
-                                        : Opacity(
-                                            opacity:
-                                                0.75, // Same opacity as group chat
-                                            child: Image.asset(
-                                              'assets/images/oscar/oscar_chat.png',
-                                              repeat: ImageRepeat.repeat,
-                                              // No fit parameter - image repeats at its natural size without stretching
-                                              errorBuilder:
-                                                  (context, error, stackTrace) {
-                                                debugPrint(
-                                                    'Failed to load background image: $error');
-                                                // Fallback to white background if image fails to load
-                                                return Container(
-                                                    color: Colors.white);
-                                              },
-                                            ),
-                                          ),
+                        child: Builder(
+                          builder: (context) {
+                            final bottomInset = MediaQuery.of(
+                              context,
+                            ).viewInsets.bottom;
+                            final emojiHeight = _showEmojiPicker
+                                ? _emojiPickerHeight
+                                : 0.0;
+                            final listPadding = EdgeInsets.fromLTRB(
+                              16,
+                              16,
+                              16,
+                              16 + bottomInset + emojiHeight + 120,
+                            );
+                            return Listener(
+                              behavior: HitTestBehavior.translucent,
+                              onPointerDown: (_) => _dismissEmojiAndKeyboard(),
+                              child: Stack(
+                                children: [
+                                  // Background image layer
+                                  Positioned.fill(
+                                    child: ChatWallpaperBackground(
+                                      customWallpaper: _chatWallpaperImage,
+                                      opacity: 0.75,
+                                    ),
                                   ),
-                                ),
-                                // Content layer
-                                // Note: Global loader dialog is shown when _isLoading is true
-                                // No need to show CircularProgressIndicator here
-                                _hasError && _messages.isEmpty
-                                    ? _buildErrorState()
-                                    : _messages.isEmpty
-                                        ? _buildEmptyState()
-                                        : ListView.builder(
-                                            controller: _scrollController,
-                                            padding: listPadding,
-                                            itemCount: _messages.length +
-                                                (_isTyping ? 1 : 0) +
-                                                (_isLoadingMore ? 1 : 0),
-                                            itemBuilder: (context, index) {
-                                              // Loading indicator for pagination at top (like group chat)
-                                              if (index == 0 &&
-                                                  _isLoadingMore) {
-                                                return const Padding(
-                                                  padding: EdgeInsets.all(16.0),
-                                                  child: Center(
-                                                    child:
-                                                        CircularProgressIndicator(),
-                                                  ),
-                                                );
-                                              }
-                                              // Adjust index if loading indicator is shown
-                                              final messageIndex =
-                                                  _isLoadingMore
-                                                      ? index - 1
-                                                      : index;
+                                  // Content layer
+                                  // Note: Global loader dialog is shown when _isLoading is true
+                                  // No need to show CircularProgressIndicator here
+                                  _hasError && _messages.isEmpty && !_hasPendingForward
+                                      ? _buildErrorState()
+                                      : _messages.isEmpty
+                                      ? _buildEmptyState()
+                                      : ListView.builder(
+                                          controller: _scrollController,
+                                          padding: listPadding,
+                                          itemCount:
+                                              _messages.length +
+                                              (_isTyping ? 1 : 0) +
+                                              (_isLoadingMore ? 1 : 0),
+                                          itemBuilder: (context, index) {
+                                            // Loading indicator for pagination at top (like group chat)
+                                            if (index == 0 && _isLoadingMore) {
+                                              return const Padding(
+                                                padding: EdgeInsets.all(16.0),
+                                                child: Center(
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                ),
+                                              );
+                                            }
+                                            // Adjust index if loading indicator is shown
+                                            final messageIndex = _isLoadingMore
+                                                ? index - 1
+                                                : index;
 
-                                              // Typing indicator
-                                              if (messageIndex ==
-                                                      _messages.length &&
-                                                  _isTyping) {
-                                                return _buildTypingIndicator();
-                                              }
+                                            // Typing indicator
+                                            if (messageIndex ==
+                                                    _messages.length &&
+                                                _isTyping) {
+                                              return _buildTypingIndicator();
+                                            }
 
-                                              final message =
-                                                  _messages[messageIndex];
-                                              return _buildMessageBubble(
-                                                  message);
-                                            },
-                                          ),
-                              ],
-                            ),
-                          );
-                        }),
+                                            final message =
+                                                _messages[messageIndex];
+                                            return _buildMessageBubble(message);
+                                          },
+                                        ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                       ),
 
                       // Reply preview
                       if (_replyingTo != null)
                         Builder(
                           builder: (context) {
-                            final isDarkTheme = _chatTheme == ThemeMode.dark ||
+                            final isDarkTheme =
+                                _chatTheme == ThemeMode.dark ||
                                 (_chatTheme == ThemeMode.system &&
                                     MediaQuery.of(context).platformBrightness ==
                                         Brightness.dark);
                             return Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
                                 color: isDarkTheme
                                     ? Colors.grey.shade900
@@ -4694,7 +5162,7 @@ class _ChatScreenState extends State<ChatScreen>
                                         const SizedBox(height: 2),
                                         Text(
                                           _replyingTo!.isDeleted
-                                              ? 'This message was deleted'
+                                              ? chatCallTr(context, 'chatCall_thisMessageWasDeletedShort', fallback: 'This message was deleted')
                                               : _replyingTo!.text,
                                           style: TextStyle(
                                             fontSize: 11,
@@ -4709,11 +5177,13 @@ class _ChatScreenState extends State<ChatScreen>
                                     ),
                                   ),
                                   IconButton(
-                                    icon: Icon(Icons.close,
-                                        size: 20,
-                                        color: isDarkTheme
-                                            ? Colors.white
-                                            : Colors.black),
+                                    icon: Icon(
+                                      Icons.close,
+                                      size: 20,
+                                      color: isDarkTheme
+                                          ? Colors.white
+                                          : Colors.black,
+                                    ),
                                     onPressed: () {
                                       setState(() {
                                         _replyingTo = null;
@@ -4729,13 +5199,16 @@ class _ChatScreenState extends State<ChatScreen>
                       if (!_isBlocked)
                         Builder(
                           builder: (context) {
-                            final isDarkTheme = _chatTheme == ThemeMode.dark ||
+                            final isDarkTheme =
+                                _chatTheme == ThemeMode.dark ||
                                 (_chatTheme == ThemeMode.system &&
                                     MediaQuery.of(context).platformBrightness ==
                                         Brightness.dark);
                             return Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
                                 color: isDarkTheme
                                     ? Colors.grey.shade900
@@ -4754,8 +5227,10 @@ class _ChatScreenState extends State<ChatScreen>
                                   Row(
                                     children: [
                                       IconButton(
-                                        icon: Icon(Icons.attach_file,
-                                            color: Colors.red),
+                                        icon: Icon(
+                                          Icons.attach_file,
+                                          color: Colors.red,
+                                        ),
                                         onPressed: _showAttachmentOptions,
                                       ),
                                       IconButton(
@@ -4766,8 +5241,8 @@ class _ChatScreenState extends State<ChatScreen>
                                           color: _showEmojiPicker
                                               ? AppColors.primary
                                               : (isDarkTheme
-                                                  ? Colors.grey.shade300
-                                                  : Colors.grey),
+                                                    ? Colors.grey.shade300
+                                                    : Colors.grey),
                                         ),
                                         onPressed: _toggleEmojiPanel,
                                       ),
@@ -4797,7 +5272,12 @@ class _ChatScreenState extends State<ChatScreen>
                                           decoration: InputDecoration(
                                             hintText: _replyingTo != null
                                                 ? 'Reply to ${_replyingTo!.isMe ? "your message" : widget.contact.name}...'
-                                                : 'Type a message...',
+                                                : chatCallTr(
+                                                    context,
+                                                    'chatCall_typeMessageHint',
+                                                    fallback:
+                                                        'Type a message...',
+                                                  ),
                                             hintStyle: TextStyle(
                                               color: isDarkTheme
                                                   ? Colors.grey.shade500
@@ -4814,9 +5294,9 @@ class _ChatScreenState extends State<ChatScreen>
                                                 : Colors.grey.shade100,
                                             contentPadding:
                                                 const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 12,
-                                            ),
+                                                  horizontal: 16,
+                                                  vertical: 12,
+                                                ),
                                           ),
                                           textCapitalization:
                                               TextCapitalization.sentences,
@@ -4827,8 +5307,9 @@ class _ChatScreenState extends State<ChatScreen>
                                           .trim()
                                           .isNotEmpty)
                                         CircleAvatar(
-                                          backgroundColor:
-                                              const Color(0xffc62828),
+                                          backgroundColor: const Color(
+                                            0xffc62828,
+                                          ),
                                           child: IconButton(
                                             icon: const Icon(Icons.send),
                                             color: Colors.white,
@@ -4854,14 +5335,15 @@ class _ChatScreenState extends State<ChatScreen>
                                             // Show hint for long press
                                             EnhancedToast.info(
                                               context,
-                                              title: 'Voice Note',
+                                              title: chatCallTr(context, 'chatCall_voiceNote', fallback: 'Voice Note'),
                                               message:
-                                                  'Hold to record a voice message',
+                                                  chatCallTr(context, 'chatCall_holdToRecordVoice', fallback: 'Hold to record a voice message'),
                                             );
                                           },
                                           child: AnimatedContainer(
                                             duration: const Duration(
-                                                milliseconds: 200),
+                                              milliseconds: 200,
+                                            ),
                                             width: 48,
                                             height: 48,
                                             decoration: BoxDecoration(
@@ -4872,11 +5354,15 @@ class _ChatScreenState extends State<ChatScreen>
                                               boxShadow: _isPressingMic
                                                   ? [
                                                       BoxShadow(
-                                                        color: const Color(0xffc62828),
+                                                        color: const Color(
+                                                          0xffc62828,
+                                                        ),
                                                         spreadRadius: 4,
                                                         blurRadius: 8,
-                                                        offset:
-                                                            const Offset(0, 2),
+                                                        offset: const Offset(
+                                                          0,
+                                                          2,
+                                                        ),
                                                       ),
                                                     ]
                                                   : null,
@@ -4924,7 +5410,8 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildMessageBubble(ChatMessage message) {
-    final isDarkTheme = _chatTheme == ThemeMode.dark ||
+    final isDarkTheme =
+        _chatTheme == ThemeMode.dark ||
         (_chatTheme == ThemeMode.system &&
             MediaQuery.of(context).platformBrightness == Brightness.dark);
     final isSelected = _selectedMessageIds.contains(message.id);
@@ -4932,7 +5419,8 @@ class _ChatScreenState extends State<ChatScreen>
 
     // Check if we need to show date separator
     final messageIndex = _messages.indexOf(message);
-    final showDateSeparator = messageIndex == 0 ||
+    final showDateSeparator =
+        messageIndex == 0 ||
         _messages[messageIndex - 1].timestamp.day != message.timestamp.day ||
         _messages[messageIndex - 1].timestamp.month !=
             message.timestamp.month ||
@@ -4960,8 +5448,8 @@ class _ChatScreenState extends State<ChatScreen>
             direction: selectionActive
                 ? DismissDirection.none
                 : (message.isMe
-                    ? DismissDirection.endToStart
-                    : DismissDirection.startToEnd),
+                      ? DismissDirection.endToStart
+                      : DismissDirection.startToEnd),
             confirmDismiss: (direction) async {
               // Handle the swipe action without removing the widget
               if (selectionActive) return false;
@@ -4970,21 +5458,19 @@ class _ChatScreenState extends State<ChatScreen>
               });
               EnhancedToast.info(
                 context,
-                title: 'Replying',
-                message: 'Tap to send your reply',
+                title: chatCallTr(context, 'chatCall_replaying', fallback: 'Replying'),
+                message: chatCallTr(context, 'chatCall_tapToSendReply', fallback: 'Tap to send your reply'),
               );
               // Return false to prevent the widget from being removed
               return false;
             },
             background: Container(
-              alignment:
-                  message.isMe ? Alignment.centerRight : Alignment.centerLeft,
+              alignment: message.isMe
+                  ? Alignment.centerRight
+                  : Alignment.centerLeft,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               color: AppColors.primary.withOpacity(0.1),
-              child: const Icon(
-                Icons.reply,
-                color: AppColors.primary,
-              ),
+              child: const Icon(Icons.reply, color: AppColors.primary),
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
@@ -4999,8 +5485,9 @@ class _ChatScreenState extends State<ChatScreen>
                       builder: (context) {
                         // Get avatar from cache (like group chat)
                         // For 1-to-1 chat, use contact ID to lookup avatar
-                        String? avatarUrl =
-                            _getAvatarForSender(widget.contact.id);
+                        String? avatarUrl = _getAvatarForSender(
+                          widget.contact.id,
+                        );
 
                         // Fallback to _memberAvatar or widget.contact.photoUrl
                         if (avatarUrl == null || avatarUrl.isEmpty) {
@@ -5011,24 +5498,28 @@ class _ChatScreenState extends State<ChatScreen>
                             avatarUrl != null && avatarUrl.isNotEmpty;
 
                         return GestureDetector(
-                          onTap: hasAvatar && avatarUrl != null
+                          onTap: hasAvatar
                               ? () => _previewAvatar(
-                                    _getHighResAvatarUrl(avatarUrl!),
-                                  )
+                                  _getHighResAvatarUrl(avatarUrl!),
+                                )
                               : null,
                           child: Stack(
                             children: [
                               CircleAvatar(
                                 radius: 16,
-                                backgroundColor:
-                                    AppColors.primary.withOpacity(0.1),
+                                backgroundColor: AppColors.primary.withOpacity(
+                                  0.1,
+                                ),
                                 // Use cached avatar from RoomInfo API, WebSocket message, or Messages API
                                 // Priority: _memberAvatarCache > _memberAvatar > widget.contact.photoUrl > initials
-                                backgroundImage:
-                                    hasAvatar ? NetworkImage(avatarUrl!) : null,
+                                backgroundImage: hasAvatar
+                                    ? NetworkImage(avatarUrl)
+                                    : null,
                                 onBackgroundImageError: hasAvatar
                                     ? (exception, stackTrace) {
-                                        log('⚠️ [ChatScreen] Failed to load avatar for ${widget.contact.id}: $exception');
+                                        log(
+                                          '⚠️ [ChatScreen] Failed to load avatar for ${widget.contact.id}: $exception',
+                                        );
                                         log('   Avatar URL: $avatarUrl');
                                       }
                                     : null,
@@ -5054,7 +5545,9 @@ class _ChatScreenState extends State<ChatScreen>
                                       color: Colors.green,
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                          color: Colors.white, width: 2),
+                                        color: Colors.white,
+                                        width: 2,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -5077,11 +5570,16 @@ class _ChatScreenState extends State<ChatScreen>
                           decoration: BoxDecoration(
                             color: message.isMe
                                 ? (isDarkTheme
-                                    ? const Color.fromRGBO(0, 132, 255, 1.0)
-                                    : const Color.fromRGBO(255, 179, 179, 0.4))
+                                      ? const Color.fromRGBO(0, 132, 255, 1.0)
+                                      : const Color.fromRGBO(
+                                          255,
+                                          179,
+                                          179,
+                                          0.4,
+                                        ))
                                 : (isDarkTheme
-                                    ? Colors.grey.shade800
-                                    : Colors.white),
+                                      ? Colors.grey.shade800
+                                      : Colors.white),
                             borderRadius: BorderRadius.circular(18),
                             border: isSelected
                                 ? Border.all(color: AppColors.primary, width: 1)
@@ -5113,8 +5611,7 @@ class _ChatScreenState extends State<ChatScreen>
                                         color: Colors.grey.shade700,
                                       ),
                                       const SizedBox(width: 4),
-                                      Text(
-                                        'Forwarded',
+                                      Text(chatCallTr(context, 'chatCall_forwardedToast', fallback: 'Forwarded'),
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
@@ -5136,7 +5633,9 @@ class _ChatScreenState extends State<ChatScreen>
                                   builder: (context) {
                                     // Debug logging for image rendering
                                     if (message.imageUrl != null) {
-                                      log('🖼️ [ChatScreen] Rendering image - imageUrl: ${message.imageUrl!.length > 50 ? message.imageUrl!.substring(0, 50) + "..." : message.imageUrl}');
+                                      log(
+                                        '🖼️ [ChatScreen] Rendering image - imageUrl: ${message.imageUrl!.length > 50 ? message.imageUrl!.substring(0, 50) + "..." : message.imageUrl}',
+                                      );
                                     }
                                     return Stack(
                                       children: [
@@ -5146,49 +5645,66 @@ class _ChatScreenState extends State<ChatScreen>
                                               _previewImage(message.imageFile!);
                                             } else if (message.imageUrl !=
                                                 null) {
-                                              log('👆 [ChatScreen] Image tapped - previewing: ${message.imageUrl}');
+                                              log(
+                                                '👆 [ChatScreen] Image tapped - previewing: ${message.imageUrl}',
+                                              );
                                               _previewImageUrl(
-                                                  message.imageUrl!);
+                                                message.imageUrl!,
+                                              );
                                             }
                                           },
                                           child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                             child: message.imageFile != null
                                                 ? Image.file(
                                                     message.imageFile!,
                                                     width: double.infinity,
                                                     fit: BoxFit.cover,
-                                                    errorBuilder: (context,
-                                                        error, stackTrace) {
-                                                      log('❌ [ChatScreen] Failed to load local image file: $error');
-                                                      return Container(
-                                                        height: 150,
-                                                        color: Colors
-                                                            .grey.shade300,
-                                                        child: const Icon(
-                                                            Icons.broken_image),
-                                                      );
-                                                    },
+                                                    errorBuilder:
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) {
+                                                          log(
+                                                            '❌ [ChatScreen] Failed to load local image file: $error',
+                                                          );
+                                                          return Container(
+                                                            height: 150,
+                                                            color: Colors
+                                                                .grey
+                                                                .shade300,
+                                                            child: const Icon(
+                                                              Icons
+                                                                  .broken_image,
+                                                            ),
+                                                          );
+                                                        },
                                                   )
                                                 : _buildNetworkImage(
-                                                    message.imageUrl!),
+                                                    message.imageUrl!,
+                                                  ),
                                           ),
                                         ),
                                         // Download button overlay (like WhatsApp)
                                         if (message.imageUrl != null &&
-                                            !_uploadingFiles
-                                                .containsKey(message.id))
+                                            !_uploadingFiles.containsKey(
+                                              message.id,
+                                            ))
                                           Positioned(
                                             bottom: 8,
                                             right: 8,
                                             child: GestureDetector(
                                               onTap: () =>
                                                   _downloadImageFromUrl(
-                                                      message.imageUrl!),
+                                                    message.imageUrl!,
+                                                  ),
                                               child: Container(
-                                                padding:
-                                                    const EdgeInsets.all(8),
+                                                padding: const EdgeInsets.all(
+                                                  8,
+                                                ),
                                                 decoration: BoxDecoration(
                                                   color: Colors.black
                                                       .withOpacity(0.6),
@@ -5205,13 +5721,15 @@ class _ChatScreenState extends State<ChatScreen>
                                         // Upload progress overlay
                                         if (_uploadingFiles[message.id] ==
                                                 true &&
-                                            _uploadProgress
-                                                .containsKey(message.id))
+                                            _uploadProgress.containsKey(
+                                              message.id,
+                                            ))
                                           Positioned.fill(
                                             child: Container(
                                               decoration: BoxDecoration(
-                                                color: Colors.black
-                                                    .withOpacity(0.5),
+                                                color: Colors.black.withOpacity(
+                                                  0.5,
+                                                ),
                                                 borderRadius:
                                                     BorderRadius.circular(12),
                                               ),
@@ -5223,8 +5741,8 @@ class _ChatScreenState extends State<ChatScreen>
                                                     const CircularProgressIndicator(
                                                       valueColor:
                                                           AlwaysStoppedAnimation<
-                                                                  Color>(
-                                                              Colors.white),
+                                                            Color
+                                                          >(Colors.white),
                                                     ),
                                                     const SizedBox(height: 8),
                                                     Text(
@@ -5267,17 +5785,20 @@ class _ChatScreenState extends State<ChatScreen>
                                   onTap: () {
                                     // Only allow tap if not uploading or downloading
                                     if (_uploadingFiles[message.id] != true &&
-                                        !_videoDownloadInProgress
-                                            .contains(message.id)) {
+                                        !_videoDownloadInProgress.contains(
+                                          message.id,
+                                        )) {
                                       _handleChatVideoTap(message);
                                     }
                                   },
-                                  onDownload: (message.videoUrl != null &&
+                                  onDownload:
+                                      (message.videoUrl != null &&
                                               message.videoUrl!.isNotEmpty &&
                                               message.videoFile == null) &&
                                           _uploadingFiles[message.id] != true &&
-                                          !_videoDownloadInProgress
-                                              .contains(message.id)
+                                          !_videoDownloadInProgress.contains(
+                                            message.id,
+                                          )
                                       ? () {
                                           // Download video from URL
                                           _downloadVideoWithProgress(message);
@@ -5302,8 +5823,7 @@ class _ChatScreenState extends State<ChatScreen>
                                         color: Colors.green,
                                       ),
                                       const SizedBox(height: 8),
-                                      Text(
-                                        'Location Shared',
+                                      Text(chatCallTr(context, 'chatCall_locationShared', fallback: 'Location Shared'),
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           color: Colors.grey.shade700,
@@ -5326,16 +5846,17 @@ class _ChatScreenState extends State<ChatScreen>
                                           if (message.documentFile != null) {
                                             // Show options: Open or Download
                                             _showDocumentOptions(
-                                                message.documentFile!,
-                                                message.documentName ??
-                                                    'Document');
+                                              message.documentFile!,
+                                              message.documentName ??
+                                                  chatCallTr(context, 'chatCall_document', fallback: 'Document'),
+                                            );
                                           } else if (message.documentUrl !=
                                               null) {
                                             // Download document from S3 URL
                                             _downloadDocumentFromUrl(
                                               message.documentUrl!,
                                               message.documentName ??
-                                                  'Document',
+                                                  chatCallTr(context, 'chatCall_document', fallback: 'Document'),
                                             );
                                           }
                                         },
@@ -5343,27 +5864,28 @@ class _ChatScreenState extends State<ChatScreen>
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
                                             color: _getDocumentColor(
-                                                    message.documentType ??
-                                                        'other')
-                                                .withOpacity(0.1),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
+                                              message.documentType ?? 'other',
+                                            ).withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                             border: Border.all(
                                               color: _getDocumentColor(
-                                                      message.documentType ??
-                                                          'other')
-                                                  .withOpacity(0.3),
+                                                message.documentType ?? 'other',
+                                              ).withOpacity(0.3),
                                             ),
                                           ),
                                           child: Row(
                                             children: [
                                               Icon(
                                                 _getDocumentIcon(
-                                                    message.documentType ??
-                                                        'other'),
+                                                  message.documentType ??
+                                                      'other',
+                                                ),
                                                 color: _getDocumentColor(
-                                                    message.documentType ??
-                                                        'other'),
+                                                  message.documentType ??
+                                                      'other',
+                                                ),
                                                 size: 32,
                                               ),
                                               const SizedBox(width: 12),
@@ -5374,7 +5896,7 @@ class _ChatScreenState extends State<ChatScreen>
                                                   children: [
                                                     Text(
                                                       message.documentName ??
-                                                          'Document',
+                                                          chatCallTr(context, 'chatCall_document', fallback: 'Document'),
                                                       style: const TextStyle(
                                                         fontWeight:
                                                             FontWeight.bold,
@@ -5388,12 +5910,23 @@ class _ChatScreenState extends State<ChatScreen>
                                                     Text(
                                                       message.documentFile !=
                                                               null
-                                                          ? 'Tap to open'
-                                                          : 'Tap to download',
+                                                          ? chatCallTr(
+                                                              context,
+                                                              'chatCall_tapToOpen',
+                                                              fallback:
+                                                                  'Tap to open',
+                                                            )
+                                                          : chatCallTr(
+                                                              context,
+                                                              'chatCall_tapToDownload',
+                                                              fallback:
+                                                                  'Tap to download',
+                                                            ),
                                                       style: TextStyle(
                                                         fontSize: 12,
                                                         color: Colors
-                                                            .grey.shade600,
+                                                            .grey
+                                                            .shade600,
                                                       ),
                                                     ),
                                                   ],
@@ -5418,7 +5951,7 @@ class _ChatScreenState extends State<ChatScreen>
                                                     _downloadDocumentFromUrl(
                                                       message.documentUrl!,
                                                       message.documentName ??
-                                                          'Document',
+                                                          chatCallTr(context, 'chatCall_document', fallback: 'Document'),
                                                     );
                                                   }
                                                 },
@@ -5462,16 +5995,14 @@ class _ChatScreenState extends State<ChatScreen>
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            Text(
-                                              'Contact Shared',
+                                            Text(chatCallTr(context, 'chatCall_contactShared', fallback: 'Contact Shared'),
                                               style: const TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 14,
                                               ),
                                             ),
                                             const SizedBox(height: 4),
-                                            Text(
-                                              'Tap to view details',
+                                            Text(chatCallTr(context, 'tapToViewDetails', fallback: 'Tap to view details'),
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 color: Colors.grey.shade600,
@@ -5496,15 +6027,16 @@ class _ChatScreenState extends State<ChatScreen>
                                   isFromMe: message.isMe,
                                   audioPlayer: _audioPlayer,
                                   messageId: message.id,
-                                  isPlaying: _isPlayingAudio &&
+                                  isPlaying:
+                                      _isPlayingAudio &&
                                       _playingAudioId == message.id,
                                   onTogglePlayback: () =>
                                       _toggleAudioPlayback(message),
                                   onDownload: message.audioFile != null
                                       ? () => _downloadFile(
-                                            message.audioFile!,
-                                            'audio_${DateTime.now().millisecondsSinceEpoch}.m4a',
-                                          )
+                                          message.audioFile!,
+                                          'audio_${DateTime.now().millisecondsSinceEpoch}.m4a',
+                                        )
                                       : null,
                                 ),
                                 const SizedBox(height: 8),
@@ -5514,11 +6046,13 @@ class _ChatScreenState extends State<ChatScreen>
                               if (message.isDeleted)
                                 Row(
                                   children: [
-                                    Icon(Icons.block,
-                                        size: 14, color: Colors.grey.shade600),
+                                    Icon(
+                                      Icons.block,
+                                      size: 14,
+                                      color: Colors.grey.shade600,
+                                    ),
                                     const SizedBox(width: 4),
-                                    Text(
-                                      'This message was deleted',
+                                    Text(chatCallTr(context, 'chatCall_thisMessageWasDeleted', fallback: 'This message was deleted'),
                                       style: TextStyle(
                                         color: Colors.grey.shade600,
                                         fontStyle: FontStyle.italic,
@@ -5535,11 +6069,11 @@ class _ChatScreenState extends State<ChatScreen>
                                   style: TextStyle(
                                     color: isDarkTheme
                                         ? (message.isMe
-                                            ? Colors.white
-                                            : Colors.white)
+                                              ? Colors.white
+                                              : Colors.white)
                                         : (message.isMe
-                                            ? Colors.black
-                                            : Colors.black),
+                                              ? Colors.black
+                                              : Colors.black),
                                     fontSize: _fontSize,
                                   ),
                                 ),
@@ -5556,8 +6090,7 @@ class _ChatScreenState extends State<ChatScreen>
                                           : Colors.grey.shade600,
                                     ),
                                     const SizedBox(width: 2),
-                                    Text(
-                                      'edited',
+                                    Text(chatCallTr(context, 'chatCall_edited', fallback: 'edited'),
                                       style: TextStyle(
                                         color: isDarkTheme
                                             ? Colors.grey.shade400
@@ -5578,11 +6111,11 @@ class _ChatScreenState extends State<ChatScreen>
                                     style: TextStyle(
                                       color: isDarkTheme
                                           ? (message.isMe
-                                              ? Colors.white.withOpacity(0.7)
-                                              : Colors.grey.shade400)
+                                                ? Colors.white.withOpacity(0.7)
+                                                : Colors.grey.shade400)
                                           : (message.isMe
-                                              ? Colors.black.withOpacity(0.7)
-                                              : Colors.grey),
+                                                ? Colors.black.withOpacity(0.7)
+                                                : Colors.grey),
                                       fontSize: 10,
                                     ),
                                   ),
@@ -5608,8 +6141,10 @@ class _ChatScreenState extends State<ChatScreen>
                               decoration: BoxDecoration(
                                 color: AppColors.primary,
                                 shape: BoxShape.circle,
-                                border:
-                                    Border.all(color: Colors.white, width: 2),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
                               ),
                               padding: const EdgeInsets.all(2),
                               child: const Icon(
@@ -5642,9 +6177,7 @@ class _ChatScreenState extends State<ChatScreen>
           bottomLeft: Radius.circular(4),
           bottomRight: Radius.circular(4),
         ),
-        border: Border(
-          left: BorderSide(color: AppColors.primary, width: 3),
-        ),
+        border: Border(left: BorderSide(color: AppColors.primary, width: 3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -5665,11 +6198,8 @@ class _ChatScreenState extends State<ChatScreen>
           ),
           const SizedBox(height: 2),
           Text(
-            replyTo.isDeleted ? 'This message was deleted' : replyTo.text,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade700,
-            ),
+            replyTo.isDeleted ? chatCallTr(context, 'chatCall_thisMessageWasDeletedShort', fallback: 'This message was deleted') : replyTo.text,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
             overflow: TextOverflow.visible,
           ),
         ],
@@ -5694,10 +6224,12 @@ class _ChatScreenState extends State<ChatScreen>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ...uniqueReactionTypes.map((reactionType) => Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: _reactionIcon(reactionType),
-                )),
+            ...uniqueReactionTypes.map(
+              (reactionType) => Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: _reactionIcon(reactionType),
+              ),
+            ),
             if (reactionCounts.length > 3)
               Text(
                 '+${reactionCounts.length - 3}',
@@ -5727,8 +6259,9 @@ class _ChatScreenState extends State<ChatScreen>
           children: [
             if (preview.imageUrl != null)
               ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(8)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(8),
+                ),
                 child: Image.network(
                   preview.imageUrl!,
                   width: double.infinity,
@@ -5798,7 +6331,9 @@ class _ChatScreenState extends State<ChatScreen>
       for (final reactionType in uniqueReactionTypes) {
         final hasUserReacted = _hasUserReacted(message, reactionType);
         if (hasUserReacted) {
-          log('🔍 [ChatScreen] User has reacted with $reactionType - cancel icon should show');
+          log(
+            '🔍 [ChatScreen] User has reacted with $reactionType - cancel icon should show',
+          );
         }
       }
     }
@@ -5976,7 +6511,8 @@ class _ChatScreenState extends State<ChatScreen>
         _pendingForwardMessageIds!.isEmpty) {
       return;
     }
-    if (_currentRoomId == null || _isLoading) return;
+    if (_currentRoomId == null) return;
+
     _insertForwardPlaceholders();
 
     _forwardIntentInFlight = true;
@@ -5985,13 +6521,26 @@ class _ChatScreenState extends State<ChatScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
+      barrierColor: Colors.black54,
+      builder: (_) => Center(
+        child: OneGateGlobalLoader(
+          title: chatCallTr(context, 'chatCall_forwarding', fallback: 'Forwarding'),
+          subtitle: chatCallTr(context, 'chatCall_sendingYourMessages', fallback: 'Sending your messages...'),
+        ),
+      ),
     );
 
     try {
-      final isMember = await _chatService.ensureMembership(_currentRoomId!);
-      if (!isMember) {
-        throw Exception('You are not a member of this chat');
+      final companyId = await _apiService.getSelectedSocietyId();
+      if (companyId != null) {
+        final membership = await _chatService.validateMembership(
+          _currentRoomId!,
+          isMember: true,
+          companyId: companyId,
+        );
+        if (membership.isNotMember) {
+          throw Exception('You are not a member of this chat');
+        }
       }
 
       int success = 0;
@@ -6015,9 +6564,13 @@ class _ChatScreenState extends State<ChatScreen>
                 } catch (_) {}
               } else if (item is Map) {
                 try {
-                  createdMessages.add(RoomMessage.fromJson(
+                  createdMessages.add(
+                    RoomMessage.fromJson(
                       Map<String, dynamic>.from(
-                          item.map((k, v) => MapEntry(k.toString(), v)))));
+                        item.map((k, v) => MapEntry(k.toString(), v)),
+                      ),
+                    ),
+                  );
                 } catch (_) {}
               }
             }
@@ -6039,20 +6592,20 @@ class _ChatScreenState extends State<ChatScreen>
       if (success == (_pendingForwardMessageIds?.length ?? 0)) {
         EnhancedToast.success(
           context,
-          title: 'Forwarded',
+          title: chatCallTr(context, 'chatCall_forwardedToast', fallback: 'Forwarded'),
           message: 'Message${success > 1 ? 's' : ''} forwarded successfully.',
         );
       } else if (success > 0) {
         EnhancedToast.warning(
           context,
-          title: 'Partially sent',
+          title: chatCallTr(context, 'chatCall_partiallySent', fallback: 'Partially sent'),
           message:
               '$success of ${_pendingForwardMessageIds!.length} sent. ${failures.isNotEmpty ? failures.first : ''}',
         );
       } else {
         EnhancedToast.error(
           context,
-          title: 'Failed',
+          title: chatCallTr(context, 'chatCall_failed', fallback: 'Failed'),
           message: failures.isNotEmpty
               ? failures.first
               : 'Could not forward right now.',
@@ -6066,8 +6619,8 @@ class _ChatScreenState extends State<ChatScreen>
       Navigator.of(context).pop();
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Failed to forward message: $e',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_failedToForwardMessage', fallback: 'Failed to forward message: {error}', params: {'error': '$e'}),
       );
     } finally {
       _pendingForwardMessageIds = null;
@@ -6079,12 +6632,15 @@ class _ChatScreenState extends State<ChatScreen>
   /// Replaces temp forward placeholders with real messages from API response
   /// so the list has real ids and is_forwarded from server (persists on re-entry).
   void _replaceForwardPlaceholdersWithCreatedMessages(
-      List<RoomMessage> createdMessages) {
+    List<RoomMessage> createdMessages,
+  ) {
     if (createdMessages.isEmpty) return;
     setState(() {
-      for (int i = 0;
-          i < createdMessages.length && i < _forwardPlaceholderIds.length;
-          i++) {
+      for (
+        int i = 0;
+        i < createdMessages.length && i < _forwardPlaceholderIds.length;
+        i++
+      ) {
         final tempId = _forwardPlaceholderIds[i];
         final rm = createdMessages[i];
         final idx = _messages.indexWhere((m) => m.id == tempId);
@@ -6196,8 +6752,8 @@ class _ChatScreenState extends State<ChatScreen>
     });
     EnhancedToast.info(
       context,
-      title: 'Selected',
-      message: 'Select more messages or tap the forward icon',
+      title: chatCallTr(context, 'chatCall_selected', fallback: 'Selected'),
+      message: chatCallTr(context, 'chatCall_selectMoreOrForward', fallback: 'Select more messages or tap the forward icon'),
     );
   }
 
@@ -6206,8 +6762,8 @@ class _ChatScreenState extends State<ChatScreen>
     if (selectedMessages.isEmpty) {
       EnhancedToast.warning(
         context,
-        title: 'Nothing selected',
-        message: 'Choose at least one message to forward.',
+        title: chatCallTr(context, 'chatCall_nothingSelected', fallback: 'Nothing selected'),
+        message: chatCallTr(context, 'chatCall_chooseAtLeastOneToForward', fallback: 'Choose at least one message to forward.'),
       );
       return;
     }
@@ -6216,8 +6772,8 @@ class _ChatScreenState extends State<ChatScreen>
     if (companyId == null) {
       EnhancedToast.warning(
         context,
-        title: 'Society Required',
-        message: 'Select a society before forwarding messages.',
+        title: chatCallTr(context, 'chatCall_societyRequired', fallback: 'Society Required'),
+        message: chatCallTr(context, 'chatCall_selectSocietyBeforeForward', fallback: 'Select a society before forwarding messages.'),
       );
       return;
     }
@@ -6267,8 +6823,11 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
-  Future<void> _navigateToContactForForward(IntercomContact contact,
-      List<String> messageIds, List<ForwardPayload> payloads) async {
+  Future<void> _navigateToContactForForward(
+    IntercomContact contact,
+    List<String> messageIds,
+    List<ForwardPayload> payloads,
+  ) async {
     NavigationHelper.pushRoute(
       context,
       MaterialPageRoute(
@@ -6282,15 +6841,18 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Future<void> _navigateToGroupForForward(
-      Room room, List<String> messageIds, List<ForwardPayload> payloads) async {
+    Room room,
+    List<String> messageIds,
+    List<ForwardPayload> payloads,
+  ) async {
     if (_currentUserId == null) {
       await _loadCurrentUserId();
     }
     if (_currentUserId == null) {
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'User information not ready. Please try again.',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_userInformationNotReadyPleaseTry', fallback: 'User information not ready. Please try again.'),
       );
       return;
     }
@@ -6330,14 +6892,17 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Future<void> _forwardMessagesToRoom(
-      Room targetRoom, List<ChatMessage> messages) async {
-    final forwardable =
-        messages.where((m) => !m.isDeleted && m.id.isNotEmpty).toList();
+    Room targetRoom,
+    List<ChatMessage> messages,
+  ) async {
+    final forwardable = messages
+        .where((m) => !m.isDeleted && m.id.isNotEmpty)
+        .toList();
     if (forwardable.isEmpty) {
       EnhancedToast.warning(
         context,
-        title: 'Nothing to send',
-        message: 'Selected messages are empty or deleted.',
+        title: chatCallTr(context, 'chatCall_nothingToSend', fallback: 'Nothing to send'),
+        message: chatCallTr(context, 'chatCall_selectedMessagesEmpty', fallback: 'Selected messages are empty or deleted.'),
       );
       return;
     }
@@ -6385,21 +6950,21 @@ class _ChatScreenState extends State<ChatScreen>
         _clearSelection();
         EnhancedToast.success(
           context,
-          title: 'Forwarded',
+          title: chatCallTr(context, 'chatCall_forwardedToast', fallback: 'Forwarded'),
           message:
               'Message${messages.length > 1 ? 's' : ''} sent to ${targetRoom.name}.',
         );
       } else if (successCount > 0) {
         EnhancedToast.warning(
           context,
-          title: 'Partially sent',
+          title: chatCallTr(context, 'chatCall_partiallySent', fallback: 'Partially sent'),
           message:
               '$successCount of ${forwardable.length} message(s) forwarded. ${failures.isNotEmpty ? failures.first : ''}',
         );
       } else {
         EnhancedToast.error(
           context,
-          title: 'Failed',
+          title: chatCallTr(context, 'chatCall_failed', fallback: 'Failed'),
           message: failures.isNotEmpty
               ? failures.first
               : 'Could not forward right now. Please try again.',
@@ -6413,8 +6978,8 @@ class _ChatScreenState extends State<ChatScreen>
       });
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Failed to forward message: $e',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_failedToForwardMessage', fallback: 'Failed to forward message: {error}', params: {'error': '$e'}),
       );
     }
   }
@@ -6445,7 +7010,9 @@ class _ChatScreenState extends State<ChatScreen>
                 if (!message.isDeleted) ...[
                   ListTile(
                     leading: const Icon(Icons.reply, color: Colors.blue),
-                    title: const Text('Reply'),
+                    title: Text(
+                      chatCallTr(context, 'chatCall_reply', fallback: 'Reply'),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       setState(() {
@@ -6455,16 +7022,30 @@ class _ChatScreenState extends State<ChatScreen>
                   ),
                   ListTile(
                     leading: const Icon(Icons.forward, color: Colors.purple),
-                    title: const Text('Forward'),
+                    title: Text(
+                      chatCallTr(
+                        context,
+                        'chatCall_forward',
+                        fallback: 'Forward',
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       _startForwardSelection(message);
                     },
                   ),
                   ListTile(
-                    leading:
-                        const Icon(Icons.add_reaction, color: Colors.orange),
-                    title: const Text('Add Reaction'),
+                    leading: const Icon(
+                      Icons.add_reaction,
+                      color: Colors.orange,
+                    ),
+                    title: Text(
+                      chatCallTr(
+                        context,
+                        'chatCall_addReaction',
+                        fallback: 'Add Reaction',
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       _showReactionPicker(message);
@@ -6473,9 +7054,17 @@ class _ChatScreenState extends State<ChatScreen>
                   // Show "Remove Reaction" option if user has reacted
                   if (_hasUserReactedAny(message)) ...[
                     ListTile(
-                      leading: const Icon(Icons.remove_circle_outline,
-                          color: Colors.red),
-                      title: const Text('Remove Reaction'),
+                      leading: const Icon(
+                        Icons.remove_circle_outline,
+                        color: Colors.red,
+                      ),
+                      title: Text(
+                        chatCallTr(
+                          context,
+                          'chatCall_removeReaction',
+                          fallback: 'Remove Reaction',
+                        ),
+                      ),
                       onTap: () {
                         Navigator.pop(context);
                         final userReaction = _getUserReaction(message);
@@ -6489,7 +7078,13 @@ class _ChatScreenState extends State<ChatScreen>
                   // API will fetch reactions even if not loaded locally
                   ListTile(
                     leading: const Icon(Icons.people, color: Colors.blue),
-                    title: const Text('View Who Reacted'),
+                    title: Text(
+                      chatCallTr(
+                        context,
+                        'chatCall_viewWhoReacted',
+                        fallback: 'View Who Reacted',
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       _showWhoReacted(message);
@@ -6498,9 +7093,17 @@ class _ChatScreenState extends State<ChatScreen>
                 ],
                 if (message.replyTo != null && !message.replyTo!.isDeleted) ...[
                   ListTile(
-                    leading:
-                        const Icon(Icons.add_reaction, color: Colors.orange),
-                    title: const Text('Add Reaction to Reply'),
+                    leading: const Icon(
+                      Icons.add_reaction,
+                      color: Colors.orange,
+                    ),
+                    title: Text(
+                      chatCallTr(
+                        context,
+                        'chatCall_addReactionToReply',
+                        fallback: 'Add Reaction to Reply',
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       _showReactionPicker(message.replyTo!);
@@ -6510,7 +7113,13 @@ class _ChatScreenState extends State<ChatScreen>
                 if (message.isMe && !message.isDeleted) ...[
                   ListTile(
                     leading: const Icon(Icons.edit, color: Colors.green),
-                    title: const Text('Edit Message'),
+                    title: Text(
+                      chatCallTr(
+                        context,
+                        'chatCall_editMessage',
+                        fallback: 'Edit Message',
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       _editMessage(message);
@@ -6518,7 +7127,13 @@ class _ChatScreenState extends State<ChatScreen>
                   ),
                   ListTile(
                     leading: const Icon(Icons.delete, color: Colors.red),
-                    title: const Text('Delete Message'),
+                    title: Text(
+                      chatCallTr(
+                        context,
+                        'chatCall_deleteMessage',
+                        fallback: 'Delete Message',
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       _deleteMessage(message);
@@ -6533,9 +7148,11 @@ class _ChatScreenState extends State<ChatScreen>
                           : Icons.play_arrow,
                       color: Colors.purple,
                     ),
-                    title: Text(_isPlayingAudio && _playingAudioId == message.id
-                        ? 'Pause'
-                        : 'Play'),
+                    title: Text(
+                      _isPlayingAudio && _playingAudioId == message.id
+                          ? 'Pause'
+                          : 'Play',
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       _toggleAudioPlayback(message);
@@ -6569,11 +7186,11 @@ class _ChatScreenState extends State<ChatScreen>
               final screenHeight = MediaQuery.of(context).size.height;
               final targetHeight = (screenHeight * 0.28).clamp(140.0, 200.0);
               final sheetHeight =
-                  targetHeight > constraints.maxHeight && constraints.maxHeight > 0
-                      ? constraints.maxHeight
-                      : targetHeight;
-              final loaderSize =
-                  (sheetHeight - 32).clamp(80.0, 140.0);
+                  targetHeight > constraints.maxHeight &&
+                      constraints.maxHeight > 0
+                  ? constraints.maxHeight
+                  : targetHeight;
+              final loaderSize = (sheetHeight - 32).clamp(80.0, 140.0);
               return Container(
                 height: sheetHeight,
                 decoration: const BoxDecoration(
@@ -6611,8 +7228,8 @@ class _ChatScreenState extends State<ChatScreen>
         if (reactions.isEmpty) {
           EnhancedToast.info(
             context,
-            title: 'No Reactions',
-            message: 'No one has reacted to this message yet',
+            title: chatCallTr(context, 'No Reactions', fallback: 'No Reactions'),
+            message: chatCallTr(context, 'chatCall_noOneHasReactedToThis', fallback: 'No one has reacted to this message yet'),
           );
           return;
         }
@@ -6658,8 +7275,7 @@ class _ChatScreenState extends State<ChatScreen>
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         children: [
-                          const Text(
-                            'Reactions',
+                          Text(chatCallTr(context, 'chatCall_reactions', fallback: 'Reactions'),
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -6679,8 +7295,9 @@ class _ChatScreenState extends State<ChatScreen>
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         itemCount: groupedReactions.length,
                         itemBuilder: (context, index) {
-                          final reactionType =
-                              groupedReactions.keys.elementAt(index);
+                          final reactionType = groupedReactions.keys.elementAt(
+                            index,
+                          );
                           final reactionList = groupedReactions[reactionType]!;
 
                           return Column(
@@ -6694,8 +7311,9 @@ class _ChatScreenState extends State<ChatScreen>
                                 }
 
                                 // Get avatar URL for this user
-                                String? avatarUrl =
-                                    _getAvatarForSender(reaction.userId);
+                                String? avatarUrl = _getAvatarForSender(
+                                  reaction.userId,
+                                );
 
                                 // Get initials for fallback
                                 final initials = displayName.isNotEmpty
@@ -6709,7 +7327,8 @@ class _ChatScreenState extends State<ChatScreen>
                                   children: [
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
-                                          vertical: 12),
+                                        vertical: 12,
+                                      ),
                                       child: Row(
                                         children: [
                                           CircleAvatar(
@@ -6718,12 +7337,16 @@ class _ChatScreenState extends State<ChatScreen>
                                                 .withOpacity(0.1),
                                             // Use avatar image if available, otherwise show initials
                                             backgroundImage: hasAvatar
-                                                ? NetworkImage(avatarUrl!)
+                                                ? NetworkImage(avatarUrl)
                                                 : null,
                                             onBackgroundImageError: hasAvatar
                                                 ? (exception, stackTrace) {
-                                                    log('⚠️ [ChatScreen] Failed to load avatar for ${reaction.userId}: $exception');
-                                                    log('   Avatar URL: $avatarUrl');
+                                                    log(
+                                                      '⚠️ [ChatScreen] Failed to load avatar for ${reaction.userId}: $exception',
+                                                    );
+                                                    log(
+                                                      '   Avatar URL: $avatarUrl',
+                                                    );
                                                   }
                                                 : null,
                                             child: !hasAvatar
@@ -6751,8 +7374,9 @@ class _ChatScreenState extends State<ChatScreen>
                                           // Show reaction emoji after member name
                                           Text(
                                             reactionType,
-                                            style:
-                                                const TextStyle(fontSize: 20),
+                                            style: const TextStyle(
+                                              fontSize: 20,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -6781,7 +7405,7 @@ class _ChatScreenState extends State<ChatScreen>
       } else {
         EnhancedToast.error(
           context,
-          title: 'Error',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
           message: response.error ?? 'Failed to fetch reactions',
         );
       }
@@ -6790,8 +7414,8 @@ class _ChatScreenState extends State<ChatScreen>
       Navigator.pop(context); // Close loading indicator if still open
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'An unexpected error occurred: $e',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_unexpectedError', fallback: 'An unexpected error occurred: {error}', params: {'error': '$e'}),
       );
     }
   }
@@ -6804,7 +7428,8 @@ class _ChatScreenState extends State<ChatScreen>
     final isUuidFormat = str.contains('-') && str.length > 30;
 
     // Check for "user_" prefix followed by UUID
-    final isUserPrefixedUuid = str.startsWith('user_') &&
+    final isUserPrefixedUuid =
+        str.startsWith('user_') &&
         str.length > 36 && // "user_" (5) + UUID (36) = 41
         str.substring(5).contains('-');
 
@@ -6957,8 +7582,7 @@ class _ChatScreenState extends State<ChatScreen>
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const Text(
-                    'Add Reaction',
+                  Text(chatCallTr(context, 'chatCall_addReaction', fallback: 'Add Reaction'),
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
@@ -6968,17 +7592,18 @@ class _ChatScreenState extends State<ChatScreen>
                       shrinkWrap: false,
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4,
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                        childAspectRatio: 1.0,
-                      ),
+                            crossAxisCount: 4,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                            childAspectRatio: 1.0,
+                          ),
                       itemCount: reactions.length,
                       itemBuilder: (context, index) {
                         final reaction = reactions[index];
                         final emoji = reaction['emoji']!;
                         final reactionType = _emojiToReactionType(emoji);
-                        final isAlreadyReacted = reactionType != null &&
+                        final isAlreadyReacted =
+                            reactionType != null &&
                             _hasUserReacted(message, reactionType);
                         return Material(
                           color: Colors.transparent,
@@ -6991,31 +7616,39 @@ class _ChatScreenState extends State<ChatScreen>
                               if (message.reactions.isEmpty) {
                                 await loadReactionsForMessage(message.id);
                                 // Get updated message from state
-                                final updatedIndex = _messages
-                                    .indexWhere((m) => m.id == message.id);
+                                final updatedIndex = _messages.indexWhere(
+                                  (m) => m.id == message.id,
+                                );
                                 if (updatedIndex != -1) {
                                   final updatedMessage =
                                       _messages[updatedIndex];
 
                                   // Check again with loaded reactions
-                                  final hasUserReactedAny =
-                                      _hasUserReactedAny(updatedMessage);
-                                  final userReaction =
-                                      _getUserReaction(updatedMessage);
+                                  final hasUserReactedAny = _hasUserReactedAny(
+                                    updatedMessage,
+                                  );
+                                  final userReaction = _getUserReaction(
+                                    updatedMessage,
+                                  );
 
-                                  if (isAlreadyReacted &&
-                                      reactionType != null) {
+                                  if (isAlreadyReacted) {
                                     // User tapped their own reaction - remove it
                                     _removeReaction(
-                                        updatedMessage, reactionType);
+                                      updatedMessage,
+                                      reactionType,
+                                    );
                                   } else if (hasUserReactedAny &&
                                       userReaction != null) {
                                     // User has reacted with different type - UPDATE (PUT)
-                                    log('🔄 [ChatScreen] User updating reaction from ${userReaction.reactionType} to $reactionType');
+                                    log(
+                                      '🔄 [ChatScreen] User updating reaction from ${userReaction.reactionType} to $reactionType',
+                                    );
                                     _addReaction(updatedMessage, emoji);
                                   } else {
                                     // User hasn't reacted - ADD (POST)
-                                    log('➕ [ChatScreen] User adding new reaction: $reactionType');
+                                    log(
+                                      '➕ [ChatScreen] User adding new reaction: $reactionType',
+                                    );
                                     _addReaction(updatedMessage, emoji);
                                   }
                                 } else {
@@ -7024,7 +7657,7 @@ class _ChatScreenState extends State<ChatScreen>
                                 }
                               } else {
                                 // Reactions already loaded - process normally
-                                if (isAlreadyReacted && reactionType != null) {
+                                if (isAlreadyReacted) {
                                   _removeReaction(message, reactionType);
                                 } else {
                                   _addReaction(message, emoji);
@@ -7125,12 +7758,10 @@ class _ChatScreenState extends State<ChatScreen>
     }
     // Normalize both IDs for comparison (trim whitespace, handle case)
     final normalizedCurrentUserId = _currentUserId!.trim();
-    final hasReacted = message.reactions.any(
-      (r) {
-        return r.userId.trim() == normalizedCurrentUserId &&
-            r.reactionType == reactionType;
-      },
-    );
+    final hasReacted = message.reactions.any((r) {
+      return r.userId.trim() == normalizedCurrentUserId &&
+          r.reactionType == reactionType;
+    });
     return hasReacted;
   }
 
@@ -7138,8 +7769,9 @@ class _ChatScreenState extends State<ChatScreen>
   bool _hasUserReactedAny(ChatMessage message) {
     if (_currentUserId == null) return false;
     final normalizedCurrentUserId = _currentUserId!.trim();
-    return message.reactions
-        .any((r) => r.userId.trim() == normalizedCurrentUserId);
+    return message.reactions.any(
+      (r) => r.userId.trim() == normalizedCurrentUserId,
+    );
   }
 
   /// Get current user's existing reaction for this message
@@ -7162,7 +7794,8 @@ class _ChatScreenState extends State<ChatScreen>
   /// - Batches of 5 messages with 500ms delay between batches
   /// - Respects cooldown periods
   Future<void> _fetchReactionsForMessagesOnEntry(
-      List<ChatMessage> messages) async {
+    List<ChatMessage> messages,
+  ) async {
     if (messages.isEmpty) return;
 
     // Only fetch for recent messages (last 20) to avoid overwhelming API
@@ -7170,7 +7803,9 @@ class _ChatScreenState extends State<ChatScreen>
         ? messages.sublist(messages.length - 20)
         : messages;
 
-    log('🔄 [ChatScreen] Fetching reactions for ${messagesToFetch.length} messages on entry');
+    log(
+      '🔄 [ChatScreen] Fetching reactions for ${messagesToFetch.length} messages on entry',
+    );
 
     // Process in batches of 5 with delay between batches
     const batchSize = 5;
@@ -7183,9 +7818,12 @@ class _ChatScreenState extends State<ChatScreen>
       if (_reactionFetchCooldownUntil != null) {
         final now = DateTime.now();
         if (now.isBefore(_reactionFetchCooldownUntil!)) {
-          final remainingSeconds =
-              _reactionFetchCooldownUntil!.difference(now).inSeconds;
-          log('⏸️ [ChatScreen] Reaction fetch on cooldown. ${remainingSeconds}s remaining. Stopping batch fetch.');
+          final remainingSeconds = _reactionFetchCooldownUntil!
+              .difference(now)
+              .inSeconds;
+          log(
+            '⏸️ [ChatScreen] Reaction fetch on cooldown. ${remainingSeconds}s remaining. Stopping batch fetch.',
+          );
           break;
         } else {
           _reactionFetchCooldownUntil = null;
@@ -7201,7 +7839,8 @@ class _ChatScreenState extends State<ChatScreen>
         // Skip if already fetching or if cooldown active
         if (_reactionsFetchInProgress.contains(message.id)) continue;
         if (_reactionFetchCooldownUntil != null &&
-            DateTime.now().isBefore(_reactionFetchCooldownUntil!)) break;
+            DateTime.now().isBefore(_reactionFetchCooldownUntil!))
+          break;
 
         // Fetch with rate limiting
         await loadReactionsForMessage(message.id);
@@ -7228,7 +7867,9 @@ class _ChatScreenState extends State<ChatScreen>
   Future<void> loadReactionsForMessage(String messageId) async {
     // Check if already fetching for this message
     if (_reactionsFetchInProgress.contains(messageId)) {
-      log('⏭️ [ChatScreen] Reaction fetch already in progress for message: $messageId');
+      log(
+        '⏭️ [ChatScreen] Reaction fetch already in progress for message: $messageId',
+      );
       return;
     }
 
@@ -7236,9 +7877,12 @@ class _ChatScreenState extends State<ChatScreen>
     if (_reactionFetchCooldownUntil != null) {
       final now = DateTime.now();
       if (now.isBefore(_reactionFetchCooldownUntil!)) {
-        final remainingSeconds =
-            _reactionFetchCooldownUntil!.difference(now).inSeconds;
-        log('⏸️ [ChatScreen] Reaction fetch on cooldown. ${remainingSeconds}s remaining');
+        final remainingSeconds = _reactionFetchCooldownUntil!
+            .difference(now)
+            .inSeconds;
+        log(
+          '⏸️ [ChatScreen] Reaction fetch on cooldown. ${remainingSeconds}s remaining',
+        );
         return;
       } else {
         // Cooldown expired, clear it
@@ -7248,11 +7892,14 @@ class _ChatScreenState extends State<ChatScreen>
 
     // Rate limiting: Check minimum interval between reaction fetches
     if (_lastReactionFetchTime != null) {
-      final timeSinceLastFetch =
-          DateTime.now().difference(_lastReactionFetchTime!);
+      final timeSinceLastFetch = DateTime.now().difference(
+        _lastReactionFetchTime!,
+      );
       if (timeSinceLastFetch < _reactionFetchMinInterval) {
         final waitTime = _reactionFetchMinInterval - timeSinceLastFetch;
-        log('⏸️ [ChatScreen] Rate limiting reaction fetch. Waiting ${waitTime.inMilliseconds}ms');
+        log(
+          '⏸️ [ChatScreen] Rate limiting reaction fetch. Waiting ${waitTime.inMilliseconds}ms',
+        );
         await Future.delayed(waitTime);
       }
     }
@@ -7261,20 +7908,24 @@ class _ChatScreenState extends State<ChatScreen>
     _lastReactionFetchTime = DateTime.now();
 
     try {
-      final response =
-          await _roomService.getMessageReactions(messageId: messageId);
+      final response = await _roomService.getMessageReactions(
+        messageId: messageId,
+      );
 
       if (response.statusCode == 429) {
         // Rate limit error - set cooldown
-        _reactionFetchCooldownUntil =
-            DateTime.now().add(_reactionFetchCooldown);
-        log('⚠️ [ChatScreen] Rate limit (429) on reaction fetch. Cooldown until: $_reactionFetchCooldownUntil');
+        _reactionFetchCooldownUntil = DateTime.now().add(
+          _reactionFetchCooldown,
+        );
+        log(
+          '⚠️ [ChatScreen] Rate limit (429) on reaction fetch. Cooldown until: $_reactionFetchCooldownUntil',
+        );
 
         if (mounted) {
           EnhancedToast.warning(
             context,
-            title: 'Too Many Requests',
-            message: 'Please wait 30s before retrying.',
+            title: chatCallTr(context, 'chatCall_tooManyRequests2', fallback: 'Too Many Requests'),
+            message: chatCallTr(context, 'chatCall_pleaseWait30sBeforeRetrying', fallback: 'Please wait 30s before retrying.'),
           );
         }
         return;
@@ -7286,10 +7937,14 @@ class _ChatScreenState extends State<ChatScreen>
           // Create a new list to ensure Flutter detects the change
           final updatedReactions = List<MessageReaction>.from(response.data!);
 
-          log('🔄 [ChatScreen] Updating reactions for message $messageId: ${updatedReactions.length} reactions');
+          log(
+            '🔄 [ChatScreen] Updating reactions for message $messageId: ${updatedReactions.length} reactions',
+          );
           log('   Current user ID: $_currentUserId');
           for (final reaction in updatedReactions) {
-            log('   Reaction: ${reaction.reactionType} by user ${reaction.userId} (${reaction.userName})');
+            log(
+              '   Reaction: ${reaction.reactionType} by user ${reaction.userId} (${reaction.userName})',
+            );
             if (reaction.userId == _currentUserId) {
               log('   ✓ This is current user\'s reaction!');
             }
@@ -7313,7 +7968,9 @@ class _ChatScreenState extends State<ChatScreen>
 
           // Force a rebuild by checking the updated message
           final updatedMessage = _messages[msgIndex];
-          log('✅ [ChatScreen] Reactions updated. Message now has ${updatedMessage.reactions.length} reactions');
+          log(
+            '✅ [ChatScreen] Reactions updated. Message now has ${updatedMessage.reactions.length} reactions',
+          );
           log('   User has reacted: ${_hasUserReactedAny(updatedMessage)}');
           if (_hasUserReactedAny(updatedMessage)) {
             final userReaction = _getUserReaction(updatedMessage);
@@ -7340,8 +7997,8 @@ class _ChatScreenState extends State<ChatScreen>
     if (message.isDeleted) {
       EnhancedToast.warning(
         context,
-        title: 'Cannot React',
-        message: 'Deleted messages cannot be reacted to.',
+        title: chatCallTr(context, 'chatCall_cannotReact', fallback: 'Cannot React'),
+        message: chatCallTr(context, 'chatCall_deletedMessagesCannotBeReactedTo', fallback: 'Deleted messages cannot be reacted to.'),
       );
       return;
     }
@@ -7352,8 +8009,8 @@ class _ChatScreenState extends State<ChatScreen>
       log('⚠️ [ChatScreen] Unsupported emoji for reaction: $reaction');
       EnhancedToast.warning(
         context,
-        title: 'Unsupported Reaction',
-        message: 'This reaction type is not supported.',
+        title: chatCallTr(context, 'chatCall_unsupportedReaction', fallback: 'Unsupported Reaction'),
+        message: chatCallTr(context, 'chatCall_thisReactionTypeIsNotSupported', fallback: 'This reaction type is not supported.'),
       );
       return;
     }
@@ -7367,7 +8024,9 @@ class _ChatScreenState extends State<ChatScreen>
 
     // Rate limiting: Check if already updating this message
     if (_reactionsUpdateInProgress.contains(message.id)) {
-      log('⏭️ [ChatScreen] Reaction update already in progress for message: ${message.id}');
+      log(
+        '⏭️ [ChatScreen] Reaction update already in progress for message: ${message.id}',
+      );
       return;
     }
 
@@ -7375,12 +8034,15 @@ class _ChatScreenState extends State<ChatScreen>
     if (_reactionUpdateCooldownUntil != null) {
       final now = DateTime.now();
       if (now.isBefore(_reactionUpdateCooldownUntil!)) {
-        final remainingSeconds =
-            _reactionUpdateCooldownUntil!.difference(now).inSeconds;
-        log('⏸️ [ChatScreen] Reaction update on cooldown. ${remainingSeconds}s remaining');
+        final remainingSeconds = _reactionUpdateCooldownUntil!
+            .difference(now)
+            .inSeconds;
+        log(
+          '⏸️ [ChatScreen] Reaction update on cooldown. ${remainingSeconds}s remaining',
+        );
         EnhancedToast.warning(
           context,
-          title: 'Too Many Requests',
+          title: chatCallTr(context, 'chatCall_tooManyRequests2', fallback: 'Too Many Requests'),
           message:
               'Please wait ${remainingSeconds}s before updating reactions.',
         );
@@ -7393,11 +8055,14 @@ class _ChatScreenState extends State<ChatScreen>
 
     // Rate limiting: Check minimum interval between reaction updates
     if (_lastReactionUpdateTime != null) {
-      final timeSinceLastUpdate =
-          DateTime.now().difference(_lastReactionUpdateTime!);
+      final timeSinceLastUpdate = DateTime.now().difference(
+        _lastReactionUpdateTime!,
+      );
       if (timeSinceLastUpdate < _reactionUpdateMinInterval) {
         final waitTime = _reactionUpdateMinInterval - timeSinceLastUpdate;
-        log('⏸️ [ChatScreen] Rate limiting reaction update. Waiting ${waitTime.inMilliseconds}ms');
+        log(
+          '⏸️ [ChatScreen] Rate limiting reaction update. Waiting ${waitTime.inMilliseconds}ms',
+        );
         await Future.delayed(waitTime);
       }
     }
@@ -7434,7 +8099,7 @@ class _ChatScreenState extends State<ChatScreen>
         userName: existingReaction.userName,
       );
       // Remove old reaction and add new one
-      currentReactions.removeWhere((r) => r.id == existingReaction!.id);
+      currentReactions.removeWhere((r) => r.id == existingReaction.id);
       currentReactions.add(optimisticReaction);
     } else {
       // Add new reaction optimistically
@@ -7450,9 +8115,7 @@ class _ChatScreenState extends State<ChatScreen>
 
     // Update UI immediately (optimistic update)
     setState(() {
-      _messages[index] = _messages[index].copyWith(
-        reactions: currentReactions,
-      );
+      _messages[index] = _messages[index].copyWith(reactions: currentReactions);
     });
 
     _reactionsUpdateInProgress.add(message.id);
@@ -7463,14 +8126,18 @@ class _ChatScreenState extends State<ChatScreen>
       ApiResponse<MessageReaction> response;
       if (hasUserReacted && existingReaction != null) {
         // User already reacted with different type - UPDATE existing reaction (PUT API)
-        log('🔄 [ChatScreen] Calling PUT API to UPDATE reaction: ${existingReaction.reactionType} → $reactionType (message ${message.id})');
+        log(
+          '🔄 [ChatScreen] Calling PUT API to UPDATE reaction: ${existingReaction.reactionType} → $reactionType (message ${message.id})',
+        );
         response = await _roomService.updateReaction(
           messageId: message.id,
           reactionType: reactionType,
         );
       } else {
         // User hasn't reacted - ADD new reaction (POST API)
-        log('➕ [ChatScreen] Calling POST API to ADD reaction: $reactionType → message ${message.id}');
+        log(
+          '➕ [ChatScreen] Calling POST API to ADD reaction: $reactionType → message ${message.id}',
+        );
         response = await _roomService.addReaction(
           messageId: message.id,
           reactionType: reactionType,
@@ -7479,9 +8146,12 @@ class _ChatScreenState extends State<ChatScreen>
 
       if (response.statusCode == 429) {
         // Rate limit error - set cooldown and revert optimistic update
-        _reactionUpdateCooldownUntil =
-            DateTime.now().add(_reactionUpdateCooldown);
-        log('⚠️ [ChatScreen] Rate limit (429) on reaction update. Cooldown until: $_reactionUpdateCooldownUntil');
+        _reactionUpdateCooldownUntil = DateTime.now().add(
+          _reactionUpdateCooldown,
+        );
+        log(
+          '⚠️ [ChatScreen] Rate limit (429) on reaction update. Cooldown until: $_reactionUpdateCooldownUntil',
+        );
 
         // Revert optimistic update
         setState(() {
@@ -7493,8 +8163,8 @@ class _ChatScreenState extends State<ChatScreen>
         if (mounted) {
           EnhancedToast.warning(
             context,
-            title: 'Too Many Requests',
-            message: 'Please wait 30s before updating reactions again.',
+            title: chatCallTr(context, 'chatCall_tooManyRequests2', fallback: 'Too Many Requests'),
+            message: chatCallTr(context, 'chatCall_pleaseWait30sBeforeUpdatingReactions', fallback: 'Please wait 30s before updating reactions again.'),
           );
         }
         return;
@@ -7515,20 +8185,21 @@ class _ChatScreenState extends State<ChatScreen>
           if (response.statusCode == 401) {
             EnhancedToast.error(
               context,
-              title: 'Unauthorized',
-              message: 'Please log in again.',
+              title: chatCallTr(context, 'chatCall_unauthorized', fallback: 'Unauthorized'),
+              message: chatCallTr(context, 'chatCall_pleaseLogInAgain', fallback: 'Please log in again.'),
             );
           } else if (response.statusCode == 400) {
             EnhancedToast.error(
               context,
-              title: 'Invalid Reaction',
+              title: chatCallTr(context, 'chatCall_invalidReaction', fallback: 'Invalid Reaction'),
               message: response.error ?? 'Invalid reaction type.',
             );
           } else {
             EnhancedToast.error(
               context,
-              title: 'Error',
-              message: response.error ??
+              title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+              message:
+                  response.error ??
                   'Failed to ${hasUserReacted ? 'update' : 'add'} reaction.',
             );
           }
@@ -7538,13 +8209,16 @@ class _ChatScreenState extends State<ChatScreen>
         // Success - update with server response (more accurate than optimistic update)
         if (response.data != null) {
           final serverReaction = response.data!;
-          final updatedReactions =
-              List<MessageReaction>.from(message.reactions);
+          final updatedReactions = List<MessageReaction>.from(
+            message.reactions,
+          );
 
           // Remove optimistic reaction and add server reaction
           if (hasUserReacted && existingReaction != null) {
-            updatedReactions.removeWhere((r) =>
-                r.id == existingReaction!.id || r.id == optimisticReaction!.id);
+            updatedReactions.removeWhere(
+              (r) =>
+                  r.id == existingReaction.id || r.id == optimisticReaction!.id,
+            );
           } else {
             updatedReactions.removeWhere((r) => r.id == optimisticReaction!.id);
           }
@@ -7574,14 +8248,17 @@ class _ChatScreenState extends State<ChatScreen>
         );
       });
       // Network failure - fail silently
-      log('❌ [ChatScreen] Exception ${hasUserReacted ? 'updating' : 'adding'} reaction: $e');
+      log(
+        '❌ [ChatScreen] Exception ${hasUserReacted ? 'updating' : 'adding'} reaction: $e',
+      );
     } finally {
       _reactionsUpdateInProgress.remove(message.id);
     }
   }
 
   Widget _buildEmojiPicker() {
-    final isDarkTheme = _chatTheme == ThemeMode.dark ||
+    final isDarkTheme =
+        _chatTheme == ThemeMode.dark ||
         (_chatTheme == ThemeMode.system &&
             MediaQuery.of(context).platformBrightness == Brightness.dark);
 
@@ -7648,8 +8325,8 @@ class _ChatScreenState extends State<ChatScreen>
           '😨',
           '😰',
           '😥',
-          '😓'
-        ]
+          '😓',
+        ],
       },
       'Gestures': {
         'icon': '🤗',
@@ -7696,8 +8373,8 @@ class _ChatScreenState extends State<ChatScreen>
           '👽',
           '👾',
           '🤖',
-          '🎃'
-        ]
+          '🎃',
+        ],
       },
       'Hearts': {
         'icon': '❤️',
@@ -7720,8 +8397,8 @@ class _ChatScreenState extends State<ChatScreen>
           '💖',
           '💘',
           '💝',
-          '💟'
-        ]
+          '💟',
+        ],
       },
       'Hands': {
         'icon': '👋',
@@ -7755,8 +8432,8 @@ class _ChatScreenState extends State<ChatScreen>
           '👐',
           '🤲',
           '🤝',
-          '🙏'
-        ]
+          '🙏',
+        ],
       },
       'Activities': {
         'icon': '🎮',
@@ -7781,8 +8458,8 @@ class _ChatScreenState extends State<ChatScreen>
           '🎺',
           '🎸',
           '🪕',
-          '🎻'
-        ]
+          '🎻',
+        ],
       },
       'Food': {
         'icon': '🍕',
@@ -7886,8 +8563,8 @@ class _ChatScreenState extends State<ChatScreen>
           '🍹',
           '🧉',
           '🍾',
-          '🧊'
-        ]
+          '🧊',
+        ],
       },
       'Travel': {
         'icon': '🚗',
@@ -7941,8 +8618,8 @@ class _ChatScreenState extends State<ChatScreen>
           '🚡',
           '🛰️',
           '🚀',
-          '🛸'
-        ]
+          '🛸',
+        ],
       },
       'Symbols': {
         'icon': '✅',
@@ -7977,8 +8654,8 @@ class _ChatScreenState extends State<ChatScreen>
           '🔱',
           '📛',
           '🔰',
-          '⭕'
-        ]
+          '⭕',
+        ],
       },
     };
 
@@ -8072,20 +8749,19 @@ class _ChatScreenState extends State<ChatScreen>
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? (isDarkTheme
-                                ? AppColors.primary.withOpacity(0.2)
-                                : AppColors.primary.withOpacity(0.1))
+                                  ? AppColors.primary.withOpacity(0.2)
+                                  : AppColors.primary.withOpacity(0.1))
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         border: isSelected
-                            ? Border.all(
-                                color: AppColors.primary,
-                                width: 1.5,
-                              )
+                            ? Border.all(color: AppColors.primary, width: 1.5)
                             : null,
                       ),
                       child: Center(
@@ -8093,13 +8769,14 @@ class _ChatScreenState extends State<ChatScreen>
                           category,
                           style: TextStyle(
                             fontSize: isSelected ? 14 : 13,
-                            fontWeight:
-                                isSelected ? FontWeight.w600 : FontWeight.w500,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
                             color: isSelected
                                 ? AppColors.primary
                                 : (isDarkTheme
-                                    ? Colors.white70
-                                    : Colors.black87),
+                                      ? Colors.white70
+                                      : Colors.black87),
                           ),
                         ),
                       ),
@@ -8112,8 +8789,10 @@ class _ChatScreenState extends State<ChatScreen>
             Expanded(
               child: ListView(
                 controller: emojiScrollController,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 children: emojiCategories.entries.map((entry) {
                   final category = entry.key;
                   final emojis = entry.value['emojis'] as List<String>;
@@ -8123,8 +8802,11 @@ class _ChatScreenState extends State<ChatScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding:
-                            const EdgeInsets.only(left: 4, top: 12, bottom: 8),
+                        padding: const EdgeInsets.only(
+                          left: 4,
+                          top: 12,
+                          bottom: 8,
+                        ),
                         child: Row(
                           children: [
                             Text(
@@ -8137,8 +8819,9 @@ class _ChatScreenState extends State<ChatScreen>
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
-                                color:
-                                    isDarkTheme ? Colors.white : Colors.black87,
+                                color: isDarkTheme
+                                    ? Colors.white
+                                    : Colors.black87,
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -8150,10 +8833,10 @@ class _ChatScreenState extends State<ChatScreen>
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 8,
-                          crossAxisSpacing: 6,
-                          mainAxisSpacing: 6,
-                        ),
+                              crossAxisCount: 8,
+                              crossAxisSpacing: 6,
+                              mainAxisSpacing: 6,
+                            ),
                         itemCount: emojis.length,
                         itemBuilder: (context, index) {
                           final emoji = emojis[index];
@@ -8198,8 +8881,8 @@ class _ChatScreenState extends State<ChatScreen>
     if (message.isDeleted) {
       EnhancedToast.warning(
         context,
-        title: 'Cannot Remove Reaction',
-        message: 'Deleted messages cannot have reactions removed.',
+        title: chatCallTr(context, 'chatCall_cannotRemoveReaction', fallback: 'Cannot Remove Reaction'),
+        message: chatCallTr(context, 'chatCall_deletedMessagesCannotHaveReactionsRemoved', fallback: 'Deleted messages cannot have reactions removed.'),
       );
       return;
     }
@@ -8213,7 +8896,9 @@ class _ChatScreenState extends State<ChatScreen>
 
     // Rate limiting: Check if already updating this message
     if (_reactionsUpdateInProgress.contains(message.id)) {
-      log('⏭️ [ChatScreen] Reaction update already in progress for message: ${message.id}');
+      log(
+        '⏭️ [ChatScreen] Reaction update already in progress for message: ${message.id}',
+      );
       return;
     }
 
@@ -8221,12 +8906,15 @@ class _ChatScreenState extends State<ChatScreen>
     if (_reactionUpdateCooldownUntil != null) {
       final now = DateTime.now();
       if (now.isBefore(_reactionUpdateCooldownUntil!)) {
-        final remainingSeconds =
-            _reactionUpdateCooldownUntil!.difference(now).inSeconds;
-        log('⏸️ [ChatScreen] Reaction update on cooldown. ${remainingSeconds}s remaining');
+        final remainingSeconds = _reactionUpdateCooldownUntil!
+            .difference(now)
+            .inSeconds;
+        log(
+          '⏸️ [ChatScreen] Reaction update on cooldown. ${remainingSeconds}s remaining',
+        );
         EnhancedToast.warning(
           context,
-          title: 'Too Many Requests',
+          title: chatCallTr(context, 'chatCall_tooManyRequests2', fallback: 'Too Many Requests'),
           message:
               'Please wait ${remainingSeconds}s before updating reactions.',
         );
@@ -8238,11 +8926,14 @@ class _ChatScreenState extends State<ChatScreen>
 
     // Rate limiting: Check minimum interval
     if (_lastReactionUpdateTime != null) {
-      final timeSinceLastUpdate =
-          DateTime.now().difference(_lastReactionUpdateTime!);
+      final timeSinceLastUpdate = DateTime.now().difference(
+        _lastReactionUpdateTime!,
+      );
       if (timeSinceLastUpdate < _reactionUpdateMinInterval) {
         final waitTime = _reactionUpdateMinInterval - timeSinceLastUpdate;
-        log('⏸️ [ChatScreen] Rate limiting reaction delete. Waiting ${waitTime.inMilliseconds}ms');
+        log(
+          '⏸️ [ChatScreen] Rate limiting reaction delete. Waiting ${waitTime.inMilliseconds}ms',
+        );
         await Future.delayed(waitTime);
       }
     }
@@ -8255,9 +8946,7 @@ class _ChatScreenState extends State<ChatScreen>
     }
 
     setState(() {
-      _messages[index] = _messages[index].copyWith(
-        reactions: currentReactions,
-      );
+      _messages[index] = _messages[index].copyWith(reactions: currentReactions);
     });
 
     _reactionsUpdateInProgress.add(message.id);
@@ -8270,9 +8959,12 @@ class _ChatScreenState extends State<ChatScreen>
 
       if (response.statusCode == 429) {
         // Rate limit error - set cooldown and revert optimistic update
-        _reactionUpdateCooldownUntil =
-            DateTime.now().add(_reactionUpdateCooldown);
-        log('⚠️ [ChatScreen] Rate limit (429) on reaction delete. Cooldown until: $_reactionUpdateCooldownUntil');
+        _reactionUpdateCooldownUntil = DateTime.now().add(
+          _reactionUpdateCooldown,
+        );
+        log(
+          '⚠️ [ChatScreen] Rate limit (429) on reaction delete. Cooldown until: $_reactionUpdateCooldownUntil',
+        );
 
         // Revert optimistic update
         setState(() {
@@ -8284,8 +8976,8 @@ class _ChatScreenState extends State<ChatScreen>
         if (mounted) {
           EnhancedToast.warning(
             context,
-            title: 'Too Many Requests',
-            message: 'Please wait 30s before updating reactions again.',
+            title: chatCallTr(context, 'chatCall_tooManyRequests2', fallback: 'Too Many Requests'),
+            message: chatCallTr(context, 'chatCall_pleaseWait30sBeforeUpdatingReactions', fallback: 'Please wait 30s before updating reactions again.'),
           );
         }
         return;
@@ -8306,13 +8998,13 @@ class _ChatScreenState extends State<ChatScreen>
           if (response.statusCode == 401) {
             EnhancedToast.error(
               context,
-              title: 'Unauthorized',
-              message: 'Please log in again.',
+              title: chatCallTr(context, 'chatCall_unauthorized', fallback: 'Unauthorized'),
+              message: chatCallTr(context, 'chatCall_pleaseLogInAgain', fallback: 'Please log in again.'),
             );
           } else {
             EnhancedToast.error(
               context,
-              title: 'Error',
+              title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
               message: response.error ?? 'Failed to remove reaction.',
             );
           }
@@ -8345,8 +9037,8 @@ class _ChatScreenState extends State<ChatScreen>
     if (!message.isMe) {
       EnhancedToast.warning(
         context,
-        title: 'Cannot Edit',
-        message: 'You can only edit your own messages.',
+        title: chatCallTr(context, 'chatCall_cannotEdit', fallback: 'Cannot Edit'),
+        message: chatCallTr(context, 'chatCall_youCanOnlyEditYourOwn', fallback: 'You can only edit your own messages.'),
       );
       return;
     }
@@ -8355,13 +9047,14 @@ class _ChatScreenState extends State<ChatScreen>
     if (message.isDeleted) {
       EnhancedToast.warning(
         context,
-        title: 'Cannot Edit',
-        message: 'Deleted messages cannot be edited.',
+        title: chatCallTr(context, 'chatCall_cannotEdit', fallback: 'Cannot Edit'),
+        message: chatCallTr(context, 'chatCall_deletedMessagesCannotBeEdited', fallback: 'Deleted messages cannot be edited.'),
       );
       return;
     }
 
-    final isDarkTheme = _chatTheme == ThemeMode.dark ||
+    final isDarkTheme =
+        _chatTheme == ThemeMode.dark ||
         (_chatTheme == ThemeMode.system &&
             MediaQuery.of(context).platformBrightness == Brightness.dark);
 
@@ -8387,8 +9080,7 @@ class _ChatScreenState extends State<ChatScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Title
-                Text(
-                  'Edit Message',
+                Text(chatCallTr(context, 'chatCall_editMessage', fallback: 'Edit Message'),
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -8407,7 +9099,11 @@ class _ChatScreenState extends State<ChatScreen>
                     fontSize: 16,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Edit your message...',
+                    hintText: chatCallTr(
+                      context,
+                      'chatCall_editYourMessageHint',
+                      fallback: 'Edit your message...',
+                    ),
                     hintStyle: TextStyle(
                       color: isDarkTheme
                           ? Colors.grey.shade500
@@ -8415,24 +9111,15 @@ class _ChatScreenState extends State<ChatScreen>
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Colors.red,
-                        width: 1,
-                      ),
+                      borderSide: const BorderSide(color: Colors.red, width: 1),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Colors.red,
-                        width: 1,
-                      ),
+                      borderSide: const BorderSide(color: Colors.red, width: 1),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Colors.red,
-                        width: 1,
-                      ),
+                      borderSide: const BorderSide(color: Colors.red, width: 1),
                     ),
                     filled: true,
                     fillColor: isDarkTheme
@@ -8449,8 +9136,9 @@ class _ChatScreenState extends State<ChatScreen>
                     SizedBox(
                       height: 48,
                       child: OutlinedButton(
-                        onPressed:
-                            isSaving ? null : () => Navigator.pop(context),
+                        onPressed: isSaving
+                            ? null
+                            : () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(
                             color: isDarkTheme
@@ -8466,8 +9154,7 @@ class _ChatScreenState extends State<ChatScreen>
                             vertical: 12,
                           ),
                         ),
-                        child: Text(
-                          'Cancel',
+                        child: Text(chatCallTr(context, 'chatCall_cancel', fallback: 'Cancel'),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -8494,8 +9181,8 @@ class _ChatScreenState extends State<ChatScreen>
                                   if (updatedText.isEmpty) {
                                     EnhancedToast.warning(
                                       context,
-                                      title: 'Invalid',
-                                      message: 'Message cannot be empty',
+                                      title: chatCallTr(context, 'chatCall_invalid', fallback: 'Invalid'),
+                                      message: chatCallTr(context, 'chatCall_messageCannotBeEmpty', fallback: 'Message cannot be empty'),
                                     );
                                     return;
                                   }
@@ -8513,18 +9200,22 @@ class _ChatScreenState extends State<ChatScreen>
 
                                   try {
                                     // Call API to edit message
-                                    log('📝 [ChatScreen] Editing message: ${message.id}');
-                                    final response =
-                                        await _roomService.editMessage(
-                                      messageId: message.id,
-                                      content: updatedText,
+                                    log(
+                                      '📝 [ChatScreen] Editing message: ${message.id}',
                                     );
+                                    final response = await _roomService
+                                        .editMessage(
+                                          messageId: message.id,
+                                          content: updatedText,
+                                        );
 
                                     if (!mounted) return;
 
                                     if (response.success &&
                                         response.data != null) {
-                                      log('✅ [ChatScreen] Message edited successfully');
+                                      log(
+                                        '✅ [ChatScreen] Message edited successfully',
+                                      );
                                       // Update message in-place
                                       final index = _messages.indexWhere(
                                         (m) => m.id == message.id,
@@ -8540,7 +9231,8 @@ class _ChatScreenState extends State<ChatScreen>
                                               ? ''
                                               : updatedRoomMessage.body,
                                           isMe: _isMessageFromCurrentUser(
-                                              updatedRoomMessage),
+                                            updatedRoomMessage,
+                                          ),
                                           timestamp:
                                               updatedRoomMessage.createdAt,
                                           editedAt: updatedRoomMessage.editedAt,
@@ -8560,9 +9252,9 @@ class _ChatScreenState extends State<ChatScreen>
                                         // Show success toast
                                         EnhancedToast.success(
                                           context,
-                                          title: 'Message Edited',
+                                          title: chatCallTr(context, 'chatCall_messageEdited', fallback: 'Message Edited'),
                                           message:
-                                              'Your message has been updated.',
+                                              chatCallTr(context, 'chatCall_yourMessageHasBeenUpdated', fallback: 'Your message has been updated.'),
                                         );
                                       }
                                     } else {
@@ -8573,13 +9265,16 @@ class _ChatScreenState extends State<ChatScreen>
 
                                       EnhancedToast.error(
                                         context,
-                                        title: 'Failed to Edit',
-                                        message: response.displayError ??
+                                        title: chatCallTr(context, 'chatCall_failedToEdit', fallback: 'Failed to Edit'),
+                                        message:
+                                            response.displayError ??
                                             'Failed to edit message. Please try again.',
                                       );
                                     }
                                   } catch (e) {
-                                    log('❌ [ChatScreen] Error editing message: $e');
+                                    log(
+                                      '❌ [ChatScreen] Error editing message: $e',
+                                    );
                                     if (!mounted) return;
 
                                     // Re-enable save button on error
@@ -8589,8 +9284,8 @@ class _ChatScreenState extends State<ChatScreen>
 
                                     EnhancedToast.error(
                                       context,
-                                      title: 'Error',
-                                      message: 'Failed to edit message: $e',
+                                      title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+                                      message: chatCallTr(context, 'chatCall_failedToEditMessage', fallback: 'Failed to edit message: {error}', params: {'error': '$e'}),
                                     );
                                   }
                                 },
@@ -8618,8 +9313,7 @@ class _ChatScreenState extends State<ChatScreen>
                                     ),
                                   ),
                                 )
-                              : const Text(
-                                  'Save',
+                              : Text(chatCallTr(context, 'chatCall_save', fallback: 'Save'),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -8643,8 +9337,8 @@ class _ChatScreenState extends State<ChatScreen>
     if (!message.isMe) {
       EnhancedToast.warning(
         context,
-        title: 'Cannot Delete',
-        message: 'You can only delete your own messages.',
+        title: chatCallTr(context, 'chatCall_cannotDelete', fallback: 'Cannot Delete'),
+        message: chatCallTr(context, 'chatCall_youCanOnlyDeleteYourOwn', fallback: 'You can only delete your own messages.'),
       );
       return;
     }
@@ -8653,8 +9347,8 @@ class _ChatScreenState extends State<ChatScreen>
     if (message.isDeleted) {
       EnhancedToast.warning(
         context,
-        title: 'Already Deleted',
-        message: 'This message has already been deleted.',
+        title: chatCallTr(context, 'chatCall_alreadyDeleted', fallback: 'Already Deleted'),
+        message: chatCallTr(context, 'chatCall_thisMessageHasAlreadyBeenDeleted', fallback: 'This message has already been deleted.'),
       );
       return;
     }
@@ -8664,9 +9358,7 @@ class _ChatScreenState extends State<ChatScreen>
       context: context,
       barrierDismissible: true,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -8690,8 +9382,7 @@ class _ChatScreenState extends State<ChatScreen>
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Delete Message',
+              Text(chatCallTr(context, 'chatCall_deleteMessage', fallback: 'Delete Message'),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -8701,7 +9392,7 @@ class _ChatScreenState extends State<ChatScreen>
               ),
               const SizedBox(height: 12),
               Text(
-                'Are you sure you want to delete this message? This action cannot be undone.',
+                chatCallTr(context, 'chatCall_confirmDeleteMessage', fallback: 'Are you sure you want to delete this message? This action cannot be undone.'),
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey.shade700,
@@ -8726,8 +9417,7 @@ class _ChatScreenState extends State<ChatScreen>
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Cancel',
+                        child: Text(chatCallTr(context, 'chatCall_cancel', fallback: 'Cancel'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -8745,10 +9435,7 @@ class _ChatScreenState extends State<ChatScreen>
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            Colors.red.shade400,
-                            Colors.red.shade600,
-                          ],
+                          colors: [Colors.red.shade400, Colors.red.shade600],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
@@ -8769,8 +9456,7 @@ class _ChatScreenState extends State<ChatScreen>
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Delete',
+                        child: Text(chatCallTr(context, 'chatCall_delete', fallback: 'Delete'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -8796,9 +9482,7 @@ class _ChatScreenState extends State<ChatScreen>
     try {
       // Call API to delete message
       log('🗑️ [ChatScreen] Deleting message: ${message.id}');
-      final response = await _roomService.deleteMessage(
-        messageId: message.id,
-      );
+      final response = await _roomService.deleteMessage(messageId: message.id);
 
       if (!mounted) return;
 
@@ -8826,16 +9510,17 @@ class _ChatScreenState extends State<ChatScreen>
           // Show success toast
           EnhancedToast.success(
             context,
-            title: 'Message Deleted',
-            message: 'Your message has been deleted.',
+            title: chatCallTr(context, 'chatCall_messageDeleted', fallback: 'Message Deleted'),
+            message: chatCallTr(context, 'chatCall_yourMessageHasBeenDeleted', fallback: 'Your message has been deleted.'),
           );
         }
       } else {
         // Show error but don't change message UI
         EnhancedToast.error(
           context,
-          title: 'Failed to Delete',
-          message: response.displayError ??
+          title: chatCallTr(context, 'chatCall_failedToDelete', fallback: 'Failed to Delete'),
+          message:
+              response.displayError ??
               'Failed to delete message. Please try again.',
         );
       }
@@ -8846,8 +9531,8 @@ class _ChatScreenState extends State<ChatScreen>
       // Show error but don't change message UI
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Failed to delete message: $e',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_failedToDeleteMessage', fallback: 'Failed to delete message: {error}', params: {'error': '$e'}),
       );
     }
   }
@@ -8892,8 +9577,9 @@ class _ChatScreenState extends State<ChatScreen>
 
         // Listen for completion - only for this message
         _audioStateSubscription?.cancel();
-        _audioStateSubscription =
-            _audioPlayer.playerStateStream.listen((state) {
+        _audioStateSubscription = _audioPlayer.playerStateStream.listen((
+          state,
+        ) {
           if (state.processingState == audio.ProcessingState.completed) {
             if (mounted && _playingAudioId == message.id) {
               setState(() {
@@ -8909,7 +9595,7 @@ class _ChatScreenState extends State<ChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to play audio: ${e.toString()}',
       );
       setState(() {
@@ -8922,7 +9608,8 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildTypingIndicator() {
-    final isDarkTheme = _chatTheme == ThemeMode.dark ||
+    final isDarkTheme =
+        _chatTheme == ThemeMode.dark ||
         (_chatTheme == ThemeMode.system &&
             MediaQuery.of(context).platformBrightness == Brightness.dark);
 
@@ -8958,8 +9645,7 @@ class _ChatScreenState extends State<ChatScreen>
                 const SizedBox(width: 4),
                 _buildTypingDot(2),
                 const SizedBox(width: 8),
-                Text(
-                  'Typing...',
+                Text(chatCallTr(context, 'chatCall_typing', fallback: 'Typing...'),
                   style: TextStyle(
                     color: isDarkTheme
                         ? Colors.grey.shade400
@@ -9009,15 +9695,10 @@ class _ChatScreenState extends State<ChatScreen>
                   color: Color(0xffc62828),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.mic,
-                  color: Colors.white,
-                  size: 48,
-                ),
+                child: const Icon(Icons.mic, color: Colors.white, size: 48),
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Recording...',
+              Text(chatCallTr(context, 'chatCall_recording', fallback: 'Recording...'),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -9092,7 +9773,8 @@ class _ChatScreenState extends State<ChatScreen>
             final baseHeight = entry.value;
             final animationValue =
                 (_waveformController.value + index * 0.1) % 1.0;
-            final height = baseHeight *
+            final height =
+                baseHeight *
                 (0.5 + 0.5 * math.sin(animationValue * math.pi * 2));
             return Container(
               width: 3,
@@ -9158,8 +9840,7 @@ class _ChatScreenState extends State<ChatScreen>
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              'Failed to load messages',
+            Text(chatCallTr(context, 'chatCall_failedToLoadMessagesShort', fallback: 'Failed to load messages'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -9168,12 +9849,9 @@ class _ChatScreenState extends State<ChatScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              _errorMessage ?? 'Please check your connection and try again',
+              _errorMessage ?? chatCallTr(context, 'chatCall_failedToSendRetry', fallback: 'Please check your connection and try again'),
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
@@ -9191,7 +9869,9 @@ class _ChatScreenState extends State<ChatScreen>
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Retry'),
+              child: Text(
+                chatCallTr(context, 'chatCall_retry', fallback: 'Retry'),
+              ),
             ),
           ],
         ),
@@ -9232,8 +9912,7 @@ class _ChatScreenState extends State<ChatScreen>
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              'No messages yet',
+            Text(chatCallTr(context, 'chatCall_noMessagesYet', fallback: 'No messages yet'),
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -9242,8 +9921,7 @@ class _ChatScreenState extends State<ChatScreen>
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            Text(
-              'Start the conversation',
+            Text(chatCallTr(context, 'chatCall_startTheConversation', fallback: 'Start the conversation'),
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 14,
@@ -9262,9 +9940,7 @@ class _ChatScreenState extends State<ChatScreen>
       context: context,
       barrierDismissible: true,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -9290,8 +9966,7 @@ class _ChatScreenState extends State<ChatScreen>
               ),
               const SizedBox(height: 24),
               // Title
-              const Text(
-                'Clear Chat',
+              Text(chatCallTr(context, 'chatCall_clearChat', fallback: 'Clear Chat'),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -9302,7 +9977,7 @@ class _ChatScreenState extends State<ChatScreen>
               const SizedBox(height: 12),
               // Message
               Text(
-                'Are you sure you want to clear all messages from this chat? This action cannot be undone.',
+                chatCallTr(context, 'chatCall_confirmClearChat', fallback: 'Are you sure you want to clear all messages from this chat? This action cannot be undone.'),
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey.shade700,
@@ -9329,8 +10004,7 @@ class _ChatScreenState extends State<ChatScreen>
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Cancel',
+                        child: Text(chatCallTr(context, 'chatCall_cancel', fallback: 'Cancel'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -9349,10 +10023,7 @@ class _ChatScreenState extends State<ChatScreen>
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            Colors.red.shade400,
-                            Colors.red.shade600,
-                          ],
+                          colors: [Colors.red.shade400, Colors.red.shade600],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
@@ -9376,8 +10047,7 @@ class _ChatScreenState extends State<ChatScreen>
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Clear',
+                        child: Text(chatCallTr(context, 'chatCall_clear', fallback: 'Clear'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -9404,8 +10074,8 @@ class _ChatScreenState extends State<ChatScreen>
         if (mounted) {
           EnhancedToast.error(
             context,
-            title: 'Error',
-            message: 'Unable to get society ID. Please try again.',
+            title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+            message: chatCallTr(context, 'chatCall_unableToGetSocietyIdPlease', fallback: 'Unable to get society ID. Please try again.'),
           );
         }
         return;
@@ -9416,8 +10086,8 @@ class _ChatScreenState extends State<ChatScreen>
         if (mounted) {
           EnhancedToast.error(
             context,
-            title: 'Error',
-            message: 'Chat room not available. Please try again.',
+            title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+            message: chatCallTr(context, 'chatCall_chatRoomNotAvailablePleaseTry', fallback: 'Chat room not available. Please try again.'),
           );
         }
         return;
@@ -9442,14 +10112,14 @@ class _ChatScreenState extends State<ChatScreen>
 
         EnhancedToast.success(
           context,
-          title: 'Chat Cleared',
-          message: 'All messages have been cleared successfully.',
+          title: chatCallTr(context, 'chatCall_chatCleared', fallback: 'Chat Cleared'),
+          message: chatCallTr(context, 'chatCall_allMessagesHaveBeenClearedSuccessfully', fallback: 'All messages have been cleared successfully.'),
         );
       } else {
         // Show error if API call failed
         EnhancedToast.error(
           context,
-          title: 'Error',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
           message: response.error ?? 'Failed to clear chat. Please try again.',
         );
       }
@@ -9458,8 +10128,8 @@ class _ChatScreenState extends State<ChatScreen>
       if (mounted) {
         EnhancedToast.error(
           context,
-          title: 'Error',
-          message: 'An error occurred while clearing chat. Please try again.',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+          message: chatCallTr(context, 'chatCall_anErrorOccurredWhileClearingChat', fallback: 'An error occurred while clearing chat. Please try again.'),
         );
       }
     }
@@ -9474,7 +10144,8 @@ class _ChatScreenState extends State<ChatScreen>
       isDismissible: true,
       enableDrag: true,
       builder: (BuildContext context) {
-        final isDarkTheme = _chatTheme == ThemeMode.dark ||
+        final isDarkTheme =
+            _chatTheme == ThemeMode.dark ||
             (_chatTheme == ThemeMode.system &&
                 MediaQuery.of(context).platformBrightness == Brightness.dark);
         final sheetColor = isDarkTheme ? Colors.grey.shade900 : Colors.white;
@@ -9491,8 +10162,9 @@ class _ChatScreenState extends State<ChatScreen>
               width: double.infinity,
               decoration: BoxDecoration(
                 color: sheetColor,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.15),
@@ -9522,14 +10194,26 @@ class _ChatScreenState extends State<ChatScreen>
                         spacing: 24,
                         runSpacing: 16,
                         children: [
-                          _buildAttachmentOption(Icons.photo_library, 'Gallery',
-                              () => _pickMultipleMedia()),
-                          _buildAttachmentOption(Icons.camera_alt, 'Camera',
-                              () => _pickImage(ImageSource.camera)),
-                          _buildAttachmentOption(Icons.insert_drive_file,
-                              'Document', _pickDocument),
                           _buildAttachmentOption(
-                              Icons.videocam, 'Video', _pickVideo),
+                            Icons.photo_library,
+                            chatCallTr(context, 'chatCall_gallery', fallback: 'Gallery'),
+                            () => _pickMultipleMedia(),
+                          ),
+                          _buildAttachmentOption(
+                            Icons.camera_alt,
+                            chatCallTr(context, 'chatCall_camera', fallback: 'Camera'),
+                            () => _pickImage(ImageSource.camera),
+                          ),
+                          _buildAttachmentOption(
+                            Icons.insert_drive_file,
+                            chatCallTr(context, 'chatCall_document', fallback: 'Document'),
+                            _pickDocument,
+                          ),
+                          _buildAttachmentOption(
+                            Icons.videocam,
+                              chatCallTr(context, 'chatCall_video', fallback: 'Video'),
+                            _pickVideo,
+                          ),
                         ],
                       ),
                     ],
@@ -9544,7 +10228,10 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildAttachmentOption(
-      IconData icon, String label, VoidCallback onTap) {
+    IconData icon,
+    String label,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: () {
         Navigator.pop(context);
@@ -9587,7 +10274,8 @@ class _ChatScreenState extends State<ChatScreen>
 
           // Check if it's a video by extension or mime type
           final pathLower = xFile.path.toLowerCase();
-          final isVideo = pathLower.endsWith('.mp4') ||
+          final isVideo =
+              pathLower.endsWith('.mp4') ||
               pathLower.endsWith('.mov') ||
               pathLower.endsWith('.avi') ||
               pathLower.endsWith('.mkv') ||
@@ -9600,8 +10288,10 @@ class _ChatScreenState extends State<ChatScreen>
             // Handle video
             if (pickedFiles.length == 1) {
               // Single video - show preview
-              final previewResult =
-                  await _showMediaPreview(xFile, isVideo: true);
+              final previewResult = await _showMediaPreview(
+                xFile,
+                isVideo: true,
+              );
               if (previewResult == true) {
                 await _sendVideoMessageWithProgress(file);
               }
@@ -9613,8 +10303,10 @@ class _ChatScreenState extends State<ChatScreen>
             // Handle image
             if (pickedFiles.length == 1) {
               // Single image - show preview
-              final previewResult =
-                  await _showMediaPreview(xFile, isVideo: false);
+              final previewResult = await _showMediaPreview(
+                xFile,
+                isVideo: false,
+              );
               if (previewResult == true) {
                 final compressedFile = await _compressImage(file);
                 if (compressedFile != null) {
@@ -9643,7 +10335,7 @@ class _ChatScreenState extends State<ChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to pick media: ${e.toString()}',
       );
     }
@@ -9658,8 +10350,10 @@ class _ChatScreenState extends State<ChatScreen>
 
       if (pickedFile != null) {
         // Show preview before sending
-        final previewResult =
-            await _showMediaPreview(pickedFile, isVideo: false);
+        final previewResult = await _showMediaPreview(
+          pickedFile,
+          isVideo: false,
+        );
         if (previewResult == true) {
           // Compress image before sending
           final compressedFile = await _compressImage(File(pickedFile.path));
@@ -9673,7 +10367,7 @@ class _ChatScreenState extends State<ChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to pick image: ${e.toString()}',
       );
     }
@@ -9685,7 +10379,8 @@ class _ChatScreenState extends State<ChatScreen>
       context: context,
       barrierColor: Colors.black87,
       builder: (context) {
-        final isDarkTheme = _chatTheme == ThemeMode.dark ||
+        final isDarkTheme =
+            _chatTheme == ThemeMode.dark ||
             (_chatTheme == ThemeMode.system &&
                 MediaQuery.of(context).platformBrightness == Brightness.dark);
 
@@ -9706,14 +10401,12 @@ class _ChatScreenState extends State<ChatScreen>
                 // Preview
                 Flexible(
                   child: ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(16)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
                     child: isVideo
                         ? _VideoPreviewWidget(videoFile: File(file.path))
-                        : Image.file(
-                            File(file.path),
-                            fit: BoxFit.contain,
-                          ),
+                        : Image.file(File(file.path), fit: BoxFit.contain),
                   ),
                 ),
                 // Actions
@@ -9725,7 +10418,13 @@ class _ChatScreenState extends State<ChatScreen>
                       TextButton.icon(
                         onPressed: () => Navigator.pop(context, false),
                         icon: const Icon(Icons.close),
-                        label: const Text('Cancel'),
+                        label: Text(
+                          chatCallTr(
+                            context,
+                            'chatCall_cancel',
+                            fallback: 'Cancel',
+                          ),
+                        ),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.red,
                         ),
@@ -9733,7 +10432,13 @@ class _ChatScreenState extends State<ChatScreen>
                       ElevatedButton.icon(
                         onPressed: () => Navigator.pop(context, true),
                         icon: const Icon(Icons.send),
-                        label: const Text('Send'),
+                        label: Text(
+                          chatCallTr(
+                            context,
+                            'chatCall_send',
+                            fallback: 'Send',
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xffc62828),
                           foregroundColor: Colors.white,
@@ -9778,8 +10483,8 @@ class _ChatScreenState extends State<ChatScreen>
     if (roomId == null || roomId.isEmpty) {
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Room ID not available. Please try again.',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_roomIdNotAvailablePleaseTry', fallback: 'Room ID not available. Please try again.'),
       );
       return;
     }
@@ -9826,7 +10531,9 @@ class _ChatScreenState extends State<ChatScreen>
       if (!mounted) return;
 
       if (!uploadResponse.success || uploadResponse.data == null) {
-        log('❌ [ChatScreen] Failed to upload image to S3: ${uploadResponse.error}');
+        log(
+          '❌ [ChatScreen] Failed to upload image to S3: ${uploadResponse.error}',
+        );
         // Update message to show error - keep as sending to indicate failure
         final index = _messages.indexWhere((m) => m.id == messageId);
         if (index != -1) {
@@ -9838,8 +10545,9 @@ class _ChatScreenState extends State<ChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Upload Failed',
-          message: uploadResponse.error ??
+          title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
+          message:
+              uploadResponse.error ??
               'Failed to upload image. Please try again.',
         );
         return;
@@ -9862,8 +10570,8 @@ class _ChatScreenState extends State<ChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Upload Failed',
-          message: 'Invalid response from server. Please try again.',
+          title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
+          message: chatCallTr(context, 'chatCall_invalidServerResponse', fallback: 'Invalid response from server. Please try again.'),
         );
         return;
       }
@@ -9872,7 +10580,9 @@ class _ChatScreenState extends State<ChatScreen>
       final originalUrl = fileUrl;
       fileUrl = RoomService.transformLocalhostUrl(fileUrl);
       if (fileUrl != originalUrl) {
-        log('🔄 [ChatScreen] Transformed fileUrl from localhost: $originalUrl -> $fileUrl');
+        log(
+          '🔄 [ChatScreen] Transformed fileUrl from localhost: $originalUrl -> $fileUrl',
+        );
       }
 
       log('✅ [ChatScreen] Image uploaded to S3: $fileUrl');
@@ -9929,8 +10639,8 @@ class _ChatScreenState extends State<ChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Send Failed',
-          message: 'Failed to send message. Please try again.',
+          title: chatCallTr(context, 'chatCall_sendFailed', fallback: 'Send Failed'),
+          message: chatCallTr(context, 'chatCall_failedToSendMessagePleaseTry', fallback: 'Failed to send message. Please try again.'),
         );
       }
     } catch (e) {
@@ -9946,7 +10656,7 @@ class _ChatScreenState extends State<ChatScreen>
       }
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to upload image: ${e.toString()}',
       );
     }
@@ -9982,8 +10692,10 @@ class _ChatScreenState extends State<ChatScreen>
 
       if (pickedFile != null) {
         // Show preview before sending (like WhatsApp)
-        final previewResult =
-            await _showMediaPreview(pickedFile, isVideo: true);
+        final previewResult = await _showMediaPreview(
+          pickedFile,
+          isVideo: true,
+        );
         if (previewResult == true) {
           final file = File(pickedFile.path);
           await _sendVideoMessageWithProgress(file);
@@ -9992,7 +10704,7 @@ class _ChatScreenState extends State<ChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to pick video: ${e.toString()}',
       );
     }
@@ -10003,8 +10715,8 @@ class _ChatScreenState extends State<ChatScreen>
     if (roomId == null || roomId.isEmpty) {
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Room ID not available. Please try again.',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_roomIdNotAvailablePleaseTry', fallback: 'Room ID not available. Please try again.'),
       );
       return;
     }
@@ -10049,7 +10761,9 @@ class _ChatScreenState extends State<ChatScreen>
       if (!mounted) return;
 
       if (!uploadResponse.success || uploadResponse.data == null) {
-        log('❌ [ChatScreen] Failed to upload video to S3: ${uploadResponse.error}');
+        log(
+          '❌ [ChatScreen] Failed to upload video to S3: ${uploadResponse.error}',
+        );
         final index = _messages.indexWhere((m) => m.id == messageId);
         if (index != -1) {
           setState(() {
@@ -10059,8 +10773,9 @@ class _ChatScreenState extends State<ChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Upload Failed',
-          message: uploadResponse.error ??
+          title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
+          message:
+              uploadResponse.error ??
               'Failed to upload video. Please try again.',
         );
         return;
@@ -10082,8 +10797,8 @@ class _ChatScreenState extends State<ChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Upload Failed',
-          message: 'Invalid response from server. Please try again.',
+          title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
+          message: chatCallTr(context, 'chatCall_invalidServerResponse', fallback: 'Invalid response from server. Please try again.'),
         );
         return;
       }
@@ -10091,7 +10806,9 @@ class _ChatScreenState extends State<ChatScreen>
       final originalUrl = fileUrl;
       fileUrl = RoomService.transformLocalhostUrl(fileUrl);
       if (fileUrl != originalUrl) {
-        log('🔄 [ChatScreen] Transformed video fileUrl from localhost: $originalUrl -> $fileUrl');
+        log(
+          '🔄 [ChatScreen] Transformed video fileUrl from localhost: $originalUrl -> $fileUrl',
+        );
       }
 
       final contentMap = {
@@ -10104,7 +10821,9 @@ class _ChatScreenState extends State<ChatScreen>
       };
       final content = jsonEncode(contentMap);
 
-      log('📤 [ChatScreen] Sending WebSocket video message with file_url: $fileUrl');
+      log(
+        '📤 [ChatScreen] Sending WebSocket video message with file_url: $fileUrl',
+      );
       final sent = await _chatService.sendMessage(
         roomId: roomId,
         content: content,
@@ -10132,8 +10851,8 @@ class _ChatScreenState extends State<ChatScreen>
       if (!sent) {
         EnhancedToast.error(
           context,
-          title: 'Send Failed',
-          message: 'Uploaded, but failed to send video. Please retry.',
+          title: chatCallTr(context, 'chatCall_sendFailed', fallback: 'Send Failed'),
+          message: chatCallTr(context, 'chatCall_uploadedButFailedToSendVideo', fallback: 'Uploaded, but failed to send video. Please retry.'),
         );
       }
     } catch (e) {
@@ -10148,7 +10867,7 @@ class _ChatScreenState extends State<ChatScreen>
       }
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to send video: ${e.toString()}',
       );
     }
@@ -10167,7 +10886,7 @@ class _ChatScreenState extends State<ChatScreen>
           'xlsx',
           'ppt',
           'pptx',
-          'txt'
+          'txt',
         ],
         allowMultiple: false,
       );
@@ -10183,15 +10902,19 @@ class _ChatScreenState extends State<ChatScreen>
         if (fileSize > 10 * 1024 * 1024) {
           EnhancedToast.warning(
             context,
-            title: 'File Too Large',
-            message: 'File size must be less than 10MB.',
+            title: chatCallTr(context, 'chatCall_fileTooLarge', fallback: 'File Too Large'),
+            message: chatCallTr(context, 'chatCall_fileSizeMustBeLessThan', fallback: 'File size must be less than 10MB.'),
           );
           return;
         }
 
         // Show document preview with file info
-        final shouldSend =
-            await _showDocumentPreview(file, fileName, fileSize, fileType);
+        final shouldSend = await _showDocumentPreview(
+          file,
+          fileName,
+          fileSize,
+          fileType,
+        );
         if (shouldSend == true) {
           await _sendDocumentMessageWithProgress(file, fileName, fileType);
         }
@@ -10199,7 +10922,7 @@ class _ChatScreenState extends State<ChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to pick document: ${e.toString()}',
       );
     }
@@ -10207,8 +10930,13 @@ class _ChatScreenState extends State<ChatScreen>
 
   // Show document preview with file details
   Future<bool?> _showDocumentPreview(
-      File file, String fileName, int fileSize, String fileType) async {
-    final isDarkTheme = _chatTheme == ThemeMode.dark ||
+    File file,
+    String fileName,
+    int fileSize,
+    String fileType,
+  ) async {
+    final isDarkTheme =
+        _chatTheme == ThemeMode.dark ||
         (_chatTheme == ThemeMode.system &&
             MediaQuery.of(context).platformBrightness == Brightness.dark);
 
@@ -10217,8 +10945,7 @@ class _ChatScreenState extends State<ChatScreen>
       builder: (context) {
         return AlertDialog(
           backgroundColor: isDarkTheme ? Colors.grey.shade900 : Colors.white,
-          title: Text(
-            'Document Preview',
+          title: Text(chatCallTr(context, 'Document Preview', fallback: 'Document Preview'),
             style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black),
           ),
           content: Column(
@@ -10274,12 +11001,12 @@ class _ChatScreenState extends State<ChatScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text(
-                'Cancel',
+              child: Text(chatCallTr(context, 'chatCall_cancel', fallback: 'Cancel'),
                 style: TextStyle(
-                    color: isDarkTheme
-                        ? Colors.grey.shade300
-                        : Colors.grey.shade700),
+                  color: isDarkTheme
+                      ? Colors.grey.shade300
+                      : Colors.grey.shade700,
+                ),
               ),
             ),
             ElevatedButton(
@@ -10288,7 +11015,9 @@ class _ChatScreenState extends State<ChatScreen>
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Send'),
+              child: Text(
+                chatCallTr(context, 'chatCall_send', fallback: 'Send'),
+              ),
             ),
           ],
         );
@@ -10322,14 +11051,17 @@ class _ChatScreenState extends State<ChatScreen>
 
   // Send document with upload progress
   Future<void> _sendDocumentMessageWithProgress(
-      File file, String fileName, String fileType) async {
+    File file,
+    String fileName,
+    String fileType,
+  ) async {
     // Ensure we have a room ID
     final roomId = _currentRoomId ?? widget.contact.id;
     if (roomId == null || roomId.isEmpty) {
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Room ID not available. Please try again.',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_roomIdNotAvailablePleaseTry', fallback: 'Room ID not available. Please try again.'),
       );
       return;
     }
@@ -10379,7 +11111,9 @@ class _ChatScreenState extends State<ChatScreen>
       if (!mounted) return;
 
       if (!uploadResponse.success || uploadResponse.data == null) {
-        log('❌ [ChatScreen] Failed to upload document to S3: ${uploadResponse.error}');
+        log(
+          '❌ [ChatScreen] Failed to upload document to S3: ${uploadResponse.error}',
+        );
         // Update message to show error - keep as sending to indicate failure
         final index = _messages.indexWhere((m) => m.id == messageId);
         if (index != -1) {
@@ -10391,8 +11125,9 @@ class _ChatScreenState extends State<ChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Upload Failed',
-          message: uploadResponse.error ??
+          title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
+          message:
+              uploadResponse.error ??
               'Failed to upload document. Please try again.',
         );
         return;
@@ -10415,8 +11150,8 @@ class _ChatScreenState extends State<ChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Upload Failed',
-          message: 'Invalid response from server. Please try again.',
+          title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
+          message: chatCallTr(context, 'chatCall_invalidServerResponse', fallback: 'Invalid response from server. Please try again.'),
         );
         return;
       }
@@ -10425,7 +11160,9 @@ class _ChatScreenState extends State<ChatScreen>
       final originalUrl = fileUrl;
       fileUrl = RoomService.transformLocalhostUrl(fileUrl);
       if (fileUrl != originalUrl) {
-        log('🔄 [ChatScreen] Transformed fileUrl from localhost: $originalUrl -> $fileUrl');
+        log(
+          '🔄 [ChatScreen] Transformed fileUrl from localhost: $originalUrl -> $fileUrl',
+        );
       }
 
       log('✅ [ChatScreen] Document uploaded to S3: $fileUrl');
@@ -10484,8 +11221,8 @@ class _ChatScreenState extends State<ChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Send Failed',
-          message: 'Failed to send message. Please try again.',
+          title: chatCallTr(context, 'chatCall_sendFailed', fallback: 'Send Failed'),
+          message: chatCallTr(context, 'chatCall_failedToSendMessagePleaseTry', fallback: 'Failed to send message. Please try again.'),
         );
       }
     } catch (e) {
@@ -10501,7 +11238,7 @@ class _ChatScreenState extends State<ChatScreen>
       }
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to upload document: ${e.toString()}',
       );
     }
@@ -10541,16 +11278,16 @@ class _ChatScreenState extends State<ChatScreen>
     try {
       EnhancedToast.info(
         context,
-        title: 'Getting Location',
-        message: 'Fetching your current location...',
+        title: chatCallTr(context, 'chatCall_gettingLocation', fallback: 'Getting Location'),
+        message: chatCallTr(context, 'chatCall_fetchingYourCurrentLocation', fallback: 'Fetching your current location...'),
       );
 
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         EnhancedToast.warning(
           context,
-          title: 'Location Disabled',
-          message: 'Please enable location services to share your location.',
+          title: chatCallTr(context, 'chatCall_locationDisabled', fallback: 'Location Disabled'),
+          message: chatCallTr(context, 'chatCall_pleaseEnableLocationServicesToShare', fallback: 'Please enable location services to share your location.'),
         );
         return;
       }
@@ -10561,8 +11298,8 @@ class _ChatScreenState extends State<ChatScreen>
         if (permission == LocationPermission.denied) {
           EnhancedToast.warning(
             context,
-            title: 'Permission Denied',
-            message: 'Location permission is required to share location.',
+            title: chatCallTr(context, 'chatCall_permissionDenied', fallback: 'Permission Denied'),
+            message: chatCallTr(context, 'chatCall_locationPermissionIsRequiredToShare', fallback: 'Location permission is required to share location.'),
           );
           return;
         }
@@ -10571,8 +11308,8 @@ class _ChatScreenState extends State<ChatScreen>
       if (permission == LocationPermission.deniedForever) {
         EnhancedToast.warning(
           context,
-          title: 'Permission Required',
-          message: 'Please enable location permission in settings.',
+          title: chatCallTr(context, 'chatCall_permissionRequired', fallback: 'Permission Required'),
+          message: chatCallTr(context, 'chatCall_pleaseEnableLocationPermissionInSettings', fallback: 'Please enable location permission in settings.'),
         );
         return;
       }
@@ -10608,7 +11345,7 @@ class _ChatScreenState extends State<ChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to get location: ${e.toString()}',
       );
     }
@@ -10622,8 +11359,8 @@ class _ChatScreenState extends State<ChatScreen>
       if (!hasPermission) {
         EnhancedToast.warning(
           context,
-          title: 'Permission Required',
-          message: 'Contact permission is required to share contacts.',
+          title: chatCallTr(context, 'chatCall_permissionRequired', fallback: 'Permission Required'),
+          message: chatCallTr(context, 'chatCall_contactPermissionIsRequiredToShare', fallback: 'Contact permission is required to share contacts.'),
         );
         return;
       }
@@ -10694,7 +11431,7 @@ class _ChatScreenState extends State<ChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to share contact: ${e.toString()}',
       );
     }
@@ -10702,7 +11439,8 @@ class _ChatScreenState extends State<ChatScreen>
 
   // Show location preview with map
   Future<bool?> _showLocationPreview(Position position) async {
-    final isDarkTheme = _chatTheme == ThemeMode.dark ||
+    final isDarkTheme =
+        _chatTheme == ThemeMode.dark ||
         (_chatTheme == ThemeMode.system &&
             MediaQuery.of(context).platformBrightness == Brightness.dark);
 
@@ -10711,8 +11449,7 @@ class _ChatScreenState extends State<ChatScreen>
       builder: (context) {
         return AlertDialog(
           backgroundColor: isDarkTheme ? Colors.grey.shade900 : Colors.white,
-          title: Text(
-            'Share Location',
+          title: Text(chatCallTr(context, 'chatCall_shareLocation', fallback: 'Share Location'),
             style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black),
           ),
           content: Column(
@@ -10736,8 +11473,7 @@ class _ChatScreenState extends State<ChatScreen>
                             color: Colors.grey.shade600,
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            'Map Preview',
+                          Text(chatCallTr(context, 'chatCall_mapPreview', fallback: 'Map Preview'),
                             style: TextStyle(color: Colors.grey.shade600),
                           ),
                           const SizedBox(height: 4),
@@ -10760,8 +11496,7 @@ class _ChatScreenState extends State<ChatScreen>
                   const Icon(Icons.location_on, color: Colors.green, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      'Current Location',
+                    child: Text(chatCallTr(context, 'chatCall_currentLocation', fallback: 'Current Location'),
                       style: TextStyle(
                         color: isDarkTheme ? Colors.white : Colors.black,
                         fontWeight: FontWeight.w500,
@@ -10775,12 +11510,12 @@ class _ChatScreenState extends State<ChatScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text(
-                'Cancel',
+              child: Text(chatCallTr(context, 'chatCall_cancel', fallback: 'Cancel'),
                 style: TextStyle(
-                    color: isDarkTheme
-                        ? Colors.grey.shade300
-                        : Colors.grey.shade700),
+                  color: isDarkTheme
+                      ? Colors.grey.shade300
+                      : Colors.grey.shade700,
+                ),
               ),
             ),
             ElevatedButton(
@@ -10789,7 +11524,13 @@ class _ChatScreenState extends State<ChatScreen>
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Send Location'),
+              child: Text(
+                chatCallTr(
+                  context,
+                  'chatCall_sendLocation',
+                  fallback: 'Send Location',
+                ),
+              ),
             ),
           ],
         );
@@ -10799,7 +11540,8 @@ class _ChatScreenState extends State<ChatScreen>
 
   // Show audio options (voice note or file picker)
   void _showAudioOptions() {
-    final isDarkTheme = _chatTheme == ThemeMode.dark ||
+    final isDarkTheme =
+        _chatTheme == ThemeMode.dark ||
         (_chatTheme == ThemeMode.system &&
             MediaQuery.of(context).platformBrightness == Brightness.dark);
 
@@ -10834,16 +11576,28 @@ class _ChatScreenState extends State<ChatScreen>
                         color: AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                  child: const Icon(Icons.mic, color: Color(0xffc62828)),
+                      child: const Icon(Icons.mic, color: Color(0xffc62828)),
                     ),
-                    title: const Text('Voice Note'),
-                    subtitle: const Text('Hold the mic button to record'),
+                    title: Text(
+                      chatCallTr(
+                        context,
+                        'chatCall_voiceNote',
+                        fallback: 'Voice Note',
+                      ),
+                    ),
+                    subtitle: Text(
+                      chatCallTr(
+                        context,
+                        'chatCall_holdMicToRecord',
+                        fallback: 'Hold the mic button to record',
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       EnhancedToast.info(
                         context,
-                        title: 'Voice Note',
-                        message: 'Hold the mic button to record',
+                        title: chatCallTr(context, 'chatCall_voiceNote', fallback: 'Voice Note'),
+                        message: chatCallTr(context, 'chatCall_holdMicToRecord', fallback: 'Hold the mic button to record'),
                       );
                     },
                   ),
@@ -10856,8 +11610,20 @@ class _ChatScreenState extends State<ChatScreen>
                       ),
                       child: const Icon(Icons.audiotrack, color: Colors.pink),
                     ),
-                    title: const Text('Audio File'),
-                    subtitle: const Text('Select an audio file from storage'),
+                    title: Text(
+                      chatCallTr(
+                        context,
+                        'chatCall_audioFile',
+                        fallback: 'Audio File',
+                      ),
+                    ),
+                    subtitle: Text(
+                      chatCallTr(
+                        context,
+                        'chatCall_selectAudioFile',
+                        fallback: 'Select an audio file from storage',
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       _pickAudioFile();
@@ -10890,8 +11656,8 @@ class _ChatScreenState extends State<ChatScreen>
         if (fileSize > 10 * 1024 * 1024) {
           EnhancedToast.warning(
             context,
-            title: 'File Too Large',
-            message: 'Audio file size must be less than 10MB.',
+            title: chatCallTr(context, 'chatCall_fileTooLarge', fallback: 'File Too Large'),
+            message: chatCallTr(context, 'chatCall_audioFileSizeMustBeLess', fallback: 'Audio file size must be less than 10MB.'),
           );
           return;
         }
@@ -10912,7 +11678,7 @@ class _ChatScreenState extends State<ChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to pick audio file: ${e.toString()}',
       );
     }
@@ -10920,14 +11686,17 @@ class _ChatScreenState extends State<ChatScreen>
 
   // Send audio message
   Future<void> _sendAudioMessage(
-      File audioFile, String fileName, Duration duration) async {
+    File audioFile,
+    String fileName,
+    Duration duration,
+  ) async {
     // Ensure we have a room ID
     final roomId = _currentRoomId ?? widget.contact.id;
     if (roomId == null || roomId.isEmpty) {
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Room ID not available. Please try again.',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_roomIdNotAvailablePleaseTry', fallback: 'Room ID not available. Please try again.'),
       );
       return;
     }
@@ -10975,7 +11744,9 @@ class _ChatScreenState extends State<ChatScreen>
       if (!mounted) return;
 
       if (!uploadResponse.success || uploadResponse.data == null) {
-        log('❌ [ChatScreen] Failed to upload audio to S3: ${uploadResponse.error}');
+        log(
+          '❌ [ChatScreen] Failed to upload audio to S3: ${uploadResponse.error}',
+        );
         final index = _messages.indexWhere((m) => m.id == messageId);
         if (index != -1) {
           setState(() {
@@ -10985,8 +11756,9 @@ class _ChatScreenState extends State<ChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Upload Failed',
-          message: uploadResponse.error ??
+          title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
+          message:
+              uploadResponse.error ??
               'Failed to upload audio. Please try again.',
         );
         return;
@@ -11008,8 +11780,8 @@ class _ChatScreenState extends State<ChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Upload Failed',
-          message: 'Invalid response from server. Please try again.',
+          title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
+          message: chatCallTr(context, 'chatCall_invalidServerResponse', fallback: 'Invalid response from server. Please try again.'),
         );
         return;
       }
@@ -11017,7 +11789,9 @@ class _ChatScreenState extends State<ChatScreen>
       final originalUrl = fileUrl;
       fileUrl = RoomService.transformLocalhostUrl(fileUrl);
       if (fileUrl != originalUrl) {
-        log('🔄 [ChatScreen] Transformed audio fileUrl from localhost: $originalUrl -> $fileUrl');
+        log(
+          '🔄 [ChatScreen] Transformed audio fileUrl from localhost: $originalUrl -> $fileUrl',
+        );
       }
 
       final contentMap = {
@@ -11031,7 +11805,9 @@ class _ChatScreenState extends State<ChatScreen>
       };
       final content = jsonEncode(contentMap);
 
-      log('📤 [ChatScreen] Sending WebSocket voice message with file_url: $fileUrl');
+      log(
+        '📤 [ChatScreen] Sending WebSocket voice message with file_url: $fileUrl',
+      );
       final sent = await _chatService.sendMessage(
         roomId: roomId,
         content: content,
@@ -11058,8 +11834,8 @@ class _ChatScreenState extends State<ChatScreen>
       if (!sent) {
         EnhancedToast.error(
           context,
-          title: 'Send Failed',
-          message: 'Uploaded, but failed to send voice note. Please retry.',
+          title: chatCallTr(context, 'chatCall_sendFailed', fallback: 'Send Failed'),
+          message: chatCallTr(context, 'chatCall_uploadedButSendFailed', fallback: 'Uploaded, but failed to send voice note. Please retry.'),
         );
       }
     } catch (e) {
@@ -11074,7 +11850,7 @@ class _ChatScreenState extends State<ChatScreen>
       }
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to send audio: ${e.toString()}',
       );
     }
@@ -11120,8 +11896,9 @@ class _ChatScreenState extends State<ChatScreen>
         _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
           if (mounted && _isRecording && _recordingStartTime != null) {
             setState(() {
-              _recordingDuration =
-                  DateTime.now().difference(_recordingStartTime!);
+              _recordingDuration = DateTime.now().difference(
+                _recordingStartTime!,
+              );
             });
           } else {
             timer.cancel();
@@ -11130,14 +11907,14 @@ class _ChatScreenState extends State<ChatScreen>
       } else {
         EnhancedToast.warning(
           context,
-          title: 'Permission Required',
-          message: 'Microphone permission is required.',
+          title: chatCallTr(context, 'chatCall_permissionRequired', fallback: 'Permission Required'),
+          message: chatCallTr(context, 'chatCall_micPermissionRequired', fallback: 'Microphone permission is required.'),
         );
       }
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to start recording: ${e.toString()}',
       );
     }
@@ -11208,7 +11985,7 @@ class _ChatScreenState extends State<ChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to send voice message: ${e.toString()}',
       );
       setState(() {
@@ -11250,20 +12027,20 @@ class _ChatScreenState extends State<ChatScreen>
 
         EnhancedToast.info(
           context,
-          title: 'Recording',
-          message: 'Recording audio... Tap attachment button again to stop.',
+          title: chatCallTr(context, 'chatCall_recording2', fallback: 'Recording'),
+          message: chatCallTr(context, 'chatCall_recordingAudioTapAttachmentButtonAgain', fallback: 'Recording audio... Tap attachment button again to stop.'),
         );
       } else {
         EnhancedToast.warning(
           context,
-          title: 'Permission Required',
-          message: 'Microphone permission is required to record audio.',
+          title: chatCallTr(context, 'chatCall_permissionRequired', fallback: 'Permission Required'),
+          message: chatCallTr(context, 'chatCall_microphonePermissionIsRequiredToRecord', fallback: 'Microphone permission is required to record audio.'),
         );
       }
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to start recording: ${e.toString()}',
       );
     }
@@ -11274,8 +12051,9 @@ class _ChatScreenState extends State<ChatScreen>
       Future.delayed(const Duration(seconds: 1), () {
         if (_isRecording && mounted) {
           setState(() {
-            _recordingDuration =
-                DateTime.now().difference(_recordingStartTime!);
+            _recordingDuration = DateTime.now().difference(
+              _recordingStartTime!,
+            );
           });
           _updateRecordingDuration();
         }
@@ -11343,14 +12121,14 @@ class _ChatScreenState extends State<ChatScreen>
       } else {
         EnhancedToast.warning(
           context,
-          title: 'Recording Failed',
-          message: 'No audio was recorded.',
+          title: chatCallTr(context, 'chatCall_recordingFailed', fallback: 'Recording Failed'),
+          message: chatCallTr(context, 'chatCall_noAudioWasRecorded', fallback: 'No audio was recorded.'),
         );
       }
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to stop recording: ${e.toString()}',
       );
       setState(() {
@@ -11438,9 +12216,7 @@ class _ChatScreenState extends State<ChatScreen>
       placeholder: (context, url) => Container(
         height: 150,
         color: Colors.grey.shade300,
-        child: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        child: const Center(child: CircularProgressIndicator()),
       ),
       errorWidget: (context, url, error) {
         log('❌ [ChatScreen] Failed to load image: $url, error: $error');
@@ -11456,9 +12232,7 @@ class _ChatScreenState extends State<ChatScreen>
             placeholder: (context, url) => Container(
               height: 150,
               color: Colors.grey.shade300,
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: const Center(child: CircularProgressIndicator()),
             ),
             errorWidget: (context, url, error) => _buildImageErrorWidget(),
           );
@@ -11478,8 +12252,7 @@ class _ChatScreenState extends State<ChatScreen>
         children: [
           const Icon(Icons.broken_image, size: 40, color: Colors.grey),
           const SizedBox(height: 8),
-          Text(
-            'Failed to load image',
+          Text(chatCallTr(context, 'chatCall_failedToLoadImage', fallback: 'Failed to load image'),
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
         ],
@@ -11493,7 +12266,9 @@ class _ChatScreenState extends State<ChatScreen>
     String normalizedUrl =
         RoomService.transformLocalhostUrl(imageUrl) ?? imageUrl;
     if (normalizedUrl != imageUrl) {
-      log('🔄 [ChatScreen] Normalized preview image URL: $imageUrl -> $normalizedUrl');
+      log(
+        '🔄 [ChatScreen] Normalized preview image URL: $imageUrl -> $normalizedUrl',
+      );
     }
 
     return CachedNetworkImage(
@@ -11524,11 +12299,7 @@ class _ChatScreenState extends State<ChatScreen>
             errorWidget: (context, url, error) => Container(
               color: Colors.black,
               child: const Center(
-                child: Icon(
-                  Icons.broken_image,
-                  color: Colors.white,
-                  size: 64,
-                ),
+                child: Icon(Icons.broken_image, color: Colors.white, size: 64),
               ),
             ),
           );
@@ -11536,11 +12307,7 @@ class _ChatScreenState extends State<ChatScreen>
         return Container(
           color: Colors.black,
           child: const Center(
-            child: Icon(
-              Icons.broken_image,
-              color: Colors.white,
-              size: 64,
-            ),
+            child: Icon(Icons.broken_image, color: Colors.white, size: 64),
           ),
         );
       },
@@ -11552,14 +12319,16 @@ class _ChatScreenState extends State<ChatScreen>
       // Try to download even if localhost (for development/testing)
       // Log warning but don't block the download attempt
       if (imageUrl.contains('localhost') || imageUrl.contains('127.0.0.1')) {
-        log('⚠️ [ChatScreen] Attempting to download from localhost URL: $imageUrl');
+        log(
+          '⚠️ [ChatScreen] Attempting to download from localhost URL: $imageUrl',
+        );
         log('   This may fail on mobile devices if not on same network.');
       }
 
       EnhancedToast.info(
         context,
-        title: 'Downloading',
-        message: 'Downloading image to gallery...',
+        title: chatCallTr(context, 'chatCall_downloading', fallback: 'Downloading'),
+        message: chatCallTr(context, 'chatCall_downloadingImageToGallery', fallback: 'Downloading image to gallery...'),
       );
 
       final response = await http.get(Uri.parse(imageUrl));
@@ -11584,8 +12353,13 @@ class _ChatScreenState extends State<ChatScreen>
                 .split('/')
                 .first; // Remove query params and path
             // Validate extension
-            if (!['jpg', 'jpeg', 'png', 'gif', 'webp']
-                .contains(extension.toLowerCase())) {
+            if (![
+              'jpg',
+              'jpeg',
+              'png',
+              'gif',
+              'webp',
+            ].contains(extension.toLowerCase())) {
               extension = 'jpg';
             }
           }
@@ -11611,39 +12385,44 @@ class _ChatScreenState extends State<ChatScreen>
 
         EnhancedToast.success(
           context,
-          title: 'Downloaded',
-          message: 'Image saved to gallery',
+          title: chatCallTr(context, 'chatCall_downloaded', fallback: 'Downloaded'),
+          message: chatCallTr(context, 'chatCall_imageSavedToGallery', fallback: 'Image saved to gallery'),
         );
       } else {
         throw Exception(
-            'Failed to download image: HTTP ${response.statusCode}');
+          'Failed to download image: HTTP ${response.statusCode}',
+        );
       }
     } catch (e) {
       log('❌ [ChatScreen] Error downloading image from URL: $e');
       EnhancedToast.error(
         context,
-        title: 'Download Failed',
+        title: chatCallTr(context, 'chatCall_downloadFailed', fallback: 'Download Failed'),
         message:
-            'Failed to download image. Please check your connection and try again.',
+            chatCallTr(context, 'chatCall_failedToDownloadImagePleaseCheck', fallback: 'Failed to download image. Please check your connection and try again.'),
       );
     }
   }
 
   Future<void> _downloadDocumentFromUrl(
-      String documentUrl, String fileName) async {
+    String documentUrl,
+    String fileName,
+  ) async {
     try {
       // Try to download even if localhost (for development/testing)
       // Log warning but don't block the download attempt
       if (documentUrl.contains('localhost') ||
           documentUrl.contains('127.0.0.1')) {
-        log('⚠️ [ChatScreen] Attempting to download from localhost URL: $documentUrl');
+        log(
+          '⚠️ [ChatScreen] Attempting to download from localhost URL: $documentUrl',
+        );
         log('   This may fail on mobile devices if not on same network.');
       }
 
       EnhancedToast.info(
         context,
-        title: 'Downloading',
-        message: 'Downloading document...',
+        title: chatCallTr(context, 'chatCall_downloading', fallback: 'Downloading'),
+        message: chatCallTr(context, 'chatCall_downloadingDocument', fallback: 'Downloading document...'),
       );
 
       final response = await http.get(Uri.parse(documentUrl));
@@ -11664,23 +12443,24 @@ class _ChatScreenState extends State<ChatScreen>
         final file = File('${directory.path}/$finalFileName');
         await file.writeAsBytes(response.bodyBytes);
 
-        await Share.shareXFiles([XFile(file.path)], text: 'Document');
+        await Share.shareXFiles([XFile(file.path)], text: chatCallTr(context, 'chatCall_document', fallback: 'Document'));
         EnhancedToast.success(
           context,
-          title: 'Downloaded',
-          message: 'Document saved successfully',
+          title: chatCallTr(context, 'chatCall_downloaded', fallback: 'Downloaded'),
+          message: chatCallTr(context, 'chatCall_documentSavedSuccessfully', fallback: 'Document saved successfully'),
         );
       } else {
         throw Exception(
-            'Failed to download document: HTTP ${response.statusCode}');
+          'Failed to download document: HTTP ${response.statusCode}',
+        );
       }
     } catch (e) {
       log('❌ [ChatScreen] Error downloading document from URL: $e');
       EnhancedToast.error(
         context,
-        title: 'Download Failed',
+        title: chatCallTr(context, 'chatCall_downloadFailed', fallback: 'Download Failed'),
         message:
-            'Failed to download document. Please check your connection and try again.',
+            chatCallTr(context, 'chatCall_failedToDownloadDocumentPleaseCheck', fallback: 'Failed to download document. Please check your connection and try again.'),
       );
     }
   }
@@ -11734,7 +12514,9 @@ class _ChatScreenState extends State<ChatScreen>
                           avatarUrl,
                           fit: BoxFit.contain,
                           errorBuilder: (context, error, stackTrace) {
-                            log('⚠️ [ChatScreen] Failed to load avatar preview: $error');
+                            log(
+                              '⚠️ [ChatScreen] Failed to load avatar preview: $error',
+                            );
                             return const Icon(
                               Icons.broken_image,
                               color: Colors.white70,
@@ -11790,8 +12572,10 @@ class _ChatScreenState extends State<ChatScreen>
     await _downloadVideoWithProgress(message, playAfterDownload: true);
   }
 
-  Future<void> _downloadVideoWithProgress(ChatMessage message,
-      {bool playAfterDownload = false}) async {
+  Future<void> _downloadVideoWithProgress(
+    ChatMessage message, {
+    bool playAfterDownload = false,
+  }) async {
     if (_videoDownloadInProgress.contains(message.id)) {
       return;
     }
@@ -11824,15 +12608,15 @@ class _ChatScreenState extends State<ChatScreen>
       } else {
         EnhancedToast.error(
           context,
-          title: 'Download Failed',
-          message: 'Unable to download video. Try again.',
+          title: chatCallTr(context, 'chatCall_downloadFailed', fallback: 'Download Failed'),
+          message: chatCallTr(context, 'chatCall_unableToDownloadVideo', fallback: 'Unable to download video. Try again.'),
         );
       }
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Download Failed',
-        message: 'Unable to download video.',
+        title: chatCallTr(context, 'chatCall_downloadFailed', fallback: 'Download Failed'),
+        message: chatCallTr(context, 'chatCall_unableToDownloadVideoGeneric', fallback: 'Unable to download video.'),
       );
     } finally {
       if (mounted) {
@@ -11890,8 +12674,10 @@ class _ChatScreenState extends State<ChatScreen>
     final index = _messages.indexWhere((m) => m.id == messageId);
     if (index == -1) return;
     setState(() {
-      _messages[index] =
-          _messages[index].copyWith(videoFile: file, isVideo: true);
+      _messages[index] = _messages[index].copyWith(
+        videoFile: file,
+        isVideo: true,
+      );
     });
   }
 
@@ -11911,8 +12697,8 @@ class _ChatScreenState extends State<ChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Unable to open video link',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_unableToOpenVideoLink', fallback: 'Unable to open video link'),
       );
     }
   }
@@ -11942,7 +12728,13 @@ class _ChatScreenState extends State<ChatScreen>
                 ),
                 ListTile(
                   leading: const Icon(Icons.download, color: Colors.blue),
-                  title: const Text('Download'),
+                  title: Text(
+                    chatCallTr(
+                      context,
+                      'chatCall_download',
+                      fallback: 'Download',
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _downloadFile(file, fileName);
@@ -11950,7 +12742,9 @@ class _ChatScreenState extends State<ChatScreen>
                 ),
                 ListTile(
                   leading: const Icon(Icons.share, color: Colors.green),
-                  title: const Text('Share'),
+                  title: Text(
+                    chatCallTr(context, 'chatCall_share', fallback: 'Share'),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _shareFile(file, fileName);
@@ -11972,8 +12766,8 @@ class _ChatScreenState extends State<ChatScreen>
       if (directory == null) {
         EnhancedToast.error(
           context,
-          title: 'Error',
-          message: 'Unable to access storage directory.',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+          message: chatCallTr(context, 'chatCall_unableToAccessStorage', fallback: 'Unable to access storage directory.'),
         );
         return;
       }
@@ -11991,15 +12785,14 @@ class _ChatScreenState extends State<ChatScreen>
 
       EnhancedToast.success(
         context,
-        title: 'Downloaded',
-        message: 'File saved to Downloads: $fileName',
+        title: chatCallTr(context, 'chatCall_downloaded', fallback: 'Downloaded'),
+        message: chatCallTr(context, 'chatCall_fileSavedToDownloads', fallback: 'File saved to Downloads: {fileName}', params: {'fileName': fileName}),
       );
 
       // Also share the file so user can save it
-      await Share.shareXFiles(
-        [XFile(destinationFile.path)],
-        text: 'Downloaded: $fileName',
-      );
+      await Share.shareXFiles([
+        XFile(destinationFile.path),
+      ], text: 'Downloaded: $fileName');
     } catch (e) {
       // If direct save fails, use share as fallback
       await _shareFile(file, fileName);
@@ -12016,7 +12809,7 @@ class _ChatScreenState extends State<ChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to share file: ${e.toString()}',
       );
     }
@@ -12045,19 +12838,21 @@ class _ChatScreenState extends State<ChatScreen>
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const Padding(
+                Padding(
                   padding: EdgeInsets.all(16),
-                  child: Text(
-                    'Chat Customization',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Text(chatCallTr(context, 'chatCall_chatCustomization', fallback: 'Chat Customization'),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
                 ListTile(
                   leading: const Icon(Icons.wallpaper, color: Colors.purple),
-                  title: const Text('Change Background Wallpaper'),
+                  title: Text(
+                    chatCallTr(
+                      context,
+                      'chatCall_changeBackgroundWallpaper',
+                      fallback: 'Change Background Wallpaper',
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _showWallpaperOptions();
@@ -12066,7 +12861,7 @@ class _ChatScreenState extends State<ChatScreen>
                 // Theme Settings option hidden (matches group chat)
                 // ListTile(
                 //   leading: const Icon(Icons.dark_mode, color: Colors.blue),
-                //   title: const Text('Theme Settings'),
+                //   title: Text(chatCallTr(context, 'chatCall_themeSettings', fallback: 'Theme Settings')),
                 //   onTap: () {
                 //     Navigator.pop(context);
                 //     _showThemeOptions();
@@ -12075,7 +12870,7 @@ class _ChatScreenState extends State<ChatScreen>
                 // Font Size option hidden (matches group chat)
                 // ListTile(
                 //   leading: const Icon(Icons.text_fields, color: Colors.orange),
-                //   title: const Text('Font Size'),
+                //   title: Text(chatCallTr(context, 'chatCall_fontSize', fallback: 'Font Size')),
                 //   onTap: () {
                 //     Navigator.pop(context);
                 //     _showFontSizeOptions();
@@ -12114,8 +12909,7 @@ class _ChatScreenState extends State<ChatScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Select Wallpaper',
+                  Text(chatCallTr(context, 'chatCall_selectWallpaper', fallback: 'Select Wallpaper'),
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
@@ -12148,9 +12942,7 @@ class _ChatScreenState extends State<ChatScreen>
                             decoration: BoxDecoration(
                               color: Colors.blue.shade50,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Colors.blue.shade200,
-                              ),
+                              border: Border.all(color: Colors.blue.shade200),
                             ),
                             child: _chatWallpaperImage != null
                                 ? ClipRRect(
@@ -12181,8 +12973,7 @@ class _ChatScreenState extends State<ChatScreen>
                                       size: 20,
                                     ),
                                     const SizedBox(width: 8),
-                                    const Text(
-                                      'Choose from Gallery',
+                                    Text(chatCallTr(context, 'chatCall_chooseFromGallery2', fallback: 'Choose from Gallery'),
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -12197,10 +12988,11 @@ class _ChatScreenState extends State<ChatScreen>
                                         ),
                                         decoration: BoxDecoration(
                                           color: Colors.green,
-                                          borderRadius:
-                                              BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
-                                        child: const Row(
+                                        child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Icon(
@@ -12209,8 +13001,7 @@ class _ChatScreenState extends State<ChatScreen>
                                               size: 14,
                                             ),
                                             SizedBox(width: 4),
-                                            Text(
-                                              'Active',
+                                            Text(chatCallTr(context, 'chatCall_active', fallback: 'Active'),
                                               style: TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 10,
@@ -12281,7 +13072,7 @@ class _ChatScreenState extends State<ChatScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Row(
+                                Row(
                                   children: [
                                     Icon(
                                       Icons.camera_alt,
@@ -12289,8 +13080,7 @@ class _ChatScreenState extends State<ChatScreen>
                                       size: 20,
                                     ),
                                     SizedBox(width: 8),
-                                    Text(
-                                      'Take Photo',
+                                    Text(chatCallTr(context, 'chatCall_takePhoto', fallback: 'Take a photo'),
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -12299,8 +13089,7 @@ class _ChatScreenState extends State<ChatScreen>
                                   ],
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  'Capture a new photo with camera',
+                                Text(chatCallTr(context, 'chatCall_captureANewPhotoWithCamera', fallback: 'Capture a new photo with camera'),
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey.shade600,
@@ -12313,23 +13102,22 @@ class _ChatScreenState extends State<ChatScreen>
                       ),
                     ),
                   ),
-                  Divider(
-                    color: Colors.grey.withOpacity(0.2),
-                  ),
+                  Divider(color: Colors.grey.withOpacity(0.2)),
                   // Color wallpapers
                   GridView.builder(
                     shrinkWrap: true,
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 1.5,
-                    ),
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 1.5,
+                        ),
                     itemCount: wallpapers.length,
                     itemBuilder: (context, index) {
                       final wallpaper = wallpapers[index];
-                      final isSelected = _chatWallpaperImage == null &&
+                      final isSelected =
+                          _chatWallpaperImage == null &&
                           _chatWallpaper == wallpaper['color'];
                       return GestureDetector(
                         onTap: () async {
@@ -12344,7 +13132,7 @@ class _ChatScreenState extends State<ChatScreen>
                           Navigator.pop(context);
                           EnhancedToast.success(
                             context,
-                            title: 'Wallpaper Changed',
+                            title: chatCallTr(context, 'chatCall_wallpaperChanged', fallback: 'Wallpaper Changed'),
                             message: 'Wallpaper set to ${wallpaper['name']}',
                           );
                         },
@@ -12415,7 +13203,7 @@ class _ChatScreenState extends State<ChatScreen>
 
         EnhancedToast.success(
           context,
-          title: 'Wallpaper Changed',
+          title: chatCallTr(context, 'chatCall_wallpaperChanged', fallback: 'Wallpaper Changed'),
           message: source == ImageSource.camera
               ? 'Camera wallpaper applied'
               : 'Gallery wallpaper applied',
@@ -12424,7 +13212,7 @@ class _ChatScreenState extends State<ChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message:
             'Failed to ${source == ImageSource.camera ? "capture" : "pick"} image: ${e.toString()}',
       );
@@ -12440,7 +13228,9 @@ class _ChatScreenState extends State<ChatScreen>
       final prefs = await SharedPreferences.getInstance();
       final key = 'chat_wallpaper_${_currentRoomId}';
       await prefs.setString(key, wallpaperPath);
-      log('✅ [ChatScreen] Wallpaper saved to SharedPreferences: $key -> $wallpaperPath');
+      log(
+        '✅ [ChatScreen] Wallpaper saved to SharedPreferences: $key -> $wallpaperPath',
+      );
     } catch (e) {
       log('❌ [ChatScreen] Error saving wallpaper to SharedPreferences: $e');
     }
@@ -12474,14 +13264,19 @@ class _ChatScreenState extends State<ChatScreen>
             setState(() {
               _chatWallpaperImage = wallpaperFile;
               _chatWallpaper = Colors
-                  .grey.shade100; // Reset to default color when image is loaded
+                  .grey
+                  .shade100; // Reset to default color when image is loaded
             });
-            log('✅ [ChatScreen] Wallpaper loaded from SharedPreferences: $wallpaperPath');
+            log(
+              '✅ [ChatScreen] Wallpaper loaded from SharedPreferences: $wallpaperPath',
+            );
           }
         } else {
           // File doesn't exist, remove from preferences
           await prefs.remove(key);
-          log('⚠️ [ChatScreen] Wallpaper file not found, removed from preferences: $wallpaperPath');
+          log(
+            '⚠️ [ChatScreen] Wallpaper file not found, removed from preferences: $wallpaperPath',
+          );
         }
       }
     } catch (e) {
@@ -12519,8 +13314,7 @@ class _ChatScreenState extends State<ChatScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Select Theme',
+                  Text(chatCallTr(context, 'chatCall_selectTheme', fallback: 'Select Theme'),
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
@@ -12531,7 +13325,9 @@ class _ChatScreenState extends State<ChatScreen>
                           ? AppColors.primary
                           : Colors.orange,
                     ),
-                    title: const Text('Light'),
+                    title: Text(
+                      chatCallTr(context, 'chatCall_light', fallback: 'Light'),
+                    ),
                     trailing: _chatTheme == ThemeMode.light
                         ? const Icon(Icons.check, color: AppColors.primary)
                         : null,
@@ -12540,8 +13336,11 @@ class _ChatScreenState extends State<ChatScreen>
                         _chatTheme = ThemeMode.light;
                       });
                       Navigator.pop(context);
-                      EnhancedToast.info(context,
-                          title: 'Theme', message: 'Light theme selected');
+                      EnhancedToast.info(
+                        context,
+                        title: chatCallTr(context, 'chatCall_theme', fallback: 'Theme'),
+                        message: chatCallTr(context, 'chatCall_lightThemeSelected', fallback: 'Light theme selected'),
+                      );
                     },
                   ),
                   ListTile(
@@ -12551,7 +13350,9 @@ class _ChatScreenState extends State<ChatScreen>
                           ? AppColors.primary
                           : Colors.blue,
                     ),
-                    title: const Text('Dark'),
+                    title: Text(
+                      chatCallTr(context, 'chatCall_dark', fallback: 'Dark'),
+                    ),
                     trailing: _chatTheme == ThemeMode.dark
                         ? const Icon(Icons.check, color: AppColors.primary)
                         : null,
@@ -12560,8 +13361,11 @@ class _ChatScreenState extends State<ChatScreen>
                         _chatTheme = ThemeMode.dark;
                       });
                       Navigator.pop(context);
-                      EnhancedToast.info(context,
-                          title: 'Theme', message: 'Dark theme selected');
+                      EnhancedToast.info(
+                        context,
+                        title: chatCallTr(context, 'chatCall_theme', fallback: 'Theme'),
+                        message: chatCallTr(context, 'chatCall_darkThemeSelected', fallback: 'Dark theme selected'),
+                      );
                     },
                   ),
                   const SizedBox(height: 16),
@@ -12590,14 +13394,15 @@ class _ChatScreenState extends State<ChatScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Font Size',
+                  Text(chatCallTr(context, 'chatCall_fontSize', fallback: 'Font Size'),
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   ListTile(
                     leading: const Icon(Icons.text_decrease),
-                    title: const Text('Small'),
+                    title: Text(
+                      chatCallTr(context, 'chatCall_small', fallback: 'Small'),
+                    ),
                     subtitle: const Text('12px'),
                     trailing: _fontSize == 12.0
                         ? const Icon(Icons.check, color: AppColors.primary)
@@ -12607,13 +13412,22 @@ class _ChatScreenState extends State<ChatScreen>
                         _fontSize = 12.0;
                       });
                       Navigator.pop(context);
-                      EnhancedToast.info(context,
-                          title: 'Font Size', message: 'Small font selected');
+                      EnhancedToast.info(
+                        context,
+                        title: chatCallTr(context, 'chatCall_fontSize', fallback: 'Font Size'),
+                        message: chatCallTr(context, 'chatCall_smallFontSelected', fallback: 'Small font selected'),
+                      );
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.text_fields),
-                    title: const Text('Medium'),
+                    title: Text(
+                      chatCallTr(
+                        context,
+                        'chatCall_medium',
+                        fallback: 'Medium',
+                      ),
+                    ),
                     subtitle: const Text('14px'),
                     trailing: _fontSize == 14.0
                         ? const Icon(Icons.check, color: AppColors.primary)
@@ -12623,13 +13437,18 @@ class _ChatScreenState extends State<ChatScreen>
                         _fontSize = 14.0;
                       });
                       Navigator.pop(context);
-                      EnhancedToast.info(context,
-                          title: 'Font Size', message: 'Medium font selected');
+                      EnhancedToast.info(
+                        context,
+                        title: chatCallTr(context, 'chatCall_fontSize', fallback: 'Font Size'),
+                        message: chatCallTr(context, 'chatCall_mediumFontSelected', fallback: 'Medium font selected'),
+                      );
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.text_increase),
-                    title: const Text('Large'),
+                    title: Text(
+                      chatCallTr(context, 'chatCall_large', fallback: 'Large'),
+                    ),
                     subtitle: const Text('16px'),
                     trailing: _fontSize == 16.0
                         ? const Icon(Icons.check, color: AppColors.primary)
@@ -12639,8 +13458,11 @@ class _ChatScreenState extends State<ChatScreen>
                         _fontSize = 16.0;
                       });
                       Navigator.pop(context);
-                      EnhancedToast.info(context,
-                          title: 'Font Size', message: 'Large font selected');
+                      EnhancedToast.info(
+                        context,
+                        title: chatCallTr(context, 'chatCall_fontSize', fallback: 'Font Size'),
+                        message: chatCallTr(context, 'chatCall_largeFontSelected', fallback: 'Large font selected'),
+                      );
                     },
                   ),
                   const SizedBox(height: 16),
@@ -12658,13 +13480,18 @@ class _ChatScreenState extends State<ChatScreen>
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Block User'),
+          title: Text(
+            chatCallTr(context, 'chatCall_blockUser', fallback: 'Block User'),
+          ),
           content: Text(
-              'Are you sure you want to block ${widget.contact.name}? You will no longer receive messages from this user.'),
+            'Are you sure you want to block ${widget.contact.name}? You will no longer receive messages from this user.',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(
+                chatCallTr(context, 'chatCall_cancel', fallback: 'Cancel'),
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -12672,7 +13499,9 @@ class _ChatScreenState extends State<ChatScreen>
                 Navigator.pop(context);
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Block'),
+              child: Text(
+                chatCallTr(context, 'chatCall_block', fallback: 'Block'),
+              ),
             ),
           ],
         );
@@ -12686,7 +13515,7 @@ class _ChatScreenState extends State<ChatScreen>
     });
     EnhancedToast.success(
       context,
-      title: 'User Blocked',
+      title: chatCallTr(context, 'chatCall_userBlocked', fallback: 'User Blocked'),
       message: '${widget.contact.name} has been blocked',
     );
   }
@@ -12697,7 +13526,7 @@ class _ChatScreenState extends State<ChatScreen>
     });
     EnhancedToast.success(
       context,
-      title: 'User Unblocked',
+      title: chatCallTr(context, 'chatCall_userUnblocked', fallback: 'User Unblocked'),
       message: '${widget.contact.name} has been unblocked',
     );
   }
@@ -12829,12 +13658,7 @@ class LinkPreview {
   final String? description;
   final String? imageUrl;
 
-  LinkPreview({
-    required this.url,
-    this.title,
-    this.description,
-    this.imageUrl,
-  });
+  LinkPreview({required this.url, this.title, this.description, this.imageUrl});
 }
 
 class _VideoThumbnailWidget extends StatelessWidget {
@@ -12847,11 +13671,7 @@ class _VideoThumbnailWidget extends StatelessWidget {
     return Container(
       color: Colors.black,
       child: const Center(
-        child: Icon(
-          Icons.videocam,
-          color: Colors.white54,
-          size: 48,
-        ),
+        child: Icon(Icons.videocam, color: Colors.white54, size: 48),
       ),
     );
   }
@@ -12891,15 +13711,15 @@ class _ImagePreviewScreen extends StatelessWidget {
                 if (context.mounted) {
                   EnhancedToast.success(
                     context,
-                    title: 'Downloaded',
-                    message: 'Image saved to Downloads',
+                    title: chatCallTr(context, 'chatCall_downloaded', fallback: 'Downloaded'),
+                    message: chatCallTr(context, 'chatCall_imageSavedToDownloads', fallback: 'Image saved to Downloads'),
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
                   EnhancedToast.error(
                     context,
-                    title: 'Error',
+                    title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
                     message: 'Failed to download image: ${e.toString()}',
                   );
                 }
@@ -12910,15 +13730,14 @@ class _ImagePreviewScreen extends StatelessWidget {
             icon: const Icon(Icons.share, color: Colors.white),
             onPressed: () async {
               try {
-                await Share.shareXFiles(
-                  [XFile(imageFile.path)],
-                  text: 'Image from chat',
-                );
+                await Share.shareXFiles([
+                  XFile(imageFile.path),
+                ], text: 'Image from chat');
               } catch (e) {
                 if (context.mounted) {
                   EnhancedToast.error(
                     context,
-                    title: 'Error',
+                    title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
                     message: 'Failed to share image: ${e.toString()}',
                   );
                 }
@@ -12935,11 +13754,7 @@ class _ImagePreviewScreen extends StatelessWidget {
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) {
               return const Center(
-                child: Icon(
-                  Icons.broken_image,
-                  color: Colors.white,
-                  size: 64,
-                ),
+                child: Icon(Icons.broken_image, color: Colors.white, size: 64),
               );
             },
           ),
@@ -12980,8 +13795,9 @@ class _VideoPreviewWidgetState extends State<_VideoPreviewWidget> {
         // Seek to middle frame for better thumbnail
         final duration = _controller!.value.duration;
         if (duration.inMilliseconds > 0) {
-          await _controller!
-              .seekTo(Duration(milliseconds: duration.inMilliseconds ~/ 2));
+          await _controller!.seekTo(
+            Duration(milliseconds: duration.inMilliseconds ~/ 2),
+          );
           await _controller!.pause();
         }
       }
@@ -13006,9 +13822,7 @@ class _VideoPreviewWidgetState extends State<_VideoPreviewWidget> {
       return Container(
         color: Colors.black,
         child: const Center(
-          child: CircularProgressIndicator(
-            color: Colors.white54,
-          ),
+          child: CircularProgressIndicator(color: Colors.white54),
         ),
       );
     }
@@ -13028,11 +13842,7 @@ class _VideoPreviewWidgetState extends State<_VideoPreviewWidget> {
               color: Colors.black.withOpacity(0.6),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.play_arrow,
-              color: Colors.white,
-              size: 48,
-            ),
+            child: const Icon(Icons.play_arrow, color: Colors.white, size: 48),
           ),
         ),
       ],
@@ -13053,23 +13863,17 @@ class _VideoPreviewScreen extends StatelessWidget {
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: const Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.videocam,
-              color: Colors.white,
-              size: 64,
-            ),
+            Icon(Icons.videocam, color: Colors.white, size: 64),
             SizedBox(height: 16),
-            Text(
-              'Video Preview',
+            Text(chatCallTr(context, 'chatCall_videoPreview', fallback: 'Video Preview'),
               style: TextStyle(color: Colors.white, fontSize: 18),
             ),
             SizedBox(height: 8),
-            Text(
-              'Video player integration needed',
+            Text(chatCallTr(context, 'chatCall_videoPlayerIntegrationNeeded', fallback: 'Video player integration needed'),
               style: TextStyle(color: Colors.white70, fontSize: 14),
             ),
           ],
@@ -13111,23 +13915,29 @@ class _EditMessageDialogState extends State<_EditMessageDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: widget.isDarkTheme ? Colors.grey.shade900 : Colors.white,
-      title: Text(
-        'Edit Message',
-        style:
-            TextStyle(color: widget.isDarkTheme ? Colors.white : Colors.black),
+      title: Text(chatCallTr(context, 'chatCall_editMessage', fallback: 'Edit Message'),
+        style: TextStyle(
+          color: widget.isDarkTheme ? Colors.white : Colors.black,
+        ),
       ),
       content: TextField(
         controller: _controller,
         autofocus: true,
         maxLines: 5,
-        style:
-            TextStyle(color: widget.isDarkTheme ? Colors.white : Colors.black),
+        style: TextStyle(
+          color: widget.isDarkTheme ? Colors.white : Colors.black,
+        ),
         decoration: InputDecoration(
-          hintText: 'Edit your message...',
+          hintText: chatCallTr(
+            context,
+            'chatCall_editYourMessageHint',
+            fallback: 'Edit your message...',
+          ),
           hintStyle: TextStyle(
-              color: widget.isDarkTheme
-                  ? Colors.grey.shade500
-                  : Colors.grey.shade600),
+            color: widget.isDarkTheme
+                ? Colors.grey.shade500
+                : Colors.grey.shade600,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide(color: Colors.grey.shade300),
@@ -13141,8 +13951,9 @@ class _EditMessageDialogState extends State<_EditMessageDialog> {
             borderSide: const BorderSide(color: AppColors.primary, width: 2),
           ),
           filled: true,
-          fillColor:
-              widget.isDarkTheme ? Colors.grey.shade800 : Colors.grey.shade50,
+          fillColor: widget.isDarkTheme
+              ? Colors.grey.shade800
+              : Colors.grey.shade50,
         ),
       ),
       actions: [
@@ -13150,12 +13961,12 @@ class _EditMessageDialogState extends State<_EditMessageDialog> {
           onPressed: () {
             Navigator.pop(context);
           },
-          child: Text(
-            'Cancel',
+          child: Text(chatCallTr(context, 'chatCall_cancel', fallback: 'Cancel'),
             style: TextStyle(
-                color: widget.isDarkTheme
-                    ? Colors.grey.shade300
-                    : Colors.grey.shade700),
+              color: widget.isDarkTheme
+                  ? Colors.grey.shade300
+                  : Colors.grey.shade700,
+            ),
           ),
         ),
         TextButton(
@@ -13164,8 +13975,8 @@ class _EditMessageDialogState extends State<_EditMessageDialog> {
             if (text.isEmpty) {
               EnhancedToast.warning(
                 context,
-                title: 'Invalid',
-                message: 'Message cannot be empty.',
+                title: chatCallTr(context, 'chatCall_invalid', fallback: 'Invalid'),
+                message: chatCallTr(context, 'chatCall_messageCannotBeEmpty2', fallback: 'Message cannot be empty.'),
               );
               return;
             }
@@ -13177,10 +13988,8 @@ class _EditMessageDialogState extends State<_EditMessageDialog> {
 
             Navigator.pop(context, text);
           },
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.primary,
-          ),
-          child: const Text('Save'),
+          style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+          child: Text(chatCallTr(context, 'chatCall_save', fallback: 'Save')),
         ),
       ],
     );

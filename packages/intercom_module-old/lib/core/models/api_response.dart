@@ -69,6 +69,7 @@ class ApiResponse<T> {
     T Function(dynamic)? fromJsonT,
   ) {
     final success = json['success'] ?? json['status'] == 'success' ?? false;
+    final statusCode = _parseStatusCode(json['status_code']);
 
     if (success) {
       T? data;
@@ -87,17 +88,24 @@ class ApiResponse<T> {
       return ApiResponse.success(
         data,
         message: json['message'],
-        statusCode: json['status_code'],
+        statusCode: statusCode,
         metadata: json['metadata'],
       );
     } else {
       return ApiResponse.error(
         json['error'] ?? json['message'] ?? 'Unknown error',
         message: json['message'],
-        statusCode: json['status_code'],
+        statusCode: statusCode,
         metadata: json['metadata'],
       );
     }
+  }
+
+  static int? _parseStatusCode(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 
   Map<String, dynamic> toJson() {

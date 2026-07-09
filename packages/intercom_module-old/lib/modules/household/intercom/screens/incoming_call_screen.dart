@@ -10,6 +10,7 @@ import '../models/call_model.dart';
 import '../models/call_status.dart';
 import '../services/call_service.dart';
 import '../../../../core/services/call_coordinator.dart';
+import '../../../../src/config/chat_call_i18n.dart';
 
 class IncomingCallScreen extends StatefulWidget {
   final Call call;
@@ -39,7 +40,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   String get _displayName {
     final trimmed = widget.callerName.trim();
     if (trimmed.isNotEmpty) return trimmed;
-    return widget.callerPhone ?? 'Unknown caller';
+    return widget.callerPhone ??
+        chatCallTr(context, 'chatCall_unknownCaller', fallback: 'Unknown caller');
   }
 
   String get _initials {
@@ -67,20 +69,25 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
 
     // Step 1: POST accept (sets accepted_at; backend may send call_accepted FCM).
     unawaited(
-      CallService.instance.acceptCall(widget.call.id).then((_) {}, onError: (e, st) {
-        log('⚠️ [IncomingCall] acceptCall failed: $e');
-      }),
+      CallService.instance
+          .acceptCall(widget.call.id)
+          .then(
+            (_) {},
+            onError: (e, st) {
+              log('⚠️ [IncomingCall] acceptCall failed: $e');
+            },
+          ),
     );
     // Step 2: PATCH status answered (triggers FCM "call_answered" to caller with meeting details).
     unawaited(
       CallService.instance
-          .updateCallStatus(
-            callId: widget.call.id,
-            status: CallStatus.answered,
-          )
-          .then((_) {}, onError: (e, st) {
-        log('⚠️ [IncomingCall] Failed to notify backend (answered): $e');
-      }),
+          .updateCallStatus(callId: widget.call.id, status: CallStatus.answered)
+          .then(
+            (_) {},
+            onError: (e, st) {
+              log('⚠️ [IncomingCall] Failed to notify backend (answered): $e');
+            },
+          ),
     );
 
     await CallCoordinator.instance.acceptIncomingCall(payload);
@@ -131,7 +138,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   Future<void> _startAlerting() async {
     try {
       await _ringtonePlayer.setLoopMode(LoopMode.one);
-      await _ringtonePlayer.setAsset('assets/sound/incoming_call.mp3');
+      await _ringtonePlayer.setAsset('assets/media/audio/incoming_call.mp3');
       await _ringtonePlayer.play();
     } catch (e) {
       log('⚠️ [IncomingCall] Failed to start ringtone: $e');
@@ -168,61 +175,77 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
             ),
             child: SizedBox.expand(
               child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircleAvatar(
-                  radius: 48,
-                  backgroundColor: const Color(0xffc62828),
-                  child: Text(
-                    _initials,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 48,
+                    backgroundColor: const Color(0xffc62828),
+                    child: Text(
+                      _initials,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _displayName,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  _displayName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  widget.call.callType.isVideo
-                      ? 'Incoming video call'
-                      : 'Incoming audio call',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 40),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _CallActionButton(
-                      label: 'Decline',
-                      icon: Icons.call_end,
-                      color: Colors.redAccent,
-                      onTap: _declineCall,
-                      loading: _isProcessing,
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.call.callType.isVideo
+                        ? chatCallTr(
+                            context,
+                            'chatCall_incomingVideoCall',
+                            fallback: 'Incoming video call',
+                          )
+                        : chatCallTr(
+                            context,
+                            'chatCall_incomingAudioCall',
+                            fallback: 'Incoming audio call',
+                          ),
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 16,
                     ),
-                    _CallActionButton(
-                      label: 'Accept',
-                      icon: Icons.call,
-                      color: Colors.green,
-                      onTap: _acceptCall,
-                      loading: _isProcessing,
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                  const SizedBox(height: 40),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _CallActionButton(
+                        label: chatCallTr(
+                          context,
+                          'chatCall_decline',
+                          fallback: 'Decline',
+                        ),
+                        icon: Icons.call_end,
+                        color: Colors.redAccent,
+                        onTap: _declineCall,
+                        loading: _isProcessing,
+                      ),
+                      _CallActionButton(
+                        label: chatCallTr(
+                          context,
+                          'chatCall_accept',
+                          fallback: 'Accept',
+                        ),
+                        icon: Icons.call,
+                        color: Colors.green,
+                        onTap: _acceptCall,
+                        loading: _isProcessing,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -269,10 +292,7 @@ class _CallActionButton extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white),
-        ),
+        Text(label, style: const TextStyle(color: Colors.white)),
       ],
     );
   }

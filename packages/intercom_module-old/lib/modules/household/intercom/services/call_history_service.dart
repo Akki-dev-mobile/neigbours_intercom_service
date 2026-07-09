@@ -117,8 +117,9 @@ class CallHistoryService {
 
   Future<void> _addOrUpdate(CallHistoryEntry entry) async {
     final entries = List<CallHistoryEntry>.from(_historyNotifier.value);
-    final existingIndex =
-        entries.indexWhere((element) => element.callId == entry.callId);
+    final existingIndex = entries.indexWhere(
+      (element) => element.callId == entry.callId,
+    );
 
     if (existingIndex != -1) {
       entries[existingIndex] = entry;

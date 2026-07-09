@@ -1,1 +1,0 @@
-/Users/rohitdineshjain/Desktop/one-monorepo/apps/flutter/onegate/android/app/src/main/kotlin/com/cubeonebiz/gate/onegate/MainActivity.kt

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../../src/config/chat_call_i18n.dart';
 
 import '../models/intercom_contact.dart';
 import '../models/room_model.dart';
 import '../services/chat_service.dart';
 import '../services/intercom_service.dart';
 import '../../../../core/models/api_response.dart';
-import '../../../../core/theme/colors.dart';
-import '../../../../core/widgets/app_loader.dart';
+import '../../../../core/widgets/onegate_global_loader.dart';
 
 enum ForwardTargetType { group, member }
 
@@ -16,22 +16,19 @@ class ForwardSelection {
   final IntercomContact? contact;
 
   const ForwardSelection.group(this.room)
-      : type = ForwardTargetType.group,
-        contact = null;
+    : type = ForwardTargetType.group,
+      contact = null;
 
   const ForwardSelection.member(this.contact)
-      : type = ForwardTargetType.member,
-        room = null;
+    : type = ForwardTargetType.member,
+      room = null;
 }
 
 class ForwardTargetsData {
   final List<Room> groups;
   final List<IntercomContact> contacts;
 
-  const ForwardTargetsData({
-    required this.groups,
-    required this.contacts,
-  });
+  const ForwardTargetsData({required this.groups, required this.contacts});
 }
 
 /// Reusable bottom sheet that mirrors the Intercom tabs to list
@@ -57,14 +54,14 @@ class ForwardToBottomSheet extends StatefulWidget {
     return showModalBottomSheet<ForwardSelection>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => ForwardToBottomSheet(
-        companyId: companyId,
-        chatService: chatService,
-        intercomService: intercomService,
+      backgroundColor: Colors.transparent,
+      builder: (context) => FractionallySizedBox(
+        heightFactor: 0.88,
+        child: ForwardToBottomSheet(
+          companyId: companyId,
+          chatService: chatService,
+          intercomService: intercomService,
+        ),
       ),
     );
   }
@@ -74,6 +71,8 @@ class ForwardToBottomSheet extends StatefulWidget {
 }
 
 class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
+  static const Color _onegateRed = Color(0xFFF44336);
+
   bool _isLoading = true;
   String? _error;
   ForwardTargetsData? _data;
@@ -92,20 +91,26 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
     });
 
     try {
-      // Fetch contacts from all tabs in parallel
-      final residentsFuture =
-          widget.intercomService.getResidents(companyId: widget.companyId);
-      final committeeFuture = widget.intercomService
-          .getCommitteeMembers(companyId: widget.companyId);
-      final gatekeepersFuture =
-          widget.intercomService.getGatekeepers(companyId: widget.companyId);
-      final officeFuture = widget.intercomService
-          .getSocietyOfficeContacts(companyId: widget.companyId);
-      final lobbiesFuture =
-          widget.intercomService.getLobbies(companyId: widget.companyId);
+      final residentsFuture = widget.intercomService.getResidents(
+        companyId: widget.companyId,
+      );
+      final committeeFuture = widget.intercomService.getCommitteeMembers(
+        companyId: widget.companyId,
+      );
+      final gatekeepersFuture = widget.intercomService.getGatekeepers(
+        companyId: widget.companyId,
+      );
+      final officeFuture = widget.intercomService.getSocietyOfficeContacts(
+        companyId: widget.companyId,
+      );
+      final lobbiesFuture = widget.intercomService.getLobbies(
+        companyId: widget.companyId,
+      );
 
-      final groupsFuture = widget.chatService
-          .fetchRooms(companyId: widget.companyId, chatType: 'group');
+      final groupsFuture = widget.chatService.fetchRooms(
+        companyId: widget.companyId,
+        chatType: 'group',
+      );
 
       final results = await Future.wait([
         residentsFuture,
@@ -127,32 +132,38 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
           ? (groupsResponse.data ?? <Room>[])
           : <Room>[];
 
-      // Merge and deduplicate enabled contacts (hasUserId == true)
       final Map<String, IntercomContact> contactMap = {};
       for (final contact in [
         ...residents,
         ...committee,
         ...gatekeepers,
         ...office,
-        ...lobbies
+        ...lobbies,
       ]) {
         if (contact.hasUserId) {
           contactMap.putIfAbsent(contact.id, () => contact);
         }
       }
 
+      if (!mounted) return;
       setState(() {
         _data = ForwardTargetsData(
           groups: groups,
           contacts: contactMap.values.toList()
             ..sort(
-                (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase())),
+              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+            ),
         );
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _error = 'Failed to load contacts. Please try again.';
+        _error = chatCallTr(
+          context,
+          'chatCall_failedToLoadContacts',
+          fallback: 'Failed to load contacts. Please try again.',
+        );
         _isLoading = false;
       });
     }
@@ -163,9 +174,11 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
     if (_query.isEmpty) return _data!.groups;
     final q = _query.toLowerCase();
     return _data!.groups
-        .where((room) =>
-            room.name.toLowerCase().contains(q) ||
-            (room.description ?? '').toLowerCase().contains(q))
+        .where(
+          (room) =>
+              room.name.toLowerCase().contains(q) ||
+              (room.description ?? '').toLowerCase().contains(q),
+        )
         .toList();
   }
 
@@ -174,10 +187,12 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
     if (_query.isEmpty) return _data!.contacts;
     final q = _query.toLowerCase();
     return _data!.contacts
-        .where((c) =>
-            c.name.toLowerCase().contains(q) ||
-            (c.unit ?? '').toLowerCase().contains(q) ||
-            c.typeLabel.toLowerCase().contains(q))
+        .where(
+          (c) =>
+              c.name.toLowerCase().contains(q) ||
+              (c.unit ?? '').toLowerCase().contains(q) ||
+              c.typeLabel.toLowerCase().contains(q),
+        )
         .toList();
   }
 
@@ -186,113 +201,145 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
     return SafeArea(
       child: Container(
         decoration: const BoxDecoration(
-          color: AppColors.cardBackground,
+          color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.lightGrey,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 8, 12),
-                child: Row(
-                  children: [
-                    Text(
-                      'Forward to',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 8, 12),
+              child: Row(
+                children: [
+                  Text(
+                    chatCallTr(
+                      context,
+                      'chatCall_forwardTo',
+                      fallback: 'Forward to',
                     ),
-                    const Spacer(),
-                    IconButton(
-                      icon: Icon(Icons.close, color: AppColors.textSecondary),
-                      onPressed: () => Navigator.pop(context),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff212427),
                     ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search groups or members',
-                    hintStyle: TextStyle(color: AppColors.textLight),
-                    prefixIcon:
-                        Icon(Icons.search, color: AppColors.textSecondary),
-                    filled: true,
-                    fillColor: AppColors.background,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppColors.lightGrey),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppColors.lightGrey),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: AppColors.primary, width: 1.5),
-                    ),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
                   ),
-                  onChanged: (value) {
-                    setState(() {
-                      _query = value.trim();
-                    });
-                  },
-                ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: _onegateRed),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              if (_isLoading)
-                const Padding(
-                  padding: EdgeInsets.all(24.0),
-                  child: Center(child: AppLoader()),
-                )
-              else if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: AppColors.error),
-                      ),
-                      const SizedBox(height: 12),
-                      TextButton(
-                        onPressed: _loadTargets,
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primary,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: chatCallTr(
+                    context,
+                    'chatCall_searchGroupsOrMembers',
+                    fallback: 'Search groups or members',
+                  ),
+                  hintStyle: TextStyle(color: Colors.grey.shade500),
+                  prefixIcon: const Icon(Icons.search, color: _onegateRed),
+                  filled: true,
+                  fillColor: const Color(0xFFF9FAFB),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: _onegateRed,
+                      width: 1.5,
+                    ),
+                  ),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _query = value.trim();
+                  });
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: _isLoading
+                  ? Center(
+                      child: OneGateGlobalLoader(
+                        title: chatCallTr(
+                          context,
+                          'chatCall_loadingChats',
+                          fallback: 'Loading Chats',
                         ),
-                        child: const Text('Retry'),
+                        subtitle: chatCallTr(
+                          context,
+                          'chatCall_fetchingGroupsAndMembers',
+                          fallback: 'Fetching groups and members...',
+                        ),
                       ),
-                    ],
-                  ),
-                )
-              else
-                Flexible(
-                  child: _buildResults(),
-                ),
-            ],
-          ),
+                    )
+                  : _error != null
+                  ? _buildErrorState()
+                  : _buildResults(),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _onegateRed.withOpacity(0.1),
+            ),
+            child: const Icon(
+              Icons.error_outline,
+              size: 28,
+              color: _onegateRed,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _error!,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: _loadTargets,
+            style: TextButton.styleFrom(foregroundColor: _onegateRed),
+            child: Text(
+              chatCallTr(context, 'chatCall_retry', fallback: 'Retry'),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -307,51 +354,59 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
     final contacts = _filteredContacts;
 
     if (groups.isEmpty && contacts.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(24.0),
+      return Center(
         child: Text(
-          'No groups or members found.',
-          style: TextStyle(color: AppColors.textLight),
+          chatCallTr(
+            context,
+            'chatCall_noGroupsOrMembersFound',
+            fallback: 'No groups or members found.',
+          ),
+          style: TextStyle(color: Colors.grey.shade600),
         ),
       );
     }
 
     return ListView(
-      shrinkWrap: true,
       padding: const EdgeInsets.only(bottom: 24),
       children: [
         if (groups.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
-              'Groups (${groups.length})',
-              style: const TextStyle(
+              chatCallTr(
+                context,
+                'chatCall_groupsCount',
+                fallback: 'Groups (${groups.length})',
+                params: {'count': '${groups.length}'},
+              ),
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: Colors.grey.shade700,
               ),
             ),
           ),
-          ...groups.map(
-            (room) => _buildGroupRow(room),
-          ),
+          ...groups.map((room) => _buildGroupRow(room)),
           const SizedBox(height: 16),
         ],
         if (contacts.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
-              'Members (${contacts.length})',
-              style: const TextStyle(
+              chatCallTr(
+                context,
+                'chatCall_membersCountLabel',
+                fallback: 'Members (${contacts.length})',
+                params: {'count': '${contacts.length}'},
+              ),
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: Colors.grey.shade700,
               ),
             ),
           ),
-          ...contacts.map(
-            (contact) => _buildMemberRow(contact),
-          ),
+          ...contacts.map((contact) => _buildMemberRow(contact)),
         ],
       ],
     );
@@ -361,10 +416,10 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
     return Card(
       elevation: 0,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      color: AppColors.cardBackground,
+      color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.lightGrey.withOpacity(0.5)),
+        side: BorderSide(color: Colors.grey.shade200),
       ),
       child: InkWell(
         onTap: () => Navigator.pop(context, ForwardSelection.group(room)),
@@ -384,7 +439,7 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
-                        color: AppColors.textPrimary,
+                        color: Color(0xff212427),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -394,14 +449,17 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
                       '${room.membersCount ?? 0} member${(room.membersCount ?? 0) == 1 ? '' : 's'}',
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textLight,
+                        color: Colors.grey.shade600,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios,
-                  size: 14, color: AppColors.textLight),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: Colors.grey.shade500,
+              ),
             ],
           ),
         ),
@@ -416,7 +474,7 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
       width: 52,
       height: 52,
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: _onegateRed.withOpacity(0.08),
         shape: BoxShape.circle,
       ),
       child: photoUrl != null && photoUrl.isNotEmpty
@@ -444,7 +502,7 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
       child: Text(
         initials,
         style: const TextStyle(
-          color: Color(0xffc62828),
+          color: _onegateRed,
           fontWeight: FontWeight.bold,
           fontSize: 18,
         ),
@@ -456,10 +514,10 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
     return Card(
       elevation: 0,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      color: AppColors.cardBackground,
+      color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.lightGrey.withOpacity(0.5)),
+        side: BorderSide(color: Colors.grey.shade200),
       ),
       child: InkWell(
         onTap: () => Navigator.pop(context, ForwardSelection.member(contact)),
@@ -479,7 +537,7 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
-                        color: AppColors.textPrimary,
+                        color: Color(0xff212427),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -489,14 +547,17 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
                       contact.typeLabel,
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textLight,
+                        color: Colors.grey.shade600,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios,
-                  size: 14, color: AppColors.textLight),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: Colors.grey.shade500,
+              ),
             ],
           ),
         ),
@@ -509,8 +570,8 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
     return Container(
       width: 52,
       height: 52,
-      decoration: BoxDecoration(
-        color: const Color(0xffffebee),
+      decoration: const BoxDecoration(
+        color: Color(0xffffebee),
         shape: BoxShape.circle,
       ),
       child: photoUrl != null && photoUrl.isNotEmpty
@@ -538,7 +599,7 @@ class _ForwardToBottomSheetState extends State<ForwardToBottomSheet> {
       child: Text(
         initials,
         style: const TextStyle(
-          color: Color(0xffc62828),
+          color: _onegateRed,
           fontWeight: FontWeight.bold,
           fontSize: 18,
         ),

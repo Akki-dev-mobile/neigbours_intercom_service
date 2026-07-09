@@ -99,12 +99,15 @@ class Call extends Equatable {
     final callTypeRaw = callData['call_type'] as String?;
     if (callTypeRaw == null || callTypeRaw.isEmpty) {
       // Log available keys for debugging
-      throw ArgumentError('call_type is required and cannot be null or empty. '
-          'Available keys: ${callData.keys.toList()}');
+      throw ArgumentError(
+        'call_type is required and cannot be null or empty. '
+        'Available keys: ${callData.keys.toList()}',
+      );
     }
 
     // Extract call_status with fallback to 'initiated'
-    final statusRaw = callData['call_status'] as String? ??
+    final statusRaw =
+        callData['call_status'] as String? ??
         callData['status'] as String? ??
         'initiated';
 
@@ -112,8 +115,9 @@ class Call extends Equatable {
     CallUser? fromUser;
     if (callData['from_user'] != null &&
         callData['from_user'] is Map<String, dynamic>) {
-      fromUser =
-          CallUser.fromJson(callData['from_user'] as Map<String, dynamic>);
+      fromUser = CallUser.fromJson(
+        callData['from_user'] as Map<String, dynamic>,
+      );
     }
 
     // Parse to_user if present
@@ -193,19 +197,19 @@ class Call extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        meetingId,
-        jitsiMeetingUrl,
-        callType,
-        status,
-        fromUserId,
-        toUserId,
-        toUserPhone,
-        fromUser,
-        toUser,
-        createdAt,
-        updatedAt,
-      ];
+    id,
+    meetingId,
+    jitsiMeetingUrl,
+    callType,
+    status,
+    fromUserId,
+    toUserId,
+    toUserPhone,
+    fromUser,
+    toUser,
+    createdAt,
+    updatedAt,
+  ];
 
   @override
   String toString() {
@@ -328,10 +332,7 @@ class UpdateCallStatusRequest {
   /// Platform (android/ios/web) - optional, sent when required by backend.
   final String? platform;
 
-  const UpdateCallStatusRequest({
-    required this.status,
-    this.platform,
-  });
+  const UpdateCallStatusRequest({required this.status, this.platform});
 
   Map<String, dynamic> toJson() {
     return {

@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+import '../services/member_avatar_resolver.dart';
 
 /// Normalized room member key with all identifier types
 /// This eliminates confusion between different ID formats used across the app
@@ -83,7 +83,9 @@ class RoomMemberKey {
         final snapshotMap = userSnapshot is Map<String, dynamic>
             ? userSnapshot
             : <String, dynamic>{
-                ...userSnapshot.map((key, value) => MapEntry(key.toString(), value))
+                ...userSnapshot.map(
+                  (key, value) => MapEntry(key.toString(), value),
+                ),
               };
 
         final userIdValue = snapshotMap['user_id'];
@@ -105,7 +107,9 @@ class RoomMemberKey {
         final snapshotMap = userSnapshot is Map<String, dynamic>
             ? userSnapshot
             : <String, dynamic>{
-                ...userSnapshot.map((key, value) => MapEntry(key.toString(), value))
+                ...userSnapshot.map(
+                  (key, value) => MapEntry(key.toString(), value),
+                ),
               };
         username = _toStringNullable(snapshotMap['user_name']);
       }
@@ -114,31 +118,19 @@ class RoomMemberKey {
       username = _toStringNullable(json['user_name']);
     }
 
-    // Extract avatar - prefer user_snapshot.avatar, fallback to direct field
+    // Extract avatar - check all known fields via shared resolver
     String? avatar;
-    if (json['user_snapshot'] != null) {
-      final userSnapshot = json['user_snapshot'];
-      if (userSnapshot is Map) {
-        final snapshotMap = userSnapshot is Map<String, dynamic>
-            ? userSnapshot
-            : <String, dynamic>{
-                ...userSnapshot.map((key, value) => MapEntry(key.toString(), value))
-              };
-        avatar = _toStringNullable(snapshotMap['avatar']);
-      }
-    }
-    if (avatar == null || avatar.isEmpty) {
-      avatar = _toStringNullable(json['avatar']);
-    }
+    final avatarResult = MemberAvatarResolver.extractAvatarFromJson(json);
+    avatar = avatarResult.url;
 
     // Extract admin status
     final isAdmin = json['is_admin'] is bool
         ? json['is_admin'] as bool
         : (json['is_admin'] is int
-            ? (json['is_admin'] as int) != 0
-            : (json['is_admin'] is String
-                ? (json['is_admin'] as String).toLowerCase() == 'true'
-                : false));
+              ? (json['is_admin'] as int) != 0
+              : (json['is_admin'] is String
+                    ? (json['is_admin'] as String).toLowerCase() == 'true'
+                    : false));
 
     return RoomMemberKey(
       userUuid: userUuid,
@@ -165,8 +157,8 @@ class RoomMemberKey {
   /// Check if this member matches a given identifier
   bool matches(String identifier) {
     return userUuid == identifier ||
-           roomMemberId?.toString() == identifier ||
-           userNumericId?.toString() == identifier;
+        roomMemberId?.toString() == identifier ||
+        userNumericId?.toString() == identifier;
   }
 
   /// Get the appropriate ID for different use cases
@@ -217,7 +209,9 @@ class RoomPhoto {
         jsonMap[key.toString()] = value;
       });
     } else {
-      throw Exception('RoomPhoto.fromJson: Expected Map, got ${json.runtimeType}');
+      throw Exception(
+        'RoomPhoto.fromJson: Expected Map, got ${json.runtimeType}',
+      );
     }
 
     String _toString(dynamic value) {
@@ -251,7 +245,9 @@ class RoomPhoto {
       roomId: _toString(jsonMap['room_id']),
       photoUrl: _toString(jsonMap['photo_url']),
       uploadedBy: _toString(jsonMap['uploaded_by']),
-      isPrimary: jsonMap['is_primary'] is bool ? jsonMap['is_primary'] as bool : false,
+      isPrimary: jsonMap['is_primary'] is bool
+          ? jsonMap['is_primary'] as bool
+          : false,
       uploadedAt: _parseDateTime(jsonMap['uploaded_at']) ?? DateTime.now(),
     );
   }
@@ -273,6 +269,7 @@ class RoomInfo {
   final RoomInfoAdmin? admin;
   final List<RoomInfoMember> members;
   final List<RoomPhoto> photos;
+
   /// For 1-to-1 chats only: the other participant (peer); from backend peer_user.
   final RoomInfoUser? peerUser;
 
@@ -306,7 +303,9 @@ class RoomInfo {
         jsonMap[key.toString()] = value;
       });
     } else {
-      throw Exception('RoomInfo.fromJson: Expected Map, got ${json.runtimeType}');
+      throw Exception(
+        'RoomInfo.fromJson: Expected Map, got ${json.runtimeType}',
+      );
     }
 
     // Helper function to safely convert to String
@@ -353,45 +352,75 @@ class RoomInfo {
     }
 
     return RoomInfo(
-      id: _toString(jsonMap['id']),
+      id: _toString(jsonMap['id'] ?? jsonMap['room_id']),
       name: _toString(jsonMap['name']),
-      description: jsonMap['description'] != null ? _toString(jsonMap['description']) : null,
+      description: jsonMap['description'] != null
+          ? _toString(jsonMap['description'])
+          : null,
       createdBy: _toString(jsonMap['created_by']),
-      createdByUserId: jsonMap['created_by_user_id'] is int ? jsonMap['created_by_user_id'] as int : null,
+      createdByUserId: jsonMap['created_by_user_id'] is int
+          ? jsonMap['created_by_user_id'] as int
+          : null,
       createdByUser: _toMap(jsonMap['created_by_user']) != null
           ? RoomInfoUser.fromJson(_toMap(jsonMap['created_by_user'])!)
           : null,
-      companyId: jsonMap['company_id'] is int ? jsonMap['company_id'] as int : null,
-      photoUrl: jsonMap['photo_url'] != null ? _toString(jsonMap['photo_url']) : null,
+      companyId: jsonMap['company_id'] is int
+          ? jsonMap['company_id'] as int
+          : null,
+      photoUrl: jsonMap['photo_url'] != null
+          ? _toString(jsonMap['photo_url'])
+          : null,
       createdAt: _parseDateTime(jsonMap['created_at']) ?? DateTime.now(),
       lastActive: _parseDateTime(jsonMap['last_active']),
       memberCount: jsonMap['member_count'] is int
           ? jsonMap['member_count'] as int
           : (jsonMap['member_count'] is String
-              ? int.tryParse(jsonMap['member_count'] as String) ?? 0
-              : 0),
+                ? int.tryParse(jsonMap['member_count'] as String) ?? 0
+                : 0),
       admin: _toMap(jsonMap['admin']) != null
           ? RoomInfoAdmin.fromJson(_toMap(jsonMap['admin'])!)
           : null,
-      members: jsonMap['members'] != null && jsonMap['members'] is List
-          ? (jsonMap['members'] as List)
-              .map((item) => _toMap(item))
-              .whereType<Map<String, dynamic>>()
-              .map((item) => RoomInfoMember.fromJson(item))
-              .where((member) => member.status == null || member.status == 'active') // Only show active members
-              .toList()
-          : <RoomInfoMember>[],
+      members: RoomInfo.parseMembersList(jsonMap),
       photos: jsonMap['photos'] != null && jsonMap['photos'] is List
           ? (jsonMap['photos'] as List)
-              .map((item) => _toMap(item))
-              .whereType<Map<String, dynamic>>()
-              .map((item) => RoomPhoto.fromJson(item))
-              .toList()
+                .map((item) => _toMap(item))
+                .whereType<Map<String, dynamic>>()
+                .map((item) => RoomPhoto.fromJson(item))
+                .toList()
           : <RoomPhoto>[],
       peerUser: _toMap(jsonMap['peer_user']) != null
           ? RoomInfoUser.fromJson(_toMap(jsonMap['peer_user'])!)
           : null,
     );
+  }
+
+  static List<RoomInfoMember> parseMembersList(Map<String, dynamic> jsonMap) {
+    dynamic rawMembers = jsonMap['members'] ?? jsonMap['room_members'];
+    if (rawMembers == null && jsonMap['data'] is Map) {
+      final nested = jsonMap['data'] as Map;
+      rawMembers = nested['members'] ?? nested['room_members'];
+    }
+
+    if (rawMembers is! List) {
+      return <RoomInfoMember>[];
+    }
+
+    Map<String, dynamic>? _itemToMap(dynamic item) {
+      if (item is Map<String, dynamic>) return item;
+      if (item is Map) {
+        return item.map((key, value) => MapEntry(key.toString(), value));
+      }
+      return null;
+    }
+
+    return rawMembers
+        .map(_itemToMap)
+        .whereType<Map<String, dynamic>>()
+        .map(RoomInfoMember.fromJson)
+        .where(
+          (member) => member.status == null || member.status == 'active',
+        )
+        .toList();
   }
 }
 
@@ -425,7 +454,9 @@ class RoomInfoUser {
         jsonMap[key.toString()] = value;
       });
     } else {
-      throw Exception('RoomInfoUser.fromJson: Expected Map, got ${json.runtimeType}');
+      throw Exception(
+        'RoomInfoUser.fromJson: Expected Map, got ${json.runtimeType}',
+      );
     }
 
     String? _toStringNullable(dynamic value) {
@@ -472,11 +503,7 @@ class RoomInfoAdmin {
   final String? email;
   final String? userId;
 
-  RoomInfoAdmin({
-    this.username,
-    this.email,
-    this.userId,
-  });
+  RoomInfoAdmin({this.username, this.email, this.userId});
 
   factory RoomInfoAdmin.fromJson(dynamic json) {
     // Convert to Map<String, dynamic> if needed
@@ -489,7 +516,9 @@ class RoomInfoAdmin {
         jsonMap[key.toString()] = value;
       });
     } else {
-      throw Exception('RoomInfoAdmin.fromJson: Expected Map, got ${json.runtimeType}');
+      throw Exception(
+        'RoomInfoAdmin.fromJson: Expected Map, got ${json.runtimeType}',
+      );
     }
 
     // Helper function to safely convert to String
@@ -511,7 +540,8 @@ class RoomInfoAdmin {
 /// Member information in room info
 class RoomInfoMember {
   final String userId; // UUID
-  final int? roomMemberId; // Legacy numeric room member ID (DELETE now uses UUID)
+  final int?
+  roomMemberId; // Legacy numeric room member ID (DELETE now uses UUID)
   final String? username;
   final String? avatar;
   final bool isAdmin;
@@ -552,7 +582,9 @@ class RoomInfoMember {
         jsonMap[key.toString()] = value;
       });
     } else {
-      throw Exception('RoomInfoMember.fromJson: Expected Map, got ${json.runtimeType}');
+      throw Exception(
+        'RoomInfoMember.fromJson: Expected Map, got ${json.runtimeType}',
+      );
     }
 
     // Helper function to safely convert to String
@@ -595,10 +627,10 @@ class RoomInfoMember {
     // Extract username - PREFER user_snapshot.user_name, fallback to direct user_name field
     // This ensures we use the most up-to-date name from user_snapshot
     String? extractedUsername;
-    
-    // Extract avatar - PREFER user_snapshot.avatar, fallback to direct avatar field
+
+    // Extract avatar via shared resolver (all known fields)
     String? extractedAvatar;
-    
+
     // Extract room member ID (used for DELETE endpoint)
     int? extractedRoomMemberId;
     final idValue = jsonMap['id'];
@@ -610,10 +642,20 @@ class RoomInfoMember {
       }
     }
 
-    // Extract numeric user ID from user_snapshot for mapping
+    // Extract numeric user ID from user_snapshot / snapshot_user_id for mapping
     int? extractedNumericUserId;
-    
-    // FIRST: Try user_snapshot (preferred source)
+
+    // Top-level snapshot_user_id (common on /members responses)
+    final snapshotUserId = jsonMap['snapshot_user_id'];
+    if (snapshotUserId != null) {
+      if (snapshotUserId is int) {
+        extractedNumericUserId = snapshotUserId;
+      } else if (snapshotUserId is String) {
+        extractedNumericUserId = int.tryParse(snapshotUserId);
+      }
+    }
+
+    // FIRST: Try user_snapshot (preferred source for name + avatar + numeric id)
     if (jsonMap['user_snapshot'] != null) {
       final userSnapshot = jsonMap['user_snapshot'];
       if (userSnapshot is Map) {
@@ -621,51 +663,41 @@ class RoomInfoMember {
         final snapshotMap = userSnapshot is Map<String, dynamic>
             ? userSnapshot
             : <String, dynamic>{
-                ...userSnapshot.map((key, value) => MapEntry(key.toString(), value))
+                ...userSnapshot.map(
+                  (key, value) => MapEntry(key.toString(), value),
+                ),
               };
-        
+
         // Prefer user_snapshot.user_name
         extractedUsername = _toStringNullable(snapshotMap['user_name']);
-        if (extractedUsername != null && extractedUsername.isNotEmpty) {
-          developer.log('✅ [RoomInfoMember] Found username in user_snapshot.user_name: $extractedUsername');
-        }
-        
-        // Prefer user_snapshot.avatar
-        extractedAvatar = _toStringNullable(snapshotMap['avatar']);
-        if (extractedAvatar != null && extractedAvatar.isNotEmpty) {
-          developer.log('✅ [RoomInfoMember] Found avatar in user_snapshot: $extractedAvatar');
-        }
-        
-        // Extract numeric user_id from user_snapshot
-        final userIdValue = snapshotMap['user_id'];
-        if (userIdValue != null) {
-          if (userIdValue is int) {
-            extractedNumericUserId = userIdValue;
-          } else if (userIdValue is String) {
-            extractedNumericUserId = int.tryParse(userIdValue);
+
+        // Numeric user_id from snapshot when not set yet
+        if (extractedNumericUserId == null) {
+          final userIdValue = snapshotMap['user_id'];
+          if (userIdValue != null) {
+            if (userIdValue is int) {
+              extractedNumericUserId = userIdValue;
+            } else if (userIdValue is String) {
+              extractedNumericUserId = int.tryParse(userIdValue);
+            }
           }
         }
       }
     }
-    
+
+    final avatarResult = MemberAvatarResolver.extractAvatarFromJson(jsonMap);
+    extractedAvatar = avatarResult.url;
+
     // FALLBACK: If not found in user_snapshot, try direct fields
     if (extractedUsername == null || extractedUsername.isEmpty) {
       extractedUsername = _toStringNullable(jsonMap['user_name']);
-      if (extractedUsername != null && extractedUsername.isNotEmpty) {
-        developer.log('✅ [RoomInfoMember] Found username in direct user_name field: $extractedUsername');
-      }
     }
-    
+
     if (extractedAvatar == null || extractedAvatar.isEmpty) {
-      extractedAvatar = _toStringNullable(jsonMap['avatar']);
-      if (extractedAvatar != null && extractedAvatar.isNotEmpty) {
-        developer.log('✅ [RoomInfoMember] Found avatar in direct field: $extractedAvatar');
-      }
-    }
-    
-    if (extractedAvatar == null || extractedAvatar.isEmpty) {
-      developer.log('⚠️ [RoomInfoMember] No avatar found for user_id: ${_toString(jsonMap['user_id'])}');
-      developer.log('   Available keys in jsonMap: ${jsonMap.keys.toList()}');
+      MemberAvatarResolver.logMissingAvatarOnce(
+        userId: _toString(jsonMap['user_id']),
+        snapshotUserId: extractedNumericUserId,
+      );
     }
 
     return RoomInfoMember(
@@ -677,10 +709,10 @@ class RoomInfoMember {
       isAdmin: jsonMap['is_admin'] is bool
           ? jsonMap['is_admin'] as bool
           : (jsonMap['is_admin'] is int
-              ? (jsonMap['is_admin'] as int) != 0
-              : (jsonMap['is_admin'] is String
-                  ? (jsonMap['is_admin'] as String).toLowerCase() == 'true'
-                  : false)),
+                ? (jsonMap['is_admin'] as int) != 0
+                : (jsonMap['is_admin'] is String
+                      ? (jsonMap['is_admin'] as String).toLowerCase() == 'true'
+                      : false)),
       joinedAt: _parseDateTime(jsonMap['joined_at']),
       status: _toStringNullable(jsonMap['status']),
     );

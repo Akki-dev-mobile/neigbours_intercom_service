@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/colors.dart';
 import '../models/intercom_contact.dart';
+import '../../../../src/config/chat_call_i18n.dart';
 
 class IntercomContactCard extends StatefulWidget {
   final IntercomContact contact;
@@ -30,12 +31,11 @@ class _IntercomContactCardState extends State<IntercomContactCard> {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(
-          bottom: 1), // Reduced margin as parent handles spacing
+        bottom: 1,
+      ), // Reduced margin as parent handles spacing
       elevation: 0,
       shadowColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -90,7 +90,9 @@ class _IntercomContactCardState extends State<IntercomContactCard> {
                               if (widget.hasFamilyMembers)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.red.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(12),
@@ -170,14 +172,17 @@ class _IntercomContactCardState extends State<IntercomContactCard> {
                                 const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 2),
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppColors.infoBlue,
                                     borderRadius: BorderRadius.circular(10),
                                     boxShadow: [
                                       BoxShadow(
-                                        color:
-                                            AppColors.infoBlue.withOpacity(0.3),
+                                        color: AppColors.infoBlue.withOpacity(
+                                          0.3,
+                                        ),
                                         blurRadius: 4,
                                       ),
                                     ],
@@ -224,8 +229,9 @@ class _IntercomContactCardState extends State<IntercomContactCard> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap:
-                            widget.contact.isContactable ? widget.onChat : null,
+                        onTap: widget.contact.isContactable
+                            ? widget.onChat
+                            : null,
                         borderRadius: const BorderRadius.only(
                           bottomLeft: Radius.circular(12),
                         ),
@@ -257,20 +263,17 @@ class _IntercomContactCardState extends State<IntercomContactCard> {
                       ),
                     ),
                   ),
-                  Container(
-                    width: 1,
-                    height: 24,
-                    color: Colors.grey.shade300,
-                  ),
+                  Container(width: 1, height: 24, color: Colors.grey.shade300),
                   Expanded(
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: widget.contact.isContactable
                             ? (widget.contact.phoneNumber != null
-                                ? () =>
-                                    _makePhoneCall(widget.contact.phoneNumber!)
-                                : widget.onCall)
+                                  ? () => _makePhoneCall(
+                                      widget.contact.phoneNumber!,
+                                    )
+                                  : widget.onCall)
                             : null,
                         borderRadius: const BorderRadius.only(
                           bottomRight: Radius.circular(12),
@@ -313,10 +316,7 @@ class _IntercomContactCardState extends State<IntercomContactCard> {
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: phoneNumber,
-    );
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
     try {
       await launchUrl(launchUri);
     } catch (e) {
@@ -371,11 +371,7 @@ class _IntercomContactCardState extends State<IntercomContactCard> {
                 color: Colors.white,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.star,
-                color: Colors.amber,
-                size: 14,
-              ),
+              child: const Icon(Icons.star, color: Colors.amber, size: 14),
             ),
           ),
       ],
@@ -425,7 +421,9 @@ class _IntercomContactCardState extends State<IntercomContactCard> {
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.grey.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
@@ -473,7 +471,7 @@ class _IntercomContactCardState extends State<IntercomContactCard> {
               IconButton(
                 icon: const Icon(Icons.chat_outlined, size: 18),
                 color: AppColors.primary,
-                tooltip: 'Chat',
+                tooltip: chatCallTr(context, 'chatCall_chat', fallback: 'Chat'),
                 onPressed: () {
                   // Handle family member chat
                 },
@@ -485,7 +483,7 @@ class _IntercomContactCardState extends State<IntercomContactCard> {
               IconButton(
                 icon: const Icon(Icons.phone_outlined, size: 18),
                 color: Colors.green,
-                tooltip: 'Call',
+                tooltip: chatCallTr(context, 'chatCall_call', fallback: 'Call'),
                 onPressed: () {
                   // Handle family member call
                   if (member.phoneNumber != null) {

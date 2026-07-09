@@ -157,13 +157,13 @@ class ChatWebSocketService {
 
   WebSocketChannel? _channel;
   WebSocket?
-      _webSocket; // Store reference to underlying WebSocket for state checks
+  _webSocket; // Store reference to underlying WebSocket for state checks
   StreamSubscription? _subscription;
   bool _isConnected = false;
   bool _isConnecting = false;
   final Set<String> _joinedRooms = {};
   String?
-      _currentConnectionRoomId; // Track which room_id was used in the connection URL
+  _currentConnectionRoomId; // Track which room_id was used in the connection URL
 
   // Reconnection state
   int _reconnectAttempts = 0;
@@ -195,15 +195,18 @@ class ChatWebSocketService {
   /// Check if WebSocket is connected
   bool get isConnected {
     // Verify actual connection state
-    final isActuallyConnected = _isConnected &&
+    final isActuallyConnected =
+        _isConnected &&
         _channel != null &&
         _webSocket != null &&
         _webSocket?.readyState == WebSocket.open;
 
     // Update internal state if mismatch
     if (_isConnected && !isActuallyConnected) {
-      log('⚠️ Connection state mismatch detected, correcting...',
-          name: _logName);
+      log(
+        '⚠️ Connection state mismatch detected, correcting...',
+        name: _logName,
+      );
       _isConnected = false;
       _connectionStateController.add(false);
     }
@@ -245,7 +248,8 @@ class ChatWebSocketService {
       // 4. If roomId is numeric and current connection has no room_id -> stay connected (already correct)
       // 5. If roomId matches current connection -> stay connected
 
-      final needsReconnect = (roomId != null &&
+      final needsReconnect =
+          (roomId != null &&
               roomId.isNotEmpty &&
               _isUuid(roomId) &&
               _currentConnectionRoomId != roomId) ||
@@ -256,13 +260,17 @@ class ChatWebSocketService {
           (roomId == null && _currentConnectionRoomId != null);
 
       if (needsReconnect) {
-        log('⚠️ WebSocket already connected to different room ($_currentConnectionRoomId), reconnecting with new room_id: ${roomId ?? "none"}',
-            name: _logName);
+        log(
+          '⚠️ WebSocket already connected to different room ($_currentConnectionRoomId), reconnecting with new room_id: ${roomId ?? "none"}',
+          name: _logName,
+        );
         await disconnect();
         // Continue to connect with new room_id below
       } else {
-        log('✅ Already connected to WebSocket${roomId != null ? " (room: $roomId)" : " (no room_id)"}',
-            name: _logName);
+        log(
+          '✅ Already connected to WebSocket${roomId != null ? " (room: $roomId)" : " (no room_id)"}',
+          name: _logName,
+        );
         // If roomId is UUID and matches or no roomId needed, just mark as joined if not already
         if (roomId != null &&
             roomId.isNotEmpty &&
@@ -306,8 +314,10 @@ class ChatWebSocketService {
       // WebSocket servers should accept the same tokens as REST APIs
       String tokenParam = Uri.encodeComponent(token);
 
-      log('🔑 [WebSocket] Using full token (${token.length} chars) for authentication',
-          name: _logName);
+      log(
+        '🔑 [WebSocket] Using full token (${token.length} chars) for authentication',
+        name: _logName,
+      );
 
       String wsUrl = '$_wsBaseUrl?token=$tokenParam';
       final packageName = AppConstants.appPackageName;
@@ -322,18 +332,28 @@ class ChatWebSocketService {
         _currentConnectionRoomId =
             roomId; // Store the room_id used in connection
         log('  Room ID: $roomId (included in connection URL)', name: _logName);
-        log('  WebSocket URL format: ws://13.201.27.102:7071/api/v1/ws?token={token}&room_id={room_id}',
-            name: _logName);
-        log('  Full URL: ws://13.201.27.102:7071/api/v1/ws?token=***&room_id=$roomId',
-            name: _logName);
+        log(
+          '  WebSocket URL format: ws://13.201.27.102:7071/api/v1/ws?token={token}&room_id={room_id}',
+          name: _logName,
+        );
+        log(
+          '  Full URL: ws://13.201.27.102:7071/api/v1/ws?token=***&room_id=$roomId',
+          name: _logName,
+        );
       } else {
         _currentConnectionRoomId = null; // No room_id in connection
-        log('⚠️ Warning: No room_id provided in WebSocket connection URL',
-            name: _logName);
-        log('  For 1-to-1 chat and group chat, room_id should be provided (typically contact.id or group.id)',
-            name: _logName);
-        log('  URL without room_id: ws://13.201.27.102:7071/api/v1/ws?token=***',
-            name: _logName);
+        log(
+          '⚠️ Warning: No room_id provided in WebSocket connection URL',
+          name: _logName,
+        );
+        log(
+          '  For 1-to-1 chat and group chat, room_id should be provided (typically contact.id or group.id)',
+          name: _logName,
+        );
+        log(
+          '  URL without room_id: ws://13.201.27.102:7071/api/v1/ws?token=***',
+          name: _logName,
+        );
       }
 
       // Log connection details (without full token for security)
@@ -343,15 +363,21 @@ class ChatWebSocketService {
       log('  Endpoint: /api/v1/ws', name: _logName);
       log('  Token available: ✅ (${token.length} chars)', name: _logName);
       log('  Full URL length: ${wsUrl.length} characters', name: _logName);
-      log('  Connection URL format: ws://13.201.27.102:7071/api/v1/ws?token={token}&room_id={room_id}',
-          name: _logName);
-      log('  Note: Token and room_id are passed in query parameters as per backend specification',
-          name: _logName);
+      log(
+        '  Connection URL format: ws://13.201.27.102:7071/api/v1/ws?token={token}&room_id={room_id}',
+        name: _logName,
+      );
+      log(
+        '  Note: Token and room_id are passed in query parameters as per backend specification',
+        name: _logName,
+      );
 
       // Log URL length for debugging
       if (wsUrl.length > 2000) {
-        log('📏 [WebSocket] URL is long (${wsUrl.length} chars) but using full token for auth',
-            name: _logName);
+        log(
+          '📏 [WebSocket] URL is long (${wsUrl.length} chars) but using full token for auth',
+          name: _logName,
+        );
       }
 
       // Log the actual URL (with masked token for debugging)
@@ -364,11 +390,14 @@ class ChatWebSocketService {
       final uri = Uri.parse(wsUrl);
       if (!uri.scheme.startsWith('ws')) {
         throw Exception(
-            'Invalid WebSocket URL scheme: ${uri.scheme}. Must be ws:// or wss://');
+          'Invalid WebSocket URL scheme: ${uri.scheme}. Must be ws:// or wss://',
+        );
       }
 
-      log('🌐 Connecting to: ${uri.host}:${uri.port}${uri.path}',
-          name: _logName);
+      log(
+        '🌐 Connecting to: ${uri.host}:${uri.port}${uri.path}',
+        name: _logName,
+      );
 
       // Create HttpClient with proper configuration
       final httpClient = HttpClient();
@@ -390,17 +419,16 @@ class ChatWebSocketService {
         // support headers, so we rely on query parameter authentication.
         // If server requires Authorization header, we'd need to use a different approach.
 
-      webSocket = await WebSocket.connect(
-        wsUrl,
-        customClient: httpClient,
-      ).timeout(
-          const Duration(seconds: 15),
-          onTimeout: () {
-            httpClient.close(force: true);
-            throw TimeoutException(
-                'WebSocket connection timed out after 15 seconds');
-          },
-        );
+        webSocket = await WebSocket.connect(wsUrl, customClient: httpClient)
+            .timeout(
+              const Duration(seconds: 15),
+              onTimeout: () {
+                httpClient.close(force: true);
+                throw TimeoutException(
+                  'WebSocket connection timed out after 15 seconds',
+                );
+              },
+            );
       } catch (e) {
         httpClient.close(force: true);
         rethrow;
@@ -410,7 +438,8 @@ class ChatWebSocketService {
       if (webSocket.readyState != WebSocket.open) {
         await webSocket.close();
         throw Exception(
-            'WebSocket connection failed: readyState = ${webSocket.readyState}');
+          'WebSocket connection failed: readyState = ${webSocket.readyState}',
+        );
       }
 
       // Store references
@@ -443,8 +472,10 @@ class ChatWebSocketService {
       _reconnectAttempts = 0;
 
       log('✅ WebSocket connected successfully', name: _logName);
-      log('📊 Connection state: OPEN (readyState: ${_webSocket?.readyState})',
-          name: _logName);
+      log(
+        '📊 Connection state: OPEN (readyState: ${_webSocket?.readyState})',
+        name: _logName,
+      );
 
       _connectionStateController.add(true);
       onConnected?.call();
@@ -462,12 +493,16 @@ class ChatWebSocketService {
         if (e.toString().contains('400')) {
           log('⚠️ HTTP 400 Bad Request - Possible causes:', name: _logName);
           log('  1. Invalid token format', name: _logName);
-          log('  2. Server endpoint not configured for WebSocket',
-              name: _logName);
+          log(
+            '  2. Server endpoint not configured for WebSocket',
+            name: _logName,
+          );
           log('  3. Token expired or invalid', name: _logName);
         } else if (e.toString().contains('401')) {
-          log('⚠️ HTTP 401 Unauthorized - Token authentication failed',
-              name: _logName);
+          log(
+            '⚠️ HTTP 401 Unauthorized - Token authentication failed',
+            name: _logName,
+          );
         } else if (e.toString().contains('403')) {
           log('⚠️ HTTP 403 Forbidden - Access denied', name: _logName);
         }
@@ -475,8 +510,10 @@ class ChatWebSocketService {
         log('⚠️ SocketException - Network connectivity issue', name: _logName);
         log('  OS Error: ${e.osError}', name: _logName);
       } else if (e is TimeoutException) {
-        log('⚠️ Connection timeout - Server may be unreachable',
-            name: _logName);
+        log(
+          '⚠️ Connection timeout - Server may be unreachable',
+          name: _logName,
+        );
       }
 
       // Clean up failed connection
@@ -490,7 +527,8 @@ class ChatWebSocketService {
       onError?.call(errorMessage);
 
       // Only retry for network errors, not auth/config errors
-      final shouldRetry = !errorMessage.toLowerCase().contains('auth') &&
+      final shouldRetry =
+          !errorMessage.toLowerCase().contains('auth') &&
           !errorMessage.toLowerCase().contains('401') &&
           !errorMessage.toLowerCase().contains('403') &&
           !errorMessage.toLowerCase().contains('400') &&
@@ -499,8 +537,10 @@ class ChatWebSocketService {
       if (shouldRetry) {
         _scheduleReconnect();
       } else {
-        log('⏸️ Not scheduling reconnection due to configuration/auth error',
-            name: _logName);
+        log(
+          '⏸️ Not scheduling reconnection due to configuration/auth error',
+          name: _logName,
+        );
       }
 
       return false;
@@ -552,8 +592,10 @@ class ChatWebSocketService {
 
     // Ensure connection first
     if (!isConnected) {
-      log('🚪 WebSocket not connected, attempting to connect...',
-          name: _logName);
+      log(
+        '🚪 WebSocket not connected, attempting to connect...',
+        name: _logName,
+      );
       final connected = await connect();
       if (!connected) {
         log('❌ Failed to connect before joining room', name: _logName);
@@ -576,10 +618,7 @@ class ChatWebSocketService {
     }
 
     try {
-      final joinMessage = {
-        'type': 'join',
-        'room_id': roomId,
-      };
+      final joinMessage = {'type': 'join', 'room_id': roomId};
 
       final joinMessageJson = jsonEncode(joinMessage);
       _channel!.sink.add(joinMessageJson);
@@ -592,8 +631,12 @@ class ChatWebSocketService {
 
       return true;
     } catch (e, stackTrace) {
-      log('❌ Failed to join room: $e',
-          name: _logName, error: e, stackTrace: stackTrace);
+      log(
+        '❌ Failed to join room: $e',
+        name: _logName,
+        error: e,
+        stackTrace: stackTrace,
+      );
 
       // Remove from joined rooms if join failed
       _joinedRooms.remove(roomId);
@@ -603,8 +646,10 @@ class ChatWebSocketService {
           e.toString().contains('WebSocket') ||
           e.toString().contains('connection') ||
           e.toString().contains('Broken pipe')) {
-        log('🔌 Connection issue during join, marking as disconnected',
-            name: _logName);
+        log(
+          '🔌 Connection issue during join, marking as disconnected',
+          name: _logName,
+        );
         _isConnected = false;
         _connectionStateController.add(false);
         await _cleanupConnection();
@@ -619,8 +664,10 @@ class ChatWebSocketService {
   void markRoomJoined(String roomId) {
     if (roomId.isNotEmpty && !_joinedRooms.contains(roomId)) {
       _joinedRooms.add(roomId);
-      log('✅ Room marked as joined (from connection URL): $roomId',
-          name: _logName);
+      log(
+        '✅ Room marked as joined (from connection URL): $roomId',
+        name: _logName,
+      );
     }
   }
 
@@ -647,8 +694,9 @@ class ChatWebSocketService {
   bool _isUuid(String? str) {
     if (str == null || str.isEmpty) return false;
     final uuidRegex = RegExp(
-        r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
-        caseSensitive: false);
+      r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+      caseSensitive: false,
+    );
     return uuidRegex.hasMatch(str);
   }
 
@@ -661,8 +709,10 @@ class ChatWebSocketService {
     log('📤 [WebSocket] sendMessage called', name: _logName);
     log('   Room ID: $roomId', name: _logName);
     log('   Room ID is UUID: ${_isUuid(roomId)}', name: _logName);
-    log('   Current connection room ID: $_currentConnectionRoomId',
-        name: _logName);
+    log(
+      '   Current connection room ID: $_currentConnectionRoomId',
+      name: _logName,
+    );
     log('   Is connected: $_isConnected', name: _logName);
     log('   Channel exists: ${_channel != null}', name: _logName);
     log('   Room is joined: ${_joinedRooms.contains(roomId)}', name: _logName);
@@ -671,77 +721,106 @@ class ChatWebSocketService {
     // Backend requires room_id in WebSocket URL to match the room_id in the message
     if (_isUuid(roomId)) {
       // Check if connected to wrong room
-      final isConnectedToWrongRoom = _isConnected &&
+      final isConnectedToWrongRoom =
+          _isConnected &&
           _currentConnectionRoomId != null &&
           _currentConnectionRoomId != roomId;
 
       if (isConnectedToWrongRoom) {
-        log('⚠️ [WebSocket] Connected to wrong room ($_currentConnectionRoomId), reconnecting with correct room_id: $roomId',
-            name: _logName);
+        log(
+          '⚠️ [WebSocket] Connected to wrong room ($_currentConnectionRoomId), reconnecting with correct room_id: $roomId',
+          name: _logName,
+        );
         await disconnect();
         // Fall through to connect below
       }
 
       // If not connected or was disconnected above, connect with correct room_id
       if (!_isConnected || _channel == null) {
-        log('🔌 [WebSocket] Connecting with UUID room_id: $roomId...',
-            name: _logName);
+        log(
+          '🔌 [WebSocket] Connecting with UUID room_id: $roomId...',
+          name: _logName,
+        );
         // Connect with room_id in the connection URL (required for message persistence)
         final connected = await connect(roomId: roomId);
         if (!connected) {
-          log('❌ [WebSocket] Failed to connect WebSocket, cannot send message',
-              name: _logName);
+          log(
+            '❌ [WebSocket] Failed to connect WebSocket, cannot send message',
+            name: _logName,
+          );
           return false;
         }
         // Mark room as joined since it's in the connection URL
         markRoomJoined(roomId);
-        log('✅ [WebSocket] Connected and room marked as joined: $roomId',
-            name: _logName);
+        log(
+          '✅ [WebSocket] Connected and room marked as joined: $roomId',
+          name: _logName,
+        );
         // Wait a brief moment for connection to stabilize
         await Future.delayed(const Duration(milliseconds: 500));
       } else {
         // Connected to correct room - verify room is joined
         if (!_joinedRooms.contains(roomId)) {
-          log('⚠️ [WebSocket] Connected but room not marked as joined, marking now: $roomId',
-              name: _logName);
+          log(
+            '⚠️ [WebSocket] Connected but room not marked as joined, marking now: $roomId',
+            name: _logName,
+          );
           markRoomJoined(roomId);
         }
-        log('✅ [WebSocket] Already connected to correct room: $roomId',
-            name: _logName);
+        log(
+          '✅ [WebSocket] Already connected to correct room: $roomId',
+          name: _logName,
+        );
       }
     } else {
       // Numeric room_id - room should have been created first to get UUID
       // If we still have numeric ID, room creation might have failed
-      log('❌ [WebSocket] Cannot send message: WebSocket requires UUID room_id in connection URL',
-          name: _logName);
-      log('   Numeric room_id: $roomId - room should have been created first',
-          name: _logName);
-      log('   Backend rejects WebSocket connection without room_id (HTTP 400)',
-          name: _logName);
-      log('   Please ensure room is created before sending messages',
-          name: _logName);
+      log(
+        '❌ [WebSocket] Cannot send message: WebSocket requires UUID room_id in connection URL',
+        name: _logName,
+      );
+      log(
+        '   Numeric room_id: $roomId - room should have been created first',
+        name: _logName,
+      );
+      log(
+        '   Backend rejects WebSocket connection without room_id (HTTP 400)',
+        name: _logName,
+      );
+      log(
+        '   Please ensure room is created before sending messages',
+        name: _logName,
+      );
       return false;
     }
 
     // Verify connection is still valid after reconnect attempt
     if (!_isConnected || _channel == null) {
-      log('❌ [WebSocket] Connection failed after reconnect attempt',
-          name: _logName);
+      log(
+        '❌ [WebSocket] Connection failed after reconnect attempt',
+        name: _logName,
+      );
       return false;
     }
 
     // CRITICAL: Verify we're connected to the correct room
     // The connection room_id MUST match the message room_id for messages to be delivered
     if (_currentConnectionRoomId != roomId) {
-      log('❌ [WebSocket] CRITICAL ERROR: Connection room_id ($_currentConnectionRoomId) does not match message room_id ($roomId)',
-          name: _logName);
-      log('   This will cause message delivery failure - reconnecting...',
-          name: _logName);
+      log(
+        '❌ [WebSocket] CRITICAL ERROR: Connection room_id ($_currentConnectionRoomId) does not match message room_id ($roomId)',
+        name: _logName,
+      );
+      log(
+        '   This will cause message delivery failure - reconnecting...',
+        name: _logName,
+      );
       await disconnect();
       final connected = await connect(roomId: roomId);
       if (!connected) {
-        log('❌ [WebSocket] Failed to reconnect with correct room_id',
-            name: _logName);
+        log(
+          '❌ [WebSocket] Failed to reconnect with correct room_id',
+          name: _logName,
+        );
         return false;
       }
       markRoomJoined(roomId);
@@ -750,13 +829,17 @@ class ChatWebSocketService {
 
     // Verify room is marked as joined (should be true if connected with room_id in URL)
     if (!_joinedRooms.contains(roomId)) {
-      log('⚠️ [WebSocket] Room not marked as joined, marking now: $roomId',
-          name: _logName);
+      log(
+        '⚠️ [WebSocket] Room not marked as joined, marking now: $roomId',
+        name: _logName,
+      );
       markRoomJoined(roomId);
     }
 
-    log('✅ [WebSocket] Ready to send message - connected to room: $roomId',
-        name: _logName);
+    log(
+      '✅ [WebSocket] Ready to send message - connected to room: $roomId',
+      name: _logName,
+    );
 
     // Retry logic: attempt to send up to 3 times
     int retryCount = 0;
@@ -777,8 +860,10 @@ class ChatWebSocketService {
             markRoomJoined(roomId);
             await Future.delayed(const Duration(milliseconds: 500));
           } else {
-            log('❌ Cannot reconnect: Numeric room_id requires UUID for WebSocket connection',
-                name: _logName);
+            log(
+              '❌ Cannot reconnect: Numeric room_id requires UUID for WebSocket connection',
+              name: _logName,
+            );
             return false;
           }
         }
@@ -788,8 +873,10 @@ class ChatWebSocketService {
           log('❌ Connection lost before send attempt', name: _logName);
           if (retryCount < maxRetries - 1) {
             retryCount++;
-            log('🔄 Retrying send (attempt $retryCount/$maxRetries)...',
-                name: _logName);
+            log(
+              '🔄 Retrying send (attempt $retryCount/$maxRetries)...',
+              name: _logName,
+            );
             await Future.delayed(Duration(milliseconds: 500 * retryCount));
             continue;
           }
@@ -810,10 +897,14 @@ class ChatWebSocketService {
 
         // CRITICAL: Verify connection room_id matches message room_id one more time
         if (_currentConnectionRoomId != roomId) {
-          log('❌ [WebSocket] CRITICAL: Connection room_id mismatch detected just before sending!',
-              name: _logName);
-          log('   Connection room_id: $_currentConnectionRoomId',
-              name: _logName);
+          log(
+            '❌ [WebSocket] CRITICAL: Connection room_id mismatch detected just before sending!',
+            name: _logName,
+          );
+          log(
+            '   Connection room_id: $_currentConnectionRoomId',
+            name: _logName,
+          );
           log('   Message room_id: $roomId', name: _logName);
           log('   This will cause message delivery failure', name: _logName);
           // Don't send - this will fail
@@ -824,15 +915,21 @@ class ChatWebSocketService {
         log('📤 [WebSocket] Sending message:', name: _logName);
         log('   Room ID: $roomId', name: _logName);
         log('   Connection Room ID: $_currentConnectionRoomId', name: _logName);
-        log('   Content: ${content.substring(0, content.length > 100 ? 100 : content.length)}${content.length > 100 ? "..." : ""}',
-            name: _logName);
+        log(
+          '   Content: ${content.substring(0, content.length > 100 ? 100 : content.length)}${content.length > 100 ? "..." : ""}',
+          name: _logName,
+        );
         log('   Message Type: $messageType', name: _logName);
         log('   Reply To ID: ${replyTo ?? "null"}', name: _logName);
         log('   JSON: $messageJson', name: _logName);
-        log('   Connection URL includes room_id: ${_currentConnectionRoomId == roomId ? "Yes (matches)" : "No (MISMATCH!)"}',
-            name: _logName);
-        log('   Room is joined: ${_joinedRooms.contains(roomId)}',
-            name: _logName);
+        log(
+          '   Connection URL includes room_id: ${_currentConnectionRoomId == roomId ? "Yes (matches)" : "No (MISMATCH!)"}',
+          name: _logName,
+        );
+        log(
+          '   Room is joined: ${_joinedRooms.contains(roomId)}',
+          name: _logName,
+        );
 
         // Verify channel is still valid
         if (_channel == null) {
@@ -842,28 +939,39 @@ class ChatWebSocketService {
         // Attempt to send the message
         _channel!.sink.add(messageJson);
 
-        log('✅ [WebSocket] Message sent successfully to room: $roomId (attempt ${retryCount + 1})',
-            name: _logName);
-        log('   Message should be persisted by backend automatically',
-            name: _logName);
+        log(
+          '✅ [WebSocket] Message sent successfully to room: $roomId (attempt ${retryCount + 1})',
+          name: _logName,
+        );
+        log(
+          '   Message should be persisted by backend automatically',
+          name: _logName,
+        );
         log('   Waiting for confirmation via WebSocket...', name: _logName);
 
         return true;
       } catch (e, stackTrace) {
         retryCount++;
-        log('❌ Failed to send message (attempt $retryCount/$maxRetries): $e',
-            name: _logName, error: e, stackTrace: stackTrace);
+        log(
+          '❌ Failed to send message (attempt $retryCount/$maxRetries): $e',
+          name: _logName,
+          error: e,
+          stackTrace: stackTrace,
+        );
 
         // If sending failed due to connection issue, mark as disconnected
-        final isConnectionError = e.toString().contains('SocketException') ||
+        final isConnectionError =
+            e.toString().contains('SocketException') ||
             e.toString().contains('WebSocket') ||
             e.toString().contains('connection') ||
             e.toString().contains('Broken pipe') ||
             e.toString().contains('Connection closed');
 
         if (isConnectionError) {
-          log('🔌 Connection issue detected, marking as disconnected',
-              name: _logName);
+          log(
+            '🔌 Connection issue detected, marking as disconnected',
+            name: _logName,
+          );
           _isConnected = false;
           _connectionStateController.add(false);
 
@@ -889,16 +997,19 @@ class ChatWebSocketService {
                 continue; // Retry sending
               }
             } else {
-              log('❌ Cannot reconnect: Numeric room_id requires UUID for WebSocket connection',
-                  name: _logName);
+              log(
+                '❌ Cannot reconnect: Numeric room_id requires UUID for WebSocket connection',
+                name: _logName,
+              );
             }
           }
         }
 
         // If this was the last retry, give up
         if (retryCount >= maxRetries) {
-          onError
-              ?.call('Failed to send message after $maxRetries attempts: $e');
+          onError?.call(
+            'Failed to send message after $maxRetries attempts: $e',
+          );
           return false;
         }
 
@@ -968,8 +1079,10 @@ class ChatWebSocketService {
       log('   Room ID: ${wsMessage.roomId}', name: _logName);
       log('   User ID: ${wsMessage.userId}', name: _logName);
       if (contentPreview.isNotEmpty) {
-        log('   Content: ${contentPreview.substring(0, contentPreview.length > 50 ? 50 : contentPreview.length)}...',
-            name: _logName);
+        log(
+          '   Content: ${contentPreview.substring(0, contentPreview.length > 50 ? 50 : contentPreview.length)}...',
+          name: _logName,
+        );
       } else {
         log('   Content: <empty>', name: _logName);
       }
@@ -1000,8 +1113,10 @@ class ChatWebSocketService {
           log('📖 Broadcasting read receipt update', name: _logName);
           log('   Room ID: ${wsMessage.roomId}', name: _logName);
           log('   User ID: ${wsMessage.userId}', name: _logName);
-          log('   Message ID: ${wsMessage.data?['message_id']}',
-              name: _logName);
+          log(
+            '   Message ID: ${wsMessage.data?['message_id']}',
+            name: _logName,
+          );
           log('   Data: ${wsMessage.data}', name: _logName);
           _messageController.add(wsMessage);
           onMessage?.call(wsMessage);
@@ -1030,21 +1145,31 @@ class ChatWebSocketService {
           if (wsMessage.roomId != null ||
               wsMessage.content != null ||
               wsMessage.data != null) {
-            log('⚠️ Unknown message type, treating as message for UI',
-                name: _logName);
+            log(
+              '⚠️ Unknown message type, treating as message for UI',
+              name: _logName,
+            );
             _messageController.add(wsMessage);
             onMessage?.call(wsMessage);
           } else {
-            log('⚠️ Unknown message type with no recognizable fields: ${json.keys}',
-                name: _logName);
+            log(
+              '⚠️ Unknown message type with no recognizable fields: ${json.keys}',
+              name: _logName,
+            );
           }
           break;
       }
     } catch (e, stackTrace) {
-      log('❌ Error handling WebSocket message: $e',
-          name: _logName, error: e, stackTrace: stackTrace);
-      log('   Message was: ${message.toString().substring(0, message.toString().length > 200 ? 200 : message.toString().length)}',
-          name: _logName);
+      log(
+        '❌ Error handling WebSocket message: $e',
+        name: _logName,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      log(
+        '   Message was: ${message.toString().substring(0, message.toString().length > 200 ? 200 : message.toString().length)}',
+        name: _logName,
+      );
       onError?.call('Error parsing message: $e');
     }
   }
@@ -1106,11 +1231,13 @@ class ChatWebSocketService {
     final delay = _reconnectAttempts == 1
         ? 1
         : _reconnectAttempts == 2
-            ? 3
-            : 5;
+        ? 3
+        : 5;
 
-    log('Scheduling reconnection attempt $_reconnectAttempts in ${delay}s',
-        name: _logName);
+    log(
+      'Scheduling reconnection attempt $_reconnectAttempts in ${delay}s',
+      name: _logName,
+    );
 
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(Duration(seconds: delay), () async {

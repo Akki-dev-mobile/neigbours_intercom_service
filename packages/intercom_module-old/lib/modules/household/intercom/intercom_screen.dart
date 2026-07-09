@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/layout/app_scaffold.dart';
 import '../../../core/widgets/responsive_tab_bar.dart';
+import '../../../core/widgets/onegate_global_loader.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/keycloak_service.dart';
 import '../../../core/utils/navigation_helper.dart';
@@ -20,6 +21,7 @@ import 'tabs/lobbies_tab.dart';
 import 'tabs/groups_tab.dart';
 import 'models/call_history_entry.dart';
 import 'models/call_status.dart';
+import 'models/call_type.dart';
 import 'models/intercom_contact.dart';
 import '../../../../src/config/intercom_ui_strings.dart';
 import 'widgets/call_bottom_sheet.dart';
@@ -109,21 +111,22 @@ class _IntercomScreenState extends State<IntercomScreen>
 
     final callId = int.tryParse(
       (payload['call_id'] ??
-              payload['callId'] ??
-              payload['id'] ??
-              payload['uuid'])
-          ?.toString() ??
+                  payload['callId'] ??
+                  payload['id'] ??
+                  payload['uuid'])
+              ?.toString() ??
           '',
     );
     if (callId == null) return;
 
     final callerName =
         payload['caller_name']?.toString().trim().isNotEmpty == true
-            ? payload['caller_name'].toString().trim()
-            : widget.uiStrings.contactFallback;
+        ? payload['caller_name'].toString().trim()
+        : widget.uiStrings.contactFallback;
     final callerPhone = payload['caller_phone']?.toString();
     final contact = IntercomContact(
-      id: payload['caller_user_id']?.toString() ??
+      id:
+          payload['caller_user_id']?.toString() ??
           payload['from_user_id']?.toString() ??
           (callerPhone != null ? 'phone:$callerPhone' : 'callback:$callId'),
       name: callerName,
@@ -222,62 +225,62 @@ class _IntercomScreenState extends State<IntercomScreen>
     return IntercomUiStringsScope(
       strings: widget.uiStrings,
       child: AppScaffold.internal(
-      title: pageTitle,
-      customAppBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.white,
-        titleSpacing: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          color: Colors.black,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          pageTitle,
-          style: const TextStyle(
+        title: pageTitle,
+        customAppBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          surfaceTintColor: Colors.white,
+          titleSpacing: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
             color: Colors.black,
-            fontWeight: FontWeight.w700,
+            onPressed: () => Navigator.of(context).pop(),
           ),
-        ),
-        actions: _isGroupsTabSelected
-            ? null
-            : [
-                IconButton(
-                  icon: const Icon(Icons.history),
-                  color: const Color(0xffc62828),
-                  onPressed: () {
-                    _showCallHistory();
-                  },
-                  tooltip: widget.uiStrings.chatHistoryTooltip,
-                ),
-              ],
-      ),
-      body: Column(
-        children: [
-          // Modern Segmented Control Tabs
-          ResponsiveTabBar(
-            controller: _tabController,
-            tabLabels: _tabTitles,
-            tabIcons: _tabIcons,
-            currentIndex: _currentIndex,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            segmented: true,
-            compact: true,
-          ),
-
-          // Tab content
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration(color: Colors.white),
-              child: TabBarView(
-                controller: _tabController,
-                children: _buildTabContentList(),
-              ),
+          title: Text(
+            pageTitle,
+            style: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.w700,
             ),
           ),
-        ],
-      ),
+          actions: _isGroupsTabSelected
+              ? null
+              : [
+                  IconButton(
+                    icon: const Icon(Icons.history),
+                    color: const Color(0xffc62828),
+                    onPressed: () {
+                      _showCallHistory();
+                    },
+                    tooltip: widget.uiStrings.chatHistoryTooltip,
+                  ),
+                ],
+        ),
+        body: Column(
+          children: [
+            // Modern Segmented Control Tabs
+            ResponsiveTabBar(
+              controller: _tabController,
+              tabLabels: _tabTitles,
+              tabIcons: _tabIcons,
+              currentIndex: _currentIndex,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              segmented: true,
+              compact: true,
+            ),
+
+            // Tab content
+            Expanded(
+              child: Container(
+                decoration: const BoxDecoration(color: Colors.white),
+                child: TabBarView(
+                  controller: _tabController,
+                  children: _buildTabContentList(),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -384,7 +387,10 @@ class _CallHistoryPageState extends State<CallHistoryPage>
         ),
         title: Text(
           ui.chatsAndCallsHistory,
-          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700),
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
       body: Column(
@@ -459,9 +465,7 @@ class IntercomSearchDelegate extends SearchDelegate<String> {
   @override
   Widget buildSuggestions(BuildContext context) {
     final ui = IntercomUiStringsScope.of(context);
-    return Center(
-      child: Text(ui.searchHint),
-    );
+    return Center(child: Text(ui.searchHint));
   }
 }
 
@@ -606,8 +610,10 @@ class _CallHistoryItem extends StatelessWidget {
         status == CallStatus.missed || status == CallStatus.initiated;
     final isDeclined = status == CallStatus.declined;
 
-    final callTypeLabel = entry.callType.displayName;
-    final statusLabel = showAsMissed ? ui.missedCall : status.displayName;
+    final callTypeLabel = _localizedCallTypeLabel(entry.callType, ui);
+    final statusLabel = showAsMissed
+        ? ui.missedCall
+        : _localizedStatusLabel(status, ui);
 
     // Icon: use missed icons for missed/declined, arrows otherwise.
     final IconData statusIcon;
@@ -647,15 +653,19 @@ class _CallHistoryItem extends StatelessWidget {
     if (entry.duration != null && !showAsMissed && !isDeclined) {
       spans.add(
         TextSpan(
-          text: ' · ${_formatDuration(entry.duration!)}',
+          text: ' · ${_formatDuration(entry.duration!, ui)}',
           style: baseStyle,
         ),
       );
     }
 
-    final timeText = DateFormat('jm').format(_toIndiaTime(entry.initiatedAt));
+    final localeName = Localizations.localeOf(context).toLanguageTag();
+    final timeText = DateFormat.jm(
+      localeName,
+    ).format(_toIndiaTime(entry.initiatedAt));
     final avatarUrl = _normalizeAvatarUrl(entry.contactAvatar);
-    final dateTimeText = '${_formatIndiaDate(entry.initiatedAt)} · $timeText';
+    final dateTimeText =
+        '${_formatIndiaDate(entry.initiatedAt, localeName)} · $timeText';
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -704,22 +714,22 @@ class _CallHistoryItem extends StatelessWidget {
     );
   }
 
-  String _formatDuration(Duration duration) {
+  String _formatDuration(Duration duration, IntercomUiStrings ui) {
     final minutes = duration.inMinutes;
     final seconds = duration.inSeconds % 60;
     if (minutes == 0 && seconds == 0) {
-      return '0s';
+      return ui.durationSeconds(0);
     }
 
     if (minutes == 0) {
-      return '${seconds}s';
+      return ui.durationSeconds(seconds);
     }
 
     if (seconds == 0) {
-      return '${minutes}m';
+      return ui.durationMinutes(minutes);
     }
 
-    return '${minutes}m ${seconds}s';
+    return ui.durationMinutesSeconds(minutes, seconds);
   }
 
   DateTime _toIndiaTime(DateTime dateTime) {
@@ -727,9 +737,33 @@ class _CallHistoryItem extends StatelessWidget {
     return utcTime.add(const Duration(hours: 5, minutes: 30));
   }
 
-  String _formatIndiaDate(DateTime dateTime) {
+  String _formatIndiaDate(DateTime dateTime, String localeName) {
     final indiaTime = _toIndiaTime(dateTime);
-    return DateFormat('dd MMM, yyyy').format(indiaTime);
+    return DateFormat('dd MMM, yyyy', localeName).format(indiaTime);
+  }
+
+  String _localizedCallTypeLabel(CallType callType, IntercomUiStrings ui) {
+    switch (callType) {
+      case CallType.audio:
+        return ui.audioCall;
+      case CallType.video:
+        return ui.videoCall;
+    }
+  }
+
+  String _localizedStatusLabel(CallStatus status, IntercomUiStrings ui) {
+    switch (status) {
+      case CallStatus.initiated:
+        return ui.callingCall;
+      case CallStatus.answered:
+        return ui.inCall;
+      case CallStatus.declined:
+        return ui.declinedCall;
+      case CallStatus.ended:
+        return ui.endedCall;
+      case CallStatus.missed:
+        return ui.missedCall;
+    }
   }
 }
 
@@ -1824,17 +1858,68 @@ class _ChatHistoryTabState extends State<_ChatHistoryTab> {
             NavigationHelper.pushRoute(
               context,
               MaterialPageRoute(
-                builder: (context) => ChatScreen(
+                builder: (context) => _HistoryChatLoaderRoute(
                   contact: contact,
                   roomId: chat.roomId, // Pass roomId to restore chat directly
-                  returnToHistory:
-                      true, // Navigate back to history page on back button
+                  title: _ui.loadingChat,
+                  subtitle: _ui.loadingChatSubtitle,
                 ),
               ),
             );
           },
         );
       },
+    );
+  }
+}
+
+class _HistoryChatLoaderRoute extends StatefulWidget {
+  const _HistoryChatLoaderRoute({
+    required this.contact,
+    required this.roomId,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IntercomContact contact;
+  final String roomId;
+  final String title;
+  final String subtitle;
+
+  @override
+  State<_HistoryChatLoaderRoute> createState() =>
+      _HistoryChatLoaderRouteState();
+}
+
+class _HistoryChatLoaderRouteState extends State<_HistoryChatLoaderRoute> {
+  bool _showLoader = true;
+
+  void _hideLoader() {
+    if (!mounted || !_showLoader) return;
+    setState(() => _showLoader = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        ChatScreen(
+          contact: widget.contact,
+          roomId: widget.roomId,
+          returnToHistory: true,
+          onInitialLoadComplete: _hideLoader,
+        ),
+        if (_showLoader)
+          Positioned.fill(
+            child: ColoredBox(
+              color: Colors.black54,
+              child: OneGateGlobalLoader(
+                title: widget.title,
+                subtitle: widget.subtitle,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -1865,8 +1950,7 @@ class _ChatHistoryItem extends StatelessWidget {
     final ui = IntercomUiStringsScope.of(context);
     final avatarUrl = _normalizeAvatarUrl(contact?.photoUrl);
     final preview = ActivityPreviewHelper.fromStored(message);
-    final baseMessage =
-        preview.text.isEmpty ? ui.noMessagesYet : preview.text;
+    final baseMessage = preview.text.isEmpty ? ui.noMessagesYet : preview.text;
     // If chat has been opened before, always show last message (no count, no badge, no indicator)
     // If chat hasn't been opened, show count/new messages with badge and indicator (green, like group chat)
     String displayMessage = baseMessage;
@@ -1885,8 +1969,7 @@ class _ChatHistoryItem extends StatelessWidget {
     } else {
       // Chat hasn't been opened: show count/new messages with badge and indicator
       if (unreadCount > 1) {
-        // More than 1 message from receiver: show count with "new messages"
-        displayMessage = '$unreadCount new messages';
+        displayMessage = ui.newMessagesCount(unreadCount);
         showIndicator = true;
         showBadge = true;
       } else if (unreadCount == 1) {

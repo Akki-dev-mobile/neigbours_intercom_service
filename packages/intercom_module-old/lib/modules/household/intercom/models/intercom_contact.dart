@@ -1,19 +1,8 @@
 import 'package:flutter/material.dart';
 
-enum IntercomContactType {
-  resident,
-  committee,
-  gatekeeper,
-  office,
-  lobby,
-}
+enum IntercomContactType { resident, committee, gatekeeper, office, lobby }
 
-enum IntercomContactStatus {
-  online,
-  offline,
-  busy,
-  away,
-}
+enum IntercomContactStatus { online, offline, busy, away }
 
 class IntercomContact {
   final String id;
@@ -80,8 +69,11 @@ class IntercomContact {
   String get initials {
     if (name.trim().isEmpty) return '?';
 
-    final nameParts =
-        name.trim().split(' ').where((part) => part.isNotEmpty).toList();
+    final nameParts = name
+        .trim()
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .toList();
     if (nameParts.isEmpty) return '?';
 
     String result = '';
@@ -239,8 +231,11 @@ class FamilyMember {
   String get initials {
     if (name.trim().isEmpty) return '?';
 
-    final nameParts =
-        name.trim().split(' ').where((part) => part.isNotEmpty).toList();
+    final nameParts = name
+        .trim()
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .toList();
     if (nameParts.isEmpty) return '?';
 
     String result = '';

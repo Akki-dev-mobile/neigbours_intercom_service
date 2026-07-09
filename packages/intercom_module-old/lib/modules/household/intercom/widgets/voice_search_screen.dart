@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../../core/widgets/enhanced_toast.dart';
 import '../../../../features/oscar/presentation/widgets/animated_oscar_icon.dart';
+import '../../../../src/config/chat_call_i18n.dart';
+import 'voice_search_session.dart';
 
 class VoiceSearchScreen extends StatefulWidget {
   final Function(String) onTextRecognized;
@@ -27,11 +30,14 @@ class VoiceSearchScreen extends StatefulWidget {
 
 class _VoiceSearchScreenState extends State<VoiceSearchScreen>
     with SingleTickerProviderStateMixin {
-  final stt.SpeechToText _speech = stt.SpeechToText();
+  final VoiceSearchSession _session = VoiceSearchSession.instance;
   bool _isListening = false;
+  bool _speechReady = false;
   String _recognizedText = '';
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+
+  stt.SpeechToText get _speech => _session.speech;
 
   @override
   void initState() {
@@ -50,131 +56,252 @@ class _VoiceSearchScreenState extends State<VoiceSearchScreen>
 
   @override
   void dispose() {
-    _speech.stop();
+    _session.cancelSession();
     _animationController.dispose();
     super.dispose();
   }
 
-  Future<void> _initializeSpeech() async {
-    bool available = await _speech.initialize(
-      onStatus: (status) {
-        if (mounted) {
-          if (status == 'done' || status == 'notListening') {
-            setState(() {
-              _isListening = false;
-            });
-            _animationController.stop();
-            _animationController.reset();
-          } else if (status == 'listening') {
-            setState(() {
-              _isListening = true;
-            });
-            _animationController.repeat(reverse: true);
-          }
-        }
-      },
-      onError: (error) {
-        if (mounted) {
-          setState(() {
-            _isListening = false;
-          });
-          _animationController.stop();
-          _animationController.reset();
-          EnhancedToast.error(
-            context,
-            title: 'Speech Recognition Error',
-            message: error.errorMsg,
-          );
-        }
-      },
-    );
+  Future<bool> _ensureMicrophonePermission() async {
+    var status = await Permission.microphone.status;
+    if (status.isGranted) {
+      return true;
+    }
 
-    if (!available && mounted) {
+    status = await Permission.microphone.request();
+    if (status.isGranted) {
+      return true;
+    }
+
+    if (status.isPermanentlyDenied && mounted) {
       EnhancedToast.warning(
         context,
-        title: 'Speech Recognition',
-        message: 'Speech recognition is not available on this device.',
+        title: chatCallTr(
+          context,
+          'chatCall_microphonePermissionRequired',
+          fallback: 'Microphone Permission Required',
+        ),
+        message: chatCallTr(
+          context,
+          'chatCall_enableMicrophoneInSettings',
+          fallback: 'Enable microphone access in Settings to use voice search.',
+        ),
       );
-      Navigator.pop(context);
+      await openAppSettings();
+    }
+
+    return false;
+  }
+
+  Future<String?> _resolveListenLocaleId() async {
+    try {
+      final locales = await _speech.locales();
+      if (locales.isEmpty) {
+        return null;
+      }
+
+      final deviceLocale = WidgetsBinding.instance.platformDispatcher.locale;
+      final languageCode = deviceLocale.languageCode.toLowerCase();
+
+      for (final locale in locales) {
+        final localeId = locale.localeId.toLowerCase();
+        if (localeId.startsWith(languageCode)) {
+          return locale.localeId;
+        }
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  void _setListening(bool listening) {
+    if (!mounted) {
       return;
     }
 
-    // Start listening immediately
-    _startListening();
+    setState(() {
+      _isListening = listening;
+    });
+
+    if (listening) {
+      _animationController.repeat(reverse: true);
+    } else {
+      _animationController.stop();
+      _animationController.reset();
+    }
   }
 
-  Future<void> _startListening() async {
-    if (!await _speech.initialize()) {
+  Future<void> _initializeSpeech() async {
+    final hasMicPermission = await _ensureMicrophonePermission();
+    if (!hasMicPermission) {
       if (mounted) {
         EnhancedToast.warning(
           context,
-          title: 'Speech Recognition',
-          message: 'Speech recognition is not available.',
+          title: chatCallTr(
+            context,
+            'chatCall_microphonePermissionRequired',
+            fallback: 'Microphone Permission Required',
+          ),
+          message: chatCallTr(
+            context,
+            'chatCall_microphonePermissionNeededForVoiceSearch',
+            fallback: 'Microphone permission is needed for voice search.',
+          ),
         );
         Navigator.pop(context);
       }
       return;
     }
 
-    if (mounted) {
-      setState(() {
-        _isListening = true;
-        _recognizedText = '';
-      });
+    final available = await _session.initialize(
+      onStatus: (status) {
+        if (!mounted) {
+          return;
+        }
+
+        if (status == 'done' || status == 'notListening') {
+          _setListening(false);
+        } else if (status == 'listening') {
+          _setListening(true);
+        }
+      },
+      onError: (error) {
+        if (!mounted) {
+          return;
+        }
+
+        _setListening(false);
+        EnhancedToast.error(
+          context,
+          title: chatCallTr(
+            context,
+            'chatCall_speechRecognitionError',
+            fallback: 'Speech Recognition Error',
+          ),
+          message: error.errorMsg,
+        );
+      },
+    );
+
+    if (!available) {
+      if (mounted) {
+        EnhancedToast.warning(
+          context,
+          title: chatCallTr(
+            context,
+            'chatCall_speechRecognition',
+            fallback: 'Speech Recognition',
+          ),
+          message: chatCallTr(
+            context,
+            'chatCall_speechRecognitionIsNotAvailableOn',
+            fallback: 'Speech recognition is not available on this device.',
+          ),
+        );
+        Navigator.pop(context);
+      }
+      return;
     }
 
-    _speech.listen(
-      onResult: (result) {
-        if (!mounted) return;
+    _speechReady = true;
+    await _beginListening();
+  }
 
-        final recognizedText = result.recognizedWords.trim();
+  Future<void> _beginListening({bool isRetry = false}) async {
+    if (!_speechReady || !mounted) {
+      return;
+    }
 
-        setState(() {
-          _recognizedText = recognizedText;
-        });
+    await _session.prepareForSession();
 
-        // Call the callback with recognized text
-        widget.onTextRecognized(recognizedText);
+    setState(() {
+      _recognizedText = '';
+    });
+    _setListening(true);
 
-        if (result.finalResult) {
-          // Final result
-          if (mounted) {
-            setState(() {
-              _isListening = false;
-            });
-            _animationController.stop();
-            _animationController.reset();
+    final localeId = await _resolveListenLocaleId();
 
-            // Call final result callback if provided
-            if (widget.onFinalResult != null) {
-              widget.onFinalResult!(recognizedText);
-            }
+    try {
+      await _speech.listen(
+        onResult: (result) {
+          if (!mounted) {
+            return;
+          }
 
-            // Close the screen after a short delay
+          final recognizedText = result.recognizedWords.trim();
+
+          setState(() {
+            _recognizedText = recognizedText;
+          });
+
+          widget.onTextRecognized(recognizedText);
+
+          if (result.finalResult) {
+            _setListening(false);
+            widget.onFinalResult?.call(recognizedText);
+
             Future.delayed(const Duration(milliseconds: 500), () {
               if (mounted) {
                 Navigator.pop(context, recognizedText);
               }
             });
           }
-        }
-      },
-      listenFor: const Duration(seconds: 30),
-      pauseFor: const Duration(seconds: 3),
-      localeId: 'en_US',
-      cancelOnError: true,
-    );
+        },
+        listenFor: const Duration(seconds: 30),
+        pauseFor: const Duration(seconds: 4),
+        localeId: localeId,
+        cancelOnError: false,
+        partialResults: true,
+        listenMode: stt.ListenMode.search,
+      );
+    } on stt.ListenFailedException catch (error) {
+      _setListening(false);
+      if (mounted) {
+        EnhancedToast.error(
+          context,
+          title: chatCallTr(
+            context,
+            'chatCall_speechRecognitionError',
+            fallback: 'Speech Recognition Error',
+          ),
+          message: error.message ??
+              chatCallTr(
+                context,
+                'chatCall_speechRecognitionIsNotAvailableOn',
+                fallback: 'Speech recognition is not available on this device.',
+              ),
+        );
+      }
+      return;
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+
+    if (!_speech.isListening && mounted) {
+      if (!isRetry) {
+        await _beginListening(isRetry: true);
+        return;
+      }
+
+      _setListening(false);
+      EnhancedToast.warning(
+        context,
+        title: chatCallTr(
+          context,
+          'chatCall_speechRecognition',
+          fallback: 'Speech Recognition',
+        ),
+        message: chatCallTr(
+          context,
+          'chatCall_speechRecognitionIsNotAvailableOn',
+          fallback: 'Speech recognition is not available on this device.',
+        ),
+      );
+    }
   }
 
   void _stopListening() {
-    _speech.stop();
-    if (mounted) {
-      setState(() {
-        _isListening = false;
-      });
-      _animationController.stop();
-      _animationController.reset();
-    }
+    _session.stopSession();
+    _setListening(false);
   }
 
   void _cancel() {
@@ -189,7 +316,6 @@ class _VoiceSearchScreenState extends State<VoiceSearchScreen>
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -200,7 +326,12 @@ class _VoiceSearchScreenState extends State<VoiceSearchScreen>
                   ),
                   Expanded(
                     child: Text(
-                      widget.title ?? 'Voice Search',
+                      widget.title ??
+                          chatCallTr(
+                            context,
+                            'chatCall_voiceSearch',
+                            fallback: 'Voice Search',
+                          ),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
@@ -209,18 +340,15 @@ class _VoiceSearchScreenState extends State<VoiceSearchScreen>
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  const SizedBox(width: 48), // Balance the close button
+                  const SizedBox(width: 48),
                 ],
               ),
             ),
-
-            // Main content
             Expanded(
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Animated OSCAR icon
                     AnimatedBuilder(
                       animation: _scaleAnimation,
                       builder: (context, child) {
@@ -250,24 +378,28 @@ class _VoiceSearchScreenState extends State<VoiceSearchScreen>
                         );
                       },
                     ),
-
                     const SizedBox(height: 40),
-
-                    // Status text
                     Text(
                       _isListening
-                          ? (widget.listeningText ?? 'Listening...')
-                          : (widget.waitingText ?? 'Tap to start'),
+                          ? (widget.listeningText ??
+                              chatCallTr(
+                                context,
+                                'chatCall_listening',
+                                fallback: 'Listening...',
+                              ))
+                          : (widget.waitingText ??
+                              chatCallTr(
+                                context,
+                                'chatCall_tapToStart',
+                                fallback: 'Tap to start',
+                              )),
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-
                     const SizedBox(height: 40),
-
-                    // Recognized text container
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 32),
                       padding: const EdgeInsets.all(24),
@@ -287,7 +419,12 @@ class _VoiceSearchScreenState extends State<VoiceSearchScreen>
                           children: [
                             if (_recognizedText.isEmpty)
                               Text(
-                                widget.placeholderText ?? 'Speak to search...',
+                                widget.placeholderText ??
+                                    chatCallTr(
+                                      context,
+                                      'chatCall_speakToSearch',
+                                      fallback: 'Speak to search...',
+                                    ),
                                 style: const TextStyle(
                                   color: Colors.white54,
                                   fontSize: 16,
@@ -310,14 +447,10 @@ class _VoiceSearchScreenState extends State<VoiceSearchScreen>
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 40),
-
-                    // Action buttons
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Cancel button
                         ElevatedButton(
                           onPressed: _cancel,
                           style: ElevatedButton.styleFrom(
@@ -331,19 +464,43 @@ class _VoiceSearchScreenState extends State<VoiceSearchScreen>
                               borderRadius: BorderRadius.circular(30),
                             ),
                           ),
-                          child: const Text('Cancel'),
+                          child: Text(
+                            chatCallTr(
+                              context,
+                              'chatCall_cancel',
+                              fallback: 'Cancel',
+                            ),
+                          ),
                         ),
-
                         const SizedBox(width: 16),
-
-                        // Done button (only show when there's text)
-                        if (_recognizedText.isNotEmpty)
+                        if (!_isListening)
+                          ElevatedButton(
+                            onPressed: _beginListening,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            child: Text(
+                              chatCallTr(
+                                context,
+                                'chatCall_tapToStart',
+                                fallback: 'Tap to start',
+                              ),
+                            ),
+                          ),
+                        if (_recognizedText.isNotEmpty) ...[
+                          const SizedBox(width: 16),
                           ElevatedButton(
                             onPressed: () {
                               _stopListening();
-                              if (widget.onFinalResult != null) {
-                                widget.onFinalResult!(_recognizedText);
-                              }
+                              widget.onFinalResult?.call(_recognizedText);
                               Navigator.pop(context, _recognizedText);
                             },
                             style: ElevatedButton.styleFrom(
@@ -357,8 +514,15 @@ class _VoiceSearchScreenState extends State<VoiceSearchScreen>
                                 borderRadius: BorderRadius.circular(30),
                               ),
                             ),
-                            child: const Text('Done'),
+                            child: Text(
+                              chatCallTr(
+                                context,
+                                'chatCall_done',
+                                fallback: 'Done',
+                              ),
+                            ),
                           ),
+                        ],
                       ],
                     ),
                   ],

@@ -7,6 +7,8 @@ import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/enhanced_toast.dart';
 import 'models/intercom_contact.dart';
 import 'models/group_chat_model.dart';
+import '../../../src/config/chat_call_i18n.dart';
+import 'widgets/voice_search_launcher.dart';
 
 class CreateGroupScreen extends StatefulWidget {
   final List<IntercomContact> availableContacts;
@@ -30,6 +32,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   final Set<IntercomContact> _selectedContacts = {};
   List<IntercomContact> _filteredContacts = [];
   bool _isCreating = false;
+  bool _isListening = false;
 
   @override
   void initState() {
@@ -51,8 +54,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
         // Handle empty contacts list
         EnhancedToast.warning(
           context,
-          title: 'No Contacts',
-          message: 'No contacts available to create a group.',
+          title: chatCallTr(context, 'chatCall_noContacts', fallback: 'No Contacts'),
+          message: chatCallTr(context, 'chatCall_noContactsForGroup', fallback: 'No contacts available to create a group.'),
         );
         // Add a small delay before popping to ensure the Scaffold is built
         Future.delayed(const Duration(milliseconds: 100), () {
@@ -94,16 +97,68 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   }
 
   // Filter contacts based on search
+  Future<void> _startVoiceSearch() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isListening = true;
+    });
+
+    final result = await VoiceSearchLauncher.open(
+      context,
+      onTextRecognized: (text) {
+        if (!mounted) return;
+        setState(() {
+          _searchController.text = text;
+          _searchController.selection = TextSelection.fromPosition(
+            TextPosition(offset: text.length),
+          );
+          _filterContacts(text);
+        });
+      },
+      onFinalResult: (text) {
+        if (!mounted) return;
+        setState(() {
+          _searchController.text = text;
+          _searchController.selection = TextSelection.fromPosition(
+            TextPosition(offset: text.length),
+          );
+          _filterContacts(text);
+        });
+      },
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isListening = false;
+    });
+
+    if (result != null && result.trim().isNotEmpty) {
+      setState(() {
+        _searchController.text = result;
+        _searchController.selection = TextSelection.fromPosition(
+          TextPosition(offset: result.length),
+        );
+        _filterContacts(result);
+      });
+    }
+  }
+
   void _filterContacts(String query) {
     setState(() {
       if (query.isEmpty) {
         _filteredContacts = widget.availableContacts.toList();
       } else {
         _filteredContacts = widget.availableContacts
-            .where((contact) =>
-                contact.name.toLowerCase().contains(query.toLowerCase()) ||
-                (contact.unit != null &&
-                    contact.unit!.toLowerCase().contains(query.toLowerCase())))
+            .where(
+              (contact) =>
+                  contact.name.toLowerCase().contains(query.toLowerCase()) ||
+                  (contact.unit != null &&
+                      contact.unit!.toLowerCase().contains(
+                        query.toLowerCase(),
+                      )),
+            )
             .toList();
       }
     });
@@ -120,8 +175,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     if (!_formKey.currentState!.validate() || !_isFormValid) {
       EnhancedToast.warning(
         context,
-        title: 'Missing Fields',
-        message: 'Please complete all required fields.',
+        title: chatCallTr(context, 'chatCall_missingFields', fallback: 'Missing Fields'),
+        message: chatCallTr(context, 'chatCall_completeRequiredFields', fallback: 'Please complete all required fields.'),
       );
       return;
     }
@@ -130,8 +185,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     if (_selectedContacts.length < 2) {
       EnhancedToast.warning(
         context,
-        title: 'Members Required',
-        message: 'Please select at least 2 contacts for the group.',
+        title: chatCallTr(context, 'chatCall_membersRequired', fallback: 'Members Required'),
+        message: chatCallTr(context, 'chatCall_selectAtLeastTwoContacts', fallback: 'Please select at least 2 contacts for the group.'),
       );
       return;
     }
@@ -176,7 +231,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
           statusBarIconBrightness: Brightness.light,
         ),
         title: Text(
-          'Create Group',
+          chatCallTr(context, 'chatCall_createGroup', fallback: 'Create Group'),
           style: GoogleFonts.montserrat(
             color: Colors.black,
             fontWeight: FontWeight.w600,
@@ -199,7 +254,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
             child: _isCreating
                 ? const AppLoader.inline()
                 : Text(
-                    'CREATE',
+                    chatCallTr(context, 'chatCall_createGroupUpper', fallback: 'CREATE'),
                     style: GoogleFonts.montserrat(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -295,7 +350,11 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                           child: TextFormField(
                             controller: _nameController,
                             decoration: InputDecoration(
-                              hintText: 'Group Name',
+                              hintText: chatCallTr(
+                                context,
+                                'chatCall_groupName',
+                                fallback: 'Group Name',
+                              ),
                               hintStyle: GoogleFonts.montserrat(
                                 color: const Color(0xFFB0B0B0),
                                 fontWeight: FontWeight.w500,
@@ -321,7 +380,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return 'Please enter a group name';
+                                return chatCallTr(context, 'chatCall_pleaseEnterGroupName', fallback: 'Please enter a group name');
                               }
                               return null;
                             },
@@ -335,7 +394,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                         Padding(
                           padding: const EdgeInsets.only(top: 12),
                           child: Text(
-                            'Give your group a name your members will recognize',
+                            chatCallTr(context, 'chatCall_groupNameHint', fallback: 'Give your group a name your members will recognize'),
                             textAlign: TextAlign.center,
                             style: GoogleFonts.montserrat(
                               color: Colors.white.withOpacity(0.8),
@@ -367,7 +426,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Group Description',
+                          chatCallTr(context, 'chatCall_groupDescription', fallback: 'Group Description'),
                           style: GoogleFonts.montserrat(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
@@ -394,7 +453,11 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                       child: TextFormField(
                         controller: _descriptionController,
                         decoration: InputDecoration(
-                          hintText: 'Add a description (Optional)',
+                          hintText: chatCallTr(
+                            context,
+                            'chatCall_addDescriptionOptional',
+                            fallback: 'Add a description (Optional)',
+                          ),
                           hintStyle: GoogleFonts.montserrat(
                             color: const Color(0xFFB0B0B0),
                             fontWeight: FontWeight.w500,
@@ -425,7 +488,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Selected Members (${_selectedContacts.length})',
+                              chatCallTr(context, 'chatCall_selectedMembersCount', fallback: 'Selected Members ({count})', params: {'count': '${_selectedContacts.length}'}),
                               style: GoogleFonts.montserrat(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
@@ -440,13 +503,15 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                             onTap: _clearSelectedContacts,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFF416C).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Text(
-                                'Clear All',
+                                chatCallTr(context, 'chatCall_clearAll', fallback: 'Clear All'),
                                 style: GoogleFonts.montserrat(
                                   color: const Color(0xFFFF416C),
                                   fontWeight: FontWeight.w600,
@@ -498,7 +563,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                             ),
                             label: Text(
                               isCurrentUser
-                                  ? 'You (${contact.name})'
+                                  ? chatCallTr(context, 'chatCall_youLabel', fallback: 'You ({name})', params: {'name': contact.name})
                                   : contact.name,
                               style: GoogleFonts.montserrat(
                                 fontSize: 12,
@@ -546,7 +611,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Add Members',
+                          chatCallTr(context, 'chatCall_addMembers', fallback: 'Add Members'),
                           style: GoogleFonts.montserrat(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
@@ -576,7 +641,11 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
-                          hintText: 'Search members...',
+                          hintText: chatCallTr(
+                            context,
+                            'chatCall_searchMembersHint',
+                            fallback: 'Search members...',
+                          ),
                           hintStyle: GoogleFonts.montserrat(
                             color: const Color(0xFFB0B0B0),
                             fontWeight: FontWeight.w500,
@@ -601,15 +670,20 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                               ],
                             ),
                             child: IconButton(
-                              icon: const Icon(
-                                Icons.mic,
-                                color: Color(0xffc62828),
+                              icon: Icon(
+                                _isListening ? Icons.mic : Icons.mic_none,
+                                color: _isListening
+                                    ? Colors.red
+                                    : const Color(0xffc62828),
                                 size: 20,
                               ),
-                              onPressed: () {
-                                // Voice search functionality would go here
-                              },
-                              tooltip: 'Voice Search',
+                              onPressed:
+                                  _isListening ? null : _startVoiceSearch,
+                              tooltip: chatCallTr(
+                                context,
+                                'chatCall_voiceSearch',
+                                fallback: 'Voice Search',
+                              ),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                               iconSize: 20,
@@ -655,8 +729,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                         itemCount: _filteredContacts.length,
                         itemBuilder: (context, index) {
                           final contact = _filteredContacts[index];
-                          final isSelected =
-                              _selectedContacts.contains(contact);
+                          final isSelected = _selectedContacts.contains(
+                            contact,
+                          );
                           final isCurrentUser =
                               contact.id == widget.currentUserId;
 
@@ -690,8 +765,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                                   color: index < _filteredContacts.length - 1
                                       ? Colors.grey.shade200
                                       : (isSelected
-                                          ? const Color(0xFFFF416C)
-                                          : Colors.transparent),
+                                            ? const Color(0xFFFF416C)
+                                            : Colors.transparent),
                                   width: 1,
                                 ),
                               ),
@@ -708,8 +783,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                                     height: 48,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: const Color(0xFFFF416C)
-                                          .withOpacity(0.1),
+                                      color: const Color(
+                                        0xFFFF416C,
+                                      ).withOpacity(0.1),
                                       border: Border.all(
                                         color: isSelected
                                             ? const Color(0xFFFF416C)
@@ -745,8 +821,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                                           ),
                                           boxShadow: [
                                             BoxShadow(
-                                              color:
-                                                  Colors.black.withOpacity(0.1),
+                                              color: Colors.black.withOpacity(
+                                                0.1,
+                                              ),
                                               blurRadius: 4,
                                               offset: const Offset(0, 2),
                                             ),
@@ -807,8 +884,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                                     boxShadow: isSelected
                                         ? [
                                             BoxShadow(
-                                              color: const Color(0xFFFF416C)
-                                                  .withOpacity(0.3),
+                                              color: const Color(
+                                                0xFFFF416C,
+                                              ).withOpacity(0.3),
                                               blurRadius: 6,
                                               offset: const Offset(0, 3),
                                             ),

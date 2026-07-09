@@ -1,14 +1,13 @@
 import 'dart:io';
+import '../../../src/config/chat_call_i18n.dart';
 
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final File videoFile;
-  const VideoPlayerScreen({
-    Key? key,
-    required this.videoFile,
-  }) : super(key: key);
+  const VideoPlayerScreen({Key? key, required this.videoFile})
+    : super(key: key);
 
   @override
   State<VideoPlayerScreen> createState() => _VideoPlayerScreenState();
@@ -48,7 +47,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Video'),
+        title: Text(chatCallTr(context, 'chatCall_video', fallback: 'Video')),
       ),
       body: Center(
         child: _controller.value.isInitialized
@@ -90,9 +89,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   ),
                 ],
               )
-            : const CircularProgressIndicator(
-                color: Colors.white,
-              ),
+            : const CircularProgressIndicator(color: Colors.white),
       ),
       floatingActionButton: _controller.value.isInitialized
           ? FloatingActionButton(

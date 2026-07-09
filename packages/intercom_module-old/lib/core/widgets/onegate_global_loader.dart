@@ -42,62 +42,68 @@ class _OneGateGlobalLoaderState extends State<OneGateGlobalLoader>
   Widget build(BuildContext context) {
     final isTablet = widget.isTablet || MediaQuery.of(context).size.width > 600;
 
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(isTablet ? 40 : 32),
-        child: Container(
+    // Material ancestor required for Text/Icon in dialog overlays (avoids yellow underlines).
+    return Material(
+      type: MaterialType.transparency,
+      child: Center(
+        child: Padding(
           padding: EdgeInsets.all(isTablet ? 40 : 32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE5E7EB), width: 0.8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: isTablet ? 120 : 100,
-                height: isTablet ? 120 : 100,
-                child: OneGateGateAnimation(
-                  controller: _controller,
-                  size: isTablet ? 120 : 100,
-                  isTablet: isTablet,
+          child: Container(
+            padding: EdgeInsets.all(isTablet ? 40 : 32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE5E7EB), width: 0.8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
                 ),
-              ),
-              SizedBox(height: isTablet ? 32 : 24),
-              Text(
-                widget.title,
-                style: TextStyle(
-                  color: const Color(0xff212427),
-                  fontSize: isTablet ? 24 : 20,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.3,
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-              SizedBox(height: isTablet ? 12 : 8),
-              Text(
-                widget.subtitle,
-                style: TextStyle(
-                  color: const Color(0xff57636C),
-                  fontSize: isTablet ? 16 : 14,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.2,
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: isTablet ? 120 : 100,
+                  height: isTablet ? 120 : 100,
+                  child: OneGateGateAnimation(
+                    controller: _controller,
+                    size: isTablet ? 120 : 100,
+                    isTablet: isTablet,
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+                SizedBox(height: isTablet ? 32 : 24),
+                Text(
+                  widget.title,
+                  style: TextStyle(
+                    color: const Color(0xff212427),
+                    fontSize: isTablet ? 24 : 20,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+                SizedBox(height: isTablet ? 12 : 8),
+                Text(
+                  widget.subtitle,
+                  style: TextStyle(
+                    color: const Color(0xff57636C),
+                    fontSize: isTablet ? 16 : 14,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.2,
+                    decoration: TextDecoration.none,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),

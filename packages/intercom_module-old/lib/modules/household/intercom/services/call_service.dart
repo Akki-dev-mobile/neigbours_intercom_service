@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import '../../../../core/services/base_api_service.dart';
 import '../../../../core/services/keycloak_service.dart';
+import '../../../../core/services/auth_token_manager.dart';
 import '../../../../core/models/api_response.dart';
 import '../models/call_model.dart';
 import '../models/call_type.dart';
@@ -36,12 +37,12 @@ class CallService extends BaseApiService {
   static CallService? _instance;
 
   CallService._()
-      : super(
-          baseUrl: AppConstants.callServiceBaseUrl,
-          serviceName: 'CallService',
-          connectTimeout: const Duration(seconds: 30),
-          receiveTimeout: const Duration(seconds: 30),
-        );
+    : super(
+        baseUrl: AppConstants.callServiceBaseUrl,
+        serviceName: 'CallService',
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+      );
 
   /// Get singleton instance
   static CallService get instance {
@@ -75,48 +76,63 @@ class CallService extends BaseApiService {
   @override
   Future<Map<String, String>> getAuthHeaders() async {
     try {
-      // Get base headers from parent class (includes Authorization token)
-      final headers = await super.getAuthHeaders();
+      final headers = Map<String, String>.from(
+        await AuthTokenManager.getAuthHeadersForUpload(),
+      );
 
       // Get user data from Keycloak token
       final userData = await KeycloakService.getUserData();
       if (userData != null) {
         // DEBUG: Log all available user ID fields
-        log('🔍 [CallService] User data keys: ${userData.keys.toList()}',
-            name: serviceName);
-        log('🔍 [CallService] old_gate_user_id: ${userData['old_gate_user_id']}',
-            name: serviceName);
-        log('🔍 [CallService] old_sso_user_id: ${userData['old_sso_user_id']}',
-            name: serviceName);
-        log('🔍 [CallService] user_id: ${userData['user_id']}',
-            name: serviceName);
+        log(
+          '🔍 [CallService] User data keys: ${userData.keys.toList()}',
+          name: serviceName,
+        );
+        log(
+          '🔍 [CallService] old_gate_user_id: ${userData['old_gate_user_id']}',
+          name: serviceName,
+        );
+        log(
+          '🔍 [CallService] old_sso_user_id: ${userData['old_sso_user_id']}',
+          name: serviceName,
+        );
+        log(
+          '🔍 [CallService] user_id: ${userData['user_id']}',
+          name: serviceName,
+        );
 
         // CRITICAL FIX: Use old_gate_user_id for x-user-id header
         // This matches the user_id expected by the meet service backend
         // Priority: old_gate_user_id > old_sso_user_id > user_id
-        final userId = userData['old_gate_user_id']?.toString() ??
+        final userId =
+            userData['old_gate_user_id']?.toString() ??
             userData['old_sso_user_id']?.toString() ??
             userData['user_id']?.toString();
 
         if (userId != null && userId.isNotEmpty) {
           headers['x-user-id'] = userId;
-          log('✅ [CallService] Set x-user-id header: $userId (from old_gate_user_id)',
-              name: serviceName);
+          log(
+            '✅ [CallService] Set x-user-id header: $userId (from old_gate_user_id)',
+            name: serviceName,
+          );
         } else {
-          log('⚠️ [CallService] No valid user_id found in token for x-user-id header',
-              name: serviceName);
+          log(
+            '⚠️ [CallService] No valid user_id found in token for x-user-id header',
+            name: serviceName,
+          );
         }
       } else {
-        log('⚠️ [CallService] User data is null, cannot set x-user-id header',
-            name: serviceName);
+        log(
+          '⚠️ [CallService] User data is null, cannot set x-user-id header',
+          name: serviceName,
+        );
       }
 
       return headers;
     } catch (e, stackTrace) {
       log('❌ [CallService] Error getting auth headers: $e', name: serviceName);
       log('❌ [CallService] Stack trace: $stackTrace', name: serviceName);
-      // Fallback to parent implementation on error
-      return await super.getAuthHeaders();
+      return AuthTokenManager.getAuthHeadersForUpload();
     }
   }
 
@@ -167,8 +183,10 @@ class CallService extends BaseApiService {
       if (toUserPhone != null && toUserPhone.isNotEmpty) {
         normalizedPhone = normalizePhone(toUserPhone);
         if (normalizedPhone.isEmpty || !isLikelyPhone(normalizedPhone)) {
-          log('❌ [CallService] Invalid phone number: "$toUserPhone"',
-              name: serviceName);
+          log(
+            '❌ [CallService] Invalid phone number: "$toUserPhone"',
+            name: serviceName,
+          );
           return ApiResponse.error(
             'Invalid phone number. Please update the contact phone.',
             statusCode: 400,
@@ -184,10 +202,12 @@ class CallService extends BaseApiService {
         );
       }
 
-      log('📞 [CallService] Initiating ${callType.value} call '
-          'to_user_id: ${toUserId ?? "null"}, '
-          'to_user_phone: ${normalizedPhone ?? "null"}',
-          name: serviceName);
+      log(
+        '📞 [CallService] Initiating ${callType.value} call '
+        'to_user_id: ${toUserId ?? "null"}, '
+        'to_user_phone: ${normalizedPhone ?? "null"}',
+        name: serviceName,
+      );
 
       final request = InitiateCallRequest(
         toUserPhone: normalizedPhone,
@@ -213,11 +233,15 @@ class CallService extends BaseApiService {
           }
 
           // Log the raw response for debugging
-          log('🔍 [CallService] Raw response data type: ${json.runtimeType}',
-              name: serviceName);
+          log(
+            '🔍 [CallService] Raw response data type: ${json.runtimeType}',
+            name: serviceName,
+          );
           if (json is Map<String, dynamic>) {
-            log('🔍 [CallService] Response keys: ${json.keys.toList()}',
-                name: serviceName);
+            log(
+              '🔍 [CallService] Response keys: ${json.keys.toList()}',
+              name: serviceName,
+            );
           }
 
           return Call.fromJson(json as Map<String, dynamic>);
@@ -225,24 +249,27 @@ class CallService extends BaseApiService {
       );
 
       if (response.success && response.data != null) {
-        log('✅ [CallService] Call initiated successfully: ${response.data!.id}',
-            name: serviceName);
+        log(
+          '✅ [CallService] Call initiated successfully: ${response.data!.id}',
+          name: serviceName,
+        );
         log('   Meeting ID: ${response.data!.meetingId}', name: serviceName);
-        log('   Call Type: ${response.data!.callType.value}',
-            name: serviceName);
+        log(
+          '   Call Type: ${response.data!.callType.value}',
+          name: serviceName,
+        );
       } else {
-        log('❌ [CallService] Failed to initiate call: ${response.error}',
-            name: serviceName);
+        log(
+          '❌ [CallService] Failed to initiate call: ${response.error}',
+          name: serviceName,
+        );
       }
 
       return response;
     } catch (e, stackTrace) {
       log('❌ [CallService] Exception initiating call: $e', name: serviceName);
       log('   Stack trace: $stackTrace', name: serviceName);
-      return ApiResponse.error(
-        'Failed to initiate call: $e',
-        statusCode: 0,
-      );
+      return ApiResponse.error('Failed to initiate call: $e', statusCode: 0);
     }
   }
 
@@ -291,8 +318,10 @@ class CallService extends BaseApiService {
       if (response.success) {
         log('✅ [CallService] Call accepted: $callId', name: serviceName);
       } else {
-        log('❌ [CallService] Failed to accept call: ${response.error}',
-            name: serviceName);
+        log(
+          '❌ [CallService] Failed to accept call: ${response.error}',
+          name: serviceName,
+        );
       }
       return response;
     } catch (e, st) {
@@ -320,8 +349,10 @@ class CallService extends BaseApiService {
       if (response.success) {
         log('✅ [CallService] Call rejected: $callId', name: serviceName);
       } else {
-        log('❌ [CallService] Failed to reject call: ${response.error}',
-            name: serviceName);
+        log(
+          '❌ [CallService] Failed to reject call: ${response.error}',
+          name: serviceName,
+        );
       }
       return response;
     } catch (e, st) {
@@ -365,8 +396,10 @@ class CallService extends BaseApiService {
     required CallStatus status,
   }) async {
     try {
-      log('📝 [CallService] Updating call $callId status to: ${status.value}',
-          name: serviceName);
+      log(
+        '📝 [CallService] Updating call $callId status to: ${status.value}',
+        name: serviceName,
+      );
 
       final request = UpdateCallStatusRequest(
         status: status,
@@ -380,17 +413,23 @@ class CallService extends BaseApiService {
       );
 
       if (response.success) {
-        log('✅ [CallService] Call status updated successfully: $callId → ${status.value}',
-            name: serviceName);
+        log(
+          '✅ [CallService] Call status updated successfully: $callId → ${status.value}',
+          name: serviceName,
+        );
       } else {
-        log('❌ [CallService] Failed to update call status: ${response.error}',
-            name: serviceName);
+        log(
+          '❌ [CallService] Failed to update call status: ${response.error}',
+          name: serviceName,
+        );
       }
 
       return response;
     } catch (e, stackTrace) {
-      log('❌ [CallService] Exception updating call status: $e',
-          name: serviceName);
+      log(
+        '❌ [CallService] Exception updating call status: $e',
+        name: serviceName,
+      );
       log('   Stack trace: $stackTrace', name: serviceName);
       return ApiResponse.error(
         'Failed to update call status: $e',
@@ -421,12 +460,7 @@ class CallService extends BaseApiService {
         endpoint,
         data: data,
         queryParameters: queryParameters,
-        options: Options(
-          headers: {
-            ...authHeaders,
-            ...?headers,
-          },
-        ),
+        options: Options(headers: {...authHeaders, ...?headers}),
       );
 
       return _parseResponse<T>(response, fromJson);
@@ -438,15 +472,17 @@ class CallService extends BaseApiService {
 
   /// Get Dio instance for custom requests
   Future<Dio> _getDio() async {
-    final dio = Dio(BaseOptions(
-      baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    ));
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
     return dio;
   }
 
@@ -459,7 +495,8 @@ class CallService extends BaseApiService {
       final data = response.data;
 
       if (data is Map<String, dynamic>) {
-        final success = (data['success'] == true) ||
+        final success =
+            (data['success'] == true) ||
             (data['status'] == 'success') ||
             (response.statusCode == 200 || response.statusCode == 201);
 

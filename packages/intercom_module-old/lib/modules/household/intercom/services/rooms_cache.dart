@@ -17,8 +17,11 @@ class _RoomsCacheEntry {
     this.chatType,
   });
 
-  bool isValid(int? currentCompanyId, String? currentChatType,
-      {Duration? expiry}) {
+  bool isValid(
+    int? currentCompanyId,
+    String? currentChatType, {
+    Duration? expiry,
+  }) {
     if (companyId != currentCompanyId) return false;
     // If cache has chatType filter and requested has different filter, invalid
     if (chatType != null && chatType != currentChatType) {
@@ -118,7 +121,9 @@ class RoomsCache {
 
   /// Check if a request is in-flight (request coalescing)
   Future<ApiResponse<List<Room>>>? getInFlightRequest(
-      int companyId, String? chatType) {
+    int companyId,
+    String? chatType,
+  ) {
     final key = _getCacheKey(companyId, chatType);
     return _inFlightRequests[key];
   }
@@ -134,20 +139,23 @@ class RoomsCache {
     log('🔄 [RoomsCache] Marked request in-flight: $key');
 
     // Clean up when future completes
-    future.then((_) {
-      _inFlightRequests.remove(key);
-      log('✅ [RoomsCache] Request complete, removed from in-flight: $key');
-    }).catchError((_) {
-      _inFlightRequests.remove(key);
-      log('❌ [RoomsCache] Request failed, removed from in-flight: $key');
-    });
+    future
+        .then((_) {
+          _inFlightRequests.remove(key);
+          log('✅ [RoomsCache] Request complete, removed from in-flight: $key');
+        })
+        .catchError((_) {
+          _inFlightRequests.remove(key);
+          log('❌ [RoomsCache] Request failed, removed from in-flight: $key');
+        });
   }
 
   /// Clear cache for a specific company (on company change)
   void clearForCompany(int companyId) {
     _cache.removeWhere((key, entry) => entry.companyId == companyId);
-    _inFlightRequests
-        .removeWhere((key, value) => key.startsWith('${companyId}_'));
+    _inFlightRequests.removeWhere(
+      (key, value) => key.startsWith('${companyId}_'),
+    );
     log('🗑️ [RoomsCache] Cleared cache for company $companyId');
   }
 

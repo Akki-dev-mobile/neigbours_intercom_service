@@ -1,5 +1,5 @@
 /// Call type enum for audio and video calls
-/// 
+///
 /// This enum represents the type of call being made.
 /// The value must be non-null in all call operations.
 enum CallType {
@@ -7,7 +7,7 @@ enum CallType {
   video('video');
 
   const CallType(this.value);
-  
+
   /// The string value sent to/from the backend API
   final String value;
 
@@ -20,7 +20,9 @@ enum CallType {
       case 'video':
         return CallType.video;
       default:
-        throw ArgumentError('Invalid call type: $value. Expected "audio" or "video".');
+        throw ArgumentError(
+          'Invalid call type: $value. Expected "audio" or "video".',
+        );
     }
   }
 

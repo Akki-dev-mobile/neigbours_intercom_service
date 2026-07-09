@@ -18,8 +18,13 @@ class PeerUser {
   });
 
   factory PeerUser.fromJson(Map<String, dynamic> json) {
-    int? _int(dynamic v) => v == null ? null : (v is int ? v : int.tryParse(v.toString()));
-    String? _str(dynamic v) => v == null ? null : v.toString().trim().isEmpty ? null : v.toString().trim();
+    int? _int(dynamic v) =>
+        v == null ? null : (v is int ? v : int.tryParse(v.toString()));
+    String? _str(dynamic v) => v == null
+        ? null
+        : v.toString().trim().isEmpty
+        ? null
+        : v.toString().trim();
     return PeerUser(
       userId: _int(json['user_id']),
       userName: _str(json['user_name']),
@@ -40,10 +45,11 @@ class Room {
   final int? createdByUserId; // Numeric user ID from API
   final int? membersCount; // Member count from API (members_count field)
   final int?
-      unreadCount; // Unread message count for current user (unread_count field)
+  unreadCount; // Unread message count for current user (unread_count field)
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? lastActive;
+
   /// For 1-to-1 chats only: the other participant (peer); from backend peer_user.
   final PeerUser? peerUser;
 
@@ -96,42 +102,55 @@ class Room {
     }
 
     // Helper to safely parse string with fallback for backend inconsistencies
-    String _parseStringResilient(dynamic value, String fieldName,
-        {String? fallback}) {
+    String _parseStringResilient(
+      dynamic value,
+      String fieldName, {
+      String? fallback,
+    }) {
       if (value == null) {
         if (fallback != null) {
           debugPrint(
-              '⚠️ [Room.fromJson] Field "$fieldName" is null, using fallback: "$fallback"');
+            '⚠️ [Room.fromJson] Field "$fieldName" is null, using fallback: "$fallback"',
+          );
           return fallback;
         }
         // For debugging: log the entire JSON when a required field is missing
         debugPrint(
-            '❌ [Room.fromJson] Required field "$fieldName" is null. Full JSON: $json');
+          '❌ [Room.fromJson] Required field "$fieldName" is null. Full JSON: $json',
+        );
         throw FormatException(
-            'Required field "$fieldName" is null in Room JSON response. This indicates a backend API issue.');
+          'Required field "$fieldName" is null in Room JSON response. This indicates a backend API issue.',
+        );
       }
       if (value is String && value.isNotEmpty) return value;
       if (value is String && value.isEmpty && fallback != null) {
         debugPrint(
-            '⚠️ [Room.fromJson] Field "$fieldName" is empty, using fallback: "$fallback"');
+          '⚠️ [Room.fromJson] Field "$fieldName" is empty, using fallback: "$fallback"',
+        );
         return fallback;
       }
       return value.toString(); // Convert other types to string
     }
 
     // Helper to safely parse DateTime with fallback
-    DateTime _parseDateTimeResilient(dynamic value, String fieldName,
-        {DateTime? fallback}) {
+    DateTime _parseDateTimeResilient(
+      dynamic value,
+      String fieldName, {
+      DateTime? fallback,
+    }) {
       if (value == null) {
         if (fallback != null) {
           debugPrint(
-              '⚠️ [Room.fromJson] DateTime field "$fieldName" is null, using fallback: $fallback');
+            '⚠️ [Room.fromJson] DateTime field "$fieldName" is null, using fallback: $fallback',
+          );
           return fallback;
         }
         debugPrint(
-            '❌ [Room.fromJson] Required DateTime field "$fieldName" is null. Full JSON: $json');
+          '❌ [Room.fromJson] Required DateTime field "$fieldName" is null. Full JSON: $json',
+        );
         throw FormatException(
-            'Required DateTime field "$fieldName" is null in Room JSON response. This indicates a backend API issue.');
+          'Required DateTime field "$fieldName" is null in Room JSON response. This indicates a backend API issue.',
+        );
       }
       if (value is String) {
         try {
@@ -139,20 +158,24 @@ class Room {
         } catch (e) {
           if (fallback != null) {
             debugPrint(
-                '⚠️ [Room.fromJson] Invalid DateTime "$value" for field "$fieldName", using fallback: $fallback');
+              '⚠️ [Room.fromJson] Invalid DateTime "$value" for field "$fieldName", using fallback: $fallback',
+            );
             return fallback;
           }
           throw FormatException(
-              'Invalid DateTime format for "$fieldName": $value');
+            'Invalid DateTime format for "$fieldName": $value',
+          );
         }
       }
       if (fallback != null) {
         debugPrint(
-            '⚠️ [Room.fromJson] Unexpected type for DateTime field "$fieldName": ${value.runtimeType}, using fallback: $fallback');
+          '⚠️ [Room.fromJson] Unexpected type for DateTime field "$fieldName": ${value.runtimeType}, using fallback: $fallback',
+        );
         return fallback;
       }
       throw FormatException(
-          'Expected String for DateTime field "$fieldName", got ${value.runtimeType}');
+        'Expected String for DateTime field "$fieldName", got ${value.runtimeType}',
+      );
     }
 
     // Helper to safely parse optional DateTime
@@ -192,22 +215,36 @@ class Room {
 
     return Room(
       // Use fallback values for critical fields that might be missing due to backend issues
-      id: _parseStringResilient(json['id'], 'id',
-          fallback: 'unknown-${now.millisecondsSinceEpoch}'),
+      id: _parseStringResilient(
+        json['id'],
+        'id',
+        fallback: 'unknown-${now.millisecondsSinceEpoch}',
+      ),
       name: _parseStringResilient(json['name'], 'name', fallback: nameFallback),
       description: json['description'] as String? ?? descriptionFallback,
       photoUrl: json['photo_url'] as String? ?? json['photoUrl'] as String?,
-      createdBy: _parseStringResilient(json['created_by'], 'created_by',
-          fallback: 'unknown-user'),
+      createdBy: _parseStringResilient(
+        json['created_by'],
+        'created_by',
+        fallback: 'unknown-user',
+      ),
       createdByUserId: _parseInt(json['created_by_user_id']),
-      membersCount:
-          _parseInt(json['members_count']), // Parse members_count from API
-      unreadCount:
-          _parseInt(json['unread_count']), // Parse unread_count from API
-      createdAt: _parseDateTimeResilient(json['created_at'], 'created_at',
-          fallback: now),
-      updatedAt: _parseDateTimeResilient(json['updated_at'], 'updated_at',
-          fallback: now),
+      membersCount: _parseInt(
+        json['members_count'],
+      ), // Parse members_count from API
+      unreadCount: _parseInt(
+        json['unread_count'],
+      ), // Parse unread_count from API
+      createdAt: _parseDateTimeResilient(
+        json['created_at'],
+        'created_at',
+        fallback: now,
+      ),
+      updatedAt: _parseDateTimeResilient(
+        json['updated_at'],
+        'updated_at',
+        fallback: now,
+      ),
       lastActive: _parseOptionalDateTime(json['last_active']),
       peerUser: peerUser,
     );

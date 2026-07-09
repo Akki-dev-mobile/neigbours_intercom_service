@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../../core/theme/colors.dart';
 import '../../../../core/widgets/app_loader.dart';
 import '../models/intercom_contact.dart';
 import '../chat_screen.dart';
-import '../widgets/voice_search_screen.dart';
+import '../widgets/voice_search_launcher.dart';
 import '../services/intercom_service.dart';
 import '../../providers/selected_flat_provider.dart';
+import '../../../../src/config/chat_call_i18n.dart';
 
 import '../../../../core/widgets/enhanced_toast.dart';
 import '../../../../core/utils/navigation_helper.dart';
@@ -34,8 +34,6 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
   List<IntercomContact> _lobbyContacts = [];
   final TextEditingController _searchController = TextEditingController();
   List<IntercomContact> _filteredLobbyContacts = [];
-  final stt.SpeechToText _speech = stt.SpeechToText();
-  bool _isListening = false;
   bool _isLoading = true;
   final Set<String> _callStartingContactIds = <String>{};
   final IntercomService _intercomService = IntercomService();
@@ -53,7 +51,6 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
     super.initState();
     _loadLobbyContacts();
     _searchController.addListener(_filterLobbyContacts);
-    _initializeSpeech();
     _setupWebSocketListeners();
   }
 
@@ -62,7 +59,6 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
     _wsMessageSubscription?.cancel();
     _wsConnectionSubscription?.cancel();
     _searchController.dispose();
-    _speech.stop();
     super.dispose();
   }
 
@@ -79,15 +75,15 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
     );
 
     // Listen to connection state changes
-    _wsConnectionSubscription = _chatService.connectionStateStream.listen(
-      (isConnected) {
-        if (mounted) {
-          setState(() {
-            _isWebSocketConnected = isConnected;
-          });
-        }
-      },
-    );
+    _wsConnectionSubscription = _chatService.connectionStateStream.listen((
+      isConnected,
+    ) {
+      if (mounted) {
+        setState(() {
+          _isWebSocketConnected = isConnected;
+        });
+      }
+    });
 
     // Initialize connection status
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -107,20 +103,23 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
     if (roomId == null || roomId.isEmpty) return;
 
     // Handle unread_count_update events from WebSocket
-    final messageType = wsMessage.type?.toLowerCase() ??
+    final messageType =
+        wsMessage.type?.toLowerCase() ??
         wsMessage.data?['type']?.toString().toLowerCase();
     if (messageType == 'unread_count_update' ||
         wsMessage.messageTypeEnum == WebSocketMessageType.unreadCountUpdate) {
       final updateRoomId = roomId ?? wsMessage.data?['room_id']?.toString();
       final userId = wsMessage.userId ?? wsMessage.data?['user_id']?.toString();
-      final unreadCount = wsMessage.data?['unread_count'] as int? ??
+      final unreadCount =
+          wsMessage.data?['unread_count'] as int? ??
           (wsMessage.data?['unread_count'] is String
               ? int.tryParse(wsMessage.data!['unread_count'] as String)
               : null);
 
       if (updateRoomId != null && userId != null && unreadCount != null) {
         developer.log(
-            '📊 [LobbiesTab] Received unread_count_update: room=$updateRoomId, user=$userId, count=$unreadCount');
+          '📊 [LobbiesTab] Received unread_count_update: room=$updateRoomId, user=$userId, count=$unreadCount',
+        );
 
         // Update local unread count manager if this is for current user
         final currentUserId = await _apiService.getUserId();
@@ -131,7 +130,8 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
             // Backend is source of truth - update local cache with exact count
             await _unreadManager.setUnreadCount(updateRoomId, unreadCount);
             developer.log(
-                '📊 [LobbiesTab] Unread count updated to $unreadCount for room $updateRoomId');
+              '📊 [LobbiesTab] Unread count updated to $unreadCount for room $updateRoomId',
+            );
           }
 
           // Update contact in lobbies list
@@ -144,8 +144,9 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
       return; // Don't process unread_count_update as messages
     }
 
-    developer
-        .log('📨 [LobbiesTab] Received WebSocket message for room: $roomId');
+    developer.log(
+      '📨 [LobbiesTab] Received WebSocket message for room: $roomId',
+    );
 
     // Get contact ID for this room
     final contactId = _unreadManager.getContactIdForRoom(roomId);
@@ -175,7 +176,8 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
 
   /// Check if a WebSocket message is a system message (should not increment unread count)
   bool _isSystemMessageFromWebSocket(WebSocketMessage wsMessage) {
-    final messageType = wsMessage.messageType?.toLowerCase() ??
+    final messageType =
+        wsMessage.messageType?.toLowerCase() ??
         wsMessage.data?['message_type']?.toString().toLowerCase();
     final eventType = wsMessage.data?['event_type']?.toString().toLowerCase();
 
@@ -188,13 +190,16 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
       return true;
     }
 
-    final content = wsMessage.content ?? wsMessage.data?['content']?.toString() ?? '';
+    final content =
+        wsMessage.content ?? wsMessage.data?['content']?.toString() ?? '';
     final contentLower = content.toLowerCase();
     if (contentLower.contains('joined the group') ||
         contentLower.contains('left the group') ||
         contentLower.contains('was deleted') ||
-        (contentLower.contains('added') && contentLower.contains('to the group')) ||
-        (contentLower.contains('removed') && contentLower.contains('from the group'))) {
+        (contentLower.contains('added') &&
+            contentLower.contains('to the group')) ||
+        (contentLower.contains('removed') &&
+            contentLower.contains('from the group'))) {
       return true;
     }
     return false;
@@ -243,80 +248,32 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
     return preview.text;
   }
 
-  Future<void> _initializeSpeech() async {
-    bool available = await _speech.initialize(
-      onStatus: (status) {
-        if (status == 'done' || status == 'notListening') {
-          if (mounted) {
-            setState(() {
-              _isListening = false;
-            });
-          }
-        }
-      },
-      onError: (error) {
+  Future<void> _startListening() async {
+    await VoiceSearchLauncher.open(
+      context,
+      onTextRecognized: (text) {
         if (mounted) {
           setState(() {
-            _isListening = false;
+            _searchController.text = text;
+            _searchController.selection = TextSelection.fromPosition(
+              TextPosition(offset: text.length),
+            );
+            _filterLobbyContacts();
           });
-          EnhancedToast.error(
-            context,
-            title: 'Speech Recognition Error',
-            message: error.errorMsg,
-          );
+        }
+      },
+      onFinalResult: (text) {
+        if (mounted) {
+          setState(() {
+            _searchController.text = text;
+            _searchController.selection = TextSelection.fromPosition(
+              TextPosition(offset: text.length),
+            );
+            _filterLobbyContacts();
+          });
         }
       },
     );
-
-    if (!available && mounted) {
-      EnhancedToast.warning(
-        context,
-        title: 'Speech Recognition',
-        message: 'Speech recognition is not available on this device.',
-      );
-    }
-  }
-
-  // Start voice listening
-  Future<void> _startListening() async {
-    final result = await NavigationHelper.pushRoute<String>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => VoiceSearchScreen(
-          onTextRecognized: (text) {
-            // Update search field with recognized text in real-time
-            if (mounted) {
-              setState(() {
-                _searchController.text = text;
-                _searchController.selection = TextSelection.fromPosition(
-                  TextPosition(offset: text.length),
-                );
-                _filterLobbyContacts();
-              });
-            }
-          },
-          onFinalResult: (text) {
-            // Final result - set text and filter
-            if (mounted) {
-              setState(() {
-                _searchController.text = text;
-                _searchController.selection = TextSelection.fromPosition(
-                  TextPosition(offset: text.length),
-                );
-                _filterLobbyContacts();
-              });
-            }
-          },
-        ),
-      ),
-    );
-
-    // Update state after returning from voice search screen
-    if (mounted && result != null) {
-      setState(() {
-        _isListening = false;
-      });
-    }
   }
 
   void _filterLobbyContacts() {
@@ -346,7 +303,8 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
       final societyId = selectedFlatState.selectedSociety?.socId;
 
       debugPrint(
-          '🟡 [LobbiesTab] Loading lobbies with society soc_id: $societyId');
+        '🟡 [LobbiesTab] Loading lobbies with society soc_id: $societyId',
+      );
 
       // Pass the selected society's soc_id as companyId
       final lobbies = await _intercomService.getLobbies(companyId: societyId);
@@ -375,9 +333,7 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-        ),
+        decoration: const BoxDecoration(color: Colors.white),
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: Column(
@@ -555,8 +511,9 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
                                           shape: BoxShape.circle,
                                           boxShadow: [
                                             BoxShadow(
-                                              color:
-                                                  Colors.green.withOpacity(0.3),
+                                              color: Colors.green.withOpacity(
+                                                0.3,
+                                              ),
                                               blurRadius: 4,
                                               spreadRadius: 1,
                                             ),
@@ -637,7 +594,11 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search building lobbies...',
+                    hintText: chatCallTr(
+                      context,
+                      'chatCall_searchBuildingLobbiesHint',
+                      fallback: 'Search building lobbies...',
+                    ),
                     hintStyle: TextStyle(
                       color: Colors.grey.shade400,
                       fontSize: 14,
@@ -664,8 +625,9 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
                             : Container(
                                 margin: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color:
-                                      const Color(0xFFEE4D5F).withOpacity(0.1),
+                                  color: const Color(
+                                    0xFFEE4D5F,
+                                  ).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(30),
                                   boxShadow: [
                                     BoxShadow(
@@ -676,13 +638,17 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
                                   ],
                                 ),
                                 child: IconButton(
-                                  icon: Icon(
-                                    _isListening ? Icons.mic : Icons.mic_none,
-                                    color: const Color(0xffc62828),
+                                  icon: const Icon(
+                                    Icons.mic_none,
+                                    color: Color(0xffc62828),
                                     size: 20,
                                   ),
                                   onPressed: _startListening,
-                                  tooltip: 'Voice Search',
+                                  tooltip: chatCallTr(
+                                    context,
+                                    'chatCall_voiceSearch',
+                                    fallback: 'Voice Search',
+                                  ),
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
                                   iconSize: 20,
@@ -697,7 +663,9 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
                     filled: true,
                     fillColor: Colors.white,
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                   ),
                 ),
               ),
@@ -712,28 +680,26 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
                       ),
                     )
                   : _filteredLobbyContacts.isEmpty &&
-                          _searchController.text.isNotEmpty
-                      ? _buildEmptyState(
-                          icon: Icons.search_off,
-                          title: 'No lobbies found',
-                          subtitle: 'Try searching with a different keyword',
-                        )
-                      : _filteredLobbyContacts.isEmpty
-                          ? _buildEmptyState(
-                              icon: Icons.meeting_room_outlined,
-                              title: 'No lobbies available',
-                              subtitle:
-                                  'Lobbies will appear here when available',
-                            )
-                          : Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: Column(
-                                children: _filteredLobbyContacts.map((lobby) {
-                                  return _buildLobbyCard(lobby);
-                                }).toList(),
-                              ),
-                            ),
+                        _searchController.text.isNotEmpty
+                  ? _buildEmptyState(
+                      icon: Icons.search_off,
+                      title: 'No lobbies found',
+                      subtitle: 'Try searching with a different keyword',
+                    )
+                  : _filteredLobbyContacts.isEmpty
+                  ? _buildEmptyState(
+                      icon: Icons.meeting_room_outlined,
+                      title: 'No lobbies available',
+                      subtitle: 'Lobbies will appear here when available',
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        children: _filteredLobbyContacts.map((lobby) {
+                          return _buildLobbyCard(lobby);
+                        }).toList(),
+                      ),
+                    ),
 
               const SizedBox(height: 20), // Bottom padding
             ],
@@ -799,10 +765,7 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
                             decoration: BoxDecoration(
                               color: _getStatusColor(lobby.status),
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 2,
-                              ),
+                              border: Border.all(color: Colors.white, width: 2),
                               boxShadow: const [
                                 BoxShadow(
                                   color: Colors.black12,
@@ -882,11 +845,7 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
                         ),
                       ),
                     ),
-                    Container(
-                      height: 24,
-                      width: 1,
-                      color: Colors.black12,
-                    ),
+                    Container(height: 24, width: 1, color: Colors.black12),
                     Expanded(
                       child: TextButton(
                         onPressed: _callStartingContactIds.contains(lobby.id)
@@ -1003,7 +962,8 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
     try {
       final userData = await KeycloakService.getUserData();
       if (userData != null) {
-        displayName = userData['name'] as String? ??
+        displayName =
+            userData['name'] as String? ??
             userData['preferred_username'] as String? ??
             'User';
         userEmail = userData['email'] as String?;
@@ -1014,13 +974,15 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
 
     if (!mounted) return;
 
-    unawaited(CallBottomSheet.show(
-      context: context,
-      contact: contact,
-      displayName: displayName,
-      avatarUrl: avatarUrl,
-      userEmail: userEmail,
-    ));
+    unawaited(
+      CallBottomSheet.show(
+        context: context,
+        contact: contact,
+        displayName: displayName,
+        avatarUrl: avatarUrl,
+        userEmail: userEmail,
+      ),
+    );
   }
 
   Future<void> _onCallPressed(IntercomContact contact) async {
@@ -1070,11 +1032,7 @@ class _LobbiesTabState extends ConsumerState<LobbiesTab> {
                 shape: BoxShape.circle,
                 color: Color(0xffffebee),
               ),
-              child: Icon(
-                icon,
-                size: 28,
-                color: const Color(0xffc62828),
-              ),
+              child: Icon(icon, size: 28, color: const Color(0xffc62828)),
             ),
             const SizedBox(height: 16),
             Text(

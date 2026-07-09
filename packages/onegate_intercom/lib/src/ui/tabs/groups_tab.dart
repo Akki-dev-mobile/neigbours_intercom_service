@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:onegate_feature_core/onegate_feature_core.dart';
 
+import '../../i18n/intercom_i18n.dart';
 import '../../intercom_config.dart';
 import '../../models/room.dart';
 import '../../services/room_service.dart';
@@ -21,7 +22,15 @@ class GroupsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!config.enableGroups) {
-      return const Center(child: Text('Groups disabled'));
+      return Center(
+        child: Text(
+          intercomTr(
+            context,
+            'chatCall_groupsDisabled',
+            fallback: 'Groups disabled',
+          ),
+        ),
+      );
     }
 
     return _RoomsList(host: host, ctx: ctx);
@@ -84,16 +93,32 @@ class _RoomsListState extends State<_RoomsList> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Failed to load groups: $_error'),
+            Text(
+              intercomTr(
+                context,
+                'chatCall_failedToLoadGroupsWithError',
+                fallback: 'Failed to load groups: $_error',
+                params: {'error': _error ?? ''},
+              ),
+            ),
             const SizedBox(height: 12),
-            ElevatedButton(onPressed: _load, child: const Text('Retry')),
+            ElevatedButton(
+              onPressed: _load,
+              child: Text(
+                intercomTr(context, 'chatCall_retry', fallback: 'Retry'),
+              ),
+            ),
           ],
         ),
       );
     }
 
     if (_rooms.isEmpty) {
-      return const Center(child: Text('No groups'));
+      return Center(
+        child: Text(
+          intercomTr(context, 'chatCall_noGroups', fallback: 'No groups'),
+        ),
+      );
     }
 
     return RefreshIndicator(

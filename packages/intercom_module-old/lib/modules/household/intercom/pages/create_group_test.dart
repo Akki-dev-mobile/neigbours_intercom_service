@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'create_group_page.dart';
 import '../../../../core/utils/navigation_helper.dart';
+import '../../../../src/config/chat_call_i18n.dart';
 
 class CreateGroupTestPage extends StatelessWidget {
   const CreateGroupTestPage({Key? key}) : super(key: key);
@@ -9,7 +10,13 @@ class CreateGroupTestPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('CreateGroup Test'),
+        title: Text(
+          chatCallTr(
+            context,
+            'chatCall_createGroupTest',
+            fallback: 'CreateGroup Test',
+          ),
+        ),
       ),
       body: Center(
         child: ElevatedButton(
@@ -19,7 +26,13 @@ class CreateGroupTestPage extends StatelessWidget {
               MaterialPageRoute(builder: (context) => const CreateGroupPage()),
             );
           },
-          child: const Text('Open Create Group Page'),
+          child: Text(
+            chatCallTr(
+              context,
+              'chatCall_openCreateGroupPage',
+              fallback: 'Open Create Group Page',
+            ),
+          ),
         ),
       ),
     );

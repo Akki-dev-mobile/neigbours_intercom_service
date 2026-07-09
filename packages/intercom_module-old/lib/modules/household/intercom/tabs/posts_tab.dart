@@ -6,6 +6,7 @@ import '../models/post_model.dart';
 import '../post_detail_screen.dart';
 import '../create_post_screen.dart';
 import '../../../../core/utils/navigation_helper.dart';
+import '../../../../src/config/chat_call_i18n.dart';
 
 class PostsTab extends StatefulWidget {
   const PostsTab({Key? key}) : super(key: key);
@@ -93,7 +94,7 @@ class _PostsTabState extends State<PostsTab> {
         images: [
           'assets/images/planting1.jpg',
           'assets/images/planting2.jpg',
-          'assets/images/planting3.jpg'
+          'assets/images/planting3.jpg',
         ],
         likeCount: 56,
         commentCount: 23,
@@ -162,8 +163,11 @@ class _PostsTabState extends State<PostsTab> {
                       children: [
                         const Row(
                           children: [
-                            Icon(Icons.forum_rounded,
-                                color: Colors.white, size: 20),
+                            Icon(
+                              Icons.forum_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                             SizedBox(width: 8),
                             Text(
                               'Community Posts',
@@ -260,9 +264,7 @@ class _PostCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -276,10 +278,7 @@ class _PostCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     backgroundColor: AppColors.primary.withOpacity(0.1),
-                    child: const Icon(
-                      Icons.person,
-                      color: AppColors.primary,
-                    ),
+                    child: const Icon(Icons.person, color: AppColors.primary),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -339,7 +338,13 @@ class _PostCard extends StatelessWidget {
                             children: [
                               ListTile(
                                 leading: const Icon(Icons.report_outlined),
-                                title: const Text('Report post'),
+                                title: Text(
+                                  chatCallTr(
+                                    context,
+                                    'chatCall_reportPost',
+                                    fallback: 'Report post',
+                                  ),
+                                ),
                                 onTap: () {
                                   Navigator.pop(context);
                                   EnhancedToast.success(
@@ -351,7 +356,13 @@ class _PostCard extends StatelessWidget {
                               ),
                               ListTile(
                                 leading: const Icon(Icons.share_outlined),
-                                title: const Text('Share post'),
+                                title: Text(
+                                  chatCallTr(
+                                    context,
+                                    'chatCall_sharePost',
+                                    fallback: 'Share post',
+                                  ),
+                                ),
                                 onTap: () {
                                   Navigator.pop(context);
                                   EnhancedToast.success(
@@ -403,9 +414,7 @@ class _PostCard extends StatelessWidget {
                         color: post.isLiked ? Colors.red : Colors.grey.shade600,
                       ),
                     ),
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(0, 40),
-                    ),
+                    style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
                   ),
                   TextButton.icon(
                     onPressed: onComment,
@@ -416,13 +425,9 @@ class _PostCard extends StatelessWidget {
                     ),
                     label: Text(
                       post.commentCount.toString(),
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                      ),
+                      style: TextStyle(color: Colors.grey.shade600),
                     ),
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(0, 40),
-                    ),
+                    style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
                   ),
                 ],
               ),
@@ -451,8 +456,11 @@ class _PostCard extends StatelessWidget {
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return const Center(
-                child: Icon(Icons.image_not_supported,
-                    size: 40, color: Colors.grey),
+                child: Icon(
+                  Icons.image_not_supported,
+                  size: 40,
+                  color: Colors.grey,
+                ),
               );
             },
           ),
@@ -487,8 +495,11 @@ class _PostCard extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return const Center(
-                          child: Icon(Icons.image_not_supported,
-                              size: 30, color: Colors.grey),
+                          child: Icon(
+                            Icons.image_not_supported,
+                            size: 30,
+                            color: Colors.grey,
+                          ),
                         );
                       },
                     ),
@@ -526,8 +537,11 @@ class _PostCard extends StatelessWidget {
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return const Center(
-                    child: Icon(Icons.image_not_supported,
-                        size: 30, color: Colors.grey),
+                    child: Icon(
+                      Icons.image_not_supported,
+                      size: 30,
+                      color: Colors.grey,
+                    ),
                   );
                 },
               ),

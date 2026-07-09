@@ -26,7 +26,8 @@ class IntercomService {
   String get _societyBackendBaseUrl =>
       IntercomModule.config.endpoints.societyBackendBaseUrl;
 
-  String get _apiGatewayBaseUrl => IntercomModule.config.endpoints.apiGatewayBaseUrl;
+  String get _apiGatewayBaseUrl =>
+      IntercomModule.config.endpoints.apiGatewayBaseUrl;
 
   String get _gateApiBaseUrl => IntercomModule.config.endpoints.gateApiBaseUrl;
 
@@ -44,7 +45,9 @@ class IntercomService {
           final societyData = jsonDecode(societyJson) as Map<String, dynamic>;
           final socId = societyData['soc_id'] as int?;
           if (socId != null) {
-            log('✅ [IntercomService] Using society ID from selected_society_data: $socId');
+            log(
+              '✅ [IntercomService] Using society ID from selected_society_data: $socId',
+            );
             return socId;
           }
         } catch (e) {
@@ -144,13 +147,16 @@ class IntercomService {
           cookieParts.add('company_id=$companyId');
           log('✅ [IntercomService] Added company_id=$companyId to cookies');
         } else {
-          log('⚠️ [IntercomService] company_id not found in profile or selected society data');
+          log(
+            '⚠️ [IntercomService] company_id not found in profile or selected society data',
+          );
         }
 
         // Add company_name if available
         if (profile['company_name'] != null) {
-          final encodedName =
-              Uri.encodeComponent(profile['company_name'].toString());
+          final encodedName = Uri.encodeComponent(
+            profile['company_name'].toString(),
+          );
           cookieParts.add('company_name=$encodedName');
         }
 
@@ -193,15 +199,17 @@ class IntercomService {
       // Use society backend API: admin/gates/list
       final headers = await _getHeaders();
       final url = Uri.parse(
-          '$_societyBackendBaseUrl/admin/gates/list?company_id=$companyIdToUse');
+        '$_societyBackendBaseUrl/admin/gates/list?company_id=$companyIdToUse',
+      );
 
       log('🔵 [IntercomService] Calling: $url');
       final httpResponse = await http.get(url, headers: headers);
 
       if (httpResponse.statusCode >= 200 && httpResponse.statusCode < 300) {
         final decoded = jsonDecode(httpResponse.body);
-        final response =
-            decoded is Map<String, dynamic> ? decoded : {'data': decoded};
+        final response = decoded is Map<String, dynamic>
+            ? decoded
+            : {'data': decoded};
 
         // Handle different response formats
         List<dynamic> gatesData = [];
@@ -224,29 +232,33 @@ class IntercomService {
 
             // Add gate as a gatekeeper contact
             if (gate.gateName != null) {
-              gatekeepers.add(IntercomContact(
-                id: 'gate_${gate.gateId ?? gate.gateName}',
-                name: gate.gateName ?? 'Unknown Gate',
-                role: gate.gateType ?? 'Security Desk',
-                type: IntercomContactType.gatekeeper,
-                status: IntercomContactStatus.online, // Default to online
-              ));
+              gatekeepers.add(
+                IntercomContact(
+                  id: 'gate_${gate.gateId ?? gate.gateName}',
+                  name: gate.gateName ?? 'Unknown Gate',
+                  role: gate.gateType ?? 'Security Desk',
+                  type: IntercomContactType.gatekeeper,
+                  status: IntercomContactStatus.online, // Default to online
+                ),
+              );
             }
 
             // Add gatekeepers from the gate
             if (gate.gatekeepers.isNotEmpty) {
               for (final gatekeeper in gate.gatekeepers) {
-                gatekeepers.add(IntercomContact(
-                  id: 'gk_${gatekeeper.id ?? gatekeeper.gatekeeperId}',
-                  name: gatekeeper.gatekeeperName ?? 'Unknown',
-                  role: gatekeeper.designation ?? 'Security Guard',
-                  type: IntercomContactType.gatekeeper,
-                  status: gatekeeper.isActive == true
-                      ? IntercomContactStatus.online
-                      : IntercomContactStatus.offline,
-                  phoneNumber: gatekeeper.mobile,
-                  photoUrl: gatekeeper.profileImage,
-                ));
+                gatekeepers.add(
+                  IntercomContact(
+                    id: 'gk_${gatekeeper.id ?? gatekeeper.gatekeeperId}',
+                    name: gatekeeper.gatekeeperName ?? 'Unknown',
+                    role: gatekeeper.designation ?? 'Security Guard',
+                    type: IntercomContactType.gatekeeper,
+                    status: gatekeeper.isActive == true
+                        ? IntercomContactStatus.online
+                        : IntercomContactStatus.offline,
+                    phoneNumber: gatekeeper.mobile,
+                    photoUrl: gatekeeper.profileImage,
+                  ),
+                );
               }
             }
           } catch (e) {
@@ -257,7 +269,9 @@ class IntercomService {
         log('✅ [IntercomService] Fetched ${gatekeepers.length} gatekeepers');
         return gatekeepers;
       } else {
-        log('❌ [IntercomService] HTTP error: ${httpResponse.statusCode} - ${httpResponse.body}');
+        log(
+          '❌ [IntercomService] HTTP error: ${httpResponse.statusCode} - ${httpResponse.body}',
+        );
         return [];
       }
     } catch (e, stackTrace) {
@@ -274,8 +288,9 @@ class IntercomService {
       log('🔵 [IntercomService] Fetching all gates from unified API...');
 
       final headers = await _getHeaders();
-      final url =
-          Uri.parse('$_gateApiBaseUrl/admin/gates/all?company_id=$companyId');
+      final url = Uri.parse(
+        '$_gateApiBaseUrl/admin/gates/all?company_id=$companyId',
+      );
 
       log('🔵 [IntercomService] Calling: $url');
       final httpResponse = await http.get(url, headers: headers);
@@ -285,18 +300,26 @@ class IntercomService {
 
         if (decoded['success'] == true && decoded['data'] is List) {
           final gates = (decoded['data'] as List)
-              .map((item) =>
-                  SimpleGateModel.fromJson(item as Map<String, dynamic>))
+              .map(
+                (item) =>
+                    SimpleGateModel.fromJson(item as Map<String, dynamic>),
+              )
               .toList();
 
-          log('✅ [IntercomService] Fetched ${gates.length} gates from unified API');
+          log(
+            '✅ [IntercomService] Fetched ${gates.length} gates from unified API',
+          );
           return gates;
         } else {
-          log('⚠️ [IntercomService] No gates data in response or success=false');
+          log(
+            '⚠️ [IntercomService] No gates data in response or success=false',
+          );
           return [];
         }
       } else {
-        log('❌ [IntercomService] HTTP error: ${httpResponse.statusCode} - ${httpResponse.body}');
+        log(
+          '❌ [IntercomService] HTTP error: ${httpResponse.statusCode} - ${httpResponse.body}',
+        );
         return [];
       }
     } catch (e, stackTrace) {
@@ -311,21 +334,27 @@ class IntercomService {
   /// Maps to Gatekeeper model for UI compatibility
   Future<List<Gatekeeper>> getGatekeepersList(int companyId) async {
     try {
-      log('🔵 [IntercomService] Fetching gatekeepers from unified gates API...');
+      log(
+        '🔵 [IntercomService] Fetching gatekeepers from unified gates API...',
+      );
 
       // Fetch all gates
       final allGates = await fetchAllGates(companyId: companyId);
 
       // Filter: tag == "gate" and status == 1 (active)
-      final activeGates =
-          allGates.where((gate) => gate.isGatekeeper && gate.isActive).toList();
+      final activeGates = allGates
+          .where((gate) => gate.isGatekeeper && gate.isActive)
+          .toList();
 
-      log('✅ [IntercomService] Found ${activeGates.length} active gatekeeper gates');
+      log(
+        '✅ [IntercomService] Found ${activeGates.length} active gatekeeper gates',
+      );
 
       // Map to Gatekeeper model for UI compatibility
       final gatekeepers = activeGates.map((gate) {
         return Gatekeeper(
-          userId: gate.gateUserId ??
+          userId:
+              gate.gateUserId ??
               gate.id, // Use gate_user_id if available, fallback to gate id
           username: gate.name,
           email: null, // Not available in new API
@@ -344,8 +373,10 @@ class IntercomService {
 
   /// Fetch residents from buildings API
   /// Uses the /admin/member/list endpoint which is more efficient than per-building calls
-  Future<List<IntercomContact>> getResidents(
-      {int? buildingId, int? companyId}) async {
+  Future<List<IntercomContact>> getResidents({
+    int? buildingId,
+    int? companyId,
+  }) async {
     try {
       log('🔵 [IntercomService] Fetching residents...');
 
@@ -364,7 +395,9 @@ class IntercomService {
       // Fetch all members from /admin/member/list with pagination support.
       // Some backends ignore per_page and return a fixed small page size, so we
       // must iterate until hasMore/total is satisfied.
-      log('🔵 [IntercomService] Fetching members from /admin/member/list endpoint');
+      log(
+        '🔵 [IntercomService] Fetching members from /admin/member/list endpoint',
+      );
       const perPage = 50;
       final allMembers = <Map<String, dynamic>>[];
       final seenIds = <String>{};
@@ -384,11 +417,14 @@ class IntercomService {
         total = memberResponse.total;
         final hasMore = memberResponse.hasMore;
 
-        log('✅ [IntercomService] Page $page: received ${memberResponse.members.length} members (total: $total, hasMore: $hasMore)');
+        log(
+          '✅ [IntercomService] Page $page: received ${memberResponse.members.length} members (total: $total, hasMore: $hasMore)',
+        );
 
         int addedCount = 0;
         for (final member in memberResponse.members) {
-          final id = member['member_id'] ??
+          final id =
+              member['member_id'] ??
               member['fk_member_id'] ??
               member['id'] ??
               member['user_id'] ??
@@ -433,10 +469,16 @@ class IntercomService {
       // Log sample member data for debugging
       if (allMembers.isNotEmpty) {
         final sampleMember = allMembers.first;
-        log('📝 [IntercomService] Sample member keys: ${sampleMember.keys.take(10).join(", ")}');
-        log('📝 [IntercomService] Sample member data: ${sampleMember.toString().substring(0, sampleMember.toString().length > 200 ? 200 : sampleMember.toString().length)}');
+        log(
+          '📝 [IntercomService] Sample member keys: ${sampleMember.keys.take(10).join(", ")}',
+        );
+        log(
+          '📝 [IntercomService] Sample member data: ${sampleMember.toString().substring(0, sampleMember.toString().length > 200 ? 200 : sampleMember.toString().length)}',
+        );
       } else {
-        log('⚠️ [IntercomService] WARNING: Received empty members list from API!');
+        log(
+          '⚠️ [IntercomService] WARNING: Received empty members list from API!',
+        );
       }
 
       final List<IntercomContact> residents = [];
@@ -448,7 +490,8 @@ class IntercomService {
         // If buildingId is specified, filter by building
         if (buildingId != null) {
           // Check if member belongs to the specified building
-          final memberBuildingId = member['soc_building_id'] ??
+          final memberBuildingId =
+              member['soc_building_id'] ??
               member['building_id'] ??
               member['fk_building_id'];
 
@@ -472,18 +515,26 @@ class IntercomService {
             mappedCount++;
           } else {
             skippedCount++;
-            log('⚠️ [IntercomService] Skipped member with invalid name. Member keys: ${member.keys.take(5).join(", ")}');
+            log(
+              '⚠️ [IntercomService] Skipped member with invalid name. Member keys: ${member.keys.take(5).join(", ")}',
+            );
           }
         } catch (e) {
           skippedCount++;
           log('❌ [IntercomService] Error mapping member: $e');
-          log('   Member data: ${member.toString().substring(0, member.toString().length > 200 ? 200 : member.toString().length)}');
+          log(
+            '   Member data: ${member.toString().substring(0, member.toString().length > 200 ? 200 : member.toString().length)}',
+          );
         }
       }
 
-      log('✅ [IntercomService] Mapped ${mappedCount} residents, skipped ${skippedCount}');
+      log(
+        '✅ [IntercomService] Mapped ${mappedCount} residents, skipped ${skippedCount}',
+      );
       if (buildingId != null) {
-        log('🏢 [IntercomService] Filtered to ${residents.length} residents for building $buildingId');
+        log(
+          '🏢 [IntercomService] Filtered to ${residents.length} residents for building $buildingId',
+        );
       }
       return residents;
     } catch (e, stackTrace) {
@@ -515,11 +566,14 @@ class IntercomService {
       // Note: Using per_page=20 to match current behavior (TabConstants.kCommitteesPerPage)
       // This preserves backward compatibility with existing pagination limits
       final committeesUrl = Uri.parse(
-          '$_apiGatewayBaseUrl/admin/committees/list?company_id=$companyIdToUse&page=1&per_page=20');
+        '$_apiGatewayBaseUrl/admin/committees/list?company_id=$companyIdToUse&page=1&per_page=20',
+      );
       log('🔵 [IntercomService] Fetching committees from: $committeesUrl');
 
-      final committeesResponse =
-          await http.get(committeesUrl, headers: headers);
+      final committeesResponse = await http.get(
+        committeesUrl,
+        headers: headers,
+      );
 
       if (committeesResponse.statusCode >= 200 &&
           committeesResponse.statusCode < 300) {
@@ -558,39 +612,48 @@ class IntercomService {
         for (final committee in committeesList) {
           if (committee is! Map<String, dynamic>) continue;
 
-          final committeeId =
-              (committee['id'] ?? committee['committee_id'])?.toString();
+          final committeeId = (committee['id'] ?? committee['committee_id'])
+              ?.toString();
           if (committeeId == null) continue;
 
           // Check cache first
-          final cachedMembers =
-              cache.getCachedMembers(committeeId, companyIdToUse);
+          final cachedMembers = cache.getCachedMembers(
+            committeeId,
+            companyIdToUse,
+          );
           if (cachedMembers != null) {
             // Cache hit - use cached data
             allCommitteeMembers.addAll(cachedMembers);
             cacheHits++;
-            log('✅ [IntercomService] Using cached members for committee $committeeId (${cachedMembers.length} members)');
+            log(
+              '✅ [IntercomService] Using cached members for committee $committeeId (${cachedMembers.length} members)',
+            );
           } else {
             // Cache miss - add to fetch queue
-            committeesToFetch.add({
-              'id': committeeId,
-              'committee': committee,
-            });
+            committeesToFetch.add({'id': committeeId, 'committee': committee});
           }
         }
 
-        log('📊 [IntercomService] Cache stats: ${cacheHits} hits, ${committeesToFetch.length} to fetch');
+        log(
+          '📊 [IntercomService] Cache stats: ${cacheHits} hits, ${committeesToFetch.length} to fetch',
+        );
 
         // Fetch remaining committees with concurrency limiting
         if (committeesToFetch.isNotEmpty) {
-          log('🚀 [IntercomService] Fetching members for ${committeesToFetch.length} committees with concurrency limit ($maxConcurrentRequests)...');
+          log(
+            '🚀 [IntercomService] Fetching members for ${committeesToFetch.length} committees with concurrency limit ($maxConcurrentRequests)...',
+          );
 
           // Process in batches with concurrency limit
-          for (int i = 0;
-              i < committeesToFetch.length;
-              i += maxConcurrentRequests) {
-            final batch =
-                committeesToFetch.skip(i).take(maxConcurrentRequests).toList();
+          for (
+            int i = 0;
+            i < committeesToFetch.length;
+            i += maxConcurrentRequests
+          ) {
+            final batch = committeesToFetch
+                .skip(i)
+                .take(maxConcurrentRequests)
+                .toList();
             final batchFutures = <Future<void>>[];
 
             for (final item in batch) {
@@ -599,7 +662,9 @@ class IntercomService {
 
               // Skip if request already in-flight
               if (cache.isRequestInFlight(committeeId)) {
-                log('⏸️ [IntercomService] Request already in-flight for committee $committeeId, skipping');
+                log(
+                  '⏸️ [IntercomService] Request already in-flight for committee $committeeId, skipping',
+                );
                 continue;
               }
 
@@ -609,38 +674,52 @@ class IntercomService {
               // Create future for this committee
               batchFutures.add(
                 _fetchCommitteeMembersParallel(
-                  committeeId: committeeId,
-                  committee: committee,
-                  companyId: companyIdToUse,
-                  headers: headers,
-                ).then((members) {
-                  // Cache the result
-                  cache.cacheMembers(committeeId, members, companyIdToUse);
-                  allCommitteeMembers.addAll(members);
-                  cache.markRequestComplete(committeeId);
-                  log('✅ [IntercomService] Fetched ${members.length} members for committee $committeeId');
-                }).catchError((e) {
-                  cache.markRequestComplete(committeeId);
-                  log('⚠️ [IntercomService] Error fetching members for committee $committeeId: $e');
-                  // Return empty list on error (already handled in _fetchCommitteeMembersParallel)
-                }),
+                      committeeId: committeeId,
+                      committee: committee,
+                      companyId: companyIdToUse,
+                      headers: headers,
+                    )
+                    .then((members) {
+                      // Cache the result
+                      cache.cacheMembers(committeeId, members, companyIdToUse);
+                      allCommitteeMembers.addAll(members);
+                      cache.markRequestComplete(committeeId);
+                      log(
+                        '✅ [IntercomService] Fetched ${members.length} members for committee $committeeId',
+                      );
+                    })
+                    .catchError((e) {
+                      cache.markRequestComplete(committeeId);
+                      log(
+                        '⚠️ [IntercomService] Error fetching members for committee $committeeId: $e',
+                      );
+                      // Return empty list on error (already handled in _fetchCommitteeMembersParallel)
+                    }),
               );
             }
 
             // Wait for batch to complete before starting next batch
             await Future.wait(batchFutures, eagerError: false);
 
-            log('✅ [IntercomService] Completed batch ${(i ~/ maxConcurrentRequests) + 1}/${(committeesToFetch.length / maxConcurrentRequests).ceil()}');
+            log(
+              '✅ [IntercomService] Completed batch ${(i ~/ maxConcurrentRequests) + 1}/${(committeesToFetch.length / maxConcurrentRequests).ceil()}',
+            );
           }
 
-          log('✅ [IntercomService] Completed concurrency-limited fetch: ${allCommitteeMembers.length} total members');
+          log(
+            '✅ [IntercomService] Completed concurrency-limited fetch: ${allCommitteeMembers.length} total members',
+          );
         }
       } else {
-        log('❌ [IntercomService] Failed to fetch committees: ${committeesResponse.statusCode} - ${committeesResponse.body}');
+        log(
+          '❌ [IntercomService] Failed to fetch committees: ${committeesResponse.statusCode} - ${committeesResponse.body}',
+        );
         return [];
       }
 
-      log('✅ [IntercomService] Fetched ${allCommitteeMembers.length} total committee members');
+      log(
+        '✅ [IntercomService] Fetched ${allCommitteeMembers.length} total committee members',
+      );
       return allCommitteeMembers;
     } catch (e, stackTrace) {
       log('❌ [IntercomService] Error fetching committee members: $e');
@@ -668,8 +747,9 @@ class IntercomService {
       final allGates = await fetchAllGates(companyId: companyIdToUse);
 
       // Filter: tag == "lobby" and status == 1 (active)
-      final activeLobbies =
-          allGates.where((gate) => gate.isLobby && gate.isActive).toList();
+      final activeLobbies = allGates
+          .where((gate) => gate.isLobby && gate.isActive)
+          .toList();
 
       log('✅ [IntercomService] Found ${activeLobbies.length} active lobbies');
 
@@ -710,18 +790,26 @@ class IntercomService {
       // Fetch committee members for this committee
       // Note: Using per_page=20 to match current behavior (TabConstants.kCommitteeMembersPerPage)
       final membersUrl = Uri.parse(
-          '$_apiGatewayBaseUrl/admin/committees/panel/committeeMembers/$committeeId?company_id=$companyId&page=1&per_page=20');
-      log('🔵 [IntercomService] Fetching members for committee $committeeId (parallel)');
+        '$_apiGatewayBaseUrl/admin/committees/panel/committeeMembers/$committeeId?company_id=$companyId&page=1&per_page=20',
+      );
+      log(
+        '🔵 [IntercomService] Fetching members for committee $committeeId (parallel)',
+      );
 
       // OPTIMIZATION: Add timeout to prevent hanging on slow/failed APIs
-      final membersResponse =
-          await http.get(membersUrl, headers: headers).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          log('⚠️ [IntercomService] Timeout fetching members for committee $committeeId (10s limit)');
-          throw TimeoutException('Request timeout for committee $committeeId');
-        },
-      );
+      final membersResponse = await http
+          .get(membersUrl, headers: headers)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              log(
+                '⚠️ [IntercomService] Timeout fetching members for committee $committeeId (10s limit)',
+              );
+              throw TimeoutException(
+                'Request timeout for committee $committeeId',
+              );
+            },
+          );
 
       if (membersResponse.statusCode >= 200 &&
           membersResponse.statusCode < 300) {
@@ -739,7 +827,9 @@ class IntercomService {
           // Check if data[1] exists and is a list of members
           if (dataArray.length > 1 && dataArray[1] is List) {
             membersList = dataArray[1] as List<dynamic>;
-            log('✅ [IntercomService] Found ${membersList.length} members in data[1] for committee $committeeId');
+            log(
+              '✅ [IntercomService] Found ${membersList.length} members in data[1] for committee $committeeId',
+            );
           } else {
             // Fallback: try to use data directly if it's a list of members
             membersList = dataArray;
@@ -774,17 +864,25 @@ class IntercomService {
             }
 
             final contact = _mapMemberToIntercomContact(
-                memberData, IntercomContactType.committee);
+              memberData,
+              IntercomContactType.committee,
+            );
             members.add(contact);
           }
         }
 
-        log('✅ [IntercomService] Fetched ${membersList.length} members from committee $committeeId (parallel)');
+        log(
+          '✅ [IntercomService] Fetched ${membersList.length} members from committee $committeeId (parallel)',
+        );
       } else {
-        log('⚠️ [IntercomService] Failed to fetch members for committee $committeeId: ${membersResponse.statusCode}');
+        log(
+          '⚠️ [IntercomService] Failed to fetch members for committee $committeeId: ${membersResponse.statusCode}',
+        );
       }
     } catch (e) {
-      log('⚠️ [IntercomService] Error fetching members for committee $committeeId: $e');
+      log(
+        '⚠️ [IntercomService] Error fetching members for committee $committeeId: $e',
+      );
     }
 
     return members;
@@ -792,8 +890,9 @@ class IntercomService {
 
   /// Fetch society office contacts
   /// Uses the same committee API as Society Office staff are typically committee members
-  Future<List<IntercomContact>> getSocietyOfficeContacts(
-      {int? companyId}) async {
+  Future<List<IntercomContact>> getSocietyOfficeContacts({
+    int? companyId,
+  }) async {
     try {
       log('🔵 [IntercomService] Fetching society office contacts...');
 
@@ -810,11 +909,16 @@ class IntercomService {
 
       // Step 1: Fetch committees list
       final committeesUrl = Uri.parse(
-          '$_apiGatewayBaseUrl/admin/committees/list?company_id=$companyIdToUse&page=1&per_page=20');
-      log('🔵 [IntercomService] Fetching committees for office contacts from: $committeesUrl');
+        '$_apiGatewayBaseUrl/admin/committees/list?company_id=$companyIdToUse&page=1&per_page=20',
+      );
+      log(
+        '🔵 [IntercomService] Fetching committees for office contacts from: $committeesUrl',
+      );
 
-      final committeesResponse =
-          await http.get(committeesUrl, headers: headers);
+      final committeesResponse = await http.get(
+        committeesUrl,
+        headers: headers,
+      );
 
       if (committeesResponse.statusCode >= 200 &&
           committeesResponse.statusCode < 300) {
@@ -838,7 +942,9 @@ class IntercomService {
           }
         }
 
-        log('✅ [IntercomService] Found ${committeesList.length} committees for office contacts');
+        log(
+          '✅ [IntercomService] Found ${committeesList.length} committees for office contacts',
+        );
 
         // Step 2: For each committee, fetch its members
         for (final committee in committeesList) {
@@ -850,11 +956,16 @@ class IntercomService {
           try {
             // Fetch committee members for this committee
             final membersUrl = Uri.parse(
-                '$_apiGatewayBaseUrl/admin/committees/panel/committeeMembers/$committeeId?company_id=$companyIdToUse&page=1&per_page=20');
-            log('🔵 [IntercomService] Fetching office members for committee $committeeId');
+              '$_apiGatewayBaseUrl/admin/committees/panel/committeeMembers/$committeeId?company_id=$companyIdToUse&page=1&per_page=20',
+            );
+            log(
+              '🔵 [IntercomService] Fetching office members for committee $committeeId',
+            );
 
-            final membersResponse =
-                await http.get(membersUrl, headers: headers);
+            final membersResponse = await http.get(
+              membersUrl,
+              headers: headers,
+            );
 
             if (membersResponse.statusCode >= 200 &&
                 membersResponse.statusCode < 300) {
@@ -872,7 +983,9 @@ class IntercomService {
                 // Check if data[1] exists and is a list of members
                 if (dataArray.length > 1 && dataArray[1] is List) {
                   membersList = dataArray[1] as List<dynamic>;
-                  log('✅ [IntercomService] Found ${membersList.length} office members in data[1]');
+                  log(
+                    '✅ [IntercomService] Found ${membersList.length} office members in data[1]',
+                  );
                 } else {
                   // Fallback: try to use data directly if it's a list of members
                   membersList = dataArray;
@@ -896,8 +1009,8 @@ class IntercomService {
                   // Use designation_name if available, otherwise use committee name
                   if (memberData['role'] == null) {
                     if (memberData['designation_name'] != null) {
-                      memberData['role'] =
-                          memberData['designation_name'].toString();
+                      memberData['role'] = memberData['designation_name']
+                          .toString();
                     } else if (committee['name'] != null) {
                       memberData['role'] = committee['name'].toString();
                     }
@@ -909,25 +1022,37 @@ class IntercomService {
                   }
 
                   final contact = _mapMemberToIntercomContact(
-                      memberData, IntercomContactType.office);
+                    memberData,
+                    IntercomContactType.office,
+                  );
                   allOfficeContacts.add(contact);
                 }
               }
 
-              log('✅ [IntercomService] Fetched ${membersList.length} office members from committee $committeeId');
+              log(
+                '✅ [IntercomService] Fetched ${membersList.length} office members from committee $committeeId',
+              );
             } else {
-              log('⚠️ [IntercomService] Failed to fetch office members for committee $committeeId: ${membersResponse.statusCode}');
+              log(
+                '⚠️ [IntercomService] Failed to fetch office members for committee $committeeId: ${membersResponse.statusCode}',
+              );
             }
           } catch (e) {
-            log('⚠️ [IntercomService] Error fetching office members for committee $committeeId: $e');
+            log(
+              '⚠️ [IntercomService] Error fetching office members for committee $committeeId: $e',
+            );
           }
         }
       } else {
-        log('❌ [IntercomService] Failed to fetch committees for office contacts: ${committeesResponse.statusCode} - ${committeesResponse.body}');
+        log(
+          '❌ [IntercomService] Failed to fetch committees for office contacts: ${committeesResponse.statusCode} - ${committeesResponse.body}',
+        );
         return [];
       }
 
-      log('✅ [IntercomService] Fetched ${allOfficeContacts.length} total society office contacts');
+      log(
+        '✅ [IntercomService] Fetched ${allOfficeContacts.length} total society office contacts',
+      );
       return allOfficeContacts;
     } catch (e, stackTrace) {
       log('❌ [IntercomService] Error fetching society office contacts: $e');
@@ -994,17 +1119,22 @@ class IntercomService {
       }
     }
     if (memberName == null || memberName.isEmpty) {
-      memberName = member['display_name']?.toString().trim() ??
+      memberName =
+          member['display_name']?.toString().trim() ??
           member['user_name']?.toString().trim();
     }
 
     // Final fallback
     if (memberName == null || memberName.isEmpty) {
       memberName = 'Unknown';
-      log('⚠️ [IntercomService] Member has no name field. Member data keys: ${member.keys.toList()}');
+      log(
+        '⚠️ [IntercomService] Member has no name field. Member data keys: ${member.keys.toList()}',
+      );
       // Log first few keys to help debug
       if (member.isNotEmpty) {
-        log('   Sample member data: ${member.toString().substring(0, member.toString().length > 200 ? 200 : member.toString().length)}');
+        log(
+          '   Sample member data: ${member.toString().substring(0, member.toString().length > 200 ? 200 : member.toString().length)}',
+        );
       }
     }
 
@@ -1030,6 +1160,7 @@ class IntercomService {
       if (trimmed.isEmpty || trimmed == 'null' || trimmed == '0') return false;
       return true;
     }
+
     final memberId = member['member_id']?.toString();
     final id = member['id']?.toString();
 
@@ -1059,12 +1190,15 @@ class IntercomService {
       numericUserId = null;
     }
 
-    final hasUserId = numericUserId != null;
+    final hasUserId =
+        (contactId != null && contactId.contains('-') && contactId.length > 20) ||
+        numericUserId != null;
 
     // If no UUID-based contactId was set above, fall back to numeric identifiers
     if (contactId == null) {
       // Prefer valid numeric ID if available; otherwise fall back to local identifiers
-      contactId = (numericUserId != null ? numericUserId.toString() : null) ??
+      contactId =
+          (numericUserId != null ? numericUserId.toString() : null) ??
           (_hasValue(userAccountId) ? userAccountId : null) ??
           (_hasValue(userId) ? userId : null) ??
           (_hasValue(oldGateUserId) ? oldGateUserId : null) ??
@@ -1075,7 +1209,8 @@ class IntercomService {
     }
 
     // Final fallbacks for contactId (redundant safety)
-    contactId ??= (numericUserId != null ? numericUserId.toString() : null) ??
+    contactId ??=
+        (numericUserId != null ? numericUserId.toString() : null) ??
         (_hasValue(userId) ? userId : null) ??
         (_hasValue(userAccountId) ? userAccountId : null) ??
         (_hasValue(oldGateUserId) ? oldGateUserId : null) ??
@@ -1084,7 +1219,8 @@ class IntercomService {
         (_hasValue(id) ? id : null) ??
         'unknown';
 
-    String? photoUrl = member['photo']?.toString().trim() ??
+    String? photoUrl =
+        member['photo']?.toString().trim() ??
         member['photo_url']?.toString().trim() ??
         member['profile_picture']?.toString().trim() ??
         member['avatar']?.toString().trim() ??
@@ -1093,7 +1229,8 @@ class IntercomService {
       photoUrl = ProfileDataHelper.buildAvatarUrlFromUserId(member['user_id']);
     }
 
-    final rawPhone = member['phone']?.toString().trim() ??
+    final rawPhone =
+        member['phone']?.toString().trim() ??
         member['phone_number']?.toString().trim() ??
         member['mobile']?.toString().trim() ??
         member['mobile_number']?.toString().trim() ??
@@ -1105,20 +1242,24 @@ class IntercomService {
     return IntercomContact(
       id: contactId,
       name: memberName,
-      unit: member['unit']?.toString().trim() ??
+      unit:
+          member['unit']?.toString().trim() ??
           member['unit_number']?.toString().trim() ??
           member['flat_number']?.toString().trim() ??
           member['unit_flat_number']?.toString().trim() ??
           member['building_unit']?.toString().trim(),
-      building: member['building']?.toString().trim() ??
+      building:
+          member['building']?.toString().trim() ??
           member['building_name']?.toString().trim() ??
           member['soc_building_name']?.toString().trim() ??
           member['building_id']?.toString().trim() ??
           member['soc_building_id']?.toString().trim(),
-      floor: member['floor']?.toString().trim() ??
+      floor:
+          member['floor']?.toString().trim() ??
           member['floor_number']?.toString().trim() ??
           member['soc_floor_number']?.toString().trim(),
-      role: member['role']?.toString().trim() ??
+      role:
+          member['role']?.toString().trim() ??
           member['designation']?.toString().trim() ??
           member['position']?.toString().trim() ??
           member['member_type_name']?.toString().trim() ??

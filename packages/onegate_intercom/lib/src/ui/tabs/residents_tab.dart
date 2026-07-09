@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:onegate_feature_core/onegate_feature_core.dart';
 
+import '../../i18n/intercom_i18n.dart';
 import '../../intercom_config.dart';
 import '../../services/directory_service.dart';
 import '../../services/jitsi_call_manager.dart';
@@ -42,7 +43,8 @@ class _ResidentsTabState extends State<ResidentsTab> {
 
     try {
       final svc = DirectoryService.fromHost(widget.host);
-      final contacts = await svc.fetchResidents(companyId: widget.ctx.societyId);
+      final contacts =
+          await svc.fetchResidents(companyId: widget.ctx.societyId);
       if (!mounted) return;
       setState(() => _contacts = contacts);
     } catch (e) {
@@ -77,7 +79,16 @@ class _ResidentsTabState extends State<ResidentsTab> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Call failed: $e')),
+        SnackBar(
+          content: Text(
+            intercomTr(
+              context,
+              'chatCall_callFailedWithError',
+              fallback: 'Call failed: $e',
+              params: {'error': _localizedCallError(context, e)},
+            ),
+          ),
+        ),
       );
     }
   }
@@ -85,7 +96,15 @@ class _ResidentsTabState extends State<ResidentsTab> {
   @override
   Widget build(BuildContext context) {
     if (!widget.config.enableResidents) {
-      return const Center(child: Text('Residents disabled'));
+      return Center(
+        child: Text(
+          intercomTr(
+            context,
+            'chatCall_residentsDisabled',
+            fallback: 'Residents disabled',
+          ),
+        ),
+      );
     }
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
@@ -95,9 +114,21 @@ class _ResidentsTabState extends State<ResidentsTab> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Failed to load: $_error'),
+            Text(
+              intercomTr(
+                context,
+                'chatCall_failedToLoadWithError',
+                fallback: 'Failed to load: $_error',
+                params: {'error': _error ?? ''},
+              ),
+            ),
             const SizedBox(height: 12),
-            ElevatedButton(onPressed: _load, child: const Text('Retry')),
+            ElevatedButton(
+              onPressed: _load,
+              child: Text(
+                intercomTr(context, 'chatCall_retry', fallback: 'Retry'),
+              ),
+            ),
           ],
         ),
       );
@@ -115,7 +146,11 @@ class _ResidentsTabState extends State<ResidentsTab> {
             child: Row(
               children: [
                 _ScopeChip(
-                  label: 'CyberOne',
+                  label: intercomTr(
+                    context,
+                    'chatCall_cyberOneScope',
+                    fallback: 'CyberOne',
+                  ),
                   selected: _scope == _ResidentScope.cyberOne,
                   onSelected: (_) {
                     setState(() => _scope = _ResidentScope.cyberOne);
@@ -123,7 +158,11 @@ class _ResidentsTabState extends State<ResidentsTab> {
                 ),
                 const SizedBox(width: 8),
                 _ScopeChip(
-                  label: 'Flat',
+                  label: intercomTr(
+                    context,
+                    'chatCall_flatScope',
+                    fallback: 'Flat',
+                  ),
                   selected: _scope == _ResidentScope.flat,
                   onSelected: (_) {
                     setState(() => _scope = _ResidentScope.flat);
@@ -149,7 +188,17 @@ class _ResidentsTabState extends State<ResidentsTab> {
             child: Row(
               children: [
                 Text(
-                  _scope == _ResidentScope.cyberOne ? 'CyberOne' : 'Flat',
+                  _scope == _ResidentScope.cyberOne
+                      ? intercomTr(
+                          context,
+                          'chatCall_cyberOneScope',
+                          fallback: 'CyberOne',
+                        )
+                      : intercomTr(
+                          context,
+                          'chatCall_flatScope',
+                          fallback: 'Flat',
+                        ),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -163,7 +212,12 @@ class _ResidentsTabState extends State<ResidentsTab> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    '${visible.length} residents',
+                    intercomTr(
+                      context,
+                      'chatCall_residentsCount',
+                      fallback: '${visible.length} residents',
+                      params: {'count': '${visible.length}'},
+                    ),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: const Color(0xffc62828),
                           fontWeight: FontWeight.w700,
@@ -234,6 +288,46 @@ class _ScopeChip extends StatelessWidget {
   }
 }
 
+String _localizedCallError(BuildContext context, Object error) {
+  final raw = error.toString();
+  if (raw.contains('Microphone permission required')) {
+    return intercomTr(
+      context,
+      'chatCall_microphonePermissionRequired',
+      fallback: 'Microphone permission required',
+    );
+  }
+  if (raw.contains('Camera permission required')) {
+    return intercomTr(
+      context,
+      'chatCall_cameraPermissionRequired',
+      fallback: 'Camera permission required',
+    );
+  }
+  if (raw.contains('Unexpected call response')) {
+    return intercomTr(
+      context,
+      'chatCall_unexpectedCallResponse',
+      fallback: 'Unexpected call response',
+    );
+  }
+  if (raw.contains('Missing call data')) {
+    return intercomTr(
+      context,
+      'chatCall_missingCallData',
+      fallback: 'Missing call data',
+    );
+  }
+  if (raw.contains('Missing meeting_id')) {
+    return intercomTr(
+      context,
+      'chatCall_missingMeetingId',
+      fallback: 'Missing meeting ID',
+    );
+  }
+  return raw.replaceFirst('Exception: ', '');
+}
+
 class _ResidentsSearchField extends StatelessWidget {
   const _ResidentsSearchField({required this.onChanged});
 
@@ -248,7 +342,7 @@ class _ResidentsSearchField extends StatelessWidget {
         border: Border.all(color: Colors.grey[300]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -262,8 +356,12 @@ class _ResidentsSearchField extends StatelessWidget {
           Expanded(
             child: TextField(
               onChanged: onChanged,
-              decoration: const InputDecoration(
-                hintText: 'Search residents...',
+              decoration: InputDecoration(
+                hintText: intercomTr(
+                  context,
+                  'chatCall_searchResidentsHint',
+                  fallback: 'Search residents...',
+                ),
                 border: InputBorder.none,
               ),
             ),
@@ -306,7 +404,7 @@ class _ResidentCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -366,7 +464,11 @@ class _ResidentCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Not a oneapp user',
+                        intercomTr(
+                          context,
+                          'chatCall_notOneappUser',
+                          fallback: 'Not a oneapp user',
+                        ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: const Color(0xffff8f00),
                           fontWeight: FontWeight.w600,
@@ -387,13 +489,21 @@ class _ResidentCard extends StatelessWidget {
                   ),
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Invite action coming soon'),
+                      SnackBar(
+                        content: Text(
+                          intercomTr(
+                            context,
+                            'chatCall_inviteComingSoon',
+                            fallback: 'Invite action coming soon',
+                          ),
+                        ),
                       ),
                     );
                   },
                   icon: const Icon(Icons.person_add_alt_1, size: 18),
-                  label: const Text('Invite'),
+                  label: Text(
+                    intercomTr(context, 'chatCall_invite', fallback: 'Invite'),
+                  ),
                 ),
               ],
             ),
@@ -406,7 +516,9 @@ class _ResidentCard extends StatelessWidget {
                 TextButton.icon(
                   onPressed: () {},
                   icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                  label: const Text('Chat'),
+                  label: Text(
+                    intercomTr(context, 'chatCall_chat', fallback: 'Chat'),
+                  ),
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.blue[600],
                   ),

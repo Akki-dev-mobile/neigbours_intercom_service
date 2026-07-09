@@ -36,17 +36,20 @@ import 'services/room_service.dart';
 import 'services/unread_count_manager.dart';
 import 'services/intercom_service.dart';
 import 'services/room_info_cache.dart';
+import 'services/group_info_loader.dart';
+import 'services/member_avatar_resolver.dart';
+import 'services/message_cache.dart';
 import '../../../../core/models/api_response.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/layout/app_scaffold.dart';
 import '../../../core/widgets/app_loader.dart';
+import '../../../core/widgets/onegate_global_loader.dart';
 import '../../../core/widgets/enhanced_toast.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/society_backend_api_service.dart';
 import '../../../core/services/keycloak_service.dart';
 import '../../../core/network/network_interceptors.dart';
 import '../../../core/utils/profile_data_helper.dart';
-import '../society_feed/services/post_api_client.dart';
 import 'tabs/groups_tab.dart';
 import 'pages/create_group_page.dart';
 import '../providers/selected_flat_provider.dart';
@@ -57,8 +60,10 @@ import 'widgets/whatsapp_video_message.dart';
 import 'widgets/whatsapp_audio_message.dart';
 import 'video_player_screen.dart';
 import 'widgets/forward_to_sheet.dart';
+import 'widgets/chat_wallpaper_background.dart';
 import 'models/forward_payload.dart';
 import '../../../../src/runtime/intercom_runtime_cache.dart';
+import '../../../src/config/chat_call_i18n.dart';
 
 Future<int?> resolveIntercomCompanyId(
   ApiService apiService, {
@@ -98,6 +103,8 @@ class GroupChatScreen extends ConsumerStatefulWidget {
 
 class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     with TickerProviderStateMixin {
+  static const Color _onegateRed = Color(0xffF44336);
+
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _messageFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
@@ -287,7 +294,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
   // Live, page-scoped member list for Group Info (updates immediately on removal)
   ValueNotifier<List<RoomInfoMember>>? _groupInfoMembersNotifier;
   ValueNotifier<int>? _groupInfoMemberCountNotifier;
+  ValueNotifier<bool>? _groupInfoMembersLoadingNotifier;
+  ValueNotifier<int>? _groupInfoAvatarRevisionNotifier;
+  int? _groupInfoCompanyId;
   bool _isGroupInfoRefreshing = false;
+  String? _lastGroupInfoMembersSignature;
+  Future<void>? _activeGroupInfoLoad;
+  DateTime? _roomOpenStartTime;
   DateTime? _lastApiCallTime;
   int _rateLimitRetryCount = 0;
   static const Duration _minApiCallInterval = Duration(
@@ -318,6 +331,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
   List<String>? _pendingForwardMessageIds;
   List<ForwardPayload>? _pendingForwardPayloads;
   final List<String> _forwardPlaceholderIds = [];
+  /// Real message IDs created by forward API this session (API may omit is_forwarded).
+  final Set<String> _sessionForwardedMessageIds = {};
   bool _forwardPlaceholdersInserted = false;
   bool _forwardIntentHandled = false;
   bool _forwardIntentInFlight = false;
@@ -330,6 +345,11 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     _currentGroup = widget.group;
     _pendingForwardMessageIds = widget.forwardMessageIds;
     _pendingForwardPayloads = widget.forwardPayloads;
+
+    // Forward flow: show placeholders immediately — do not wait for message load.
+    if (_hasPendingForward) {
+      _isLoading = false;
+    }
 
     // Cache avatars from initial group members if available
     // CRITICAL: Cache with member.id (could be UUID or numeric)
@@ -378,6 +398,27 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         _fetchRoomInfoForAvatarCache();
       }
     });
+
+    if (_hasPendingForward) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _kickOffPendingForward();
+      });
+    }
+  }
+
+  bool get _hasPendingForward =>
+      _pendingForwardMessageIds != null &&
+      _pendingForwardMessageIds!.isNotEmpty;
+
+  void _kickOffPendingForward() {
+    if (!_hasPendingForward ||
+        _forwardIntentHandled ||
+        _forwardIntentInFlight) {
+      return;
+    }
+    _insertForwardPlaceholders();
+    unawaited(_maybeSendPendingForwardMessages());
   }
 
   /// Fetch RoomInfo FIRST to check membership, then open room (if allowed)
@@ -405,84 +446,55 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       return;
     }
 
-    // PERFORMANCE OPTIMIZATION: Start RoomInfo call with very short timeout (2s)
-    // Proceed immediately to open room - RoomInfo is only for avatar caching
-    debugPrint(
-      '🔄 [GroupChatScreen] Fetching RoomInfo (background, 2s timeout): ${widget.group.id}',
+    // PERFORMANCE: Use cached RoomInfo for avatars — no /members on chat open.
+    final roomInfoCache = RoomInfoCache();
+    final cachedRoomInfo = roomInfoCache.getCachedRoomInfo(
+      widget.group.id,
+      companyId,
     );
 
-    // Start RoomInfo call with short timeout, completely non-blocking
-    _roomService
-        .getRoomInfo(roomId: widget.group.id, companyId: companyId)
-        .timeout(
-          const Duration(seconds: 2), // Very short timeout - fail fast
-          onTimeout: () {
-            debugPrint(
-              '⏱️ [GroupChatScreen] RoomInfo timeout after 2s - continuing without it',
-            );
-            return ApiResponse.error('Request timeout', statusCode: 408);
-          },
-        )
-        .then((roomInfoResponse) {
-          // Process RoomInfo response in background (non-blocking)
-          if (roomInfoResponse.success &&
-              roomInfoResponse.data != null &&
-              mounted) {
-            _processRoomInfoResponse(roomInfoResponse.data!, companyId!);
-          } else if (roomInfoResponse.statusCode == 403) {
-            // CRITICAL FIX: Be very specific about membership errors to avoid false positives
-            // Generic "access denied" or "not authorized" could be API permission issues, not membership
-            final errorMessage = roomInfoResponse.displayError.toLowerCase();
+    if (cachedRoomInfo != null) {
+      debugPrint(
+        '✅ [GroupChatScreen] RoomInfo cache hit for chat open '
+        '(${cachedRoomInfo.members.length} members cached)',
+      );
+      _processRoomInfoResponse(cachedRoomInfo, companyId);
+    }
 
-            // Only consider it a membership error if it EXPLICITLY mentions membership/member
-            // Don't use generic phrases like "access denied" which could match rate limits or API issues
-            final isMembershipError =
-                errorMessage.contains('not a member') ||
-                errorMessage.contains('no longer a member') ||
-                errorMessage.contains('left the group') ||
-                errorMessage.contains('removed from group') ||
-                errorMessage.contains('membership') ||
-                (errorMessage.contains('forbidden') &&
-                    errorMessage.contains('member'));
-
-            if (isMembershipError) {
-              // Genuine membership error - user has left the group
-              log(
-                '🚫 [GroupChatScreen] User has left group (detected via RoomInfo 403): "$errorMessage"',
-              );
-              if (mounted) {
-                setState(() {
-                  _isUserMember = false;
-                  _isMemberFromRoomInfo = false;
-                  _hasLeftGroup = true; // Mark that user has left the group
-                });
-              }
-            } else {
-              // API permission issue, not membership - don't block user
-              // This could be rate limiting, token issues, or server errors returning 403
-              log(
-                '⚠️ [GroupChatScreen] RoomInfo 403 but NOT membership error (ignoring): "$errorMessage"',
-              );
-              log(
-                '   Proceeding with normal flow - membership will be validated via join API',
-              );
+    // Background: refresh summary only (no member list) — once, non-blocking.
+    unawaited(
+      _roomService
+          .getRoomInfo(
+            roomId: widget.group.id,
+            companyId: companyId,
+            fetchMembersIfMissing: false,
+          )
+          .timeout(
+            const Duration(seconds: 2),
+            onTimeout: () => ApiResponse.error('Request timeout', statusCode: 408),
+          )
+          .then((roomInfoResponse) {
+            if (roomInfoResponse.success &&
+                roomInfoResponse.data != null &&
+                mounted) {
+              _processRoomInfoResponse(roomInfoResponse.data!, companyId);
             }
-          }
-        })
-        .catchError((e) {
-          debugPrint('⚠️ [GroupChatScreen] RoomInfo error (non-blocking): $e');
-          // Continue - membership will be validated via join API
-        });
-
-    // PERFORMANCE OPTIMIZATION: Proceed immediately to open room without any waiting
-    // Membership will be validated via join API, which is faster and more reliable
-    debugPrint(
-      '🚀 [GroupChatScreen] Opening room immediately (RoomInfo in background, messages loading async)',
+          })
+          .catchError((Object e) {
+            debugPrint(
+              '⚠️ [GroupChatScreen] Background RoomInfo summary error: $e',
+            );
+          }),
     );
+
+    debugPrint(
+      '🚀 [GroupChatScreen] Opening room immediately (messages independent of RoomInfo)',
+    );
+    unawaited(_prefetchRoomMembersForCache(companyId));
     _openRoom(
-      isMemberFromRoomInfo: false,
+      isMemberFromRoomInfo: cachedRoomInfo != null,
       loadInBackground: true,
-    ); // Always validate via backend
+    );
   }
 
   /// Process RoomInfo response to cache avatars and update membership status
@@ -493,48 +505,34 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       if (!mounted) return;
 
       // PERFORMANCE OPTIMIZATION: Cache RoomInfo globally for reuse
-      // This prevents re-fetching and re-parsing when Group Info screen opens
       final roomInfoCache = RoomInfoCache();
-      final avatarCache = <String, String>{};
-      final numericIdToUuidMap = <int, String>{};
 
       // Cache member avatars from RoomInfo API
-      // Use normalized caching for consistency across all message sources
       for (final member in roomInfo.members) {
         if (member.avatar != null && member.avatar!.isNotEmpty) {
-          // Use normalized caching for consistency across all message sources
           _cacheAvatarNormalized(
             uuid: member.userId,
             numericId: member.numericUserId?.toString(),
             avatarUrl: member.avatar!,
             source: 'RoomInfo-init',
           );
-
-          // Still populate RoomInfoCache avatar cache (for global cache)
-          avatarCache[member.userId] =
-              _normalizeAvatarUrl(member.avatar) ?? member.avatar!;
-          if (member.numericUserId != null) {
-            avatarCache[member.numericUserId!.toString()] =
-                _normalizeAvatarUrl(member.avatar) ?? member.avatar!;
-          }
           _avatarCachePrimed = true;
         }
 
-        // Build numeric ID to UUID mapping
         if (member.numericUserId != null) {
           _numericIdToUuidMap[member.numericUserId!] = member.userId;
-          numericIdToUuidMap[member.numericUserId!] = member.userId;
         }
       }
 
-      // Cache RoomInfo globally for Group Info screen
-      roomInfoCache.cacheRoomInfo(
+      roomInfoCache.applyRoomInfoUpdate(
         roomId: widget.group.id,
         companyId: companyId,
         roomInfo: roomInfo,
-        avatarCache: avatarCache,
-        numericIdToUuidMap: numericIdToUuidMap,
       );
+
+      if (roomInfo.members.isEmpty && roomInfo.memberCount > 0) {
+        unawaited(_prefetchRoomMembersForCache(companyId));
+      }
 
       // Check if current user is already a member
       final currentUserUuid = widget.currentUserId;
@@ -585,6 +583,67 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     }
   }
 
+  /// Background fetch of /members when /info is summary-only (no member list).
+  Future<void> _prefetchRoomMembersForCache(int companyId) async {
+    try {
+      final membersResponse = await _roomService.getRoomMembers(
+        roomId: widget.group.id,
+        companyId: companyId,
+      );
+      if (!mounted) return;
+      if (!membersResponse.success ||
+          membersResponse.data == null ||
+          membersResponse.data!.isEmpty) {
+        return;
+      }
+
+      final cache = RoomInfoCache();
+      final cached = cache.getCachedRoomInfo(widget.group.id, companyId);
+      if (cached == null) return;
+
+      final merged = RoomInfo(
+        id: cached.id,
+        name: cached.name,
+        description: cached.description,
+        createdBy: cached.createdBy,
+        createdByUserId: cached.createdByUserId,
+        createdByUser: cached.createdByUser,
+        companyId: cached.companyId,
+        photoUrl: cached.photoUrl,
+        createdAt: cached.createdAt,
+        lastActive: cached.lastActive,
+        memberCount: cached.memberCount > 0
+            ? cached.memberCount
+            : membersResponse.data!.length,
+        admin: cached.admin,
+        members: membersResponse.data!,
+        photos: cached.photos,
+        peerUser: cached.peerUser,
+      );
+
+      cache.applyRoomInfoUpdate(
+        roomId: widget.group.id,
+        companyId: companyId,
+        roomInfo: merged,
+      );
+
+      if (_isGroupInfoPageOpen) {
+        _applyFreshGroupInfo(
+          merged,
+          companyId,
+          openTime: DateTime.now(),
+        );
+      }
+
+      debugPrint(
+        '✅ [GroupChatScreen] Prefetched ${membersResponse.data!.length} '
+        'members into RoomInfo cache for ${widget.group.id}',
+      );
+    } catch (e) {
+      debugPrint('⚠️ [GroupChatScreen] Member prefetch failed: $e');
+    }
+  }
+
   /// Fetch messages in read-only mode for users who left the group
   /// This fetches messages without joining the room or connecting to WebSocket
   Future<void> _fetchMessagesInReadOnlyMode() async {
@@ -597,7 +656,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         if (mounted) {
           setState(() {
             _hasError = true;
-            _errorMessage = 'Unable to load messages. Please try again.';
+            _errorMessage = chatCallTr(context, 'chatCall_unableToLoadMessages', fallback: 'Unable to load messages. Please try again.');
           });
         }
         return;
@@ -677,8 +736,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           if (mounted) {
             EnhancedToast.info(
               context,
-              title: 'Read-Only Mode',
-              message: 'You can view messages but cannot send new ones.',
+              title: chatCallTr(context, 'chatCall_readOnlyMode', fallback: 'Read-Only Mode'),
+              message: chatCallTr(context, 'chatCall_readOnlyMessage', fallback: 'You can view messages but cannot send new ones.'),
             );
           }
         });
@@ -689,7 +748,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         if (mounted) {
           setState(() {
             _hasError = true;
-            _errorMessage = messagesResponse.error ?? 'Failed to load messages';
+            _errorMessage = messagesResponse.error ?? chatCallTr(context, 'chatCall_failedToLoadMessagesShort', fallback: 'Failed to load messages');
             _isLoading = false;
           });
         }
@@ -701,7 +760,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       if (mounted) {
         setState(() {
           _hasError = true;
-          _errorMessage = 'Failed to load messages';
+          _errorMessage = chatCallTr(context, 'chatCall_failedToLoadMessagesShort', fallback: 'Failed to load messages');
           _isLoading = false;
         });
       }
@@ -898,8 +957,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           if (mounted) {
             EnhancedToast.success(
               context,
-              title: 'Connected',
-              message: 'Real-time messaging is now active',
+              title: chatCallTr(context, 'chatCall_connected', fallback: 'Connected'),
+              message: chatCallTr(context, 'chatCall_realtimeActive', fallback: 'Real-time messaging is now active'),
             );
           }
         } else if (!isConnected && wasConnected) {
@@ -1059,7 +1118,11 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
   /// Called after group is updated to get latest data
   /// Update _currentGroup state from RoomInfo (used for immediate UI updates)
   /// This method updates UI immediately without waiting for API calls
-  void _updateCurrentGroupFromRoomInfo(RoomInfo roomInfo, int companyId) {
+  void _updateCurrentGroupFromRoomInfo(
+    RoomInfo roomInfo,
+    int companyId, {
+    bool skipCacheWrite = false,
+  }) {
     if (!mounted) return;
 
     // CRITICAL: Convert room info members to IntercomContact list
@@ -1089,7 +1152,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (roomInfo.admin != null && roomInfo.admin!.userId != null) {
       final adminContact = IntercomContact(
         id: roomInfo.admin!.userId!,
-        name: roomInfo.admin!.username ?? roomInfo.admin!.email ?? 'Admin',
+        name: roomInfo.admin!.username ?? roomInfo.admin!.email ?? chatCallTr(context, 'chatCall_admin', fallback: 'Admin'),
         type: IntercomContactType.resident,
         status: IntercomContactStatus.offline,
       );
@@ -1124,15 +1187,17 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       }
     }
 
-    // Cache RoomInfo globally
-    final roomInfoCache = RoomInfoCache();
-    roomInfoCache.cacheRoomInfo(
-      roomId: _currentGroup.id,
-      companyId: companyId,
-      roomInfo: roomInfo,
-      avatarCache: avatarCache,
-      numericIdToUuidMap: numericIdToUuidMap,
-    );
+    // Cache RoomInfo globally (skip when caller already wrote cache)
+    if (!skipCacheWrite) {
+      final roomInfoCache = RoomInfoCache();
+      roomInfoCache.cacheRoomInfo(
+        roomId: _currentGroup.id,
+        companyId: companyId,
+        roomInfo: roomInfo,
+        avatarCache: avatarCache,
+        numericIdToUuidMap: numericIdToUuidMap,
+      );
+    }
 
     // Update local group state with fresh data (including memberCount)
     // CRITICAL: Always use roomInfo.memberCount from API - never derive from members.length
@@ -1268,6 +1333,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     // a member.
     if (updateInPlace) {
       if (!_isGroupInfoPageOpen) return;
+      _groupInfoMembersLoadingNotifier?.value = true;
       if (mounted) {
         setState(() {
           _isGroupInfoRefreshing = true;
@@ -1281,26 +1347,28 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           cache.clearRoomCache(widget.group.id);
         }
 
-        final response = await _roomService.getRoomInfo(
+        final openTime = DateTime.now();
+        final result = await GroupInfoLoader().loadFresh(
           roomId: widget.group.id,
           companyId: companyId,
+          roomService: _roomService,
+          forceRefresh: true,
         );
 
-        if (response.success && response.data != null && mounted) {
-          final roomInfo = response.data!;
-
-          // Keep caches and derived state in sync with the latest RoomInfo.
-          _processAndCacheRoomInfo(roomInfo, companyId);
-          _updateCurrentGroupFromRoomInfo(roomInfo, companyId);
-
-          // Update live notifiers so the open Group Info page reflects the new data.
-          _updateGroupInfoNotifiers(roomInfo);
+        if (result.roomInfo != null && mounted) {
+          _applyFreshGroupInfo(
+            result.roomInfo!,
+            companyId,
+            openTime: openTime,
+            loadResult: result,
+          );
         }
       } catch (e) {
         debugPrint(
           '⚠️ [GroupChatScreen] Failed to refresh Group Info page in place: $e',
         );
       } finally {
+        _groupInfoMembersLoadingNotifier?.value = false;
         if (mounted) {
           setState(() {
             _isGroupInfoRefreshing = false;
@@ -1310,7 +1378,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       return;
     }
 
-    await _fetchAndShowGroupInfo(widget.group.id, companyId);
+    await _loadGroupInfoFresh(widget.group.id, companyId, DateTime.now());
   }
 
   /// Open room for real-time chat (REST + WebSocket)
@@ -1355,7 +1423,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
     // PERFORMANCE OPTIMIZATION: Don't show loading state if loading in background
     // UI should already be visible, just show a subtle loading indicator if needed
-    if (!isRefresh && !loadInBackground) {
+    if (!isRefresh && !loadInBackground && !_hasPendingForward) {
       setState(() {
         _isLoading = true;
         _hasError = false;
@@ -1381,7 +1449,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           setState(() {
             _isLoading = false;
             _hasError = true;
-            _errorMessage = 'Please select a society first';
+            _errorMessage = chatCallTr(context, 'chatCall_pleaseSelectSociety', fallback: 'Please select a society first');
           });
         }
         _isOpeningRoom = false;
@@ -1395,306 +1463,369 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         debugPrint('⚠️ [GroupChatScreen] Error clearing unread count: $e');
       });
 
-      // PERFORMANCE OPTIMIZATION: Open room using ChatService (handles REST + WebSocket)
-      // If user is already a member (from RoomInfo check), skip join call to prevent errors on re-entry
-      // If user is not a member, validate membership via join call
-      // Backend will check membership using old_gate_user_id from token and handle deduplication
+      _roomOpenStartTime = DateTime.now();
+      log(
+        '📂 [GroupChatScreen] Room open start room=${widget.group.id} '
+        'time=${_roomOpenStartTime!.toIso8601String()}',
+      );
+
+      final actualLimit = _currentOffset == 0
+          ? _messagesPerPage * 2
+          : _messagesPerPage;
+      final messageCache = MessageCache();
+      final cachedMessages = messageCache.getCachedMessages(
+        widget.group.id,
+        companyId,
+        _currentOffset,
+        actualLimit,
+      );
+
+      if (cachedMessages != null &&
+          cachedMessages.isNotEmpty &&
+          !isRefresh) {
+        log(
+          '✅ [GroupChatScreen] Message cache hit '
+          '(${cachedMessages.length} messages)',
+        );
+        await _applyOpenRoomMessages(
+          cachedMessages,
+          companyId,
+          actualLimit,
+        );
+        unawaited(
+          _fetchOpenRoomFromNetwork(
+            companyId: companyId,
+            isMemberFromRoomInfo: isMemberFromRoomInfo,
+            actualLimit: actualLimit,
+          ),
+        );
+        return;
+      }
+
+      log('ℹ️ [GroupChatScreen] Message cache miss — fetching from network');
+
       final response = await _chatService.openRoom(
         roomId: widget.group.id,
-        isMember:
-            isMemberFromRoomInfo, // Use membership status from RoomInfo check
+        isMember: isMemberFromRoomInfo,
         companyId: companyId,
         offset: _currentOffset,
+        limit: actualLimit,
       );
 
       if (!mounted) return;
 
-      // Handle response
       if (response.success) {
         final roomMessages = response.data ?? <RoomMessage>[];
-
-        log(
-          '📥 [GroupChatScreen] Received ${roomMessages.length} messages from API',
-        );
-        for (final rm in roomMessages) {
-          log(
-            '   Message ID: ${rm.id}, Content: ${rm.body.isEmpty ? "(empty)" : rm.body.substring(0, rm.body.length > 30 ? 30 : rm.body.length)}, isDeleted: ${rm.isDeleted}, messageType: ${rm.messageType ?? "null"}, eventType: ${rm.eventType ?? "null"}',
+        if (roomMessages.isNotEmpty) {
+          messageCache.cacheMessages(
+            widget.group.id,
+            companyId,
+            _currentOffset,
+            actualLimit,
+            roomMessages,
           );
         }
-
-        // Mark room as read when user opens chat (backend also does this in GetMessages, but we call explicitly for consistency)
-        try {
-          await _roomService.markRoomAsRead(widget.group.id);
-          log('✅ [GroupChatScreen] Room marked as read: ${widget.group.id}');
-        } catch (e) {
-          log('⚠️ [GroupChatScreen] Failed to mark room as read: $e');
-          // Non-critical - continue even if mark-as-read fails
-        }
-
-        // Cache avatars from messages API response
-        // CRITICAL: Convert numeric senderId to UUID using RoomInfo mapping, then cache with UUID
-        for (final rm in roomMessages) {
-          if (rm.senderAvatar != null &&
-              rm.senderAvatar!.isNotEmpty &&
-              rm.senderId.isNotEmpty) {
-            // Determine UUID for this sender
-            String? senderUuid = rm.senderId;
-
-            // If senderId is numeric, try to find UUID from RoomInfo members
-            if (!rm.senderId.contains('-') &&
-                int.tryParse(rm.senderId) != null) {
-              // Numeric ID - try to find UUID from cached RoomInfo
-              // Check if we have this numeric ID mapped to a UUID
-              final numericId = int.parse(rm.senderId);
-              senderUuid = _numericIdToUuidMap[numericId];
-
-              if (senderUuid == null) {
-                // Try to find UUID from current group members
-                for (final member in _currentGroup.members) {
-                  // Check if member.id matches (could be UUID or numeric string)
-                  if (member.id == rm.senderId ||
-                      member.id == numericId.toString()) {
-                    senderUuid = member.id.contains('-') ? member.id : null;
-                    if (senderUuid != null) {
-                      _numericIdToUuidMap[numericId] = senderUuid;
-                      debugPrint(
-                        '✅ [GroupChatScreen] Mapped numeric ID $numericId to UUID $senderUuid',
-                      );
-                      break;
-                    }
-                  }
-                }
-              }
-
-              // If still not found, use numeric ID as fallback (but log warning)
-              if (senderUuid == null) {
-                senderUuid = rm.senderId; // Keep numeric as fallback
-                debugPrint(
-                  '⚠️ [GroupChatScreen] Could not find UUID for numeric senderId ${rm.senderId}, using numeric as fallback',
-                );
-              }
-            }
-
-            // Use normalized caching for consistency across all message sources
-            _cacheAvatarNormalized(
-              uuid: senderUuid,
-              numericId: rm.snapshotUserId?.toString(),
-              avatarUrl: rm.senderAvatar!,
-              source: 'API-message',
-            );
-          }
-        }
-
-        // Ensure RoomInfo avatars are available for all senders
-        // This ensures avatars from RoomInfo API are used for messages that don't have avatars
-        _ensureRoomInfoAvatarsCached();
-
-        // Convert RoomMessage to GroupMessage
-        // CRITICAL: Create a map of all messages from this batch first for efficient lookup
-        // This ensures replies work even when both the reply and replied-to message are in the same API response
-        final groupMessagesWithoutReply = roomMessages
-            .map(
-              (rm) => _convertRoomMessageToGroupMessage(
-                rm,
-                forceDeliveredStatus: true,
-              ),
-            )
-            .toList();
-
-        // Create a map of new messages by ID for efficient lookup
-        final newMessagesMap = <String, GroupMessage>{};
-        for (final gm in groupMessagesWithoutReply) {
-          newMessagesMap[gm.id] = gm;
-        }
-
-        // Second pass: resolve replyTo references
-        // CRITICAL: Check new messages first (same batch), then existing messages
-        // This ensures replies work correctly when re-entering chat or when both messages are in same response
-        // Also track replied-to messages that need to be added to the message list
-        final Set<String> repliedToMessageIds = {};
-        final groupMessages = groupMessagesWithoutReply.map((gm) {
-          final roomMessage = roomMessages.firstWhere((rm) => rm.id == gm.id);
-          if (roomMessage.replyTo != null && roomMessage.replyTo!.isNotEmpty) {
-            debugPrint(
-              '🔍 [GroupChatScreen] Resolving replyTo for message ${gm.id} (type: ${gm.id.contains("-") ? "UUID" : "numeric"}): looking for ${roomMessage.replyTo} (type: ${roomMessage.replyTo!.contains("-") ? "UUID" : "numeric"})',
-            );
-
-            // First, try to find in new messages (same batch) - most common case
-            GroupMessage? repliedToMessage = _findMessageById(
-              roomMessage.replyTo,
-              newMessagesMap,
-              groupMessagesWithoutReply,
-            );
-
-            // If not found in new messages, try existing messages
-            if (repliedToMessage == null) {
-              repliedToMessage = _findMessageById(
-                roomMessage.replyTo,
-                {}, // No map for existing messages, use list search
-                _messages,
-              );
-
-              if (repliedToMessage != null) {
-                debugPrint(
-                  '✅ [GroupChatScreen] Found replied-to message in existing messages: ${repliedToMessage.id}',
-                );
-                // Mark this replied-to message to be preserved in the list
-                repliedToMessageIds.add(repliedToMessage.id);
-              }
-            } else {
-              debugPrint(
-                '✅ [GroupChatScreen] Found replied-to message in same batch: ${repliedToMessage.id}',
-              );
-            }
-
-            // If still not found, try to find the replied-to message in the API response
-            if (repliedToMessage == null) {
-              try {
-                final repliedToRoomMessage = roomMessages.firstWhere(
-                  (rm) =>
-                      rm.id.trim().toLowerCase() ==
-                          roomMessage.replyTo!.trim().toLowerCase() ||
-                      rm.id == roomMessage.replyTo,
-                );
-                repliedToMessage = _convertRoomMessageToGroupMessage(
-                  repliedToRoomMessage,
-                );
-                debugPrint(
-                  '✅ [GroupChatScreen] Found replied-to message in API response: ${repliedToMessage.id}',
-                );
-              } catch (e) {
-                // Message not in this batch - try to load older messages to find it
-                debugPrint(
-                  '⚠️ [GroupChatScreen] Reply target message ${roomMessage.replyTo} not in current batch. Will try to load older messages.',
-                );
-
-                // Schedule async fetch of older messages to find the replied-to message
-                // This ensures the reply preview is populated even if the message is in an older batch
-                _fetchRepliedToMessage(roomMessage.replyTo!, gm.id);
-
-                // Create a temporary placeholder that will be updated when the message is found
-                repliedToMessage = GroupMessage(
-                  id: roomMessage.replyTo!,
-                  groupId: widget.group.id,
-                  senderId: '',
-                  senderName: 'Loading...',
-                  text: 'Loading original message...',
-                  timestamp: DateTime.now().subtract(const Duration(hours: 1)),
-                  isDeleted: false,
-                );
-                debugPrint(
-                  '⚠️ [GroupChatScreen] Created temporary placeholder for reply target: ${repliedToMessage.id}',
-                );
-              }
-            }
-
-            return gm.copyWith(replyTo: repliedToMessage);
-          }
-          return gm;
-        }).toList();
-
-        // CRITICAL: Preserve replied-to messages from existing messages that are not in the new batch
-        // This ensures that when re-entering chat, replied-to messages are not lost
-        final preservedRepliedToMessages = <GroupMessage>[];
-        for (final existingMessage in _messages) {
-          if (repliedToMessageIds.contains(existingMessage.id)) {
-            // Check if this message is not already in the new batch
-            final isInNewBatch = groupMessages.any(
-              (m) => m.id == existingMessage.id,
-            );
-            if (!isInNewBatch) {
-              preservedRepliedToMessages.add(existingMessage);
-              debugPrint(
-                '✅ [GroupChatScreen] Preserving replied-to message from existing messages: ${existingMessage.id}',
-              );
-            }
-          }
-        }
-
-        // CRITICAL: Also ensure replied-to messages found in the same batch are in the list
-        // Extract all unique replied-to messages from the reply relationships
-        final repliedToMessagesInBatch = <String, GroupMessage>{};
-        for (final gm in groupMessages) {
-          if (gm.replyTo != null) {
-            final repliedToId = gm.replyTo!.id;
-            // Check if this replied-to message is already in groupMessages
-            final isRepliedToInBatch = groupMessages.any(
-              (m) => m.id == repliedToId,
-            );
-            if (!isRepliedToInBatch &&
-                !repliedToMessagesInBatch.containsKey(repliedToId)) {
-              // The replied-to message is referenced but not in the batch
-              // This shouldn't happen if both are in the same batch, but we handle it anyway
-              debugPrint(
-                '⚠️ [GroupChatScreen] Replied-to message ${repliedToId} referenced but not in batch',
-              );
-            } else if (isRepliedToInBatch) {
-              // Find the replied-to message in the batch and ensure it's tracked
-              final repliedToMsg = groupMessages.firstWhere(
-                (m) => m.id == repliedToId,
-              );
-              repliedToMessagesInBatch[repliedToId] = repliedToMsg;
-            }
-          }
-        }
-
-        log(
-          '✅ [GroupChatScreen] Converted to ${groupMessages.length} GroupMessages',
-        );
-
-        // CRITICAL: Merge preserved replied-to messages with new messages
-        // Sort by timestamp to maintain chronological order
-        final allMessages = [...groupMessages, ...preservedRepliedToMessages];
-        allMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-        // Check if there are more messages
-        // Use the actual limit used (which might be doubled for initial load)
-        final actualLimit = _currentOffset == 0
-            ? _messagesPerPage * 2
-            : _messagesPerPage;
-        _hasMoreMessages = roomMessages.length >= actualLimit;
-
-        setState(() {
-          _messages = allMessages;
-          _isLoading = false;
-          _hasError = false;
-          _currentOffset = groupMessages.length;
-        });
-
-        // Reactions are already included in the messages API response
-        // No need to fetch them separately
-        log(
-          '✅ [GroupChatScreen] Reactions included in API response - no separate fetch needed',
-        );
-
-        // Scroll to bottom after messages are loaded
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_scrollController.hasClients && _messages.isNotEmpty) {
-            _scrollController.animateTo(
-              _scrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-            );
-            _isAtBottom = true;
-          }
-
-          // Mark visible messages as read after chat opens
-          _markVisibleMessagesAsRead();
-        });
-        _insertForwardPlaceholders();
-        await _maybeSendPendingForwardMessages();
-        await _maybeSendPendingForwardMessages();
-        // Reset rate limit retry count on success
+        await _applyOpenRoomMessages(roomMessages, companyId, actualLimit);
         _rateLimitRetryCount = 0;
       } else {
-        // Handle errors
         _handleMessageError(response.statusCode, response.displayError);
+        if (_hasPendingForward) {
+          _kickOffPendingForward();
+        }
       }
     } catch (e) {
       if (!mounted) return;
-      _handleMessageError(0, 'An unexpected error occurred: $e');
+      _handleMessageError(0, chatCallTr(context, 'chatCall_unexpectedError', fallback: 'An unexpected error occurred: {error}', params: {'error': '$e'}));
     } finally {
       _isOpeningRoom = false;
+    }
+  }
+
+  /// Apply messages from cache or network to the chat UI.
+  Future<void> _applyOpenRoomMessages(
+    List<RoomMessage> roomMessages,
+    int companyId,
+    int actualLimit,
+  ) async {
+    log(
+      '📥 [GroupChatScreen] Applying ${roomMessages.length} messages',
+    );
+    for (final rm in roomMessages) {
+      log(
+        '   Message ID: ${rm.id}, Content: ${rm.body.isEmpty ? "(empty)" : rm.body.substring(0, rm.body.length > 30 ? 30 : rm.body.length)}, isDeleted: ${rm.isDeleted}, messageType: ${rm.messageType ?? "null"}, eventType: ${rm.eventType ?? "null"}',
+      );
+    }
+
+    try {
+      await _roomService.markRoomAsRead(widget.group.id);
+      log('✅ [GroupChatScreen] Room marked as read: ${widget.group.id}');
+    } catch (e) {
+      log('⚠️ [GroupChatScreen] Failed to mark room as read: $e');
+    }
+
+    for (final rm in roomMessages) {
+      if (rm.senderAvatar != null &&
+          rm.senderAvatar!.isNotEmpty &&
+          rm.senderId.isNotEmpty) {
+        String? senderUuid = rm.senderId;
+
+        if (!rm.senderId.contains('-') && int.tryParse(rm.senderId) != null) {
+          final numericId = int.parse(rm.senderId);
+          senderUuid = _numericIdToUuidMap[numericId];
+
+          if (senderUuid == null) {
+            for (final member in _currentGroup.members) {
+              if (member.id == rm.senderId ||
+                  member.id == numericId.toString()) {
+                senderUuid = member.id.contains('-') ? member.id : null;
+                if (senderUuid != null) {
+                  _numericIdToUuidMap[numericId] = senderUuid;
+                  debugPrint(
+                    '✅ [GroupChatScreen] Mapped numeric ID $numericId to UUID $senderUuid',
+                  );
+                  break;
+                }
+              }
+            }
+          }
+
+          if (senderUuid == null) {
+            senderUuid = rm.senderId;
+            debugPrint(
+              '⚠️ [GroupChatScreen] Could not find UUID for numeric senderId ${rm.senderId}, using numeric as fallback',
+            );
+          }
+        }
+
+        _cacheAvatarNormalized(
+          uuid: senderUuid,
+          numericId: rm.snapshotUserId?.toString(),
+          avatarUrl: rm.senderAvatar!,
+          source: 'API-message',
+        );
+      }
+    }
+
+    _ensureRoomInfoAvatarsCached();
+
+    final groupMessagesWithoutReply = roomMessages
+        .map(
+          (rm) => _convertRoomMessageToGroupMessage(
+            rm,
+            forceDeliveredStatus: true,
+          ),
+        )
+        .toList();
+
+    final newMessagesMap = <String, GroupMessage>{};
+    for (final gm in groupMessagesWithoutReply) {
+      newMessagesMap[gm.id] = gm;
+    }
+
+    final Set<String> repliedToMessageIds = {};
+    final groupMessages = groupMessagesWithoutReply.map((gm) {
+      final roomMessage = roomMessages.firstWhere((rm) => rm.id == gm.id);
+      if (roomMessage.replyTo != null && roomMessage.replyTo!.isNotEmpty) {
+        debugPrint(
+          '🔍 [GroupChatScreen] Resolving replyTo for message ${gm.id} (type: ${gm.id.contains("-") ? "UUID" : "numeric"}): looking for ${roomMessage.replyTo} (type: ${roomMessage.replyTo!.contains("-") ? "UUID" : "numeric"})',
+        );
+
+        GroupMessage? repliedToMessage = _findMessageById(
+          roomMessage.replyTo,
+          newMessagesMap,
+          groupMessagesWithoutReply,
+        );
+
+        if (repliedToMessage == null) {
+          repliedToMessage = _findMessageById(
+            roomMessage.replyTo,
+            {},
+            _messages,
+          );
+
+          if (repliedToMessage != null) {
+            debugPrint(
+              '✅ [GroupChatScreen] Found replied-to message in existing messages: ${repliedToMessage.id}',
+            );
+            repliedToMessageIds.add(repliedToMessage.id);
+          }
+        } else {
+          debugPrint(
+            '✅ [GroupChatScreen] Found replied-to message in same batch: ${repliedToMessage.id}',
+          );
+        }
+
+        if (repliedToMessage == null) {
+          try {
+            final repliedToRoomMessage = roomMessages.firstWhere(
+              (rm) =>
+                  rm.id.trim().toLowerCase() ==
+                      roomMessage.replyTo!.trim().toLowerCase() ||
+                  rm.id == roomMessage.replyTo,
+            );
+            repliedToMessage = _convertRoomMessageToGroupMessage(
+              repliedToRoomMessage,
+            );
+            debugPrint(
+              '✅ [GroupChatScreen] Found replied-to message in API response: ${repliedToMessage.id}',
+            );
+          } catch (e) {
+            debugPrint(
+              '⚠️ [GroupChatScreen] Reply target message ${roomMessage.replyTo} not in current batch. Will try to load older messages.',
+            );
+
+            _fetchRepliedToMessage(roomMessage.replyTo!, gm.id);
+
+            repliedToMessage = GroupMessage(
+              id: roomMessage.replyTo!,
+              groupId: widget.group.id,
+              senderId: '',
+              senderName: 'Loading...',
+              text: 'Loading original message...',
+              timestamp: DateTime.now().subtract(const Duration(hours: 1)),
+              isDeleted: false,
+            );
+            debugPrint(
+              '⚠️ [GroupChatScreen] Created temporary placeholder for reply target: ${repliedToMessage.id}',
+            );
+          }
+        }
+
+        return gm.copyWith(replyTo: repliedToMessage);
+      }
+      return gm;
+    }).toList();
+
+    final preservedRepliedToMessages = <GroupMessage>[];
+    for (final existingMessage in _messages) {
+      if (repliedToMessageIds.contains(existingMessage.id)) {
+        final isInNewBatch = groupMessages.any(
+          (m) => m.id == existingMessage.id,
+        );
+        if (!isInNewBatch) {
+          preservedRepliedToMessages.add(existingMessage);
+          debugPrint(
+            '✅ [GroupChatScreen] Preserving replied-to message from existing messages: ${existingMessage.id}',
+          );
+        }
+      }
+    }
+
+    log(
+      '✅ [GroupChatScreen] Converted to ${groupMessages.length} GroupMessages',
+    );
+
+    final preservedForwardPlaceholders = _messages
+        .where(
+          (m) => m.isForwarded && m.id.startsWith('temp_forward_'),
+        )
+        .toList();
+
+    var allMessages = [
+      ...groupMessages,
+      ...preservedRepliedToMessages,
+      ...preservedForwardPlaceholders,
+    ];
+    allMessages = _reconcileForwardedMessages(allMessages);
+    allMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+    _hasMoreMessages = roomMessages.length >= actualLimit;
+
+    if (!mounted) return;
+
+    setState(() {
+      _messages = allMessages;
+      _isLoading = false;
+      _hasError = false;
+      _currentOffset = groupMessages.length;
+    });
+
+    if (_roomOpenStartTime != null && _messages.isNotEmpty) {
+      final elapsed = DateTime.now().difference(_roomOpenStartTime!);
+      log(
+        '⏱️ [GroupChatScreen] First message rendered in '
+        '${elapsed.inMilliseconds}ms (room=${widget.group.id})',
+      );
+    }
+
+    log(
+      '✅ [GroupChatScreen] Reactions included in API response - no separate fetch needed',
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients && _messages.isNotEmpty) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+        _isAtBottom = true;
+      }
+      _markVisibleMessagesAsRead();
+    });
+    if (_hasPendingForward) {
+      if (!_forwardPlaceholdersInserted) {
+        _insertForwardPlaceholders();
+      }
+      if (!_forwardIntentInFlight && !_forwardIntentHandled) {
+        unawaited(_maybeSendPendingForwardMessages());
+      }
+    }
+  }
+
+  /// Fetch messages from network in background (after cache hit).
+  Future<void> _fetchOpenRoomFromNetwork({
+    required int companyId,
+    required bool isMemberFromRoomInfo,
+    required int actualLimit,
+  }) async {
+    try {
+      final response = await _chatService.openRoom(
+        roomId: widget.group.id,
+        isMember: isMemberFromRoomInfo,
+        companyId: companyId,
+        offset: _currentOffset,
+        limit: actualLimit,
+      );
+
+      if (!mounted) return;
+
+      if (response.success) {
+        final roomMessages = response.data ?? <RoomMessage>[];
+        if (roomMessages.isNotEmpty) {
+          MessageCache().cacheMessages(
+            widget.group.id,
+            companyId,
+            _currentOffset,
+            actualLimit,
+            roomMessages,
+          );
+
+          final newMessageIds = roomMessages.map((m) => m.id).toSet();
+          final currentIds = _messages.map((m) => m.id).toSet();
+          if (newMessageIds.difference(currentIds).isNotEmpty ||
+              roomMessages.length != _messages.length) {
+            log(
+              '🔄 [GroupChatScreen] Fresh messages differ from cache — updating UI',
+            );
+            await _applyOpenRoomMessages(roomMessages, companyId, actualLimit);
+          }
+        }
+        _rateLimitRetryCount = 0;
+      } else {
+        log(
+          '⚠️ [GroupChatScreen] Background openRoom failed '
+          '(status=${response.statusCode}) — keeping cached messages',
+        );
+        if (_messages.isEmpty) {
+          _handleMessageError(response.statusCode, response.displayError);
+        }
+      }
+    } catch (e) {
+      log('⚠️ [GroupChatScreen] Background openRoom error: $e');
+      if (_messages.isEmpty && mounted) {
+        _handleMessageError(0, chatCallTr(context, 'chatCall_checkConnection', fallback: 'Unable to connect. Please check your internet connection.'));
+      }
     }
   }
 
@@ -1900,7 +2031,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         if (mounted) {
           EnhancedToast.error(
             context,
-            title: 'Access Denied',
+            title: chatCallTr(context, 'chatCall_accessDenied', fallback: 'Access Denied'),
             message: errorMessage.contains('You are not a member')
                 ? errorMessage
                 : 'You are not a member of this room. You cannot send messages here.',
@@ -1909,7 +2040,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       } else {
         // Other errors - just show to user
         if (mounted) {
-          EnhancedToast.error(context, title: 'Error', message: errorMessage);
+          EnhancedToast.error(context, title: chatCallTr(context, 'chatCall_error', fallback: 'Error'), message: errorMessage);
         }
       }
 
@@ -2419,7 +2550,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 }
                 if (mediaMatch ||
                     (groupMessage.text.isNotEmpty &&
-                        groupMessage.text == m.text)) {
+                        groupMessage.text == m.text) ||
+                    timeDiff < 60) {
                   log('✅ [GroupChatScreen] Matched forwarded placeholder');
                   return true;
                 }
@@ -2598,6 +2730,11 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                     isRead: groupMessage.isRead,
                     isSystemMessage: groupMessage.isSystemMessage,
                     snapshotUserId: widget.currentUserNumericId,
+                    isForwarded: _resolveForwardedFlag(
+                      existingMessage: existingMessage,
+                      groupMessage: groupMessage,
+                      roomMessage: roomMessage,
+                    ),
                   )
                 : groupMessage.copyWith(
                     status: initialStatus,
@@ -2623,7 +2760,16 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                         groupMessage.audioDuration ??
                         existingMessage.audioDuration,
                     isAudio: groupMessage.isAudio,
+                    isForwarded: _resolveForwardedFlag(
+                      existingMessage: existingMessage,
+                      groupMessage: groupMessage,
+                      roomMessage: roomMessage,
+                    ),
                   );
+
+            if (updatedMessage.isForwarded) {
+              _sessionForwardedMessageIds.add(updatedMessage.id);
+            }
 
             // CRITICAL FIX: Double-check bounds before assignment (defensive programming)
             // This prevents RangeError if messages list was modified during setState
@@ -2863,12 +3009,50 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       setState(() {
         _isLoadingMore = false;
       });
-      _handleMessageError(0, 'Failed to load older messages: $e');
+      _handleMessageError(0, chatCallTr(context, 'chatCall_failedToLoadOlderMessages', fallback: 'Failed to load older messages: {error}', params: {'error': '$e'}));
     }
   }
 
   /// Handle message loading errors
   void _handleMessageError(int? statusCode, String errorMessage) {
+    final errorLower = errorMessage.toLowerCase();
+    final isNetworkFailure = statusCode == null ||
+        statusCode == 0 ||
+        statusCode == 408 ||
+        errorLower.contains('timeout') ||
+        errorLower.contains('connection') ||
+        errorLower.contains('socket') ||
+        errorLower.contains('network') ||
+        errorLower.contains('cancel');
+
+    if (isNetworkFailure) {
+      log(
+        '⚠️ [GroupChatScreen] Network/transient error (status=$statusCode) — '
+        'chat may continue, not treating as membership denial',
+      );
+      setState(() {
+        _isLoading = false;
+        _isLoadingMore = false;
+        // Only show error overlay when we have no messages to display
+        if (_messages.isEmpty && !_hasPendingForward) {
+          _hasError = true;
+          _errorMessage = chatCallTr(context, 'chatCall_checkConnection', fallback: 'Unable to connect. Please check your internet connection.');
+        } else {
+          _hasError = false;
+          _errorMessage = null;
+        }
+      });
+
+      if (_messages.isEmpty && !_hasPendingForward) {
+        EnhancedToast.error(
+          context,
+          title: chatCallTr(context, 'chatCall_networkError', fallback: 'Network Error'),
+          message: chatCallTr(context, 'chatCall_checkConnection', fallback: 'Unable to connect. Please check your internet connection.'),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _isLoading = false;
       _isLoadingMore = false;
@@ -2880,8 +3064,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       // Token expired - logout
       EnhancedToast.error(
         context,
-        title: 'Authentication Error',
-        message: 'Your session has expired. Please login again.',
+        title: chatCallTr(context, 'chatCall_authError', fallback: 'Authentication Error'),
+        message: chatCallTr(context, 'chatCall_sessionExpired', fallback: 'Your session has expired. Please login again.'),
       );
       // TODO: Navigate to login screen
     } else if (statusCode == 403) {
@@ -2908,7 +3092,21 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           '⚠️ [GroupChatScreen] 403 but NOT membership error (ignoring): "$errorMessage"',
         );
         log('   Treating as API permission issue, not membership issue');
-        // Don't set _isUserMember = false - let join API determine membership
+        if (_messages.isNotEmpty) {
+          setState(() {
+            _hasError = false;
+            _errorMessage = null;
+          });
+        }
+        return;
+      }
+
+      // Genuine membership error — only block when we have no messages to show
+      if (_messages.isNotEmpty) {
+        log(
+          '⚠️ [GroupChatScreen] Membership denial but messages already loaded — '
+          'keeping chat open',
+        );
         return;
       }
 
@@ -2917,33 +3115,55 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       setState(() {
         _isUserMember = false;
         _hasError = true;
-        _errorMessage = 'You are not a member of this group';
+        _errorMessage = chatCallTr(context, 'chatCall_notMemberOfGroup', fallback: 'You are not a member of this group');
       });
 
       EnhancedToast.error(
         context,
-        title: 'Access Denied',
-        message: 'You are not a member of this group',
+        title: chatCallTr(context, 'chatCall_accessDenied', fallback: 'Access Denied'),
+        message: chatCallTr(context, 'chatCall_notMemberOfGroup', fallback: 'You are not a member of this group'),
       );
     } else if (statusCode == 404) {
-      // Room not found
-      EnhancedToast.error(
-        context,
-        title: 'Room Not Found',
-        message: 'This room does not exist',
-      );
+      final isMembershipNotFound =
+          errorLower.contains('not a member') ||
+          errorLower.contains('no longer a member') ||
+          errorLower.contains('not member');
+
+      if (isMembershipNotFound && _messages.isEmpty) {
+        log('🚫 [GroupChatScreen] 404 membership denial: "$errorMessage"');
+        setState(() {
+          _isUserMember = false;
+          _hasError = true;
+          _errorMessage = chatCallTr(context, 'chatCall_notMemberOfGroup', fallback: 'You are not a member of this group');
+        });
+        EnhancedToast.error(
+          context,
+          title: chatCallTr(context, 'chatCall_accessDenied', fallback: 'Access Denied'),
+          message: chatCallTr(context, 'chatCall_notMemberOfGroup', fallback: 'You are not a member of this group'),
+        );
+      } else if (_messages.isEmpty) {
+        EnhancedToast.error(
+          context,
+          title: chatCallTr(context, 'chatCall_roomNotFound', fallback: 'Room Not Found'),
+          message: chatCallTr(context, 'chatCall_roomNotFound', fallback: 'This room does not exist'),
+        );
+      } else {
+        log(
+          '⚠️ [GroupChatScreen] 404 with messages loaded — keeping chat open',
+        );
+      }
     } else if (statusCode == 429) {
       // Rate limit error - too many requests
       _rateLimitRetryCount++;
       final backoffSeconds = _calculateBackoffSeconds(_rateLimitRetryCount);
 
       setState(() {
-        _errorMessage = 'Too many requests. Please try again later.';
+        _errorMessage = chatCallTr(context, 'chatCall_tooManyRequestsTryLater', fallback: 'Too many requests. Please try again later.');
       });
 
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message:
             'Too many requests. Please wait ${backoffSeconds}s before retrying.',
       );
@@ -2961,21 +3181,16 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       });
     } else if (statusCode == 500) {
       // Server error - show retry option
-      EnhancedToast.error(
-        context,
-        title: 'Server Error',
-        message: 'Unable to load messages. Please try again.',
-      );
-    } else if (statusCode == 0) {
-      // Network error
-      EnhancedToast.error(
-        context,
-        title: 'Network Error',
-        message: 'Unable to connect. Please check your internet connection.',
-      );
+      if (_messages.isEmpty) {
+        EnhancedToast.error(
+          context,
+          title: chatCallTr(context, 'chatCall_serverErrorTitle', fallback: 'Server Error'),
+          message: chatCallTr(context, 'chatCall_unableToLoadMessages', fallback: 'Unable to load messages. Please try again.'),
+        );
+      }
     } else {
       // Other errors
-      EnhancedToast.error(context, title: 'Error', message: errorMessage);
+      EnhancedToast.error(context, title: chatCallTr(context, 'chatCall_error', fallback: 'Error'), message: errorMessage);
     }
   }
 
@@ -3050,7 +3265,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       }
     } catch (e) {
       log('❌ [GroupChatScreen] Error fetching messages directly: $e');
-      _handleMessageError(0, 'Failed to load messages: $e');
+      _handleMessageError(0, chatCallTr(context, 'chatCall_failedToLoadMessagesShort', fallback: 'Failed to load messages') + ': $e');
     }
   }
 
@@ -3687,9 +3902,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (!_isUserMember) {
       EnhancedToast.error(
         context,
-        title: 'Access Denied',
+        title: chatCallTr(context, 'chatCall_accessDenied', fallback: 'Access Denied'),
         message:
-            'You are not a member of this room. You cannot send messages here.',
+            chatCallTr(context, 'chatCall_youAreNotAMemberOf', fallback: 'You are not a member of this room. You cannot send messages here.'),
       );
       return;
     }
@@ -3749,8 +3964,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       if (mounted) {
         EnhancedToast.error(
           context,
-          title: 'Failed to send',
-          message: 'Please check your connection and try again',
+          title: chatCallTr(context, 'chatCall_failedToSend', fallback: 'Failed to send'),
+          message: chatCallTr(context, 'chatCall_failedToSendRetry', fallback: 'Please check your connection and try again'),
         );
       }
     }
@@ -3946,7 +4161,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: _onegateRed.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
                       child:
@@ -3967,7 +4182,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                     child: Text(
                                       displayGroup.initials,
                                       style: TextStyle(
-                                        color: AppColors.primary,
+                                        color: _onegateRed,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12,
                                       ),
@@ -3995,7 +4210,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                               child: Text(
                                 displayGroup.initials,
                                 style: TextStyle(
-                                  color: AppColors.primary,
+                                  color: _onegateRed,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -4047,7 +4262,17 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              _isWebSocketConnected ? 'Online' : 'Offline',
+                              _isWebSocketConnected
+                                  ? chatCallTr(
+                                      context,
+                                      'chatCall_online',
+                                      fallback: 'Online',
+                                    )
+                                  : chatCallTr(
+                                      context,
+                                      'chatCall_offline',
+                                      fallback: 'Offline',
+                                    ),
                               style: TextStyle(
                                 color: _isWebSocketConnected
                                     ? Colors.green.shade700
@@ -4066,7 +4291,15 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              displayGroup.memberCountDisplay,
+                              chatCallTr(
+                                context,
+                                'chatCall_membersCountGeneric',
+                                fallback: '{count} members',
+                                params: {
+                                  'count':
+                                      '${displayGroup.memberCount ?? displayGroup.members.length}',
+                                },
+                              ),
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: 12,
@@ -4102,13 +4335,19 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                     final isAdmin = _isCurrentUserAdmin();
 
                     return [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'group_info',
                         child: Row(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.blue),
-                            SizedBox(width: 8),
-                            Text('Group Info'),
+                            const Icon(Icons.info_outline, color: Colors.blue),
+                            const SizedBox(width: 8),
+                            Text(
+                              chatCallTr(
+                                context,
+                                'chatCall_groupInfo',
+                                fallback: 'Group Info',
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -4124,51 +4363,83 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                       (_updatedGroupIconUrl ??
                                               _currentGroup.iconUrl)!
                                           .isNotEmpty
-                                  ? 'Change Group Image'
-                                  : 'Upload Group Image',
+                                  ? chatCallTr(
+                                      context,
+                                      'chatCall_changeGroupImage',
+                                      fallback: 'Change Group Image',
+                                    )
+                                  : chatCallTr(
+                                      context,
+                                      'chatCall_uploadGroupImage',
+                                      fallback: 'Upload Group Image',
+                                    ),
                             ),
                           ],
                         ),
                       ),
                       // Only show "Add Member" option if current user is admin
                       if (isAdmin)
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'add_member',
                           child: Row(
                             children: [
-                              Icon(Icons.person_add, color: Colors.blue),
-                              SizedBox(width: 8),
-                              Text('Add Member'),
+                              const Icon(Icons.person_add, color: Colors.blue),
+                              const SizedBox(width: 8),
+                              Text(
+                                chatCallTr(
+                                  context,
+                                  'chatCall_addMember',
+                                  fallback: 'Add Member',
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'clear',
                         child: Row(
                           children: [
-                            Icon(Icons.delete_outline, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text('Clear Chat'),
+                            const Icon(Icons.delete_outline, color: Colors.red),
+                            const SizedBox(width: 8),
+                            Text(
+                              chatCallTr(
+                                context,
+                                'chatCall_clearChat',
+                                fallback: 'Clear Chat',
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'customize',
                         child: Row(
                           children: [
-                            Icon(Icons.palette, color: Colors.purple),
-                            SizedBox(width: 8),
-                            Text('Customize Chat'),
+                            const Icon(Icons.palette, color: Colors.purple),
+                            const SizedBox(width: 8),
+                            Text(
+                              chatCallTr(
+                                context,
+                                'chatCall_customizeChat',
+                                fallback: 'Customize Chat',
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'leave',
                         child: Row(
                           children: [
-                            Icon(Icons.exit_to_app, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text('Leave Group'),
+                            const Icon(Icons.exit_to_app, color: Colors.red),
+                            const SizedBox(width: 8),
+                            Text(
+                              chatCallTr(
+                                context,
+                                'chatCall_leaveGroup',
+                                fallback: 'Leave Group',
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -4177,13 +4448,10 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 ),
               ],
             ),
-      body: _isLoading
-          ? const Center(
-              child: AppLoader(
-                title: 'Loading Chat',
-                subtitle: 'Fetching group messages...',
-                icon: Icons.chat_rounded,
-              ),
+      body: _isLoading && !_hasPendingForward
+          ? OneGateGlobalLoader(
+              title: chatCallTr(context, 'chatCall_loadingChat', fallback: 'Loading Chat'),
+              subtitle: chatCallTr(context, 'chatCall_fetchingGroupMessages', fallback: 'Fetching group messages...'),
             )
           : Stack(
               children: [
@@ -4208,7 +4476,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Real-time messaging unavailable. Messages will sync when connection is restored.',
+                                chatCallTr(context, 'chatCall_realtimeUnavailable', fallback: 'Real-time messaging unavailable. Messages will sync when connection is restored.'),
                                 style: TextStyle(
                                   color: Colors.orange.shade900,
                                   fontSize: 12,
@@ -4228,40 +4496,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                           children: [
                             // Background image layer
                             Positioned.fill(
-                              child: Container(
-                                color: const Color(0xFFF0F2F5),
-                                child: _chatWallpaperImage != null
-                                    ? Opacity(
-                                        opacity: 0.75,
-                                        child: Image.file(
-                                          _chatWallpaperImage!,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (context, error, stackTrace) {
-                                                return const SizedBox.shrink();
-                                              },
-                                        ),
-                                      )
-                                    : Opacity(
-                                        opacity: 0.75,
-                                        child: Image.asset(
-                                          'assets/images/oscar/oscar_chat.png',
-                                          repeat: ImageRepeat.repeat,
-                                          errorBuilder:
-                                              (context, error, stackTrace) {
-                                                debugPrint(
-                                                  'Failed to load background image: $error',
-                                                );
-                                                return Container(
-                                                  color: Colors.white,
-                                                );
-                                              },
-                                        ),
-                                      ),
+                              child: ChatWallpaperBackground(
+                                customWallpaper: _chatWallpaperImage,
+                                opacity: 0.75,
                               ),
                             ),
                             // Content layer
-                            if (_hasError && _messages.isEmpty)
+                            if (_hasError && _messages.isEmpty && !_hasPendingForward)
                               _buildErrorState()
                             else if (_messages.isEmpty)
                               _buildEmptyState()
@@ -4429,8 +4670,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               });
               EnhancedToast.info(
                 context,
-                title: 'Replying',
-                message: 'Tap to send your reply',
+                title: chatCallTr(context, 'chatCall_replaying', fallback: 'Replying'),
+                message: chatCallTr(context, 'chatCall_tapToSendReply', fallback: 'Tap to send your reply'),
               );
               return false;
             },
@@ -4489,7 +4730,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                           // Use cached avatar from RoomInfo API, WebSocket message, or Messages API
                           // Priority: message.senderAvatar > _memberAvatarCache > initials
                           backgroundImage: hasAvatar
-                              ? NetworkImage(avatarUrl!)
+                              ? NetworkImage(avatarUrl)
                               : null,
                           onBackgroundImageError: hasAvatar
                               ? (exception, stackTrace) {
@@ -4580,7 +4821,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
-                                        'Forwarded',
+                                        chatCallTr(context, 'chatCall_forwardedLabel', fallback: 'Forwarded'),
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
@@ -4854,7 +5095,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                         ),
                                       )
                                     : Text(
-                                        '(Empty message)',
+                                        chatCallTr(context, 'chatCall_emptyMessage', fallback: '(Empty message)'),
                                         style: TextStyle(
                                           color: isCurrentUser
                                               ? (isDarkTheme
@@ -4868,8 +5109,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                         ),
                                       ),
                               if (message.isDeleted)
-                                Text(
-                                  'This message was deleted',
+                                Text(chatCallTr(context, 'chatCall_thisMessageWasDeleted', fallback: 'This message was deleted'),
                                   style: TextStyle(
                                     color: isDarkTheme
                                         ? Colors.grey.shade400
@@ -4894,8 +5134,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                             : Colors.grey.shade600,
                                       ),
                                       const SizedBox(width: 2),
-                                      Text(
-                                        'edited',
+                                      Text(chatCallTr(context, 'chatCall_edited', fallback: 'edited'),
                                         style: TextStyle(
                                           fontSize: 10,
                                           color: isDarkTheme
@@ -4975,9 +5214,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
     String dateText;
     if (messageDate == today) {
-      dateText = 'Today';
+      dateText = chatCallTr(context, 'chatCall_today', fallback: 'Today');
     } else if (messageDate == yesterday) {
-      dateText = 'Yesterday';
+      dateText = chatCallTr(
+        context,
+        'chatCall_yesterday',
+        fallback: 'Yesterday',
+      );
     } else {
       dateText = DateFormat('MMMM d, yyyy').format(istDate);
     }
@@ -5160,7 +5403,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           ),
           const SizedBox(height: 2),
           Text(
-            replyTo.isDeleted ? 'This message was deleted' : replyTo.text,
+            replyTo.isDeleted ? chatCallTr(context, 'chatCall_thisMessageWasDeletedShort', fallback: 'This message was deleted') : replyTo.text,
             style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
             overflow: TextOverflow.visible,
           ),
@@ -5323,8 +5566,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
             child: typingUserAvatar == null || typingUserAvatar.isEmpty
                 ? Text(
                     typingUserInitials,
-                    style: TextStyle(
-                      color: AppColors.primary,
+                    style: const TextStyle(
+                      color: Color(0xffc62828),
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -5402,8 +5645,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Voice Message',
+                Text(chatCallTr(context, 'chatCall_voiceMessage', fallback: 'Voice Message'),
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                 ),
                 if (message.audioDuration != null)
@@ -5439,7 +5681,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  message.documentName ?? 'Document',
+                  message.documentName ?? chatCallTr(context, 'chatCall_document', fallback: 'Document'),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
@@ -5453,8 +5695,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                     style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
                   )
                 else if (message.documentUrl != null)
-                  Text(
-                    'Tap to download',
+                  Text(chatCallTr(context, 'chatCall_tapToDownload', fallback: 'Tap to download'),
                     style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
                   ),
               ],
@@ -5471,7 +5712,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               } else if (message.documentUrl != null) {
                 _downloadDocumentFromUrl(
                   message.documentUrl!,
-                  message.documentName ?? 'Document',
+                  message.documentName ?? chatCallTr(context, 'chatCall_document', fallback: 'Document'),
                 );
               }
             },
@@ -5488,14 +5729,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Center(
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.location_on, size: 48, color: AppColors.primary),
             SizedBox(height: 8),
-            Text(
-              'Location Shared',
+            Text(chatCallTr(context, 'chatCall_locationShared', fallback: 'Location Shared'),
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
           ],
@@ -5522,8 +5762,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Contact Shared',
+                Text(chatCallTr(context, 'chatCall_contactShared', fallback: 'Contact Shared'),
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                 ),
                 Text(
@@ -5642,7 +5881,11 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                       decoration: InputDecoration(
                         hintText: _replyingTo != null
                             ? 'Reply to ${_replyingTo!.isFromUser(widget.currentUserId) ? "your message" : _replyingTo!.senderName}...'
-                            : 'Type a message...',
+                            : chatCallTr(
+                                context,
+                                'chatCall_typeMessageHint',
+                                fallback: 'Type a message...',
+                              ),
                         hintStyle: TextStyle(
                           color: isDarkTheme
                               ? Colors.grey.shade500
@@ -5691,8 +5934,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                       onTap: () {
                         EnhancedToast.info(
                           context,
-                          title: 'Voice Note',
-                          message: 'Hold to record a voice message',
+                          title: chatCallTr(context, 'chatCall_voiceNote', fallback: 'Voice Note'),
+                          message: chatCallTr(context, 'chatCall_holdToRecordVoice', fallback: 'Hold to record a voice message'),
                         );
                       },
                       child: AnimatedContainer(
@@ -5765,8 +6008,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           Icon(Icons.info_outline, color: Colors.grey.shade600, size: 24),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              'You cannot send messages to this group because you are no longer a member.',
+            child: Text(chatCallTr(context, 'chatCall_cannotSendNotMember', fallback: 'You cannot send messages to this group because you are no longer a member.'),
               style: TextStyle(
                 color: isDarkTheme
                     ? Colors.grey.shade300
@@ -5822,7 +6064,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 const SizedBox(height: 2),
                 Text(
                   _replyingTo!.isDeleted
-                      ? 'This message was deleted'
+                      ? chatCallTr(context, 'chatCall_thisMessageWasDeletedShort', fallback: 'This message was deleted')
                       : _replyingTo!.text,
                   style: TextStyle(
                     fontSize: 11,
@@ -6487,8 +6729,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               child: const Icon(Icons.mic, color: Colors.white, size: 48),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Recording...',
+            Text(chatCallTr(context, 'chatCall_recording', fallback: 'Recording...'),
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -6585,9 +6826,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (!_isUserMember) {
       EnhancedToast.error(
         context,
-        title: 'Access Denied',
+        title: chatCallTr(context, 'chatCall_accessDenied', fallback: 'Access Denied'),
         message:
-            'You cannot send messages to this group because you are no longer a member.',
+            chatCallTr(context, 'chatCall_cannotSendNotMember', fallback: 'You cannot send messages to this group because you are no longer a member.'),
       );
       return;
     }
@@ -6631,14 +6872,14 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       } else {
         EnhancedToast.warning(
           context,
-          title: 'Permission Required',
-          message: 'Microphone permission is required.',
+          title: chatCallTr(context, 'chatCall_permissionRequired', fallback: 'Permission Required'),
+          message: chatCallTr(context, 'chatCall_micPermissionRequired', fallback: 'Microphone permission is required.'),
         );
       }
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to start recording: ${e.toString()}',
       );
       setState(() {
@@ -6764,7 +7005,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
             }
             EnhancedToast.error(
               context,
-              title: 'Upload Failed',
+              title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
               message:
                   uploadResponse.error ??
                   'Failed to upload voice note. Please try again.',
@@ -6788,8 +7029,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
             }
             EnhancedToast.error(
               context,
-              title: 'Upload Failed',
-              message: 'Invalid response from server. Please try again.',
+              title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
+              message: chatCallTr(context, 'chatCall_invalidServerResponse', fallback: 'Invalid response from server. Please try again.'),
             );
             return;
           }
@@ -6845,8 +7086,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           if (!sent) {
             EnhancedToast.error(
               context,
-              title: 'Send Failed',
-              message: 'Uploaded, but failed to send voice note. Please retry.',
+              title: chatCallTr(context, 'chatCall_sendFailed', fallback: 'Send Failed'),
+              message: chatCallTr(context, 'chatCall_uploadedButSendFailed', fallback: 'Uploaded, but failed to send voice note. Please retry.'),
             );
           }
         } catch (e) {
@@ -6860,7 +7101,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           }
           EnhancedToast.error(
             context,
-            title: 'Error',
+            title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
             message: 'Failed to send voice message: ${e.toString()}',
           );
         }
@@ -6873,7 +7114,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to send voice message: ${e.toString()}',
       );
       setState(() {
@@ -7013,15 +7254,15 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       } else {
         EnhancedToast.error(
           context,
-          title: 'Download Failed',
-          message: 'Unable to download video. Try again.',
+          title: chatCallTr(context, 'chatCall_downloadFailed', fallback: 'Download Failed'),
+          message: chatCallTr(context, 'chatCall_unableToDownloadVideo', fallback: 'Unable to download video. Try again.'),
         );
       }
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Download Failed',
-        message: 'Unable to download video.',
+        title: chatCallTr(context, 'chatCall_downloadFailed', fallback: 'Download Failed'),
+        message: chatCallTr(context, 'chatCall_unableToDownloadVideoGeneric', fallback: 'Unable to download video.'),
       );
     } finally {
       if (mounted) {
@@ -7105,9 +7346,98 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     });
   }
 
+  static const Duration _forwardSpacing = Duration(milliseconds: 300);
+  static const Duration _forwardRateLimitBackoff = Duration(seconds: 2);
+
+  String _friendlyForwardError(Object error, {int? statusCode}) {
+    if (statusCode == 429 || error.toString().contains('429')) {
+      return 'Too many requests. Please wait a moment and try again.';
+    }
+    final text = error.toString();
+    if (text.contains('validateStatus')) {
+      return 'Server is busy. Please try again in a moment.';
+    }
+    return text.replaceFirst(RegExp(r'^Exception:\s*'), '');
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> _forwardMessageWithRetry({
+    required String messageId,
+    required List<String> targetRoomIds,
+  }) async {
+    const maxRetries = 3;
+    ApiResponse<Map<String, dynamic>>? lastResponse;
+
+    for (var attempt = 0; attempt <= maxRetries; attempt++) {
+      lastResponse = await _chatService.forwardMessage(
+        messageId: messageId,
+        targetRoomIds: targetRoomIds,
+      );
+      if (lastResponse.success || lastResponse.statusCode != 429) {
+        return lastResponse;
+      }
+      if (attempt < maxRetries) {
+        final backoff = _forwardRateLimitBackoff * (attempt + 1);
+        await Future.delayed(backoff);
+      }
+    }
+
+    return lastResponse ??
+        ApiResponse.error(
+          'Too many requests. Please wait a moment and try again.',
+          statusCode: 429,
+        );
+  }
+
   List<GroupMessage> _getSelectedMessagesInOrder() {
     if (_selectedMessageIds.isEmpty) return <GroupMessage>[];
     return _messages.where((m) => _selectedMessageIds.contains(m.id)).toList();
+  }
+
+  List<RoomMessage> _parseForwardCreatedMessages(Map<String, dynamic>? data) {
+    if (data == null) return <RoomMessage>[];
+
+    dynamic raw = data['created_messages'];
+    if (raw is! List) {
+      final nested = data['data'];
+      if (nested is Map<String, dynamic>) {
+        raw = nested['created_messages'];
+      } else if (nested is Map) {
+        raw = nested['created_messages'];
+      }
+    }
+
+    if (raw is! List) {
+      final single = data['message'] ?? data['created_message'];
+      if (single is Map<String, dynamic>) {
+        raw = [single];
+      } else if (single is Map) {
+        raw = [
+          Map<String, dynamic>.from(
+            single.map((k, v) => MapEntry(k.toString(), v)),
+          ),
+        ];
+      } else {
+        return <RoomMessage>[];
+      }
+    }
+
+    final created = <RoomMessage>[];
+    for (final item in raw) {
+      try {
+        if (item is Map<String, dynamic>) {
+          created.add(RoomMessage.fromJson(item));
+        } else if (item is Map) {
+          created.add(
+            RoomMessage.fromJson(
+              Map<String, dynamic>.from(
+                item.map((k, v) => MapEntry(k.toString(), v)),
+              ),
+            ),
+          );
+        }
+      } catch (_) {}
+    }
+    return created;
   }
 
   Future<void> _maybeSendPendingForwardMessages() async {
@@ -7117,69 +7447,74 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         _pendingForwardMessageIds!.isEmpty) {
       return;
     }
-    if (_hasLeftGroup || !_isUserMember) {
+    if (_hasLeftGroup) {
       _forwardIntentHandled = true;
       _pendingForwardMessageIds = null;
       _pendingForwardPayloads = null;
       return;
     }
 
-    _insertForwardPlaceholders();
+    if (!_forwardPlaceholdersInserted) {
+      _insertForwardPlaceholders();
+    }
 
     _forwardIntentInFlight = true;
-    _forwardIntentHandled = true;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
+    final showLoader = !_forwardIntentHandled;
+    if (showLoader) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.black54,
+        builder: (_) => Center(
+          child: OneGateGlobalLoader(
+            title: chatCallTr(context, 'chatCall_forwarding', fallback: 'Forwarding'),
+            subtitle: chatCallTr(context, 'chatCall_sendingYourMessages', fallback: 'Sending your messages...'),
+          ),
+        ),
+      );
+    }
+
+    final pendingIds = List<String>.from(_pendingForwardMessageIds!);
 
     try {
-      final isMember = await _chatService.ensureMembership(widget.group.id);
-      if (!isMember) {
-        throw Exception('You are not a member of this group');
-      }
+      // Do not call /rooms/join here — _openRoom already validates membership
+      // in the background. An extra join triggers 429 rate limits on forward.
 
       int success = 0;
       final failures = <String>[];
       final List<RoomMessage> createdMessages = [];
 
-      for (final id in _pendingForwardMessageIds!) {
-        final response = await _chatService.forwardMessage(
+      for (var i = 0; i < pendingIds.length; i++) {
+        if (i > 0) {
+          await Future.delayed(_forwardSpacing);
+        }
+        final id = pendingIds[i];
+        final response = await _forwardMessageWithRetry(
           messageId: id,
           targetRoomIds: [widget.group.id],
         );
         if (response.success) {
           success++;
-          // Use API response created_messages so we have real id and is_forwarded from server
-          final data = response.data;
-          if (data != null && data['created_messages'] is List) {
-            for (final item in data['created_messages'] as List) {
-              if (item is Map<String, dynamic>) {
-                try {
-                  createdMessages.add(RoomMessage.fromJson(item));
-                } catch (_) {}
-              } else if (item is Map) {
-                try {
-                  createdMessages.add(
-                    RoomMessage.fromJson(
-                      Map<String, dynamic>.from(
-                        item.map((k, v) => MapEntry(k.toString(), v)),
-                      ),
-                    ),
-                  );
-                } catch (_) {}
-              }
-            }
-          }
+          createdMessages.addAll(_parseForwardCreatedMessages(response.data));
         } else {
-          failures.add(response.displayError);
+          failures.add(
+            _friendlyForwardError(
+              response.displayError,
+              statusCode: response.statusCode,
+            ),
+          );
         }
       }
 
       if (!mounted) return;
-      Navigator.of(context).pop(); // close loader
+      if (showLoader && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+
+      for (final rm in createdMessages) {
+        _sessionForwardedMessageIds.add(rm.id);
+      }
 
       if (createdMessages.isNotEmpty) {
         _replaceForwardPlaceholdersWithCreatedMessages(createdMessages);
@@ -7187,24 +7522,26 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         _markForwardPlaceholdersDelivered();
       }
 
-      if (success == (_pendingForwardMessageIds?.length ?? 0)) {
+      if (success == pendingIds.length) {
+        _forwardIntentHandled = true;
         EnhancedToast.success(
           context,
-          title: 'Forwarded',
+          title: chatCallTr(context, 'chatCall_forwardedToast', fallback: 'Forwarded'),
           message:
               'Message${success > 1 ? 's' : ''} forwarded to ${widget.group.name}.',
         );
       } else if (success > 0) {
+        _forwardIntentHandled = true;
         EnhancedToast.warning(
           context,
-          title: 'Partially sent',
+          title: chatCallTr(context, 'chatCall_partiallySent', fallback: 'Partially sent'),
           message:
-              '$success of ${_pendingForwardMessageIds!.length} sent. ${failures.isNotEmpty ? failures.first : ''}',
+              '$success of ${pendingIds.length} sent. ${failures.isNotEmpty ? failures.first : ''}',
         );
       } else {
         EnhancedToast.error(
           context,
-          title: 'Failed',
+          title: chatCallTr(context, 'chatCall_failed', fallback: 'Failed'),
           message: failures.isNotEmpty
               ? failures.first
               : 'Could not forward right now.',
@@ -7214,15 +7551,19 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
     } catch (e) {
       if (!mounted) return;
-      Navigator.of(context).pop();
+      if (showLoader && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Failed to forward message: $e',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: _friendlyForwardError(e),
       );
     } finally {
-      _pendingForwardMessageIds = null;
-      _pendingForwardPayloads = null;
+      if (_forwardIntentHandled) {
+        _pendingForwardMessageIds = null;
+        _pendingForwardPayloads = null;
+      }
       _forwardIntentInFlight = false;
     }
   }
@@ -7243,9 +7584,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         final roomMessage = createdMessages[i];
         final idx = _messages.indexWhere((m) => m.id == tempId);
         if (idx != -1) {
+          _sessionForwardedMessageIds.add(roomMessage.id);
           final groupMessage = _convertRoomMessageToGroupMessage(
             roomMessage,
-          ).copyWith(status: GroupMessageStatus.delivered);
+          ).copyWith(
+            status: GroupMessageStatus.delivered,
+            isForwarded: true,
+          );
           _messages[idx] = groupMessage;
         }
       }
@@ -7267,8 +7612,20 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
   void _insertForwardPlaceholders() {
     if (_forwardPlaceholdersInserted) return;
+
     if (_pendingForwardPayloads == null || _pendingForwardPayloads!.isEmpty) {
-      return;
+      if (_pendingForwardMessageIds == null ||
+          _pendingForwardMessageIds!.isEmpty) {
+        return;
+      }
+      _pendingForwardPayloads = _pendingForwardMessageIds!
+          .map(
+            (id) => ForwardPayload(
+              messageId: id,
+              text: 'Forwarded message',
+            ),
+          )
+          .toList();
     }
     _forwardPlaceholdersInserted = true;
 
@@ -7344,8 +7701,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     });
     EnhancedToast.info(
       context,
-      title: 'Selected',
-      message: 'Select more messages or tap the forward icon',
+      title: chatCallTr(context, 'chatCall_selected', fallback: 'Selected'),
+      message: chatCallTr(context, 'chatCall_selectMoreOrForward', fallback: 'Select more messages or tap the forward icon'),
     );
   }
 
@@ -7354,8 +7711,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (selectedMessages.isEmpty) {
       EnhancedToast.warning(
         context,
-        title: 'Nothing selected',
-        message: 'Choose at least one message to forward.',
+        title: chatCallTr(context, 'chatCall_nothingSelected', fallback: 'Nothing selected'),
+        message: chatCallTr(context, 'chatCall_chooseAtLeastOneToForward', fallback: 'Choose at least one message to forward.'),
       );
       return;
     }
@@ -7366,8 +7723,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (companyId == null) {
       EnhancedToast.warning(
         context,
-        title: 'Society Required',
-        message: 'Select a society before forwarding messages.',
+        title: chatCallTr(context, 'chatCall_societyRequired', fallback: 'Society Required'),
+        message: chatCallTr(context, 'chatCall_selectSocietyBeforeForward', fallback: 'Select a society before forwarding messages.'),
       );
       return;
     }
@@ -7480,8 +7837,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (forwardable.isEmpty) {
       EnhancedToast.warning(
         context,
-        title: 'Nothing to send',
-        message: 'Selected messages are empty or deleted.',
+        title: chatCallTr(context, 'chatCall_nothingToSend', fallback: 'Nothing to send'),
+        message: chatCallTr(context, 'chatCall_selectedMessagesEmpty', fallback: 'Selected messages are empty or deleted.'),
       );
       return;
     }
@@ -7494,20 +7851,37 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
+      barrierColor: Colors.black54,
+      builder: (_) => Center(
+        child: OneGateGlobalLoader(
+          title: chatCallTr(context, 'chatCall_forwarding', fallback: 'Forwarding'),
+          subtitle: chatCallTr(context, 'chatCall_sendingYourMessages', fallback: 'Sending your messages...'),
+        ),
+      ),
     );
 
     try {
-      final isMember = await _chatService.ensureMembership(targetRoom.id);
-      if (!isMember) {
-        throw Exception('You are not a member of ${targetRoom.name}');
+      final companyId = await resolveIntercomCompanyId(_apiService, ref: ref);
+      if (companyId != null) {
+        final membership = await _chatService.validateMembership(
+          targetRoom.id,
+          isMember: true,
+          companyId: companyId,
+        );
+        if (membership.isNotMember) {
+          throw Exception('You are not a member of ${targetRoom.name}');
+        }
       }
 
       int successCount = 0;
       final List<String> failures = [];
 
-      for (final msg in forwardable) {
-        final response = await _chatService.forwardMessage(
+      for (var i = 0; i < forwardable.length; i++) {
+        if (i > 0) {
+          await Future.delayed(_forwardSpacing);
+        }
+        final msg = forwardable[i];
+        final response = await _forwardMessageWithRetry(
           messageId: msg.id,
           targetRoomIds: [targetRoom.id],
         );
@@ -7515,7 +7889,12 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         if (response.success) {
           successCount++;
         } else {
-          failures.add(response.displayError);
+          failures.add(
+            _friendlyForwardError(
+              response.displayError,
+              statusCode: response.statusCode,
+            ),
+          );
         }
       }
 
@@ -7529,21 +7908,21 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         _clearSelection();
         EnhancedToast.success(
           context,
-          title: 'Forwarded',
+          title: chatCallTr(context, 'chatCall_forwardedToast', fallback: 'Forwarded'),
           message:
               'Message${messages.length > 1 ? 's' : ''} sent to ${targetRoom.name}.',
         );
       } else if (successCount > 0) {
         EnhancedToast.warning(
           context,
-          title: 'Partially sent',
+          title: chatCallTr(context, 'chatCall_partiallySent', fallback: 'Partially sent'),
           message:
               '$successCount of ${forwardable.length} message(s) forwarded. ${failures.isNotEmpty ? failures.first : ''}',
         );
       } else {
         EnhancedToast.error(
           context,
-          title: 'Failed',
+          title: chatCallTr(context, 'chatCall_failed', fallback: 'Failed'),
           message: failures.isNotEmpty
               ? failures.first
               : 'Could not forward right now. Please try again.',
@@ -7557,8 +7936,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       });
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Failed to forward message: $e',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: _friendlyForwardError(e),
       );
     }
   }
@@ -7570,8 +7949,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       if (directory == null) {
         EnhancedToast.error(
           context,
-          title: 'Error',
-          message: 'Unable to access storage directory.',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+          message: chatCallTr(context, 'chatCall_unableToAccessStorage', fallback: 'Unable to access storage directory.'),
         );
         return;
       }
@@ -7589,8 +7968,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
       EnhancedToast.success(
         context,
-        title: 'Downloaded',
-        message: 'File saved to Downloads: $fileName',
+        title: chatCallTr(context, 'chatCall_downloaded', fallback: 'Downloaded'),
+        message: chatCallTr(context, 'chatCall_fileSavedToDownloads', fallback: 'File saved to Downloads: {fileName}', params: {'fileName': fileName}),
       );
 
       // Also share the file so user can save it
@@ -7613,7 +7992,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to share file: ${e.toString()}',
       );
     }
@@ -7677,8 +8056,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         children: [
           const Icon(Icons.broken_image, size: 40, color: Colors.grey),
           const SizedBox(height: 8),
-          Text(
-            'Failed to load image',
+          Text(chatCallTr(context, 'chatCall_failedToLoadImage', fallback: 'Failed to load image'),
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
         ],
@@ -7755,8 +8133,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
       EnhancedToast.info(
         context,
-        title: 'Downloading',
-        message: 'Downloading image to gallery...',
+        title: chatCallTr(context, 'chatCall_downloading', fallback: 'Downloading'),
+        message: chatCallTr(context, 'chatCall_downloadingImageToGallery', fallback: 'Downloading image to gallery...'),
       );
 
       final response = await http.get(Uri.parse(imageUrl));
@@ -7813,8 +8191,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
         EnhancedToast.success(
           context,
-          title: 'Downloaded',
-          message: 'Image saved to gallery',
+          title: chatCallTr(context, 'chatCall_downloaded', fallback: 'Downloaded'),
+          message: chatCallTr(context, 'chatCall_imageSavedToGallery', fallback: 'Image saved to gallery'),
         );
       } else {
         throw Exception(
@@ -7825,9 +8203,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       log('❌ [GroupChatScreen] Error downloading image from URL: $e');
       EnhancedToast.error(
         context,
-        title: 'Download Failed',
+        title: chatCallTr(context, 'chatCall_downloadFailed', fallback: 'Download Failed'),
         message:
-            'Failed to download image. Please check your connection and try again.',
+            chatCallTr(context, 'chatCall_failedToDownloadImagePleaseCheck', fallback: 'Failed to download image. Please check your connection and try again.'),
       );
     }
   }
@@ -7849,8 +8227,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
       EnhancedToast.info(
         context,
-        title: 'Downloading',
-        message: 'Downloading document...',
+        title: chatCallTr(context, 'chatCall_downloading', fallback: 'Downloading'),
+        message: chatCallTr(context, 'chatCall_downloadingDocument', fallback: 'Downloading document...'),
       );
 
       final response = await http.get(Uri.parse(documentUrl));
@@ -7871,11 +8249,11 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         final file = File('${directory.path}/$finalFileName');
         await file.writeAsBytes(response.bodyBytes);
 
-        await Share.shareXFiles([XFile(file.path)], text: 'Document');
+        await Share.shareXFiles([XFile(file.path)], text: chatCallTr(context, 'chatCall_document', fallback: 'Document'));
         EnhancedToast.success(
           context,
-          title: 'Downloaded',
-          message: 'Document saved successfully',
+          title: chatCallTr(context, 'chatCall_downloaded', fallback: 'Downloaded'),
+          message: chatCallTr(context, 'chatCall_documentSavedSuccessfully', fallback: 'Document saved successfully'),
         );
       } else {
         throw Exception(
@@ -7886,9 +8264,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       log('❌ [GroupChatScreen] Error downloading document from URL: $e');
       EnhancedToast.error(
         context,
-        title: 'Download Failed',
+        title: chatCallTr(context, 'chatCall_downloadFailed', fallback: 'Download Failed'),
         message:
-            'Failed to download document. Please check your connection and try again.',
+            chatCallTr(context, 'chatCall_failedToDownloadDocumentPleaseCheck', fallback: 'Failed to download document. Please check your connection and try again.'),
       );
     }
   }
@@ -7951,7 +8329,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to play audio: ${e.toString()}',
       );
       setState(() {
@@ -8001,7 +8379,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               if (!message.isDeleted) ...[
                 ListTile(
                   leading: const Icon(Icons.reply, color: Colors.blue),
-                  title: const Text('Reply'),
+                  title: Text(
+                    chatCallTr(context, 'chatCall_reply', fallback: 'Reply'),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     setState(() {
@@ -8011,7 +8391,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 ),
                 ListTile(
                   leading: const Icon(Icons.forward, color: Colors.purple),
-                  title: const Text('Forward'),
+                  title: Text(
+                    chatCallTr(
+                      context,
+                      'chatCall_forward',
+                      fallback: 'Forward',
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _startForwardSelection(message);
@@ -8019,7 +8405,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 ),
                 ListTile(
                   leading: const Icon(Icons.add_reaction, color: Colors.orange),
-                  title: const Text('Add Reaction'),
+                  title: Text(
+                    chatCallTr(
+                      context,
+                      'chatCall_addReaction',
+                      fallback: 'Add Reaction',
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _showReactionPicker(message);
@@ -8032,7 +8424,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                       Icons.remove_circle_outline,
                       color: Colors.red,
                     ),
-                    title: const Text('Remove Reaction'),
+                    title: Text(
+                      chatCallTr(
+                        context,
+                        'chatCall_removeReaction',
+                        fallback: 'Remove Reaction',
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       final userReaction = _getUserReaction(message);
@@ -8046,7 +8444,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 // API will fetch reactions even if not loaded locally
                 ListTile(
                   leading: const Icon(Icons.people, color: Colors.blue),
-                  title: const Text('View Who Reacted'),
+                  title: Text(
+                    chatCallTr(
+                      context,
+                      'chatCall_viewWhoReacted',
+                      fallback: 'View Who Reacted',
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _showWhoReacted(message);
@@ -8055,7 +8459,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 if (isCurrentUser) ...[
                   ListTile(
                     leading: const Icon(Icons.edit, color: Colors.green),
-                    title: const Text('Edit Message'),
+                    title: Text(
+                      chatCallTr(
+                        context,
+                        'chatCall_editMessage',
+                        fallback: 'Edit Message',
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       _editMessage(message);
@@ -8063,7 +8473,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                   ),
                   ListTile(
                     leading: const Icon(Icons.delete, color: Colors.red),
-                    title: const Text('Delete Message'),
+                    title: Text(
+                      chatCallTr(
+                        context,
+                        'chatCall_deleteMessage',
+                        fallback: 'Delete Message',
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context); // Close bottom sheet immediately
                       _deleteMessage(message); // Call API to delete
@@ -8223,8 +8639,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const Text(
-                  'Add Reaction',
+                Text(chatCallTr(context, 'chatCall_addReaction', fallback: 'Add Reaction'),
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
@@ -8272,7 +8687,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                   updatedMessage,
                                 );
 
-                                if (isAlreadyReacted && reactionType != null) {
+                                if (isAlreadyReacted) {
                                   // User tapped their own reaction - remove it
                                   _removeReaction(updatedMessage, reactionType);
                                 } else if (hasUserReactedAny &&
@@ -8295,7 +8710,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                               }
                             } else {
                               // Reactions already loaded - process normally
-                              if (isAlreadyReacted && reactionType != null) {
+                              if (isAlreadyReacted) {
                                 _removeReaction(message, reactionType);
                               } else {
                                 _addReaction(message, emoji);
@@ -8421,8 +8836,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         if (reactions.isEmpty) {
           EnhancedToast.info(
             context,
-            title: 'No Reactions',
-            message: 'No one has reacted to this message yet',
+            title: chatCallTr(context, 'No Reactions', fallback: 'No Reactions'),
+            message: chatCallTr(context, 'chatCall_noOneHasReactedToThis', fallback: 'No one has reacted to this message yet'),
           );
           return;
         }
@@ -8468,8 +8883,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         children: [
-                          const Text(
-                            'Reactions',
+                          Text(chatCallTr(context, 'chatCall_reactions', fallback: 'Reactions'),
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -8527,11 +8941,12 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                         children: [
                                           CircleAvatar(
                                             radius: 16,
-                                            backgroundColor: AppColors.primary
-                                                .withOpacity(0.1),
+                                            backgroundColor: const Color(
+                                              0xffffebee,
+                                            ),
                                             // Use avatar image if available, otherwise show initials
                                             backgroundImage: hasAvatar
-                                                ? NetworkImage(avatarUrl!)
+                                                ? NetworkImage(avatarUrl)
                                                 : null,
                                             onBackgroundImageError: hasAvatar
                                                 ? (exception, stackTrace) {
@@ -8546,8 +8961,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                             child: !hasAvatar
                                                 ? Text(
                                                     initials,
-                                                    style: TextStyle(
-                                                      color: AppColors.primary,
+                                                    style: const TextStyle(
+                                                      color: Color(0xffc62828),
                                                       fontSize: 12,
                                                       fontWeight:
                                                           FontWeight.bold,
@@ -8599,7 +9014,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       } else {
         EnhancedToast.error(
           context,
-          title: 'Error',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
           message: response.error ?? 'Failed to fetch reactions',
         );
       }
@@ -8608,8 +9023,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       Navigator.pop(context); // Close loading indicator if still open
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'An unexpected error occurred: $e',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_unexpectedError', fallback: 'An unexpected error occurred: {error}', params: {'error': '$e'}),
       );
     }
   }
@@ -8814,8 +9229,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         if (mounted) {
           EnhancedToast.warning(
             context,
-            title: 'Too Many Requests',
-            message: 'Please wait 30s before retrying.',
+            title: chatCallTr(context, 'chatCall_tooManyRequests2', fallback: 'Too Many Requests'),
+            message: chatCallTr(context, 'chatCall_pleaseWait30sBeforeRetrying', fallback: 'Please wait 30s before retrying.'),
           );
         }
         return;
@@ -8885,8 +9300,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (message.isDeleted) {
       EnhancedToast.warning(
         context,
-        title: 'Cannot React',
-        message: 'Deleted messages cannot be reacted to.',
+        title: chatCallTr(context, 'chatCall_cannotReact', fallback: 'Cannot React'),
+        message: chatCallTr(context, 'chatCall_deletedMessagesCannotBeReactedTo', fallback: 'Deleted messages cannot be reacted to.'),
       );
       return;
     }
@@ -8900,8 +9315,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       );
       EnhancedToast.error(
         context,
-        title: 'Invalid Message',
-        message: 'Cannot react to this message. Invalid message ID format.',
+        title: chatCallTr(context, 'chatCall_invalidMessage', fallback: 'Invalid Message'),
+        message: chatCallTr(context, 'chatCall_cannotReactToThisMessageInvalid', fallback: 'Cannot react to this message. Invalid message ID format.'),
       );
       return;
     }
@@ -8912,8 +9327,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       log('⚠️ [GroupChatScreen] Unsupported emoji for reaction: $reaction');
       EnhancedToast.warning(
         context,
-        title: 'Unsupported Reaction',
-        message: 'This reaction type is not supported.',
+        title: chatCallTr(context, 'chatCall_unsupportedReaction', fallback: 'Unsupported Reaction'),
+        message: chatCallTr(context, 'chatCall_thisReactionTypeIsNotSupported', fallback: 'This reaction type is not supported.'),
       );
       return;
     }
@@ -8944,7 +9359,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         );
         EnhancedToast.warning(
           context,
-          title: 'Too Many Requests',
+          title: chatCallTr(context, 'chatCall_tooManyRequests2', fallback: 'Too Many Requests'),
           message:
               'Please wait ${remainingSeconds}s before updating reactions.',
         );
@@ -8998,7 +9413,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         reactionType: reactionType,
         userName: existingReaction.userName,
       );
-      currentReactions.removeWhere((r) => r.id == existingReaction!.id);
+      currentReactions.removeWhere((r) => r.id == existingReaction.id);
       currentReactions.add(optimisticReaction);
     } else {
       optimisticReaction = MessageReaction(
@@ -9058,8 +9473,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         if (mounted) {
           EnhancedToast.warning(
             context,
-            title: 'Too Many Requests',
-            message: 'Please wait 30s before updating reactions again.',
+            title: chatCallTr(context, 'chatCall_tooManyRequests2', fallback: 'Too Many Requests'),
+            message: chatCallTr(context, 'chatCall_pleaseWait30sBeforeUpdatingReactions', fallback: 'Please wait 30s before updating reactions again.'),
           );
         }
         return;
@@ -9078,19 +9493,19 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           if (response.statusCode == 401) {
             EnhancedToast.error(
               context,
-              title: 'Unauthorized',
-              message: 'Please log in again.',
+              title: chatCallTr(context, 'chatCall_unauthorized', fallback: 'Unauthorized'),
+              message: chatCallTr(context, 'chatCall_pleaseLogInAgain', fallback: 'Please log in again.'),
             );
           } else if (response.statusCode == 400) {
             EnhancedToast.error(
               context,
-              title: 'Invalid Reaction',
+              title: chatCallTr(context, 'chatCall_invalidReaction', fallback: 'Invalid Reaction'),
               message: response.error ?? 'Invalid reaction type.',
             );
           } else {
             EnhancedToast.error(
               context,
-              title: 'Error',
+              title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
               message:
                   response.error ??
                   'Failed to ${hasUserReacted ? 'update' : 'add'} reaction.',
@@ -9107,8 +9522,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           if (hasUserReacted && existingReaction != null) {
             updatedReactions.removeWhere(
               (r) =>
-                  r.id == existingReaction!.id ||
-                  r.id == optimisticReaction!.id,
+                  r.id == existingReaction.id || r.id == optimisticReaction!.id,
             );
           } else {
             updatedReactions.removeWhere((r) => r.id == optimisticReaction!.id);
@@ -9150,8 +9564,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (message.isDeleted) {
       EnhancedToast.warning(
         context,
-        title: 'Cannot Remove Reaction',
-        message: 'Deleted messages cannot have reactions removed.',
+        title: chatCallTr(context, 'chatCall_cannotRemoveReaction', fallback: 'Cannot Remove Reaction'),
+        message: chatCallTr(context, 'chatCall_deletedMessagesCannotHaveReactionsRemoved', fallback: 'Deleted messages cannot have reactions removed.'),
       );
       return;
     }
@@ -9165,8 +9579,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       );
       EnhancedToast.error(
         context,
-        title: 'Invalid Message',
-        message: 'Cannot remove reaction. Invalid message ID format.',
+        title: chatCallTr(context, 'chatCall_invalidMessage', fallback: 'Invalid Message'),
+        message: chatCallTr(context, 'chatCall_cannotRemoveReactionInvalidMessageId', fallback: 'Cannot remove reaction. Invalid message ID format.'),
       );
       return;
     }
@@ -9198,7 +9612,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         );
         EnhancedToast.warning(
           context,
-          title: 'Too Many Requests',
+          title: chatCallTr(context, 'chatCall_tooManyRequests2', fallback: 'Too Many Requests'),
           message:
               'Please wait ${remainingSeconds}s before updating reactions.',
         );
@@ -9258,8 +9672,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         if (mounted) {
           EnhancedToast.warning(
             context,
-            title: 'Too Many Requests',
-            message: 'Please wait 30s before updating reactions again.',
+            title: chatCallTr(context, 'chatCall_tooManyRequests2', fallback: 'Too Many Requests'),
+            message: chatCallTr(context, 'chatCall_pleaseWait30sBeforeUpdatingReactions', fallback: 'Please wait 30s before updating reactions again.'),
           );
         }
         return;
@@ -9278,13 +9692,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           if (response.statusCode == 401) {
             EnhancedToast.error(
               context,
-              title: 'Unauthorized',
-              message: 'Please log in again.',
+              title: chatCallTr(context, 'chatCall_unauthorized', fallback: 'Unauthorized'),
+              message: chatCallTr(context, 'chatCall_pleaseLogInAgain', fallback: 'Please log in again.'),
             );
           } else {
             EnhancedToast.error(
               context,
-              title: 'Error',
+              title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
               message: response.error ?? 'Failed to remove reaction.',
             );
           }
@@ -9318,8 +9732,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (!isCurrentUser) {
       EnhancedToast.warning(
         context,
-        title: 'Cannot Edit',
-        message: 'You can only edit your own messages.',
+        title: chatCallTr(context, 'chatCall_cannotEdit', fallback: 'Cannot Edit'),
+        message: chatCallTr(context, 'chatCall_youCanOnlyEditYourOwn', fallback: 'You can only edit your own messages.'),
       );
       return;
     }
@@ -9328,8 +9742,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (message.isDeleted) {
       EnhancedToast.warning(
         context,
-        title: 'Cannot Edit',
-        message: 'Deleted messages cannot be edited.',
+        title: chatCallTr(context, 'chatCall_cannotEdit', fallback: 'Cannot Edit'),
+        message: chatCallTr(context, 'chatCall_deletedMessagesCannotBeEdited', fallback: 'Deleted messages cannot be edited.'),
       );
       return;
     }
@@ -9361,8 +9775,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Title
-                Text(
-                  'Edit Message',
+                Text(chatCallTr(context, 'chatCall_editMessage', fallback: 'Edit Message'),
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -9381,7 +9794,11 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                     fontSize: 16,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Edit your message...',
+                    hintText: chatCallTr(
+                      context,
+                      'chatCall_editYourMessageHint',
+                      fallback: 'Edit your message...',
+                    ),
                     hintStyle: TextStyle(
                       color: isDarkTheme
                           ? Colors.grey.shade500
@@ -9432,8 +9849,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                             vertical: 12,
                           ),
                         ),
-                        child: Text(
-                          'Cancel',
+                        child: Text(chatCallTr(context, 'chatCall_cancel', fallback: 'Cancel'),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -9460,8 +9876,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                   if (updatedText.isEmpty) {
                                     EnhancedToast.warning(
                                       context,
-                                      title: 'Invalid',
-                                      message: 'Message cannot be empty',
+                                      title: chatCallTr(context, 'chatCall_invalid', fallback: 'Invalid'),
+                                      message: chatCallTr(context, 'chatCall_messageCannotBeEmpty', fallback: 'Message cannot be empty'),
                                     );
                                     return;
                                   }
@@ -9596,9 +10012,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                         // Show success toast
                                         EnhancedToast.success(
                                           context,
-                                          title: 'Message Edited',
+                                          title: chatCallTr(context, 'chatCall_messageEdited', fallback: 'Message Edited'),
                                           message:
-                                              'Your message has been updated.',
+                                              chatCallTr(context, 'chatCall_yourMessageHasBeenUpdated', fallback: 'Your message has been updated.'),
                                         );
                                       }
 
@@ -9612,7 +10028,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
                                       EnhancedToast.error(
                                         context,
-                                        title: 'Failed to Edit',
+                                        title: chatCallTr(context, 'chatCall_failedToEdit', fallback: 'Failed to Edit'),
                                         message:
                                             response.displayError ??
                                             'Failed to edit message. Please try again.',
@@ -9631,8 +10047,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
                                     EnhancedToast.error(
                                       context,
-                                      title: 'Error',
-                                      message: 'Failed to edit message: $e',
+                                      title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+                                      message: chatCallTr(context, 'chatCall_failedToEditMessage', fallback: 'Failed to edit message: {error}', params: {'error': '$e'}),
                                     );
                                   }
                                 },
@@ -9660,8 +10076,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                     ),
                                   ),
                                 )
-                              : const Text(
-                                  'Save',
+                              : Text(chatCallTr(context, 'chatCall_save', fallback: 'Save'),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -9690,8 +10105,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (!isCurrentUser) {
       EnhancedToast.warning(
         context,
-        title: 'Cannot Delete',
-        message: 'You can only delete your own messages.',
+        title: chatCallTr(context, 'chatCall_cannotDelete', fallback: 'Cannot Delete'),
+        message: chatCallTr(context, 'chatCall_youCanOnlyDeleteYourOwn', fallback: 'You can only delete your own messages.'),
       );
       return;
     }
@@ -9700,8 +10115,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (message.isDeleted) {
       EnhancedToast.warning(
         context,
-        title: 'Already Deleted',
-        message: 'This message has already been deleted.',
+        title: chatCallTr(context, 'chatCall_alreadyDeleted', fallback: 'Already Deleted'),
+        message: chatCallTr(context, 'chatCall_thisMessageHasAlreadyBeenDeleted', fallback: 'This message has already been deleted.'),
       );
       return;
     }
@@ -9735,8 +10150,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Delete Message',
+              Text(chatCallTr(context, 'chatCall_deleteMessage', fallback: 'Delete Message'),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -9746,7 +10160,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               ),
               const SizedBox(height: 12),
               Text(
-                'Are you sure you want to delete this message? This action cannot be undone.',
+                chatCallTr(context, 'chatCall_confirmDeleteMessage', fallback: 'Are you sure you want to delete this message? This action cannot be undone.'),
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey.shade700,
@@ -9771,8 +10185,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Cancel',
+                        child: Text(chatCallTr(context, 'chatCall_cancel', fallback: 'Cancel'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -9811,8 +10224,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Delete',
+                        child: Text(chatCallTr(context, 'chatCall_delete', fallback: 'Delete'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -9859,15 +10271,15 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           // Show success toast
           EnhancedToast.success(
             context,
-            title: 'Message Deleted',
-            message: 'Your message has been deleted.',
+            title: chatCallTr(context, 'chatCall_messageDeleted', fallback: 'Message Deleted'),
+            message: chatCallTr(context, 'chatCall_yourMessageHasBeenDeleted', fallback: 'Your message has been deleted.'),
           );
         }
       } else {
         // Show error but don't change message UI
         EnhancedToast.error(
           context,
-          title: 'Failed to Delete',
+          title: chatCallTr(context, 'chatCall_failedToDelete', fallback: 'Failed to Delete'),
           message:
               response.displayError ??
               'Failed to delete message. Please try again.',
@@ -9880,8 +10292,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       // Show error but don't change message UI
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Failed to delete message: $e',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_failedToDeleteMessage', fallback: 'Failed to delete message: {error}', params: {'error': '$e'}),
       );
     }
   }
@@ -9891,9 +10303,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (!_isUserMember) {
       EnhancedToast.error(
         context,
-        title: 'Access Denied',
+        title: chatCallTr(context, 'chatCall_accessDenied', fallback: 'Access Denied'),
         message:
-            'You cannot send messages to this group because you are no longer a member.',
+            chatCallTr(context, 'chatCall_cannotSendNotMember', fallback: 'You cannot send messages to this group because you are no longer a member.'),
       );
       return;
     }
@@ -9955,7 +10367,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                           Expanded(
                             child: _buildAttachmentOption(
                               Icons.photo_library,
-                              'Gallery',
+                              chatCallTr(context, 'chatCall_gallery', fallback: 'Gallery'),
                               () => _pickMultipleMedia(),
                             ),
                           ),
@@ -9963,7 +10375,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                           Expanded(
                             child: _buildAttachmentOption(
                               Icons.camera_alt,
-                              'Camera',
+                              chatCallTr(context, 'chatCall_camera', fallback: 'Camera'),
                               () => _pickImage(ImageSource.camera),
                             ),
                           ),
@@ -9971,7 +10383,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                           Expanded(
                             child: _buildAttachmentOption(
                               Icons.insert_drive_file,
-                              'Document',
+                              chatCallTr(context, 'chatCall_document', fallback: 'Document'),
                               _pickDocument,
                             ),
                           ),
@@ -9984,7 +10396,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                           Expanded(
                             child: _buildAttachmentOption(
                               Icons.videocam,
-                              'Video',
+                              chatCallTr(context, 'chatCall_video', fallback: 'Video'),
                               _pickVideo,
                             ),
                           ),
@@ -10061,7 +10473,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to pick image: ${e.toString()}',
       );
     }
@@ -10142,7 +10554,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to pick media: ${e.toString()}',
       );
     }
@@ -10169,7 +10581,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to pick video: ${e.toString()}',
       );
     }
@@ -10220,7 +10632,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                       TextButton.icon(
                         onPressed: () => Navigator.pop(context, false),
                         icon: const Icon(Icons.close),
-                        label: const Text('Cancel'),
+                        label: Text(
+                          chatCallTr(
+                            context,
+                            'chatCall_cancel',
+                            fallback: 'Cancel',
+                          ),
+                        ),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.red,
                         ),
@@ -10228,7 +10646,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                       ElevatedButton.icon(
                         onPressed: () => Navigator.pop(context, true),
                         icon: const Icon(Icons.send),
-                        label: const Text('Send'),
+                        label: Text(
+                          chatCallTr(
+                            context,
+                            'chatCall_send',
+                            fallback: 'Send',
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xffc62828),
                           foregroundColor: Colors.white,
@@ -10271,8 +10695,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (roomId == null || roomId.isEmpty) {
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Room ID not available. Please try again.',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_roomIdNotAvailablePleaseTry', fallback: 'Room ID not available. Please try again.'),
       );
       return;
     }
@@ -10335,7 +10759,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Upload Failed',
+          title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
           message:
               uploadResponse.error ??
               'Failed to upload image. Please try again.',
@@ -10360,8 +10784,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Upload Failed',
-          message: 'Invalid response from server. Please try again.',
+          title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
+          message: chatCallTr(context, 'chatCall_invalidServerResponse', fallback: 'Invalid response from server. Please try again.'),
         );
         return;
       }
@@ -10422,8 +10846,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Send Failed',
-          message: 'Failed to send message. Please try again.',
+          title: chatCallTr(context, 'chatCall_sendFailed', fallback: 'Send Failed'),
+          message: chatCallTr(context, 'chatCall_failedToSendMessagePleaseTry', fallback: 'Failed to send message. Please try again.'),
         );
       }
     } catch (e) {
@@ -10439,7 +10863,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       }
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to upload image: ${e.toString()}',
       );
     }
@@ -10478,8 +10902,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         if (fileSize > 10 * 1024 * 1024) {
           EnhancedToast.warning(
             context,
-            title: 'File Too Large',
-            message: 'File size must be less than 10MB.',
+            title: chatCallTr(context, 'chatCall_fileTooLarge', fallback: 'File Too Large'),
+            message: chatCallTr(context, 'chatCall_fileSizeMustBeLessThan', fallback: 'File size must be less than 10MB.'),
           );
           return;
         }
@@ -10489,7 +10913,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to pick document: ${e.toString()}',
       );
     }
@@ -10518,8 +10942,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (roomId.isEmpty) {
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Room ID not available. Please try again.',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_roomIdNotAvailablePleaseTry', fallback: 'Room ID not available. Please try again.'),
       );
       return;
     }
@@ -10579,7 +11003,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Upload Failed',
+          title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
           message:
               uploadResponse.error ??
               'Failed to upload video. Please try again.',
@@ -10603,8 +11027,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Upload Failed',
-          message: 'Invalid response from server. Please try again.',
+          title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
+          message: chatCallTr(context, 'chatCall_invalidServerResponse', fallback: 'Invalid response from server. Please try again.'),
         );
         return;
       }
@@ -10656,8 +11080,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       if (!sent) {
         EnhancedToast.error(
           context,
-          title: 'Send Failed',
-          message: 'Uploaded, but failed to send video. Please retry.',
+          title: chatCallTr(context, 'chatCall_sendFailed', fallback: 'Send Failed'),
+          message: chatCallTr(context, 'chatCall_uploadedButFailedToSendVideo', fallback: 'Uploaded, but failed to send video. Please retry.'),
         );
       }
     } catch (e) {
@@ -10671,7 +11095,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       }
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to send video: ${e.toString()}',
       );
     }
@@ -10686,8 +11110,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (roomId == null || roomId.isEmpty) {
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Room ID not available. Please try again.',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_roomIdNotAvailablePleaseTry', fallback: 'Room ID not available. Please try again.'),
       );
       return;
     }
@@ -10753,7 +11177,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Upload Failed',
+          title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
           message:
               uploadResponse.error ??
               'Failed to upload document. Please try again.',
@@ -10778,8 +11202,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Upload Failed',
-          message: 'Invalid response from server. Please try again.',
+          title: chatCallTr(context, 'chatCall_uploadFailed', fallback: 'Upload Failed'),
+          message: chatCallTr(context, 'chatCall_invalidServerResponse', fallback: 'Invalid response from server. Please try again.'),
         );
         return;
       }
@@ -10842,8 +11266,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         }
         EnhancedToast.error(
           context,
-          title: 'Send Failed',
-          message: 'Failed to send message. Please try again.',
+          title: chatCallTr(context, 'chatCall_sendFailed', fallback: 'Send Failed'),
+          message: chatCallTr(context, 'chatCall_failedToSendMessagePleaseTry', fallback: 'Failed to send message. Please try again.'),
         );
       }
     } catch (e) {
@@ -10859,7 +11283,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       }
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to upload document: ${e.toString()}',
       );
     }
@@ -10883,8 +11307,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Failed to get location',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_failedToGetLocation', fallback: 'Failed to get location'),
       );
     }
   }
@@ -10910,8 +11334,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Failed to pick contact',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_failedToPickContact', fallback: 'Failed to pick contact'),
       );
     }
   }
@@ -10970,9 +11394,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'No messages yet',
-              style: TextStyle(
+            Text(
+              chatCallTr(
+                context,
+                'chatCall_noMessagesYet',
+                fallback: 'No messages yet',
+              ),
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
                 color: Colors.black87,
@@ -10981,7 +11409,11 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              'Start the conversation',
+              chatCallTr(
+                context,
+                'chatCall_startTheConversation',
+                fallback: 'Start the conversation',
+              ),
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 14,
@@ -11014,8 +11446,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
             ),
           ),
           const SizedBox(height: 24),
-          Text(
-            'Unable to load messages',
+          Text(chatCallTr(context, 'Unable to load messages', fallback: 'Unable to load messages'),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -11045,7 +11476,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                     _openRoom();
                   },
             icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
+            label: Text(
+              chatCallTr(context, 'chatCall_retry', fallback: 'Retry'),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xffc62828),
               foregroundColor: Colors.white,
@@ -11088,8 +11521,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               ),
               const SizedBox(height: 24),
               // Title
-              const Text(
-                'Clear Chat',
+              Text(chatCallTr(context, 'chatCall_clearChat', fallback: 'Clear Chat'),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -11100,7 +11532,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               const SizedBox(height: 12),
               // Message
               Text(
-                'Are you sure you want to clear all messages from this group chat? This action cannot be undone.',
+                chatCallTr(context, 'chatCall_confirmClearGroupChat', fallback: 'Are you sure you want to clear all messages from this group chat? This action cannot be undone.'),
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey.shade700,
@@ -11127,8 +11559,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Cancel',
+                        child: Text(chatCallTr(context, 'chatCall_cancel', fallback: 'Cancel'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -11171,8 +11602,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Clear',
+                        child: Text(chatCallTr(context, 'chatCall_clear', fallback: 'Clear'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -11199,8 +11629,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         if (mounted) {
           EnhancedToast.error(
             context,
-            title: 'Error',
-            message: 'Unable to get society ID. Please try again.',
+            title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+            message: chatCallTr(context, 'chatCall_unableToGetSocietyIdPlease', fallback: 'Unable to get society ID. Please try again.'),
           );
         }
         return;
@@ -11229,14 +11659,14 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
         EnhancedToast.success(
           context,
-          title: 'Chat Cleared',
-          message: 'All messages have been cleared successfully.',
+          title: chatCallTr(context, 'chatCall_chatCleared', fallback: 'Chat Cleared'),
+          message: chatCallTr(context, 'chatCall_allMessagesHaveBeenClearedSuccessfully', fallback: 'All messages have been cleared successfully.'),
         );
       } else {
         // Show error if API call failed
         EnhancedToast.error(
           context,
-          title: 'Error',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
           message: response.error ?? 'Failed to clear chat. Please try again.',
         );
       }
@@ -11245,8 +11675,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       if (mounted) {
         EnhancedToast.error(
           context,
-          title: 'Error',
-          message: 'An error occurred while clearing chat. Please try again.',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+          message: chatCallTr(context, 'chatCall_anErrorOccurredWhileClearingChat', fallback: 'An error occurred while clearing chat. Please try again.'),
         );
       }
     }
@@ -11275,16 +11705,21 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const Padding(
+                Padding(
                   padding: EdgeInsets.all(16),
-                  child: Text(
-                    'Chat Customization',
+                  child: Text(chatCallTr(context, 'chatCall_chatCustomization', fallback: 'Chat Customization'),
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
                 ListTile(
                   leading: const Icon(Icons.wallpaper, color: Colors.purple),
-                  title: const Text('Change Background Wallpaper'),
+                  title: Text(
+                    chatCallTr(
+                      context,
+                      'chatCall_changeBackgroundWallpaper',
+                      fallback: 'Change Background Wallpaper',
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _showWallpaperOptions();
@@ -11293,7 +11728,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 // Theme Settings option hidden
                 // ListTile(
                 //   leading: const Icon(Icons.dark_mode, color: Colors.blue),
-                //   title: const Text('Theme Settings'),
+                //   title: Text(chatCallTr(context, 'chatCall_themeSettings', fallback: 'Theme Settings')),
                 //   onTap: () {
                 //     Navigator.pop(context);
                 //     _showThemeOptions();
@@ -11302,7 +11737,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 // Font Size option hidden
                 // ListTile(
                 //   leading: const Icon(Icons.text_fields, color: Colors.orange),
-                //   title: const Text('Font Size'),
+                //   title: Text(chatCallTr(context, 'chatCall_fontSize', fallback: 'Font Size')),
                 //   onTap: () {
                 //     Navigator.pop(context);
                 //     _showFontSizeOptions();
@@ -11341,8 +11776,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Select Wallpaper',
+                  Text(chatCallTr(context, 'chatCall_selectWallpaper', fallback: 'Select Wallpaper'),
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
@@ -11406,8 +11840,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                       size: 20,
                                     ),
                                     const SizedBox(width: 8),
-                                    const Text(
-                                      'Choose from Gallery',
+                                    Text(chatCallTr(context, 'chatCall_chooseFromGallery2', fallback: 'Choose from Gallery'),
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -11426,7 +11859,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                             12,
                                           ),
                                         ),
-                                        child: const Row(
+                                        child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Icon(
@@ -11435,8 +11868,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                               size: 14,
                                             ),
                                             SizedBox(width: 4),
-                                            Text(
-                                              'Active',
+                                            Text(chatCallTr(context, 'chatCall_active', fallback: 'Active'),
                                               style: TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 10,
@@ -11507,7 +11939,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Row(
+                                Row(
                                   children: [
                                     Icon(
                                       Icons.camera_alt,
@@ -11515,8 +11947,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                       size: 20,
                                     ),
                                     SizedBox(width: 8),
-                                    Text(
-                                      'Take Photo',
+                                    Text(chatCallTr(context, 'chatCall_takePhoto', fallback: 'Take a photo'),
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -11525,8 +11956,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                   ],
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  'Capture a new photo with camera',
+                                Text(chatCallTr(context, 'chatCall_captureANewPhotoWithCamera', fallback: 'Capture a new photo with camera'),
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey.shade600,
@@ -11569,7 +11999,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                           Navigator.pop(context);
                           EnhancedToast.success(
                             context,
-                            title: 'Wallpaper Changed',
+                            title: chatCallTr(context, 'chatCall_wallpaperChanged', fallback: 'Wallpaper Changed'),
                             message: 'Wallpaper set to ${wallpaper['name']}',
                           );
                         },
@@ -11641,7 +12071,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
         EnhancedToast.success(
           context,
-          title: 'Wallpaper Changed',
+          title: chatCallTr(context, 'chatCall_wallpaperChanged', fallback: 'Wallpaper Changed'),
           message: source == ImageSource.camera
               ? 'Camera wallpaper applied'
               : 'Gallery wallpaper applied',
@@ -11650,7 +12080,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message:
             'Failed to ${source == ImageSource.camera ? "capture" : "pick"} image: ${e.toString()}',
       );
@@ -11745,8 +12175,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Select Theme',
+                  Text(chatCallTr(context, 'chatCall_selectTheme', fallback: 'Select Theme'),
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
@@ -11757,7 +12186,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                           ? AppColors.primary
                           : Colors.orange,
                     ),
-                    title: const Text('Light'),
+                    title: Text(
+                      chatCallTr(context, 'chatCall_light', fallback: 'Light'),
+                    ),
                     trailing: _chatTheme == ThemeMode.light
                         ? const Icon(Icons.check, color: AppColors.primary)
                         : null,
@@ -11768,8 +12199,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                       Navigator.pop(context);
                       EnhancedToast.info(
                         context,
-                        title: 'Theme',
-                        message: 'Light theme selected',
+                        title: chatCallTr(context, 'chatCall_theme', fallback: 'Theme'),
+                        message: chatCallTr(context, 'chatCall_lightThemeSelected', fallback: 'Light theme selected'),
                       );
                     },
                   ),
@@ -11780,7 +12211,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                           ? AppColors.primary
                           : Colors.blue,
                     ),
-                    title: const Text('Dark'),
+                    title: Text(
+                      chatCallTr(context, 'chatCall_dark', fallback: 'Dark'),
+                    ),
                     trailing: _chatTheme == ThemeMode.dark
                         ? const Icon(Icons.check, color: AppColors.primary)
                         : null,
@@ -11791,8 +12224,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                       Navigator.pop(context);
                       EnhancedToast.info(
                         context,
-                        title: 'Theme',
-                        message: 'Dark theme selected',
+                        title: chatCallTr(context, 'chatCall_theme', fallback: 'Theme'),
+                        message: chatCallTr(context, 'chatCall_darkThemeSelected', fallback: 'Dark theme selected'),
                       );
                     },
                   ),
@@ -11822,14 +12255,15 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Font Size',
+                  Text(chatCallTr(context, 'chatCall_fontSize', fallback: 'Font Size'),
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   ListTile(
                     leading: const Icon(Icons.text_decrease),
-                    title: const Text('Small'),
+                    title: Text(
+                      chatCallTr(context, 'chatCall_small', fallback: 'Small'),
+                    ),
                     subtitle: const Text('12px'),
                     trailing: _fontSize == 12.0
                         ? const Icon(Icons.check, color: AppColors.primary)
@@ -11841,14 +12275,20 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                       Navigator.pop(context);
                       EnhancedToast.info(
                         context,
-                        title: 'Font Size',
-                        message: 'Small font selected',
+                        title: chatCallTr(context, 'chatCall_fontSize', fallback: 'Font Size'),
+                        message: chatCallTr(context, 'chatCall_smallFontSelected', fallback: 'Small font selected'),
                       );
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.text_fields),
-                    title: const Text('Medium'),
+                    title: Text(
+                      chatCallTr(
+                        context,
+                        'chatCall_medium',
+                        fallback: 'Medium',
+                      ),
+                    ),
                     subtitle: const Text('14px'),
                     trailing: _fontSize == 14.0
                         ? const Icon(Icons.check, color: AppColors.primary)
@@ -11860,14 +12300,16 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                       Navigator.pop(context);
                       EnhancedToast.info(
                         context,
-                        title: 'Font Size',
-                        message: 'Medium font selected',
+                        title: chatCallTr(context, 'chatCall_fontSize', fallback: 'Font Size'),
+                        message: chatCallTr(context, 'chatCall_mediumFontSelected', fallback: 'Medium font selected'),
                       );
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.text_increase),
-                    title: const Text('Large'),
+                    title: Text(
+                      chatCallTr(context, 'chatCall_large', fallback: 'Large'),
+                    ),
                     subtitle: const Text('16px'),
                     trailing: _fontSize == 16.0
                         ? const Icon(Icons.check, color: AppColors.primary)
@@ -11879,8 +12321,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                       Navigator.pop(context);
                       EnhancedToast.info(
                         context,
-                        title: 'Font Size',
-                        message: 'Large font selected',
+                        title: chatCallTr(context, 'chatCall_fontSize', fallback: 'Font Size'),
+                        message: chatCallTr(context, 'chatCall_largeFontSelected', fallback: 'Large font selected'),
                       );
                     },
                   ),
@@ -11957,10 +12399,69 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     );
   }
 
-  /// Show group info by fetching room info from API
-  /// MEMBER ACCURACY PRIORITY: Always fetches fresh data to ensure member list is current
-  /// No caching for member data - prevents showing users who have left the group
-  /// Same functionality and UI as groups tab
+  List<RoomInfoMember> _localGroupMembersAsRoomInfo() {
+    final source = _currentGroup.members.isNotEmpty
+        ? _currentGroup.members
+        : widget.group.members;
+    if (source.isEmpty) return const [];
+
+    return source
+        .map(
+          (c) => RoomInfoMember(
+            userId: c.id,
+            username: c.name,
+            avatar: c.photoUrl,
+            isAdmin: _currentGroup.creatorId == c.id,
+            numericUserId: c.numericUserId,
+            status: 'active',
+          ),
+        )
+        .toList();
+  }
+
+  RoomInfo _mergeRoomInfoForDisplay(RoomInfo? cached) {
+    final localMembers = _localGroupMembersAsRoomInfo();
+    if (cached == null) {
+      return RoomInfo(
+        id: widget.group.id,
+        name: _currentGroup.name,
+        description: _currentGroup.description,
+        createdAt: _currentGroup.createdAt ?? DateTime.now(),
+        lastActive: _currentGroup.lastMessageTime,
+        memberCount:
+            _currentGroup.memberCount ?? localMembers.length,
+        createdBy: _currentGroup.creatorId,
+        members: localMembers,
+        admin: null,
+      );
+    }
+
+    if (cached.members.isNotEmpty || localMembers.isEmpty) {
+      return cached;
+    }
+
+    return RoomInfo(
+      id: cached.id.isNotEmpty ? cached.id : widget.group.id,
+      name: cached.name,
+      description: cached.description,
+      createdBy: cached.createdBy,
+      createdByUserId: cached.createdByUserId,
+      createdByUser: cached.createdByUser,
+      companyId: cached.companyId,
+      photoUrl: cached.photoUrl ?? _currentGroup.iconUrl,
+      createdAt: cached.createdAt,
+      lastActive: cached.lastActive ?? _currentGroup.lastMessageTime,
+      memberCount: cached.memberCount > 0
+          ? cached.memberCount
+          : localMembers.length,
+      admin: cached.admin,
+      members: localMembers,
+      photos: cached.photos,
+      peerUser: cached.peerUser,
+    );
+  }
+
+  /// Show group info — cache-first display, background member refresh.
   void _showGroupInfo() async {
     // DEBOUNCE: Prevent rapid taps on Group Info
     final now = DateTime.now();
@@ -11972,40 +12473,92 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     _lastGroupInfoTapTime = now;
 
     try {
-      // Get company_id for API call
-      final companyId = await _apiService.getSelectedSocietyId();
+      final companyId = await resolveIntercomCompanyId(_apiService, ref: ref);
       if (companyId == null) {
         EnhancedToast.error(
           context,
-          title: 'Error',
-          message: 'Please select a society first',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+          message: chatCallTr(context, 'chatCall_pleaseSelectSociety', fallback: 'Please select a society first'),
         );
         return;
       }
 
-      // FORCE FRESH DATA: Skip cache for member accuracy - always fetch latest from API
-      // This ensures group info shows current members (no stale data for left members)
+      _groupInfoCompanyId = companyId;
+
+      final openTime = DateTime.now();
+      final loader = GroupInfoLoader();
+      var cached = loader.cachedForDisplay(widget.group.id, companyId);
+      var cacheLabel = 'hit';
+
+      if (cached != null &&
+          cached.members.isEmpty &&
+          cached.memberCount > 0) {
+        final staleWithMembers = loader.staleCachedForDisplay(
+          widget.group.id,
+          companyId,
+        );
+        if (staleWithMembers != null && staleWithMembers.members.isNotEmpty) {
+          cached = staleWithMembers;
+          cacheLabel = 'stale-hit-members';
+        }
+      }
+
+      if (cached == null) {
+        cached = loader.staleCachedForDisplay(widget.group.id, companyId);
+        cacheLabel = cached != null ? 'stale-hit' : 'miss';
+      }
+
+      final cachedMembers = cached?.members.length ?? 0;
+      final avatarCount = loader.cachedAvatarCount(widget.group.id, companyId);
+
       debugPrint(
-        '🔄 [GroupChatScreen] Forcing fresh API call for Group Info (member accuracy priority)',
+        '[GroupInfo] open room=${widget.group.id} company=$companyId',
+      );
+      debugPrint(
+        '[GroupInfo] cache $cacheLabel, cachedMembers=$cachedMembers, '
+        'avatarCount=$avatarCount',
       );
 
-      // No cache, no in-flight - show UI immediately with basic data, fetch in background
-      debugPrint(
-        '📡 [GroupChatScreen] No cached RoomInfo - showing UI immediately, fetching in background',
-      );
+      if (cached != null) {
+        final displayInfo = _mergeRoomInfoForDisplay(cached);
+        _hydrateAvatarCacheFromRoomInfoCache(widget.group.id, companyId);
+        final displayedMs = DateTime.now().difference(openTime).inMilliseconds;
+        debugPrint(
+          '[GroupInfo] displayed cached members in ${displayedMs}ms '
+          '(members=${displayInfo.members.length})',
+        );
+        _showGroupInfoContent(
+          displayInfo,
+          isLoadingMembers:
+              displayInfo.members.isEmpty && displayInfo.memberCount > 0,
+        );
+        _lastGroupInfoMembersSignature = _groupInfoMembersSignature(displayInfo);
+        if (displayInfo.members.isEmpty && displayInfo.memberCount > 0) {
+          unawaited(_prefetchRoomMembersForCache(companyId));
+        }
+      } else {
+        final localOnly = _mergeRoomInfoForDisplay(null);
+        if (localOnly.members.isNotEmpty) {
+          debugPrint(
+            '[GroupInfo] cache miss — showing ${_currentGroup.members.length} '
+            'local members immediately',
+          );
+          _showGroupInfoContent(localOnly, isLoadingMembers: false);
+          _lastGroupInfoMembersSignature = _groupInfoMembersSignature(localOnly);
+        } else {
+          debugPrint('[GroupInfo] cache miss — showing basic shell');
+          _showGroupInfoContentWithBasicData(isLoadingMembers: true);
+        }
+        unawaited(_prefetchRoomMembersForCache(companyId));
+      }
 
-      // Show UI immediately with basic group data (from widget.group)
-      // Show loader only in Members section while fetching
-      _showGroupInfoContentWithBasicData(isLoadingMembers: true);
-
-      // Fetch RoomInfo in background and update UI
-      _fetchAndShowGroupInfo(widget.group.id, companyId);
+      _loadGroupInfoFresh(widget.group.id, companyId, openTime);
     } catch (e) {
       debugPrint('❌ [GroupChatScreen] Error showing group info: $e');
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Group information unavailable',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_groupInfoUnavailable', fallback: 'Group information unavailable'),
       );
     }
   }
@@ -12038,46 +12591,167 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     _showGroupInfoContent(basicRoomInfo, isLoadingMembers: isLoadingMembers);
   }
 
-  /// Fetch RoomInfo and show content (background, non-blocking)
-  Future<void> _fetchAndShowGroupInfo(String roomId, int companyId) async {
-    final roomInfoCache = RoomInfoCache();
-
-    try {
-      // Mark request as in-flight
-      final future = _roomService
-          .getRoomInfo(roomId: roomId, companyId: companyId)
-          .then((response) {
-            if (response.success && response.data != null) {
-              return response.data!;
-            }
-            return null;
-          });
-
-      roomInfoCache.trackInFlightRequest(roomId, future);
-
-      final roomInfo = await future;
-
-      if (!mounted || roomInfo == null) return;
-
-      // Process and cache RoomInfo (off UI thread)
-      _processAndCacheRoomInfo(roomInfo, companyId);
-
-      // Update UI with fresh data (close existing page first if open, then show new)
-      if (mounted) {
-        if (_isGroupInfoPageOpen) {
-          Navigator.pop(context); // Close existing group info page if open
-          _isGroupInfoPageOpen = false; // Reset flag before reopening
-        }
-        _showGroupInfoContent(
-          roomInfo,
-        ); // Show with full data (isLoadingMembers = false by default)
-      }
-    } catch (e) {
-      debugPrint(
-        '⚠️ [GroupChatScreen] Error fetching RoomInfo for Group Info: $e',
-      );
-      // UI already shown with basic data, so no error toast needed
+  /// Background fresh load for Group Info (single /info, conditional /members).
+  Future<void> _loadGroupInfoFresh(
+    String roomId,
+    int companyId,
+    DateTime openTime,
+  ) async {
+    if (_activeGroupInfoLoad != null) {
+      debugPrint('⏭️ [GroupInfo] Joining in-flight Group Info load');
+      await _activeGroupInfoLoad;
+      return;
     }
+
+    final loadFuture = GroupInfoLoader()
+        .loadFresh(
+          roomId: roomId,
+          companyId: companyId,
+          roomService: _roomService,
+          forceRefresh: true,
+        )
+        .then((result) async {
+          if (!mounted) return;
+
+          if (result.duplicateSkipped) {
+            debugPrint('⏭️ [GroupInfo] Duplicate network load skipped for $roomId');
+          }
+
+          if (result.roomInfo != null) {
+            _applyFreshGroupInfo(
+              result.roomInfo!,
+              companyId,
+              openTime: openTime,
+              loadResult: result,
+            );
+          } else {
+            debugPrint(
+              '⚠️ [GroupInfo] Fresh load failed: ${result.error} — '
+              'keeping visible cached/basic data',
+            );
+            _groupInfoMembersLoadingNotifier?.value = false;
+          }
+        })
+        .catchError((Object e) {
+          debugPrint('⚠️ [GroupInfo] Exception during fresh load: $e');
+          _groupInfoMembersLoadingNotifier?.value = false;
+        });
+
+    _activeGroupInfoLoad = loadFuture;
+    try {
+      await loadFuture;
+    } finally {
+      _activeGroupInfoLoad = null;
+    }
+  }
+
+  String _groupInfoMembersSignature(RoomInfo roomInfo) {
+    final ids = roomInfo.members.map((m) => m.userId).join(',');
+    return '${roomInfo.memberCount}:${roomInfo.members.length}:$ids';
+  }
+
+  void _hydrateAvatarCacheFromRoomInfoCache(String roomId, int companyId) {
+    final cache = RoomInfoCache();
+    final avatars = cache.getCachedAvatars(roomId, companyId);
+    final numericMap = cache.getCachedNumericIdToUuidMap(roomId, companyId);
+
+    if (avatars != null) {
+      for (final entry in avatars.entries) {
+        if (entry.value.isNotEmpty) {
+          _memberAvatarCache[entry.key] = entry.value;
+        }
+      }
+    }
+
+    if (numericMap != null) {
+      _numericIdToUuidMap.addAll(numericMap);
+    }
+  }
+
+  void _bumpGroupInfoAvatarRevision() {
+    _groupInfoAvatarRevisionNotifier ??= ValueNotifier<int>(0);
+    _groupInfoAvatarRevisionNotifier!.value++;
+  }
+
+  /// Single controlled update after fresh Group Info data arrives.
+  void _applyFreshGroupInfo(
+    RoomInfo roomInfo,
+    int companyId, {
+    required DateTime openTime,
+    GroupInfoLoadResult? loadResult,
+  }) {
+    if (!mounted) return;
+
+    final signature = _groupInfoMembersSignature(roomInfo);
+    final membersChanged = signature != _lastGroupInfoMembersSignature;
+    final previousAvatarCount = RoomInfoCache().getAvatarCount(
+      widget.group.id,
+      companyId,
+    );
+
+    if (loadResult != null) {
+      debugPrint(
+        '[GroupInfo] /info duration=${loadResult.infoDuration?.inMilliseconds ?? 0}ms, '
+        'membersIncluded=${loadResult.membersIncludedInInfo}, '
+        'memberCount=${roomInfo.memberCount}',
+      );
+      if (loadResult.membersFetchAttempted) {
+        debugPrint(
+          '[GroupInfo] /members duration=${loadResult.membersDuration?.inMilliseconds ?? 0}ms, '
+          'memberCount=${roomInfo.members.length}, '
+          'avatarCount=${loadResult.avatarCount}',
+        );
+      }
+    }
+
+    // GroupInfoLoader already wrote RoomInfoCache once — hydrate local lookup maps.
+    _hydrateAvatarCacheFromRoomInfoCache(widget.group.id, companyId);
+
+    for (final member in roomInfo.members) {
+      if (member.avatar != null && member.avatar!.isNotEmpty) {
+        _cacheAvatarNormalized(
+          uuid: member.userId,
+          numericId: member.numericUserId?.toString(),
+          avatarUrl: member.avatar!,
+          source: 'groupInfoApply',
+        );
+      }
+      if (member.numericUserId != null) {
+        _numericIdToUuidMap[member.numericUserId!] = member.userId;
+      }
+    }
+
+    _updateCurrentGroupFromRoomInfo(
+      roomInfo,
+      companyId,
+      skipCacheWrite: true,
+    );
+
+    final newAvatarCount = RoomInfoCache().getAvatarCount(
+      widget.group.id,
+      companyId,
+    );
+    final avatarsChanged = newAvatarCount != previousAvatarCount;
+
+    if (_isGroupInfoPageOpen && (membersChanged || avatarsChanged)) {
+      _lastGroupInfoMembersSignature = signature;
+      _updateGroupInfoNotifiers(roomInfo);
+      if (avatarsChanged) {
+        _bumpGroupInfoAvatarRevision();
+      }
+    } else {
+      _groupInfoMembersLoadingNotifier?.value = false;
+      if (avatarsChanged) {
+        _bumpGroupInfoAvatarRevision();
+      }
+    }
+
+    final elapsed = DateTime.now().difference(openTime).inMilliseconds;
+    debugPrint(
+      '[GroupInfo] displayed fresh members in ${elapsed}ms '
+      '(members=${roomInfo.members.length}, count=${roomInfo.memberCount}, '
+      'avatars=$newAvatarCount)',
+    );
   }
 
   /// Process and cache RoomInfo (off UI thread, non-blocking)
@@ -12123,32 +12797,42 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     });
   }
 
-  /// Push latest room info into the live notifiers and trigger rebuild if page is open
+  /// Push latest room info into the live notifiers (no extra setState).
   void _updateGroupInfoNotifiers(RoomInfo roomInfo) {
     if (!_isGroupInfoPageOpen) return;
 
+    final safeMembers = List<RoomInfoMember>.from(roomInfo.members);
+    final safeCount = roomInfo.memberCount;
+
     _groupInfoMembersNotifier ??= ValueNotifier<List<RoomInfoMember>>(
-      roomInfo.members,
+      safeMembers,
     );
-    _groupInfoMemberCountNotifier ??= ValueNotifier<int>(
-      roomInfo.memberCount ?? roomInfo.members.length,
-    );
+    _groupInfoMemberCountNotifier ??= ValueNotifier<int>(safeCount);
 
-    _groupInfoMembersNotifier!.value = List<RoomInfoMember>.from(
-      roomInfo.members,
-    );
-    _groupInfoMemberCountNotifier!.value =
-        roomInfo.memberCount ?? roomInfo.members.length;
-
-    // Ensure the scaffold rebuilds so any widgets outside the ValueListenableBuilder
-    // (e.g., icons/menus that depend on count) also update.
-    if (mounted) {
-      setState(() {});
+    if (!_listEqualsRoomMembers(_groupInfoMembersNotifier!.value, safeMembers)) {
+      _groupInfoMembersNotifier!.value = safeMembers;
     }
+    if (_groupInfoMemberCountNotifier!.value != safeCount) {
+      _groupInfoMemberCountNotifier!.value = safeCount;
+    }
+    _groupInfoMembersLoadingNotifier?.value = false;
+    _bumpGroupInfoAvatarRevision();
 
     debugPrint(
-      '⚡ [GroupChatScreen] Group Info notifiers refreshed with latest members (${roomInfo.memberCount ?? roomInfo.members.length})',
+      '⚡ [GroupInfo] Notifiers updated — ${safeMembers.length} members '
+      '(count=$safeCount)',
     );
+  }
+
+  bool _listEqualsRoomMembers(
+    List<RoomInfoMember> a,
+    List<RoomInfoMember> b,
+  ) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].userId != b[i].userId) return false;
+    }
+    return true;
   }
 
   /// Refresh group info in background (non-blocking)
@@ -12199,10 +12883,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       safeMembers,
     );
     _groupInfoMemberCountNotifier ??= ValueNotifier<int>(safeMemberCount);
+    _groupInfoMembersLoadingNotifier ??= ValueNotifier<bool>(isLoadingMembers);
+    _groupInfoAvatarRevisionNotifier ??= ValueNotifier<int>(0);
 
     // Refresh values even if notifiers already exist
     _groupInfoMembersNotifier?.value = safeMembers;
     _groupInfoMemberCountNotifier?.value = safeMemberCount;
+    _groupInfoMembersLoadingNotifier?.value = isLoadingMembers;
 
     // Mark that group info page is open
     _isGroupInfoPageOpen = true;
@@ -12223,9 +12910,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 Navigator.pop(context);
               },
             ),
-            title: const Text(
-              'Group Info',
-              style: TextStyle(
+            title: Text(
+              chatCallTr(context, 'chatCall_groupInfo', fallback: 'Group Info'),
+              style: const TextStyle(
                 color: Colors.black87,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
@@ -12246,7 +12933,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                         width: 60,
                         height: 60,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: _onegateRed.withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
                         child:
@@ -12272,7 +12959,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                       child: Text(
                                         widget.group.initials,
                                         style: const TextStyle(
-                                          color: AppColors.primary,
+                                          color: _onegateRed,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 24,
                                         ),
@@ -12287,7 +12974,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                           child: Text(
                                             widget.group.initials,
                                             style: const TextStyle(
-                                              color: AppColors.primary,
+                                              color: _onegateRed,
                                               fontWeight: FontWeight.bold,
                                               fontSize: 24,
                                             ),
@@ -12300,7 +12987,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                 child: Text(
                                   widget.group.initials,
                                   style: const TextStyle(
-                                    color: AppColors.primary,
+                                    color: _onegateRed,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 24,
                                   ),
@@ -12342,7 +13029,17 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                                         _groupInfoMemberCountNotifier!,
                                     builder: (context, count, _) {
                                       return Text(
-                                        '$count ${count == 1 ? 'member' : 'members'}',
+                                        chatCallTr(
+                                          context,
+                                          'chatCall_memberCount',
+                                          fallback: '{count} {unit}',
+                                          params: {
+                                            'count': '$count',
+                                            'unit': count == 1
+                                                ? chatCallTr(context, 'chatCall_memberSingular', fallback: 'member')
+                                                : chatCallTr(context, 'chatCall_membersPlural', fallback: 'members'),
+                                          },
+                                        ),
                                         style: TextStyle(
                                           color: Colors.grey.shade600,
                                           fontSize: 14,
@@ -12373,7 +13070,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 if (roomInfo.description != null &&
                     roomInfo.description!.isNotEmpty) ...[
                   _buildGroupInfoSection(
-                    title: 'Description',
+                    title: chatCallTr(context, 'chatCall_description', fallback: 'Description'),
                     icon: Icons.info_outline,
                     content: roomInfo.description!,
                   ),
@@ -12382,7 +13079,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
                 // Created Date
                 _buildGroupInfoSection(
-                  title: 'Created',
+                  title: chatCallTr(context, 'chatCall_created', fallback: 'Created'),
                   icon: Icons.calendar_today,
                   content:
                       '${roomInfo.createdAt.day}/${roomInfo.createdAt.month}/${roomInfo.createdAt.year}',
@@ -12392,7 +13089,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 // Last Active Time
                 if (roomInfo.lastActive != null) ...[
                   _buildGroupInfoSection(
-                    title: 'Last Active',
+                    title: chatCallTr(context, 'chatCall_lastActive', fallback: 'Last Active'),
                     icon: Icons.access_time,
                     content: _getTimeAgo(roomInfo.lastActive!),
                   ),
@@ -12400,14 +13097,32 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 ],
 
                 // Group Members (with optional loading state)
-                if (_groupInfoMembersNotifier != null)
+                if (_groupInfoMembersNotifier != null &&
+                    _groupInfoMembersLoadingNotifier != null)
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _groupInfoMembersLoadingNotifier!,
+                    builder: (context, isMembersLoading, _) {
+                      return ValueListenableBuilder<List<RoomInfoMember>>(
+                        valueListenable: _groupInfoMembersNotifier!,
+                        builder: (context, members, _) {
+                          return _buildGroupMembersSection(
+                            roomInfo,
+                            isLoadingMembers: isMembersLoading,
+                            overrideMembers: members,
+                            overrideMemberCount:
+                                _groupInfoMemberCountNotifier?.value,
+                          );
+                        },
+                      );
+                    },
+                  )
+                else if (_groupInfoMembersNotifier != null)
                   ValueListenableBuilder<List<RoomInfoMember>>(
                     valueListenable: _groupInfoMembersNotifier!,
                     builder: (context, members, _) {
                       return _buildGroupMembersSection(
                         roomInfo,
-                        isLoadingMembers:
-                            isLoadingMembers || _isGroupInfoRefreshing,
+                        isLoadingMembers: isLoadingMembers,
                         overrideMembers: members,
                         overrideMemberCount:
                             _groupInfoMemberCountNotifier?.value,
@@ -12417,8 +13132,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 else
                   _buildGroupMembersSection(
                     roomInfo,
-                    isLoadingMembers:
-                        isLoadingMembers || _isGroupInfoRefreshing,
+                    isLoadingMembers: isLoadingMembers,
                   ),
                 _buildGroupInfoDivider(),
 
@@ -12445,13 +13159,12 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                           ),
                           elevation: 0,
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.exit_to_app, size: 20),
                             SizedBox(width: 8),
-                            Text(
-                              'Leave Group',
+                            Text(chatCallTr(context, 'chatCall_leaveGroup', fallback: 'Leave Group'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -12477,6 +13190,10 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       _isGroupInfoPageOpen = false;
       _groupInfoMembersNotifier = null;
       _groupInfoMemberCountNotifier = null;
+      _groupInfoMembersLoadingNotifier = null;
+      _groupInfoAvatarRevisionNotifier = null;
+      _groupInfoCompanyId = null;
+      _lastGroupInfoMembersSignature = null;
     });
   }
 
@@ -12505,7 +13222,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         children: [
           Row(
             children: [
-              Icon(icon, size: 20, color: AppColors.primary),
+              Icon(icon, size: 20, color: _onegateRed),
               const SizedBox(width: 8),
               Text(
                 title,
@@ -12552,7 +13269,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         ) // Safety filter: only include active members
         .toList();
 
-    // If loading and no members yet, show AppLoader
+    // If still loading and no members yet, show OneGate global loader
     if (isLoadingMembers && allMembers.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -12561,32 +13278,29 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.people, size: 20, color: AppColors.primary),
+                const Icon(Icons.people, size: 20, color: _onegateRed),
                 const SizedBox(width: 8),
-                const Text(
-                  'Members',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                Text(
+                  chatCallTr(context, 'chatCall_members', fallback: 'Members'),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             Divider(color: Colors.grey.withOpacity(0.2), thickness: 1),
-            const SizedBox(height: 24),
-            const Center(
-              child: AppLoader(
-                title: 'Loading Members',
-                subtitle: 'Fetching group members...',
-                icon: Icons.people,
-              ),
+            const SizedBox(height: 16),
+            OneGateGlobalLoader(
+              title: chatCallTr(context, 'chatCall_loadingMembers', fallback: 'Loading Members'),
+              subtitle: chatCallTr(context, 'chatCall_fetchingGroupMemberDetails', fallback: 'Fetching group member details...'),
             ),
-            const SizedBox(height: 24),
           ],
         ),
       );
     }
 
-    // If members list is empty, show AppLoader as loading indicator
+    // Fetch finished but members unavailable — show count instead of infinite loader
     if (allMembers.isEmpty) {
+      final count = overrideMemberCount ?? roomInfo.memberCount;
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
@@ -12594,25 +13308,36 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.people, size: 20, color: AppColors.primary),
+                const Icon(Icons.people, size: 20, color: _onegateRed),
                 const SizedBox(width: 8),
-                const Text(
-                  'Members',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                Text(
+                  chatCallTr(context, 'chatCall_members', fallback: 'Members'),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             Divider(color: Colors.grey.withOpacity(0.2), thickness: 1),
-            const SizedBox(height: 24),
-            const Center(
-              child: AppLoader(
-                title: 'Loading Members',
-                subtitle: 'Fetching group members...',
-                icon: Icons.people,
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.only(left: 28),
+              child: Text(
+                count > 0
+                    ? chatCallTr(
+                        context,
+                        'chatCall_memberCount',
+                        fallback: '{count} {unit}',
+                        params: {
+                          'count': '$count',
+                          'unit': count == 1
+                              ? chatCallTr(context, 'chatCall_memberSingular', fallback: 'member')
+                              : chatCallTr(context, 'chatCall_membersPlural', fallback: 'members'),
+                        },
+                      )
+                    : chatCallTr(context, 'chatCall_noMembersFound', fallback: 'No members found'),
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
               ),
             ),
-            const SizedBox(height: 24),
           ],
         ),
       );
@@ -12625,11 +13350,11 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         children: [
           Row(
             children: [
-              Icon(Icons.people, size: 20, color: AppColors.primary),
+              const Icon(Icons.people, size: 20, color: _onegateRed),
               const SizedBox(width: 8),
-              const Text(
-                'Members',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Text(
+                chatCallTr(context, 'chatCall_members', fallback: 'Members'),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -12637,152 +13362,166 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           Divider(color: Colors.grey.withOpacity(0.2), thickness: 1),
           if (isLoadingMembers)
             Padding(
-              padding: const EdgeInsets.only(left: 28, top: 16, bottom: 16),
-              child: const Center(
-                child: AppLoader(
-                  title: 'Loading Members',
-                  subtitle: 'Fetching group members...',
-                  icon: Icons.people,
-                ),
+              padding: const EdgeInsets.only(left: 28, top: 8, bottom: 8),
+              child: Row(
+                children: [
+                  const OneGateGlobalLoaderIcon(size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    chatCallTr(context, 'chatCall_refreshingMembers', fallback: 'Refreshing members...'),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                ],
               ),
             ),
           if (!isLoadingMembers) const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.only(left: 28),
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: allMembers.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final member = allMembers[index];
-                final isCurrentUser = member.userId == widget.currentUserId;
-                final isAdmin = member.isAdmin;
-                final effectiveMemberCount =
-                    roomInfo.memberCount ?? roomInfo.members.length;
-                final canDeleteMembers =
-                    (roomInfo.admin?.userId == widget.currentUserId ||
-                        roomInfo.createdBy == widget.currentUserId) &&
-                    effectiveMemberCount >= 4 &&
-                    !isCurrentUser;
-
-                // PERFORMANCE OPTIMIZATION: Immediate rendering with simple name resolution
-                // No blocking lookups - use data directly from RoomInfo
-
-                // Phase 1: Immediate rendering - simple name from RoomInfo
-                // Use member.username directly (already from API), with minimal fallback
-                String displayName;
-                if (isCurrentUser) {
-                  displayName = 'You';
-                } else if (member.username != null &&
-                    member.username!.isNotEmpty &&
-                    !member.username!.startsWith('user_') &&
-                    !_isUuidLike(member.username!)) {
-                  // Use username from RoomInfo if it's not UUID-like
-                  displayName = member.username!;
-                } else {
-                  // Simple fallback - no complex lookups
-                  displayName = 'User';
-                }
-
-                // Avatar URL from RoomInfo (already available, no blocking)
-                final avatarUrl = member.avatar;
-                final hasAvatar = avatarUrl != null && avatarUrl.isNotEmpty;
-
-                return Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Colors.grey.withOpacity(0.1),
-                      backgroundImage: hasAvatar
-                          ? NetworkImage(avatarUrl)
-                          : null,
-                      onBackgroundImageError: hasAvatar
-                          ? (exception, stackTrace) {
-                              // Silent fail - avatar will fallback to initials
-                              // Removed verbose logging that was contributing to UI delay
-                            }
-                          : null,
-                      child: !hasAvatar
-                          ? Text(
-                              displayName.isNotEmpty
-                                  ? displayName[0].toUpperCase()
-                                  : '?',
-                              style: const TextStyle(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            displayName,
-                            style: const TextStyle(fontWeight: FontWeight.w500),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (member.joinedAt != null)
-                            Text(
-                              'Joined ${_getTimeAgo(member.joinedAt!)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    // Show Admin badge for admins, Delete icon for regular members (if user is admin)
-                    if (isAdmin)
-                      Container(
-                        margin: const EdgeInsets.only(left: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          'Admin',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      )
-                    else if (canDeleteMembers)
-                      // Show delete icon for non-admin members if current user is the group admin
-                      // Only for group rooms (not 1-to-1) and not for self-removal
-                      IconButton(
-                        onPressed: () =>
-                            _showRemoveMemberConfirmation(member, displayName),
-                        icon: const Icon(
-                          Icons.delete_outline,
-                          color: Colors.red,
-                          size: 20,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        tooltip: 'Remove member',
-                      )
-                    else
-                      // Debug: Not showing delete icon - just empty space
-                      const SizedBox.shrink(),
-                  ],
-                );
-              },
-            ),
+            child: _groupInfoAvatarRevisionNotifier != null
+                ? ValueListenableBuilder<int>(
+                    valueListenable: _groupInfoAvatarRevisionNotifier!,
+                    builder: (context, _, __) {
+                      return _buildGroupMembersList(
+                        allMembers: allMembers,
+                        roomInfo: roomInfo,
+                      );
+                    },
+                  )
+                : _buildGroupMembersList(
+                    allMembers: allMembers,
+                    roomInfo: roomInfo,
+                  ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildGroupMembersList({
+    required List<RoomInfoMember> allMembers,
+    required RoomInfo roomInfo,
+  }) {
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: allMembers.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final member = allMembers[index];
+        final isCurrentUser = member.userId == widget.currentUserId;
+        final isAdmin = member.isAdmin;
+        final effectiveMemberCount =
+            roomInfo.memberCount;
+        final canDeleteMembers =
+            (roomInfo.admin?.userId == widget.currentUserId ||
+                roomInfo.createdBy == widget.currentUserId) &&
+            effectiveMemberCount >= 4 &&
+            !isCurrentUser;
+
+        String displayName;
+        if (isCurrentUser) {
+          displayName = 'You';
+        } else if (member.username != null &&
+            member.username!.isNotEmpty &&
+            !member.username!.startsWith('user_') &&
+            !_isUuidLike(member.username!)) {
+          displayName = member.username!;
+        } else {
+          displayName = 'User';
+        }
+
+        final avatarUrl = MemberAvatarResolver.resolveForMember(
+          roomId: widget.group.id,
+          companyId: _groupInfoCompanyId,
+          member: member,
+        );
+        final hasAvatar = avatarUrl != null && avatarUrl.isNotEmpty;
+
+        return Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.grey.withOpacity(0.1),
+              backgroundImage: hasAvatar ? NetworkImage(avatarUrl) : null,
+              onBackgroundImageError: hasAvatar
+                  ? (exception, stackTrace) {}
+                  : null,
+              child: !hasAvatar
+                  ? Text(
+                      displayName.isNotEmpty
+                          ? displayName[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    displayName,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (member.joinedAt != null)
+                    Text(
+                      'Joined ${_getTimeAgo(member.joinedAt!)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (isAdmin)
+              Container(
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: _onegateRed.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  chatCallTr(context, 'chatCall_admin', fallback: 'Admin'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: _onegateRed,
+                  ),
+                ),
+              )
+            else if (canDeleteMembers)
+              IconButton(
+                onPressed: () =>
+                    _showRemoveMemberConfirmation(member, displayName),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.red,
+                  size: 20,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: chatCallTr(
+                  context,
+                  'chatCall_removeMember',
+                  fallback: 'Remove member',
+                ),
+              )
+            else
+              const SizedBox.shrink(),
+          ],
+        );
+      },
     );
   }
 
@@ -12805,9 +13544,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               size: 28,
             ),
             const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Remove Member',
+            Expanded(
+              child: Text(chatCallTr(context, 'Remove Member', fallback: 'Remove Member'),
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
@@ -12818,7 +13556,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Are you sure you want to remove "$displayName" from the group?',
+              chatCallTr(context, 'chatCall_confirmRemoveMember', fallback: 'Are you sure you want to remove "{name}" from the group?', params: {'name': displayName}),
               style: const TextStyle(fontSize: 16, height: 1.5),
             ),
             const SizedBox(height: 12),
@@ -12838,8 +13576,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      'This member will no longer receive messages from this group.',
+                    child: Text(chatCallTr(context, 'chatCall_memberRemoveWarning', fallback: 'This member will no longer receive messages from this group.'),
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.red.shade700,
@@ -12858,8 +13595,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
-            child: const Text(
-              'Cancel',
+            child: Text(chatCallTr(context, 'chatCall_cancel', fallback: 'Cancel'),
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
@@ -12876,9 +13612,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text(
-              'Remove',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            child: Text(
+              chatCallTr(context, 'chatCall_remove', fallback: 'Remove'),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -12899,8 +13635,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         if (mounted) {
           EnhancedToast.error(
             context,
-            title: 'Error',
-            message: 'Please select a society first',
+            title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+            message: chatCallTr(context, 'chatCall_pleaseSelectSociety', fallback: 'Please select a society first'),
           );
         }
         return;
@@ -12921,8 +13657,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         if (mounted) {
           EnhancedToast.success(
             context,
-            title: 'Success',
-            message: 'Member removed from group',
+            title: chatCallTr(context, 'Success', fallback: 'Success'),
+            message: chatCallTr(context, 'chatCall_memberRemovedFromGroup', fallback: 'Member removed from group'),
           );
         }
 
@@ -12992,7 +13728,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         if (mounted) {
           EnhancedToast.error(
             context,
-            title: 'Error',
+            title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
             message: response.error ?? 'Failed to remove member',
           );
         }
@@ -13001,8 +13737,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       if (mounted) {
         EnhancedToast.error(
           context,
-          title: 'Error',
-          message: 'Failed to remove member: $e',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+          message: chatCallTr(context, 'chatCall_failedToRemoveMember', fallback: 'Failed to remove member: {error}', params: {'error': '$e'}),
         );
       }
     } finally {
@@ -13043,8 +13779,98 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     return uuidPattern.hasMatch(text);
   }
 
+  bool _resolveForwardedFlag({
+    required GroupMessage existingMessage,
+    required GroupMessage groupMessage,
+    required RoomMessage roomMessage,
+  }) {
+    return existingMessage.isForwarded ||
+        groupMessage.isForwarded ||
+        _isForwardedRoomMessage(roomMessage);
+  }
+
+  bool _forwardPlaceholderMatchesMessage(
+    GroupMessage placeholder,
+    GroupMessage real,
+  ) {
+    if (placeholder.text.isNotEmpty &&
+        real.text.isNotEmpty &&
+        placeholder.text == real.text) {
+      return true;
+    }
+    if (placeholder.firstImageUrl != null &&
+        placeholder.firstImageUrl == real.firstImageUrl) {
+      return true;
+    }
+    if (placeholder.documentUrl != null &&
+        placeholder.documentUrl == real.documentUrl) {
+      return true;
+    }
+    if (placeholder.audioUrl != null && placeholder.audioUrl == real.audioUrl) {
+      return true;
+    }
+    if (placeholder.videoUrl != null && placeholder.videoUrl == real.videoUrl) {
+      return true;
+    }
+    final timeDiff = real.timestamp.difference(placeholder.timestamp).inSeconds.abs();
+    return placeholder.isForwarded && timeDiff <= 60;
+  }
+
+  /// Drops stale forward placeholders when the real forwarded message is already loaded.
+  List<GroupMessage> _reconcileForwardedMessages(List<GroupMessage> messages) {
+    final placeholders = messages
+        .where((m) => m.id.startsWith('temp_forward_'))
+        .toList();
+
+    for (final placeholder in placeholders) {
+      for (final real in messages) {
+        if (real.id.startsWith('temp_forward_')) continue;
+        if (!real.isFromUser(
+          widget.currentUserId,
+          currentUserNumericId: widget.currentUserNumericId,
+        )) {
+          continue;
+        }
+        if (_forwardPlaceholderMatchesMessage(placeholder, real)) {
+          _sessionForwardedMessageIds.add(real.id);
+        }
+      }
+    }
+
+    final result = <GroupMessage>[];
+    for (final message in messages) {
+      if (message.id.startsWith('temp_forward_')) {
+        final hasRealDuplicate = messages.any((other) {
+          if (other.id.startsWith('temp_forward_') || other.id == message.id) {
+            return false;
+          }
+          if (!other.isFromUser(
+            widget.currentUserId,
+            currentUserNumericId: widget.currentUserNumericId,
+          )) {
+            return false;
+          }
+          return _forwardPlaceholderMatchesMessage(message, other);
+        });
+        if (!hasRealDuplicate) {
+          result.add(message);
+        }
+        continue;
+      }
+
+      if (_sessionForwardedMessageIds.contains(message.id) &&
+          !message.isForwarded) {
+        result.add(message.copyWith(isForwarded: true));
+      } else {
+        result.add(message);
+      }
+    }
+    return result;
+  }
+
   /// Infer forwarded flag from RoomMessage when API omits explicit is_forwarded.
   bool _isForwardedRoomMessage(RoomMessage rm) {
+    if (_sessionForwardedMessageIds.contains(rm.id)) return true;
     if (rm.isForwarded) return true;
 
     bool hasForwardMarkerMap(Map<dynamic, dynamic>? map) {
@@ -13257,369 +14083,452 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
   }
 
   void _leaveGroup() {
+    final isTablet = MediaQuery.of(context).size.width > 768;
+    final screenSize = MediaQuery.of(context).size;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.orange.shade700,
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Leave Group',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Are you sure you want to leave "${widget.group.name}"?',
-              style: const TextStyle(fontSize: 16, height: 1.5),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.shade200),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Colors.red.shade700,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'You will no longer receive messages from this group.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.red.shade700,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
+      barrierDismissible: true,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          width: isTablet ? 500 : double.infinity,
+          constraints: BoxConstraints(
+            maxWidth: isTablet ? 500 : screenSize.width * 0.9,
+            maxHeight: screenSize.height * 0.8,
           ),
-          ElevatedButton(
-            onPressed: () async {
-              // CRITICAL FIX: Close dialog BEFORE showing loading to avoid context conflicts
-              Navigator.pop(context); // Close confirmation dialog
-
-              // CRITICAL FIX: Use screen context, not dialog context, for loading sheet
-              // Dialog context becomes invalid after Navigator.pop()
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!mounted) return;
-
-                // Show loading indicator using screen context
-                showModalBottomSheet(
-                  context:
-                      this.context, // Use screen context, not dialog context
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  isDismissible: false,
-                  enableDrag: false,
-                  builder: (context) => Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(24),
-                        topRight: Radius.circular(24),
-                      ),
-                    ),
-                    child: const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: AppLoader(),
-                      ),
-                    ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                spreadRadius: 2,
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: EdgeInsets.all(isTablet ? 24 : 20),
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: Color(0xFFE0E3E7), width: 1),
                   ),
-                );
-              });
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _onegateRed.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _onegateRed.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.exit_to_app_rounded,
+                        color: _onegateRed,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(chatCallTr(context, 'chatCall_leaveGroup', fallback: 'Leave Group'),
+                            style: TextStyle(
+                              fontSize: isTablet ? 20 : 18,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xff212427),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            chatCallTr(
+                              context,
+                              'chatCall_areYouSureLeaveGroupFull',
+                              fallback:
+                                  'Are you sure you want to leave "{groupName}"? You will no longer receive messages from this group.',
+                              params: {'groupName': widget.group.name},
+                            ),
+                            style: TextStyle(
+                              fontSize: isTablet ? 16 : 14,
+                              color: const Color(0xff57636C),
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(isTablet ? 24 : 20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xff57636C),
+                          elevation: 0,
+                          padding: EdgeInsets.symmetric(
+                            vertical: isTablet ? 16 : 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(color: Colors.grey[300]!),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        child: Text(chatCallTr(context, 'chatCall_cancel', fallback: 'Cancel'),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: isTablet ? 16 : 14,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: isTablet ? 16 : 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _onegateRed,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: EdgeInsets.symmetric(
+                            vertical: isTablet ? 16 : 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () async {
+                          Navigator.pop(dialogContext);
 
-              try {
-                // Call API to leave the room
-                final response = await _roomService.leaveRoom(widget.group.id);
+                          // CRITICAL FIX: Use screen context, not dialog context, for loading sheet
+                          // Dialog context becomes invalid after Navigator.pop()
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (!mounted) return;
 
-                if (!mounted) return;
-
-                // Close loading indicator first
-                Navigator.pop(this.context); // Use screen context
-
-                if (response.success) {
-                  // CRITICAL: Clear membership status to prevent re-entry
-                  // This ensures the user cannot access this group anymore
-                  if (mounted) {
-                    setState(() {
-                      _isUserMember = false;
-                      _isMemberFromRoomInfo = false;
-                      _hasLeftGroup = true; // Mark that user left the group
-                    });
-                  }
-
-                  // PERSIST LEAVE STATUS: Mark in GroupsTab so it persists across navigation
-                  GroupsTab.markUserLeftGroup(widget.group.id);
-
-                  // Clean up WebSocket connection
-                  await _chatService.leaveRoom(widget.group.id);
-
-                  // CRITICAL FIX: Get current user UUID to remove from cache
-                  String? currentUserUuid;
-                  try {
-                    final userData = await KeycloakService.getUserData();
-                    if (userData != null && userData['sub'] != null) {
-                      currentUserUuid = userData['sub'].toString();
-                      debugPrint(
-                        '✅ [GroupChatScreen] Current user UUID: $currentUserUuid',
-                      );
-                    }
-                  } catch (e) {
-                    debugPrint(
-                      '⚠️ [GroupChatScreen] Error getting current user UUID: $e',
-                    );
-                  }
-
-                  // CRITICAL FIX: Optimistically remove leaving user from cache
-                  // This updates cache immediately, then we clear it so admins get fresh data from API
-                  final roomInfoCache = RoomInfoCache();
-                  if (currentUserUuid != null) {
-                    roomInfoCache.removeMemberOptimistically(
-                      roomId: widget.group.id,
-                      memberUserId: currentUserUuid,
-                    );
-                    debugPrint(
-                      '✅ [GroupChatScreen] Removed leaving user from cache: $currentUserUuid',
-                    );
-                  }
-
-                  // CRITICAL FIX: Mark that a member left - this forces fresh API fetch for 30 seconds
-                  // This ensures admins viewing the group see updated member list immediately
-                  roomInfoCache.markMemberLeft(widget.group.id);
-
-                  // CRITICAL FIX: Clear cache so all admins get fresh data from API
-                  // This ensures admins viewing the group see updated member list (only active members)
-                  roomInfoCache.clearRoomCache(widget.group.id);
-                  debugPrint(
-                    '✅ [GroupChatScreen] Cleared cache and marked member left for room - admins will get fresh data from API',
-                  );
-
-                  // CRITICAL FIX: Decrement member count in GroupsTab
-                  // This ensures member count is updated immediately in groups list
-                  GroupsTab.decrementGroupMemberCount(widget.group.id, 1);
-
-                  // Remove room locally from groups list
-                  GroupsTab.removeGroup(widget.group.id);
-
-                  // Invalidate groups cache for consistency
-                  // This ensures the groups list is refreshed with accurate data
-                  GroupsTab.invalidateGroupsCache();
-
-                  // Mark group as updated so GroupsTab refreshes when user returns
-                  GroupsTab.markGroupUpdated();
-
-                  // Cancel any pending refreshes for this room since user left
-                  final coordinator = RoomRefreshCoordinator();
-                  coordinator.cancelPendingRefresh(widget.group.id);
-
-                  // Check if still mounted before showing toast and navigating
-                  if (!mounted) return;
-
-                  // CRITICAL FIX: Clear messages and state FIRST before navigation
-                  // This prevents RangeError when ListView tries to access cleared messages
-                  // Clear messages and any other cached data for this room
-                  // This prevents any potential data leakage or stale state
-                  _messages.clear();
-                  _memberAvatarCache.clear();
-                  _numericIdToUuidMap.clear();
-
-                  // CRITICAL FIX: Update UI state immediately to reflect cleared messages
-                  // This ensures ListView rebuilds with empty itemCount before navigation
-                  // This prevents RangeError when ListView.builder tries to access _messages[index]
-                  if (mounted) {
-                    setState(() {
-                      _isLoading = false;
-                      _hasError = false;
-                      _isLoadingMore = false;
-                      _isTyping = false;
-                    });
-                    debugPrint(
-                      '✅ [GroupChatScreen] Cleared messages and updated UI state',
-                    );
-                  }
-
-                  // CRITICAL FIX: Show toast FIRST while context is definitely valid
-                  // Then navigate after a short delay to ensure toast is visible
-                  try {
-                    // Show success toast immediately while context is valid
-                    EnhancedToast.success(
-                      context,
-                      title: 'Left Group',
-                      message: 'Leave Group Successfully',
-                      duration: const Duration(seconds: 3),
-                    );
-
-                    debugPrint(
-                      '✅ [GroupChatScreen] Success toast shown: Leave Group Successfully',
-                    );
-
-                    // Navigate after a short delay to ensure toast is visible
-                    // This gives the toast time to appear before navigation
-                    Future.delayed(const Duration(milliseconds: 400), () {
-                      if (mounted) {
-                        try {
-                          final navigator = Navigator.of(context);
-                          if (navigator.canPop()) {
-                            navigator.pop();
-                            debugPrint(
-                              '✅ [GroupChatScreen] Navigated back to GroupsTab',
+                            // Show loading indicator using screen context
+                            showModalBottomSheet(
+                              context: this.context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              isDismissible: false,
+                              enableDrag: false,
+                              builder: (context) => Container(
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(24),
+                                    topRight: Radius.circular(24),
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 48),
+                                  child: OneGateGlobalLoader(
+                                    title: chatCallTr(context, 'chatCall_leavingGroup', fallback: 'Leaving Group'),
+                                    subtitle: chatCallTr(context, 'chatCall_pleaseWait', fallback: 'Please wait...'),
+                                  ),
+                                ),
+                              ),
                             );
+                          });
+
+                          try {
+                            // Call API to leave the room
+                            final response = await _roomService.leaveRoom(
+                              widget.group.id,
+                            );
+
+                            if (!mounted) return;
+
+                            // Close loading indicator first
+                            Navigator.pop(this.context);
+
+                            if (response.success) {
+                              // CRITICAL: Clear membership status to prevent re-entry
+                              // This ensures the user cannot access this group anymore
+                              if (mounted) {
+                                setState(() {
+                                  _isUserMember = false;
+                                  _isMemberFromRoomInfo = false;
+                                  _hasLeftGroup =
+                                      true; // Mark that user left the group
+                                });
+                              }
+
+                              // PERSIST LEAVE STATUS: Mark in GroupsTab so it persists across navigation
+                              GroupsTab.markUserLeftGroup(widget.group.id);
+
+                              // Clean up WebSocket connection
+                              await _chatService.leaveRoom(widget.group.id);
+
+                              // CRITICAL FIX: Get current user UUID to remove from cache
+                              String? currentUserUuid;
+                              try {
+                                final userData =
+                                    await KeycloakService.getUserData();
+                                if (userData != null &&
+                                    userData['sub'] != null) {
+                                  currentUserUuid = userData['sub'].toString();
+                                  debugPrint(
+                                    '✅ [GroupChatScreen] Current user UUID: $currentUserUuid',
+                                  );
+                                }
+                              } catch (e) {
+                                debugPrint(
+                                  '⚠️ [GroupChatScreen] Error getting current user UUID: $e',
+                                );
+                              }
+
+                              // CRITICAL FIX: Optimistically remove leaving user from cache
+                              // This updates cache immediately, then we clear it so admins get fresh data from API
+                              final roomInfoCache = RoomInfoCache();
+                              if (currentUserUuid != null) {
+                                roomInfoCache.removeMemberOptimistically(
+                                  roomId: widget.group.id,
+                                  memberUserId: currentUserUuid,
+                                );
+                                debugPrint(
+                                  '✅ [GroupChatScreen] Removed leaving user from cache: $currentUserUuid',
+                                );
+                              }
+
+                              // CRITICAL FIX: Mark that a member left - this forces fresh API fetch for 30 seconds
+                              // This ensures admins viewing the group see updated member list immediately
+                              roomInfoCache.markMemberLeft(widget.group.id);
+
+                              // CRITICAL FIX: Clear cache so all admins get fresh data from API
+                              // This ensures admins viewing the group see updated member list (only active members)
+                              roomInfoCache.clearRoomCache(widget.group.id);
+                              debugPrint(
+                                '✅ [GroupChatScreen] Cleared cache and marked member left for room - admins will get fresh data from API',
+                              );
+
+                              // CRITICAL FIX: Decrement member count in GroupsTab
+                              // This ensures member count is updated immediately in groups list
+                              GroupsTab.decrementGroupMemberCount(
+                                widget.group.id,
+                                1,
+                              );
+
+                              // Remove room locally from groups list
+                              GroupsTab.removeGroup(widget.group.id);
+
+                              // Invalidate groups cache for consistency
+                              // This ensures the groups list is refreshed with accurate data
+                              GroupsTab.invalidateGroupsCache();
+
+                              // Mark group as updated so GroupsTab refreshes when user returns
+                              GroupsTab.markGroupUpdated();
+
+                              // Cancel any pending refreshes for this room since user left
+                              final coordinator = RoomRefreshCoordinator();
+                              coordinator.cancelPendingRefresh(widget.group.id);
+
+                              // Check if still mounted before showing toast and navigating
+                              if (!mounted) return;
+
+                              // CRITICAL FIX: Clear messages and state FIRST before navigation
+                              // This prevents RangeError when ListView tries to access cleared messages
+                              // Clear messages and any other cached data for this room
+                              // This prevents any potential data leakage or stale state
+                              _messages.clear();
+                              _memberAvatarCache.clear();
+                              _numericIdToUuidMap.clear();
+
+                              // CRITICAL FIX: Update UI state immediately to reflect cleared messages
+                              // This ensures ListView rebuilds with empty itemCount before navigation
+                              // This prevents RangeError when ListView.builder tries to access _messages[index]
+                              if (mounted) {
+                                setState(() {
+                                  _isLoading = false;
+                                  _hasError = false;
+                                  _isLoadingMore = false;
+                                  _isTyping = false;
+                                });
+                                debugPrint(
+                                  '✅ [GroupChatScreen] Cleared messages and updated UI state',
+                                );
+                              }
+
+                              // CRITICAL FIX: Show toast FIRST while context is definitely valid
+                              // Then navigate after a short delay to ensure toast is visible
+                              try {
+                                // Show success toast immediately while context is valid
+                                EnhancedToast.success(
+                                  context,
+                                  title: chatCallTr(context, 'chatCall_leftGroup', fallback: 'Left Group'),
+                                  message: chatCallTr(context, 'chatCall_leaveGroupSuccessfully', fallback: 'Leave Group Successfully'),
+                                  duration: const Duration(seconds: 3),
+                                );
+
+                                debugPrint(
+                                  '✅ [GroupChatScreen] Success toast shown: Leave Group Successfully',
+                                );
+
+                                // Navigate after a short delay to ensure toast is visible
+                                // This gives the toast time to appear before navigation
+                                Future.delayed(
+                                  const Duration(milliseconds: 400),
+                                  () {
+                                    if (mounted) {
+                                      try {
+                                        final navigator = Navigator.of(context);
+                                        if (navigator.canPop()) {
+                                          navigator.pop();
+                                          debugPrint(
+                                            '✅ [GroupChatScreen] Navigated back to GroupsTab',
+                                          );
+                                        }
+                                      } catch (navError) {
+                                        debugPrint(
+                                          '⚠️ [GroupChatScreen] Error navigating: $navError',
+                                        );
+                                      }
+                                    }
+                                  },
+                                );
+                              } catch (e) {
+                                debugPrint(
+                                  '⚠️ [GroupChatScreen] Error showing toast: $e',
+                                );
+                                // Still navigate even if toast fails
+                                if (mounted) {
+                                  try {
+                                    final navigator = Navigator.of(context);
+                                    if (navigator.canPop()) {
+                                      navigator.pop();
+                                    }
+                                  } catch (navError) {
+                                    debugPrint(
+                                      '⚠️ [GroupChatScreen] Error navigating: $navError',
+                                    );
+                                  }
+                                }
+                              }
+                            } else {
+                              // Close loading indicator first
+                              if (mounted) {
+                                try {
+                                  Navigator.pop(
+                                    this.context,
+                                  ); // Use screen context
+                                } catch (e) {
+                                  debugPrint(
+                                    '⚠️ [GroupChatScreen] Error closing loading indicator: $e',
+                                  );
+                                }
+                              }
+
+                              // Show error message - only if still mounted and context is valid
+                              if (mounted) {
+                                try {
+                                  final overlay = Overlay.maybeOf(this.context);
+                                  if (overlay != null) {
+                                    EnhancedToast.error(
+                                      this.context, // Use screen context
+                                      title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+                                      message:
+                                          response.error ??
+                                          'Failed to leave group',
+                                    );
+                                  } else {
+                                    debugPrint(
+                                      '⚠️ [GroupChatScreen] Cannot show error toast - overlay unavailable',
+                                    );
+                                  }
+                                } catch (e) {
+                                  debugPrint(
+                                    '⚠️ [GroupChatScreen] Error showing error toast: $e',
+                                  );
+                                }
+                              }
+                            }
+                          } catch (e) {
+                            if (!mounted) return;
+
+                            // Close loading indicator first - wrap in try-catch to prevent widget lifecycle errors
+                            if (mounted) {
+                              try {
+                                Navigator.pop(this.context);
+                              } catch (popError) {
+                                debugPrint(
+                                  '⚠️ [GroupChatScreen] Error closing loading indicator in catch: $popError',
+                                );
+                              }
+                            }
+
+                            // Show error message - only if still mounted and context is valid
+                            if (mounted) {
+                              try {
+                                final overlay = Overlay.maybeOf(this.context);
+                                if (overlay != null) {
+                                  final errorMessage = e.toString();
+                                  if (!errorMessage.contains(
+                                        'deactivated widget',
+                                      ) &&
+                                      !errorMessage.contains('widget tree') &&
+                                      !errorMessage.contains(
+                                        'ancestor is unsafe',
+                                      )) {
+                                    EnhancedToast.error(
+                                      this.context,
+                                      title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+                                      message: chatCallTr(context, 'chatCall_failedToLeaveGroup', fallback: 'Failed to leave group: {error}', params: {'error': '$e'}),
+                                    );
+                                  } else {
+                                    debugPrint(
+                                      '⚠️ [GroupChatScreen] Widget lifecycle error during leave group - not showing toast: $e',
+                                    );
+                                  }
+                                } else {
+                                  debugPrint(
+                                    '⚠️ [GroupChatScreen] Cannot show error toast - overlay unavailable',
+                                  );
+                                }
+                              } catch (toastError) {
+                                debugPrint(
+                                  '⚠️ [GroupChatScreen] Error showing error toast: $toastError',
+                                );
+                              }
+                            }
                           }
-                        } catch (navError) {
-                          debugPrint(
-                            '⚠️ [GroupChatScreen] Error navigating: $navError',
-                          );
-                        }
-                      }
-                    });
-                  } catch (e) {
-                    debugPrint('⚠️ [GroupChatScreen] Error showing toast: $e');
-                    // Still navigate even if toast fails
-                    if (mounted) {
-                      try {
-                        final navigator = Navigator.of(context);
-                        if (navigator.canPop()) {
-                          navigator.pop();
-                        }
-                      } catch (navError) {
-                        debugPrint(
-                          '⚠️ [GroupChatScreen] Error navigating: $navError',
-                        );
-                      }
-                    }
-                  }
-                } else {
-                  // Close loading indicator first
-                  if (mounted) {
-                    try {
-                      Navigator.pop(this.context); // Use screen context
-                    } catch (e) {
-                      debugPrint(
-                        '⚠️ [GroupChatScreen] Error closing loading indicator: $e',
-                      );
-                    }
-                  }
-
-                  // Show error message - only if still mounted and context is valid
-                  if (mounted) {
-                    try {
-                      final overlay = Overlay.maybeOf(this.context);
-                      if (overlay != null) {
-                        EnhancedToast.error(
-                          this.context, // Use screen context
-                          title: 'Error',
-                          message: response.error ?? 'Failed to leave group',
-                        );
-                      } else {
-                        debugPrint(
-                          '⚠️ [GroupChatScreen] Cannot show error toast - overlay unavailable',
-                        );
-                      }
-                    } catch (e) {
-                      debugPrint(
-                        '⚠️ [GroupChatScreen] Error showing error toast: $e',
-                      );
-                    }
-                  }
-                }
-              } catch (e) {
-                if (!mounted) return;
-
-                // Close loading indicator first - wrap in try-catch to prevent widget lifecycle errors
-                if (mounted) {
-                  try {
-                    Navigator.pop(this.context); // Use screen context
-                  } catch (popError) {
-                    debugPrint(
-                      '⚠️ [GroupChatScreen] Error closing loading indicator in catch: $popError',
-                    );
-                  }
-                }
-
-                // Show error message - only if still mounted and context is valid
-                if (mounted) {
-                  try {
-                    final overlay = Overlay.maybeOf(this.context);
-                    if (overlay != null) {
-                      // Only show error if it's not a widget lifecycle error
-                      final errorMessage = e.toString();
-                      if (!errorMessage.contains('deactivated widget') &&
-                          !errorMessage.contains('widget tree') &&
-                          !errorMessage.contains('ancestor is unsafe')) {
-                        EnhancedToast.error(
-                          this.context, // Use screen context
-                          title: 'Error',
-                          message: 'Failed to leave group: $e',
-                        );
-                      } else {
-                        debugPrint(
-                          '⚠️ [GroupChatScreen] Widget lifecycle error during leave group - not showing toast: $e',
-                        );
-                        // Don't show error toast for widget lifecycle errors - operation likely succeeded
-                      }
-                    } else {
-                      debugPrint(
-                        '⚠️ [GroupChatScreen] Cannot show error toast - overlay unavailable',
-                      );
-                    }
-                  } catch (toastError) {
-                    debugPrint(
-                      '⚠️ [GroupChatScreen] Error showing error toast: $toastError',
-                    );
-                    // Don't re-throw - operation may have succeeded despite toast error
-                  }
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                        },
+                        child: Text(chatCallTr(context, 'chatCall_leaveGroup', fallback: 'Leave Group'),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: isTablet ? 16 : 14,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            child: const Text(
-              'Leave Group',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -13632,14 +14541,14 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (_isMuted) {
       EnhancedToast.success(
         context,
-        title: 'Notifications Muted',
+        title: chatCallTr(context, 'chatCall_notificationsMuted', fallback: 'Notifications Muted'),
         message:
             'You will not receive notifications from "${widget.group.name}"',
       );
     } else {
       EnhancedToast.success(
         context,
-        title: 'Notifications Unmuted',
+        title: chatCallTr(context, 'chatCall_notificationsUnmuted', fallback: 'Notifications Unmuted'),
         message: 'You will receive notifications from "${widget.group.name}"',
       );
     }
@@ -13667,10 +14576,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 ),
               ),
               const SizedBox(height: 20),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  'Select Image Source',
+                child: Text(chatCallTr(context, 'Select Image Source', fallback: 'Select Image Source'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -13684,7 +14592,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 children: [
                   _buildImageSourceOption(
                     icon: Icons.camera_alt_rounded,
-                    label: 'Camera',
+                    label: chatCallTr(context, 'chatCall_camera', fallback: 'Camera'),
                     onTap: () {
                       Navigator.pop(context);
                       _uploadGroupImage(ImageSource.camera);
@@ -13692,7 +14600,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                   ),
                   _buildImageSourceOption(
                     icon: Icons.photo_library_rounded,
-                    label: 'Gallery',
+                    label: chatCallTr(context, 'chatCall_gallery', fallback: 'Gallery'),
                     onTap: () {
                       Navigator.pop(context);
                       _uploadGroupImage(ImageSource.gallery);
@@ -13726,7 +14634,14 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         ),
         child: Column(
           children: [
-            Icon(icon, size: 24, color: AppColors.primary),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _onegateRed.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 24, color: _onegateRed),
+            ),
             const SizedBox(height: 12),
             Text(
               label,
@@ -13761,8 +14676,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     if (!_isCurrentUserAdmin()) {
       EnhancedToast.error(
         context,
-        title: 'Access Denied',
-        message: 'Only group admin can add members',
+        title: chatCallTr(context, 'chatCall_accessDenied', fallback: 'Access Denied'),
+        message: chatCallTr(context, 'chatCall_onlyGroupAdminCanAddMembers', fallback: 'Only group admin can add members'),
       );
       return;
     }
@@ -13831,81 +14746,38 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
       final imageFile = File(image.path);
 
-      final companyId =
-          await resolveIntercomCompanyId(ApiService.instance, ref: ref);
+      final companyId = await resolveIntercomCompanyId(
+        ApiService.instance,
+        ref: ref,
+      );
       if (companyId == null) {
         if (mounted) {
           EnhancedToast.error(
             context,
-            title: 'Error',
-            message: 'Please select a society first',
+            title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+            message: chatCallTr(context, 'chatCall_pleaseSelectSociety', fallback: 'Please select a society first'),
           );
         }
         return;
       }
 
-      // Show OneApp global loader for upload
+      // Show OneGate global loader for upload
       showDialog(
         context: context,
         barrierDismissible: false,
-        barrierColor: Colors.black.withOpacity(0.5),
-        builder: (context) => Dialog(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: const AppLoader(
-              title: 'Uploading Image',
-              subtitle: 'Please wait while we upload your group photo...',
-              icon: Icons.image_rounded,
-            ),
+        barrierColor: Colors.black54,
+        builder: (_) => Center(
+          child: OneGateGlobalLoader(
+            title: chatCallTr(context, 'chatCall_uploadingImage', fallback: 'Uploading Image'),
+            subtitle: chatCallTr(context, 'chatCall_uploadingGroupPhoto', fallback: 'Please wait while we upload your group photo...'),
           ),
         ),
       );
 
-      // First, upload the image file to get a URL
-      String? imageUrl;
-      try {
-        imageUrl = await _uploadImageFileToGetUrl(imageFile);
-      } catch (e) {
-        if (mounted) {
-          Navigator.pop(context); // Close loading dialog
-          EnhancedToast.error(
-            context,
-            title: 'Error',
-            message: 'Failed to upload image: ${e.toString()}',
-          );
-        }
-        return;
-      }
-
-      if (imageUrl == null || imageUrl.isEmpty) {
-        if (mounted) {
-          Navigator.pop(context); // Close loading dialog
-          EnhancedToast.error(
-            context,
-            title: 'Error',
-            message: 'Failed to get image URL',
-          );
-        }
-        return;
-      }
-
-      // Upload group photo using JSON API with image_url
-      final response = await _roomService.uploadRoomPhoto(
+      // Upload group photo directly via multipart (avoids broken PostApiClient URL step)
+      final response = await _roomService.uploadRoomPhotoFile(
         roomId: widget.group.id,
-        imageUrl: imageUrl,
+        photoFile: imageFile,
         companyId: companyId,
         isPrimary: true,
       );
@@ -13916,13 +14788,15 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       Navigator.pop(context);
 
       if (response.success) {
-        // Extract photo_url from response if available, otherwise use the uploaded imageUrl
         String? updatedPhotoUrl;
-        if (response.data != null && response.data is Map<String, dynamic>) {
-          final data = response.data as Map<String, dynamic>;
-          updatedPhotoUrl = data['photo_url'] as String? ?? imageUrl;
-        } else {
-          updatedPhotoUrl = imageUrl;
+        final data = response.data;
+        if (data != null) {
+          if (data['photo_url'] is String) {
+            updatedPhotoUrl = data['photo_url'] as String;
+          } else if (data['data'] is Map) {
+            final nested = data['data'] as Map;
+            updatedPhotoUrl = nested['photo_url']?.toString();
+          }
         }
 
         // Update local state with new icon URL
@@ -13960,13 +14834,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
         EnhancedToast.success(
           context,
-          title: 'Success',
-          message: 'Group image uploaded successfully',
+          title: chatCallTr(context, 'Success', fallback: 'Success'),
+          message: chatCallTr(context, 'chatCall_groupImageUploadedSuccessfully', fallback: 'Group image uploaded successfully'),
         );
       } else {
         EnhancedToast.error(
           context,
-          title: 'Error',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
           message: response.displayError.isNotEmpty
               ? response.displayError
               : 'Failed to upload group image',
@@ -13977,28 +14851,10 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         Navigator.pop(context); // Close loading dialog if still open
         EnhancedToast.error(
           context,
-          title: 'Error',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
           message: 'Failed to upload group image: ${e.toString()}',
         );
       }
-    }
-  }
-
-  /// Upload image file to get a URL
-  /// This is a helper method to convert File to URL before calling uploadRoomPhoto
-  Future<String?> _uploadImageFileToGetUrl(File imageFile) async {
-    try {
-      // Using the same image upload service as posts
-      final dio = Dio();
-      dio.interceptors.add(AuthInterceptor(dio: dio));
-      final postApiClient = PostApiClient(dio);
-
-      final imageUrl = await postApiClient.uploadImage(imageFile);
-      debugPrint('✅ [GroupChatScreen] Image uploaded, URL: $imageUrl');
-      return imageUrl;
-    } catch (e) {
-      debugPrint('⚠️ [GroupChatScreen] Error uploading image file: $e');
-      return null;
     }
   }
 }
@@ -14085,8 +14941,7 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
     try {
       // Get existing room members (only on first load)
       if (reset) {
-        final companyId =
-            await resolveIntercomCompanyId(_apiService, ref: ref);
+        final companyId = await resolveIntercomCompanyId(_apiService, ref: ref);
         if (companyId != null) {
           final roomInfoResponse = await _roomService.getRoomInfo(
             roomId: widget.roomId,
@@ -14103,15 +14958,13 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
         }
       }
 
-      final societyId =
-          await resolveIntercomCompanyId(_apiService, ref: ref);
+      final societyId = await resolveIntercomCompanyId(_apiService, ref: ref);
       if (societyId == null) {
         if (mounted) {
           setState(() {
             _isLoading = false;
             _isLoadingMore = false;
-            _errorMessage =
-                'No society ID found. Please select a society first.';
+            _errorMessage = chatCallTr(context, 'chatCall_noSocietyIdFound', fallback: 'No society ID found. Please select a society first.');
           });
         }
         return;
@@ -14214,7 +15067,7 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
               numericUserId = int.tryParse(oldGateUserIdStr);
             }
             // Priority 2: user_id from member listing
-            else if (hasUserId && userIdStr != null) {
+            else if (hasUserId) {
               numericUserId = int.tryParse(userIdStr);
             }
             // Priority 3: user_account_id
@@ -14274,7 +15127,7 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
         setState(() {
           _isLoading = false;
           _isLoadingMore = false;
-          _errorMessage = 'Failed to load members: $e';
+          _errorMessage = chatCallTr(context, 'chatCall_failedToLoadMembersWithError', fallback: 'Failed to load members: {error}', params: {'error': '$e'});
         });
       }
     }
@@ -14331,7 +15184,7 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
       );
       EnhancedToast.info(
         context,
-        title: 'Cannot Select',
+        title: chatCallTr(context, 'chatCall_cannotSelect', fallback: 'Cannot Select'),
         message:
             '${member.name} is not a OneApp user and cannot be added to the group',
       );
@@ -14352,8 +15205,8 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
     if (_selectedMemberIds.isEmpty) {
       EnhancedToast.warning(
         context,
-        title: 'No Selection',
-        message: 'Please select at least one member to add',
+        title: chatCallTr(context, 'chatCall_noSelection', fallback: 'No Selection'),
+        message: chatCallTr(context, 'chatCall_pleaseSelectAtLeastOneMember', fallback: 'Please select at least one member to add'),
       );
       return;
     }
@@ -14390,9 +15243,14 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
         if (mounted) {
           EnhancedToast.warning(
             context,
-            title: 'Invalid Selection',
+            title: chatCallTr(context, 'chatCall_invalidSelection', fallback: 'Invalid Selection'),
             message:
-                'Selected members could not be added (invalid member IDs). Please reselect.',
+                chatCallTr(
+                  context,
+                  'chatCall_selectedMembersInvalid',
+                  fallback:
+                      'Selected members could not be added (invalid member IDs). Please reselect and try again.',
+                ),
           );
         }
         return;
@@ -14402,8 +15260,8 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
         if (mounted) {
           EnhancedToast.warning(
             context,
-            title: 'Error',
-            message: 'Selected members not found',
+            title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+            message: chatCallTr(context, 'chatCall_selectedMembersNotFound', fallback: 'Selected members not found'),
           );
         }
         return;
@@ -14425,7 +15283,7 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
         final addedCount = membersPayload.length;
         EnhancedToast.success(
           context,
-          title: 'Success',
+          title: chatCallTr(context, 'Success', fallback: 'Success'),
           message: skippedInvalidIds.isEmpty
               ? 'Added $addedCount member(s) to the group'
               : 'Added $addedCount member(s). Skipped ${skippedInvalidIds.length} with invalid IDs.',
@@ -14442,7 +15300,7 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
       } else {
         EnhancedToast.error(
           context,
-          title: 'Error',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
           message: response.error ?? 'Failed to add members',
         );
       }
@@ -14451,8 +15309,8 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
       if (mounted) {
         EnhancedToast.error(
           context,
-          title: 'Error',
-          message: 'Failed to add members: $e',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+          message: chatCallTr(context, 'chatCall_failedToAddMembers', fallback: 'Failed to add members: {error}', params: {'error': '$e'}),
         );
       }
     } finally {
@@ -14473,7 +15331,13 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Add Members'),
+            Text(
+              chatCallTr(
+                context,
+                'chatCall_addMembers',
+                fallback: 'Add Members',
+              ),
+            ),
             Text(
               widget.roomName,
               style: TextStyle(
@@ -14505,10 +15369,10 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(
+          ? Center(
               child: AppLoader(
-                title: 'Loading Members',
-                subtitle: 'Fetching available members...',
+                title: chatCallTr(context, 'chatCall_loadingMembers', fallback: 'Loading Members'),
+                subtitle: chatCallTr(context, 'chatCall_fetchingAvailableMembers', fallback: 'Fetching available members...'),
                 icon: Icons.people,
               ),
             )
@@ -14531,7 +15395,9 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: _loadMembers,
-                    child: const Text('Retry'),
+                    child: Text(
+                      chatCallTr(context, 'chatCall_retry', fallback: 'Retry'),
+                    ),
                   ),
                 ],
               ),
@@ -14552,7 +15418,11 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: 'Search members...',
+                      hintText: chatCallTr(
+                        context,
+                        'chatCall_searchMembersHint',
+                        fallback: 'Search members...',
+                      ),
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
@@ -14588,7 +15458,7 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
                               const SizedBox(height: 16),
                               Text(
                                 _searchController.text.isNotEmpty
-                                    ? 'No members found'
+                                    ? chatCallTr(context, 'chatCall_noMembersFound', fallback: 'No members found')
                                     : 'No members available',
                                 style: TextStyle(
                                   fontSize: 16,
@@ -14677,8 +15547,7 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
                                     ),
                                   ),
                                   if (isDisabled)
-                                    Text(
-                                      'Not a OneApp user',
+                                    Text(chatCallTr(context, 'chatCall_notAOneappUser', fallback: 'Not a OneApp user'),
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: Colors.orange.shade700,
@@ -14696,8 +15565,7 @@ class _AddMemberScreenState extends ConsumerState<_AddMemberScreen> {
                                         Icons.person_add,
                                         size: 16,
                                       ),
-                                      label: const Text(
-                                        'Invite',
+                                      label: Text(chatCallTr(context, 'chatCall_invite', fallback: 'Invite'),
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,

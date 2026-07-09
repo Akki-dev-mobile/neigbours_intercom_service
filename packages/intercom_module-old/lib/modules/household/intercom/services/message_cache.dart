@@ -60,7 +60,9 @@ class MessageCache {
     if (cached != null && cached.isValid(companyId, expiry: expiry)) {
       // Verify limit matches (or cached has more messages)
       if (cached.limit >= limit && cached.messages.length >= limit) {
-        log('✅ [MessageCache] Cache hit for room $roomId at offset $offset (age: ${DateTime.now().difference(cached.timestamp).inSeconds}s)');
+        log(
+          '✅ [MessageCache] Cache hit for room $roomId at offset $offset (age: ${DateTime.now().difference(cached.timestamp).inSeconds}s)',
+        );
         _cacheHits++;
         // Return the requested number of messages
         return cached.messages.take(limit).toList();
@@ -119,7 +121,9 @@ class MessageCache {
       offset: offset,
       limit: limit,
     );
-    log('💾 [MessageCache] Cached ${messages.length} messages for room $roomId at offset $offset');
+    log(
+      '💾 [MessageCache] Cached ${messages.length} messages for room $roomId at offset $offset',
+    );
   }
 
   /// Clear cache for a specific room
@@ -148,8 +152,10 @@ class MessageCache {
       'cache_hits': _cacheHits,
       'cache_misses': _cacheMisses,
       'cached_rooms': _cache.length,
-      'total_cached_batches':
-          _cache.values.fold(0, (sum, batches) => sum + batches.length),
+      'total_cached_batches': _cache.values.fold(
+        0,
+        (sum, batches) => sum + batches.length,
+      ),
     };
   }
 }

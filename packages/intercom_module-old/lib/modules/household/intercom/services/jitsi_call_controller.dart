@@ -86,12 +86,16 @@ class JitsiCallController {
     String? userEmail,
   }) async {
     try {
-      log('📞 [JitsiCallController] Joining call: ${call.id}',
-          name: 'JitsiCallController');
+      log(
+        '📞 [JitsiCallController] Joining call: ${call.id}',
+        name: 'JitsiCallController',
+      );
       log('   Meeting ID: ${call.meetingId}', name: 'JitsiCallController');
       log('   Call Type: ${call.callType.value}', name: 'JitsiCallController');
-      log('   Jitsi Server URL: https://$_jitsiServerUrl',
-          name: 'JitsiCallController');
+      log(
+        '   Jitsi Server URL: https://$_jitsiServerUrl',
+        name: 'JitsiCallController',
+      );
       log('   Avatar URL: ${avatarUrl ?? "null"}', name: 'JitsiCallController');
 
       // Set active call
@@ -106,8 +110,10 @@ class JitsiCallController {
         userEmail: userEmail,
       );
 
-      log('🔧 [JitsiCallController] Jitsi options configured:',
-          name: 'JitsiCallController');
+      log(
+        '🔧 [JitsiCallController] Jitsi options configured:',
+        name: 'JitsiCallController',
+      );
       log('   serverURL: ${options.serverURL}', name: 'JitsiCallController');
       log('   room: ${options.room}', name: 'JitsiCallController');
 
@@ -123,11 +129,15 @@ class JitsiCallController {
       // Join the meeting with event listener
       await _jitsiMeet.join(options, listener);
 
-      log('✅ [JitsiCallController] Jitsi join initiated',
-          name: 'JitsiCallController');
+      log(
+        '✅ [JitsiCallController] Jitsi join initiated',
+        name: 'JitsiCallController',
+      );
     } catch (e, stackTrace) {
-      log('❌ [JitsiCallController] Error joining call: $e',
-          name: 'JitsiCallController');
+      log(
+        '❌ [JitsiCallController] Error joining call: $e',
+        name: 'JitsiCallController',
+      );
       log('   Stack trace: $stackTrace', name: 'JitsiCallController');
 
       // Join failures are not user declines; mark ended.
@@ -148,8 +158,10 @@ class JitsiCallController {
   Future<void> cancelCall() async {
     if (_activeCall == null) return;
 
-    log('🚫 [JitsiCallController] Cancelling call: ${_activeCall!.id}',
-        name: 'JitsiCallController');
+    log(
+      '🚫 [JitsiCallController] Cancelling call: ${_activeCall!.id}',
+      name: 'JitsiCallController',
+    );
 
     // Update backend status to declined
     await _updateBackendStatus(CallStatus.declined);
@@ -161,12 +173,16 @@ class JitsiCallController {
   /// Hang up the current call
   Future<void> hangUp() async {
     try {
-      log('📴 [JitsiCallController] Hanging up call',
-          name: 'JitsiCallController');
+      log(
+        '📴 [JitsiCallController] Hanging up call',
+        name: 'JitsiCallController',
+      );
       await _jitsiMeet.hangUp();
     } catch (e) {
-      log('⚠️ [JitsiCallController] Error hanging up: $e',
-          name: 'JitsiCallController');
+      log(
+        '⚠️ [JitsiCallController] Error hanging up: $e',
+        name: 'JitsiCallController',
+      );
     } finally {
       _cleanup();
     }
@@ -191,7 +207,6 @@ class JitsiCallController {
         'startWithVideoMuted': !isVideoCall, // true for audio, false for video
         'startWithAudioMuted': false, // Always start with audio enabled
         'startAudioOnly': !isVideoCall, // true for audio calls
-
         // Disable features not needed
         'prejoinPageEnabled': false, // Skip pre-join page
         'disableDeepLinking': true,
@@ -210,7 +225,6 @@ class JitsiCallController {
         // Core call features
         FeatureFlags.callIntegrationEnabled: false,
         FeatureFlags.pipEnabled: true, // Picture-in-picture
-
         // Video features
         FeatureFlags.videoShareEnabled: isVideoCall,
         FeatureFlags.tileViewEnabled: isVideoCall,
@@ -241,7 +255,8 @@ class JitsiCallController {
       userInfo: JitsiMeetUserInfo(
         displayName: displayName,
         email: userEmail,
-        avatar: (avatarUrl != null &&
+        avatar:
+            (avatarUrl != null &&
                 avatarUrl.isNotEmpty &&
                 (avatarUrl.startsWith('http://') ||
                     avatarUrl.startsWith('https://')))
@@ -292,10 +307,7 @@ class JitsiCallController {
     final serverUrl =
         '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
 
-    return _ResolvedJitsi(
-      serverUrl: serverUrl,
-      room: room,
-    );
+    return _ResolvedJitsi(serverUrl: serverUrl, room: room);
   }
 
   /// Build Jitsi event listener
@@ -319,8 +331,10 @@ class JitsiCallController {
 
   /// Conference joined event - Update status to "answered"
   void _onConferenceJoined(String url) {
-    log('✅ [JitsiCallController] Conference joined: $url',
-        name: 'JitsiCallController');
+    log(
+      '✅ [JitsiCallController] Conference joined: $url',
+      name: 'JitsiCallController',
+    );
 
     _hasJoinedConference = true;
     _cancelMissedCallTimer();
@@ -333,8 +347,10 @@ class JitsiCallController {
 
   /// Conference terminated event - Update status to "ended"
   void _onConferenceTerminated(String url, Object? error) {
-    log('📴 [JitsiCallController] Conference terminated: $url',
-        name: 'JitsiCallController');
+    log(
+      '📴 [JitsiCallController] Conference terminated: $url',
+      name: 'JitsiCallController',
+    );
     if (error != null) {
       log('   Error: $error', name: 'JitsiCallController');
     }
@@ -349,65 +365,93 @@ class JitsiCallController {
 
   /// Conference will join event
   void _onConferenceWillJoin(String url) {
-    log('🔄 [JitsiCallController] Conference will join: $url',
-        name: 'JitsiCallController');
+    log(
+      '🔄 [JitsiCallController] Conference will join: $url',
+      name: 'JitsiCallController',
+    );
     _emitState(CallState.connecting);
   }
 
   /// Participant joined event
   void _onParticipantJoined(
-      String? email, String? name, String? role, String? participantId) {
-    log('👤 [JitsiCallController] Participant joined: $name ($participantId)',
-        name: 'JitsiCallController');
+    String? email,
+    String? name,
+    String? role,
+    String? participantId,
+  ) {
+    log(
+      '👤 [JitsiCallController] Participant joined: $name ($participantId)',
+      name: 'JitsiCallController',
+    );
   }
 
   /// Participant left event
   void _onParticipantLeft(String? participantId) {
-    log('👤 [JitsiCallController] Participant left: $participantId',
-        name: 'JitsiCallController');
+    log(
+      '👤 [JitsiCallController] Participant left: $participantId',
+      name: 'JitsiCallController',
+    );
   }
 
   /// Audio muted changed event
   void _onAudioMutedChanged(bool muted) {
-    log('🔇 [JitsiCallController] Audio muted: $muted',
-        name: 'JitsiCallController');
+    log(
+      '🔇 [JitsiCallController] Audio muted: $muted',
+      name: 'JitsiCallController',
+    );
   }
 
   /// Video muted changed event
   void _onVideoMutedChanged(bool muted) {
-    log('📹 [JitsiCallController] Video muted: $muted',
-        name: 'JitsiCallController');
+    log(
+      '📹 [JitsiCallController] Video muted: $muted',
+      name: 'JitsiCallController',
+    );
   }
 
   /// Endpoint text message received event
   void _onEndpointTextMessageReceived(String senderId, String message) {
-    log('💬 [JitsiCallController] Message from $senderId: $message',
-        name: 'JitsiCallController');
+    log(
+      '💬 [JitsiCallController] Message from $senderId: $message',
+      name: 'JitsiCallController',
+    );
   }
 
   /// Screen share toggled event
   void _onScreenShareToggled(String participantId, bool sharing) {
-    log('🖥️ [JitsiCallController] Screen share by $participantId: $sharing',
-        name: 'JitsiCallController');
+    log(
+      '🖥️ [JitsiCallController] Screen share by $participantId: $sharing',
+      name: 'JitsiCallController',
+    );
   }
 
   /// Chat message received event
   void _onChatMessageReceived(
-      String senderId, String message, bool isPrivate, String? timestamp) {
-    log('💬 [JitsiCallController] Chat from $senderId: $message',
-        name: 'JitsiCallController');
+    String senderId,
+    String message,
+    bool isPrivate,
+    String? timestamp,
+  ) {
+    log(
+      '💬 [JitsiCallController] Chat from $senderId: $message',
+      name: 'JitsiCallController',
+    );
   }
 
   /// Chat toggled event
   void _onChatToggled(bool isOpen) {
-    log('💬 [JitsiCallController] Chat toggled: $isOpen',
-        name: 'JitsiCallController');
+    log(
+      '💬 [JitsiCallController] Chat toggled: $isOpen',
+      name: 'JitsiCallController',
+    );
   }
 
   /// Participants info retrieved event
   void _onParticipantsInfoRetrieved(String participantsInfo) {
-    log('👥 [JitsiCallController] Participants info: $participantsInfo',
-        name: 'JitsiCallController');
+    log(
+      '👥 [JitsiCallController] Participants info: $participantsInfo',
+      name: 'JitsiCallController',
+    );
   }
 
   /// Ready to close event
@@ -425,8 +469,10 @@ class JitsiCallController {
       Duration(seconds: _missedCallTimeoutSeconds),
       () async {
         if (!_hasJoinedConference && _activeCall != null) {
-          log('⏰ [JitsiCallController] Missed call timeout reached',
-              name: 'JitsiCallController');
+          log(
+            '⏰ [JitsiCallController] Missed call timeout reached',
+            name: 'JitsiCallController',
+          );
 
           // Update status to missed
           await _updateBackendStatus(CallStatus.missed);
@@ -452,8 +498,10 @@ class JitsiCallController {
     if (active == null) return;
 
     try {
-      log('📝 [JitsiCallController] Updating backend status: ${status.value}',
-          name: 'JitsiCallController');
+      log(
+        '📝 [JitsiCallController] Updating backend status: ${status.value}',
+        name: 'JitsiCallController',
+      );
 
       final response = await _callService.updateCallStatus(
         callId: active.id,
@@ -461,19 +509,25 @@ class JitsiCallController {
       );
 
       if (response.success) {
-        log('✅ [JitsiCallController] Backend status updated: ${status.value}',
-            name: 'JitsiCallController');
+        log(
+          '✅ [JitsiCallController] Backend status updated: ${status.value}',
+          name: 'JitsiCallController',
+        );
         // Only update if this call is still the active one (avoid race with cleanup).
         if (_activeCall?.id == active.id) {
           _activeCall = active.copyWithStatus(status);
         }
       } else {
-        log('⚠️ [JitsiCallController] Failed to update backend status: ${response.error}',
-            name: 'JitsiCallController');
+        log(
+          '⚠️ [JitsiCallController] Failed to update backend status: ${response.error}',
+          name: 'JitsiCallController',
+        );
       }
     } catch (e) {
-      log('❌ [JitsiCallController] Error updating backend status: $e',
-          name: 'JitsiCallController');
+      log(
+        '❌ [JitsiCallController] Error updating backend status: $e',
+        name: 'JitsiCallController',
+      );
       // Don't rethrow - we still want to cleanup even if backend update fails
     } finally {
       await _syncCallHistory(active.id, status);
@@ -488,8 +542,10 @@ class JitsiCallController {
         endedAt: status.isTerminated ? DateTime.now() : null,
       );
     } catch (e) {
-      log('📝 [JitsiCallController] Failed to sync call history: $e',
-          name: 'JitsiCallController');
+      log(
+        '📝 [JitsiCallController] Failed to sync call history: $e',
+        name: 'JitsiCallController',
+      );
     }
   }
 
@@ -508,14 +564,16 @@ class JitsiCallController {
     String? jitsiEvent,
     String? failureReason,
   }) {
-    _callStateController.add(CallStateEvent(
-      state: state,
-      call: _activeCall,
-      error: error,
-      userMessage: userMessage,
-      jitsiEvent: jitsiEvent,
-      failureReason: failureReason,
-    ));
+    _callStateController.add(
+      CallStateEvent(
+        state: state,
+        call: _activeCall,
+        error: error,
+        userMessage: userMessage,
+        jitsiEvent: jitsiEvent,
+        failureReason: failureReason,
+      ),
+    );
   }
 
   /// Dispose resources
@@ -529,10 +587,7 @@ class _ResolvedJitsi {
   final String serverUrl;
   final String room;
 
-  const _ResolvedJitsi({
-    required this.serverUrl,
-    required this.room,
-  });
+  const _ResolvedJitsi({required this.serverUrl, required this.room});
 }
 
 /// Call states for UI updates

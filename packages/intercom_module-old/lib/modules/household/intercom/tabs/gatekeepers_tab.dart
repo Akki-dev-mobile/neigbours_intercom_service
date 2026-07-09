@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../../../src/config/chat_call_i18n.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,7 +89,8 @@ class _GatekeepersTabState extends ConsumerState<GatekeepersTab>
     final token = tryAcquireRequestLock();
     if (token == null) {
       developer.log(
-          '⏸️ [GatekeepersTab] Request already in-flight, ignoring duplicate request');
+        '⏸️ [GatekeepersTab] Request already in-flight, ignoring duplicate request',
+      );
       return;
     }
 
@@ -118,8 +120,9 @@ class _GatekeepersTabState extends ConsumerState<GatekeepersTab>
 
       // Check if still valid before updating state
       if (!token.isValid(lifecycleController.generation)) {
-        developer
-            .log('⏹️ [GatekeepersTab] Tab became inactive, discarding result');
+        developer.log(
+          '⏹️ [GatekeepersTab] Tab became inactive, discarding result',
+        );
         return;
       }
 
@@ -190,7 +193,11 @@ class _GatekeepersTabState extends ConsumerState<GatekeepersTab>
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search gatekeepers...',
+                  hintText: chatCallTr(
+                    context,
+                    'chatCall_searchGatekeepersHint',
+                    fallback: 'Search gatekeepers...',
+                  ),
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -212,36 +219,33 @@ class _GatekeepersTabState extends ConsumerState<GatekeepersTab>
                       ),
                     )
                   : _filteredGatekeepers.isEmpty &&
-                          _searchController.text.isNotEmpty
-                      ? _buildEmptyState(
-                          icon: Icons.search_off,
-                          title: 'No gatekeepers found',
-                          subtitle: 'Try searching with a different keyword',
-                        )
-                      : _filteredGatekeepers.isEmpty
-                          ? _buildEmptyState(
-                              icon: Icons.security_rounded,
-                              title: 'No gatekeepers available',
-                              subtitle:
-                                  'Gatekeepers will appear here when available',
-                            )
-                          : RefreshIndicator(
-                              onRefresh: () async {
-                                // Reset load state to force refresh
-                                resetLoadState();
-                                _fetchFromNetwork();
-                              },
-                              child: ListView.builder(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
-                                itemCount: _filteredGatekeepers.length,
-                                itemBuilder: (context, index) {
-                                  final gatekeeper =
-                                      _filteredGatekeepers[index];
-                                  return _buildGatekeeperCard(gatekeeper);
-                                },
-                              ),
-                            ),
+                        _searchController.text.isNotEmpty
+                  ? _buildEmptyState(
+                      icon: Icons.search_off,
+                      title: 'No gatekeepers found',
+                      subtitle: 'Try searching with a different keyword',
+                    )
+                  : _filteredGatekeepers.isEmpty
+                  ? _buildEmptyState(
+                      icon: Icons.security_rounded,
+                      title: 'No gatekeepers available',
+                      subtitle: 'Gatekeepers will appear here when available',
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () async {
+                        // Reset load state to force refresh
+                        resetLoadState();
+                        _fetchFromNetwork();
+                      },
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _filteredGatekeepers.length,
+                        itemBuilder: (context, index) {
+                          final gatekeeper = _filteredGatekeepers[index];
+                          return _buildGatekeeperCard(gatekeeper);
+                        },
+                      ),
+                    ),
             ),
           ],
         ),
@@ -312,10 +316,7 @@ class _GatekeepersTabState extends ConsumerState<GatekeepersTab>
                                   ? Colors.green
                                   : Colors.grey,
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 2,
-                              ),
+                              border: Border.all(color: Colors.white, width: 2),
                               boxShadow: const [
                                 BoxShadow(
                                   color: Colors.black12,
@@ -408,14 +409,11 @@ class _GatekeepersTabState extends ConsumerState<GatekeepersTab>
                         ),
                       ),
                     ),
-                    Container(
-                      height: 24,
-                      width: 1,
-                      color: Colors.black12,
-                    ),
+                    Container(height: 24, width: 1, color: Colors.black12),
                     Expanded(
                       child: TextButton(
-                        onPressed: _callStartingUserIds.contains(gatekeeper.userId)
+                        onPressed:
+                            _callStartingUserIds.contains(gatekeeper.userId)
                             ? null
                             : () => _onCallPressed(gatekeeper),
                         style: TextButton.styleFrom(
@@ -482,11 +480,7 @@ class _GatekeepersTabState extends ConsumerState<GatekeepersTab>
                 shape: BoxShape.circle,
                 color: Color(0xffffebee),
               ),
-              child: Icon(
-                icon,
-                size: 28,
-                color: const Color(0xffc62828),
-              ),
+              child: Icon(icon, size: 28, color: const Color(0xffc62828)),
             ),
             const SizedBox(height: 16),
             Text(
@@ -536,7 +530,8 @@ class _GatekeepersTabState extends ConsumerState<GatekeepersTab>
     try {
       final userData = await KeycloakService.getUserData();
       if (userData != null) {
-        displayName = userData['name'] as String? ??
+        displayName =
+            userData['name'] as String? ??
             userData['preferred_username'] as String? ??
             'User';
         userEmail = userData['email'] as String?;
@@ -547,13 +542,15 @@ class _GatekeepersTabState extends ConsumerState<GatekeepersTab>
 
     if (!mounted) return;
 
-    unawaited(CallBottomSheet.show(
-      context: context,
-      contact: contact,
-      displayName: displayName,
-      avatarUrl: avatarUrl,
-      userEmail: userEmail,
-    ));
+    unawaited(
+      CallBottomSheet.show(
+        context: context,
+        contact: contact,
+        displayName: displayName,
+        avatarUrl: avatarUrl,
+        userEmail: userEmail,
+      ),
+    );
   }
 
   Future<void> _onCallPressed(Gatekeeper gatekeeper) async {
@@ -571,5 +568,4 @@ class _GatekeepersTabState extends ConsumerState<GatekeepersTab>
       }
     }
   }
-
 }

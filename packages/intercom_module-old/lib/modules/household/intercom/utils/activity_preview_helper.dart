@@ -7,10 +7,7 @@ class ActivityPreview {
   final String text;
   final ActivityPreviewKind kind;
 
-  const ActivityPreview({
-    required this.text,
-    required this.kind,
-  });
+  const ActivityPreview({required this.text, required this.kind});
 
   /// Optional icon to pair with the preview text.
   IconData? get icon {
@@ -88,16 +85,11 @@ class ActivityPreviewHelper {
     final content = _normalizeContent(
       rawContent ?? data?['content']?.toString(),
     );
-    final type = _normalizeType(
-      rawType ?? data?['message_type']?.toString(),
-    );
+    final type = _normalizeType(rawType ?? data?['message_type']?.toString());
 
     if ((content == null || content.isEmpty) &&
         (type == null || type.isEmpty)) {
-      return const ActivityPreview(
-        text: '',
-        kind: ActivityPreviewKind.unknown,
-      );
+      return const ActivityPreview(text: '', kind: ActivityPreviewKind.unknown);
     }
 
     final previewFromContent = _previewFromContent(content, type);
@@ -113,10 +105,7 @@ class ActivityPreviewHelper {
     );
   }
 
-  static ActivityPreview? _previewFromContent(
-    String? content,
-    String? type,
-  ) {
+  static ActivityPreview? _previewFromContent(String? content, String? type) {
     if (content == null || content.isEmpty) return null;
 
     // 1) Structured JSON payloads that contain file_url or similar keys.
@@ -198,16 +187,10 @@ class ActivityPreviewHelper {
         kind: ActivityPreviewKind.unknown,
       );
     }
-    return ActivityPreview(
-      text: _labelForKind(kind),
-      kind: kind,
-    );
+    return ActivityPreview(text: _labelForKind(kind), kind: kind);
   }
 
-  static ActivityPreviewKind _kindFromUrlOrType(
-    String? url,
-    String? type,
-  ) {
+  static ActivityPreviewKind _kindFromUrlOrType(String? url, String? type) {
     final mappedType = _mapTypeToKind(type);
     if (mappedType != null && mappedType != ActivityPreviewKind.text) {
       return mappedType;
@@ -291,8 +274,7 @@ class ActivityPreviewHelper {
       final decoded = jsonDecode(content);
       if (decoded is Map<String, dynamic>) return decoded;
       if (decoded is Map) {
-        return decoded.map((key, value) =>
-            MapEntry(key.toString(), value));
+        return decoded.map((key, value) => MapEntry(key.toString(), value));
       }
     } catch (_) {
       // Ignore JSON errors – fallback handled by callers.

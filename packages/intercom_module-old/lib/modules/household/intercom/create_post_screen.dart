@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/widgets/app_loader.dart';
 import 'models/post_model.dart';
+import '../../../src/config/chat_call_i18n.dart';
 
 import '../../../core/widgets/enhanced_toast.dart';
 
@@ -67,7 +68,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.photo_camera),
-                title: const Text('Take a photo'),
+                title: Text(
+                  chatCallTr(
+                    context,
+                    'chatCall_takePhoto',
+                    fallback: 'Take a photo',
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.camera);
@@ -75,7 +82,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library),
-                title: const Text('Choose from gallery'),
+                title: Text(
+                  chatCallTr(
+                    context,
+                    'chatCall_chooseFromGallery',
+                    fallback: 'Choose from gallery',
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.gallery);
@@ -182,10 +195,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     controller: _contentController,
                     maxLength: 500,
                     maxLines: 8,
-                    decoration: const InputDecoration(
-                      hintText: "What's on your mind?",
+                    decoration: InputDecoration(
+                      hintText: chatCallTr(
+                        context,
+                        'chatCall_whatsOnYourMind',
+                        fallback: 'What\'s on your mind?',
+                      ),
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.all(16),
+                      contentPadding: const EdgeInsets.all(16),
                     ),
                     onChanged: (_) => setState(() {}),
                   ),
@@ -214,7 +231,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         ElevatedButton.icon(
                           onPressed: _showImageSourceDialog,
                           icon: const Icon(Icons.add_photo_alternate),
-                          label: const Text('Add'),
+                          label: Text(
+                            chatCallTr(
+                              context,
+                              'chatCall_add',
+                              fallback: 'Add',
+                            ),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                           ),
@@ -297,8 +320,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed:
-                      _isFormValid && !_isSubmitting ? _submitPost : null,
+                  onPressed: _isFormValid && !_isSubmitting
+                      ? _submitPost
+                      : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(vertical: 14),

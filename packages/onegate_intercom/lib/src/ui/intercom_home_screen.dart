@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:onegate_feature_core/onegate_feature_core.dart';
 
+import '../i18n/intercom_i18n.dart';
 import '../intercom_config.dart';
 import 'tabs/committee_tab.dart';
 import 'tabs/groups_tab.dart';
@@ -41,8 +42,9 @@ class _IntercomHomeScreenState extends State<IntercomHomeScreen>
   @override
   Widget build(BuildContext context) {
     final featureConfig = widget.host.featureConfig();
-    final title =
-        featureConfig.neighboursEnabled ? 'Neighbors' : 'Intercom';
+    final title = featureConfig.neighboursEnabled
+        ? intercomTr(context, 'chatCall_neighborsTitle', fallback: 'Neighbors')
+        : intercomTr(context, 'chatCall_intercomTitle', fallback: 'Intercom');
 
     return Scaffold(
       appBar: AppBar(
@@ -58,7 +60,7 @@ class _IntercomHomeScreenState extends State<IntercomHomeScreen>
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 12,
                     offset: const Offset(0, 6),
                   ),
@@ -77,10 +79,31 @@ class _IntercomHomeScreenState extends State<IntercomHomeScreen>
                   color: const Color(0xffffebee),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                tabs: const [
-                  Tab(icon: Icon(Icons.people), text: 'Residents'),
-                  Tab(icon: Icon(Icons.groups), text: 'Committee'),
-                  Tab(icon: Icon(Icons.forum), text: 'Groups'),
+                tabs: [
+                  Tab(
+                    icon: const Icon(Icons.people),
+                    text: intercomTr(
+                      context,
+                      'chatCall_residentsTab',
+                      fallback: 'Residents',
+                    ),
+                  ),
+                  Tab(
+                    icon: const Icon(Icons.groups),
+                    text: intercomTr(
+                      context,
+                      'chatCall_committeeTab',
+                      fallback: 'Committee',
+                    ),
+                  ),
+                  Tab(
+                    icon: const Icon(Icons.forum),
+                    text: intercomTr(
+                      context,
+                      'chatCall_groupsTab',
+                      fallback: 'Groups',
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -90,8 +113,10 @@ class _IntercomHomeScreenState extends State<IntercomHomeScreen>
       body: TabBarView(
         controller: _controller,
         children: [
-          ResidentsTab(host: widget.host, ctx: widget.ctx, config: widget.config),
-          CommitteeTab(host: widget.host, ctx: widget.ctx, config: widget.config),
+          ResidentsTab(
+              host: widget.host, ctx: widget.ctx, config: widget.config),
+          CommitteeTab(
+              host: widget.host, ctx: widget.ctx, config: widget.config),
           GroupsTab(host: widget.host, ctx: widget.ctx, config: widget.config),
         ],
       ),

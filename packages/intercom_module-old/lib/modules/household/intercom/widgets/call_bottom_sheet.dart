@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../../src/config/intercom_ui_strings.dart';
 import '../../../../core/theme/colors.dart';
-import '../../../../core/widgets/app_loader.dart';
+import '../../../../core/widgets/onegate_global_loader.dart';
 import '../../../../core/widgets/enhanced_toast.dart';
 import '../../../../core/services/call_coordinator.dart';
 import '../models/call_model.dart';
@@ -56,18 +56,25 @@ class CallBottomSheet extends StatefulWidget {
     String? userEmail,
     int? callbackCallId,
   }) async {
+    // Modal routes are siblings of IntercomScreen, not descendants, so the
+    // bottom sheet must re-provide localized strings explicitly.
+    final uiStrings = IntercomUiStringsScope.of(context);
+
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       isDismissible: false,
       enableDrag: false,
-      builder: (context) => CallBottomSheet(
-        contact: contact,
-        displayName: displayName,
-        avatarUrl: avatarUrl,
-        userEmail: userEmail,
-        callbackCallId: callbackCallId,
+      builder: (sheetContext) => IntercomUiStringsScope(
+        strings: uiStrings,
+        child: CallBottomSheet(
+          contact: contact,
+          displayName: displayName,
+          avatarUrl: avatarUrl,
+          userEmail: userEmail,
+          callbackCallId: callbackCallId,
+        ),
       ),
     );
   }
@@ -90,9 +97,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
       child: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(20),
-          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
           child: Padding(
@@ -106,10 +111,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
 
                 const SizedBox(height: 16),
 
-                Divider(
-                  color: Colors.grey.withOpacity(0.2),
-                  thickness: 1,
-                ),
+                Divider(color: Colors.grey.withOpacity(0.2), thickness: 1),
 
                 const SizedBox(height: 16),
 
@@ -119,7 +121,10 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
                 const SizedBox(height: 24),
 
                 // Call type options
-                if (_isLoading) _buildLoadingState(ui) else _buildCallOptions(ui),
+                if (_isLoading)
+                  _buildLoadingState(ui)
+                else
+                  _buildCallOptions(ui),
 
                 const SizedBox(height: 16),
               ],
@@ -139,11 +144,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
             color: const Color(0xffffebee),
             shape: BoxShape.circle,
           ),
-          child: Icon(
-            Icons.phone,
-            color: const Color(0xffc62828),
-            size: 20,
-          ),
+          child: Icon(Icons.phone, color: const Color(0xffc62828), size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -185,7 +186,8 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
-            child: (widget.contact.photoUrl != null &&
+            child:
+                (widget.contact.photoUrl != null &&
                     widget.contact.photoUrl!.isNotEmpty)
                 ? Image.network(
                     widget.contact.photoUrl!,
@@ -231,10 +233,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
               if (widget.contact.unit != null)
                 Text(
                   widget.contact.unit!,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                 ),
             ],
           ),
@@ -243,15 +242,28 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
     );
   }
 
+  String _localizedCallTypeLabel(CallType callType, IntercomUiStrings ui) {
+    switch (callType) {
+      case CallType.audio:
+        return ui.audioCall;
+      case CallType.video:
+        return ui.videoCall;
+    }
+  }
+
   Widget _buildLoadingState(IntercomUiStrings ui) {
+    final title = _selectedCallType != null
+        ? ui.startingCallLabel(
+            _localizedCallTypeLabel(_selectedCallType!, ui),
+          )
+        : ui.connecting;
+
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        child: AppLoader(
-          size: 120,
-          title: _selectedCallType != null
-              ? ui.startingCallLabel(_selectedCallType!.displayName)
-              : ui.connecting,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: OneGateGlobalLoader(
+          title: title,
+          subtitle: ui.connecting,
         ),
       ),
     );
@@ -296,10 +308,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            border: Border.all(
-              color: Colors.grey.shade200,
-              width: 1,
-            ),
+            border: Border.all(color: Colors.grey.shade200, width: 1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -310,11 +319,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 24,
-                ),
+                child: Icon(icon, color: color, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -358,7 +363,8 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
     // Validate phone number - backend expects phone number for recipient user upsert
     // Backend will create recipient user if doesn't exist (using phone number)
     var toUserId = _resolveToUserId(contact);
-    var hasPhone = contact.phoneNumber != null &&
+    var hasPhone =
+        contact.phoneNumber != null &&
         contact.phoneNumber!.isNotEmpty &&
         CallService.isLikelyPhone(contact.phoneNumber!);
 
@@ -373,7 +379,8 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
       if (resolved != null) {
         contact = resolved;
         toUserId = _resolveToUserId(contact);
-        hasPhone = contact.phoneNumber != null &&
+        hasPhone =
+            contact.phoneNumber != null &&
             contact.phoneNumber!.isNotEmpty &&
             CallService.isLikelyPhone(contact.phoneNumber!);
       }
@@ -442,17 +449,19 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
         }
 
         sheetNavigator.pop(); // close bottom sheet
-        unawaited(rootNavigator.push(
-          MaterialPageRoute(
-            fullscreenDialog: true,
-            builder: (_) => OutgoingCallScreen(
-              call: call,
-              calleeName: contact.name,
-              calleePhone: contact.phoneNumber,
-              calleeAvatarUrl: contact.photoUrl,
+        unawaited(
+          rootNavigator.push(
+            MaterialPageRoute(
+              fullscreenDialog: true,
+              builder: (_) => OutgoingCallScreen(
+                call: call,
+                calleeName: contact.name,
+                calleePhone: contact.phoneNumber,
+                calleeAvatarUrl: contact.photoUrl,
+              ),
             ),
           ),
-        ));
+        );
       } else {
         CallCoordinator.instance.unlockOutgoingCallCreation();
         setState(() {
@@ -481,11 +490,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
       });
 
       final ui = IntercomUiStringsScope.of(context);
-      EnhancedToast.error(
-        context,
-        title: ui.callFailed,
-        message: e.toString(),
-      );
+      EnhancedToast.error(context, title: ui.callFailed, message: e.toString());
     }
   }
 
@@ -529,10 +534,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.orange.shade700,
-            ),
+            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
             const SizedBox(width: 8),
             Text(ui.permissionsRequired),
           ],
@@ -548,9 +550,7 @@ class _CallBottomSheetState extends State<CallBottomSheet> {
               Navigator.pop(context);
               openAppSettings();
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             child: Text(ui.openSettings),
           ),
         ],

@@ -79,8 +79,10 @@ class CallManager {
     bool joinJitsiImmediately = true,
   }) async {
     try {
-      log('📞 [CallManager] Initiating ${callType.displayName} to: $toUserPhone',
-          name: 'CallManager');
+      log(
+        '📞 [CallManager] Initiating ${callType.displayName} to: $toUserPhone',
+        name: 'CallManager',
+      );
 
       // Step 1: Check/request permissions only if we are about to join Jitsi now.
       // Outgoing ringing UX must happen outside Jitsi; permissions will be
@@ -88,8 +90,10 @@ class CallManager {
       if (joinJitsiImmediately) {
         final permissionResult = await _checkAndRequestPermissions(callType);
         if (!permissionResult.granted) {
-          log('❌ [CallManager] Permissions denied: ${permissionResult.deniedPermissions}',
-              name: 'CallManager');
+          log(
+            '❌ [CallManager] Permissions denied: ${permissionResult.deniedPermissions}',
+            name: 'CallManager',
+          );
           return CallResult.failure(
             error: 'Permissions required',
             message: permissionResult.message,
@@ -104,10 +108,9 @@ class CallManager {
         );
       }
 
-      final callerAvatarUrl =
-          (avatarUrl != null && avatarUrl.trim().isNotEmpty)
-              ? avatarUrl.trim()
-              : await _resolveCurrentUserAvatarUrl();
+      final callerAvatarUrl = (avatarUrl != null && avatarUrl.trim().isNotEmpty)
+          ? avatarUrl.trim()
+          : await _resolveCurrentUserAvatarUrl();
       log(
         '🖼️ [CallManager] Caller avatar resolved: ${(callerAvatarUrl != null && callerAvatarUrl.isNotEmpty) ? "yes" : "no"}',
         name: 'CallManager',
@@ -123,8 +126,10 @@ class CallManager {
       );
 
       // Step 2: Call backend to create call record
-      log('📡 [CallManager] Creating call record on backend...',
-          name: 'CallManager');
+      log(
+        '📡 [CallManager] Creating call record on backend...',
+        name: 'CallManager',
+      );
       final response = await _callService.initiateCall(
         toUserPhone: toUserPhone,
         toUserId: toUserId,
@@ -136,8 +141,10 @@ class CallManager {
       );
 
       if (!response.success || response.data == null) {
-        log('❌ [CallManager] Backend call failed: ${response.error}',
-            name: 'CallManager');
+        log(
+          '❌ [CallManager] Backend call failed: ${response.error}',
+          name: 'CallManager',
+        );
         return CallResult.failure(
           error: response.error ?? 'Failed to create call',
           message: response.message,
@@ -145,8 +152,10 @@ class CallManager {
       }
 
       final call = response.data!;
-      log('✅ [CallManager] Call created: ${call.id}, meeting: ${call.meetingId}',
-          name: 'CallManager');
+      log(
+        '✅ [CallManager] Call created: ${call.id}, meeting: ${call.meetingId}',
+        name: 'CallManager',
+      );
 
       if (joinJitsiImmediately) {
         // Step 3: Join Jitsi meeting
@@ -160,8 +169,10 @@ class CallManager {
       } else {
         // WhatsApp-style behavior: caller should not open Jitsi immediately.
         // Caller should join only after callee accepts (requires server-side accept signal).
-        log('⏸️ [CallManager] joinJitsiImmediately=false, not opening Jitsi yet',
-            name: 'CallManager');
+        log(
+          '⏸️ [CallManager] joinJitsiImmediately=false, not opening Jitsi yet',
+          name: 'CallManager',
+        );
       }
 
       log('✅ [CallManager] Call initiated successfully', name: 'CallManager');
@@ -183,7 +194,8 @@ class CallManager {
 
       Map<String, dynamic> tokenClaims = <String, dynamic>{};
       try {
-        final token = await KeycloakService.getAccessToken() ??
+        final token =
+            await KeycloakService.getAccessToken() ??
             await SsoStorage.getAccessToken();
         if (token != null && token.isNotEmpty) {
           tokenClaims = JwtDecoder.decode(token);
@@ -227,7 +239,9 @@ class CallManager {
     for (final id in candidates) {
       if (id == null) continue;
       final idStr = id.toString().trim();
-      if (idStr.isNotEmpty && !idStr.contains('-') && int.tryParse(idStr) != null) {
+      if (idStr.isNotEmpty &&
+          !idStr.contains('-') &&
+          int.tryParse(idStr) != null) {
         return idStr;
       }
     }
@@ -240,8 +254,12 @@ class CallManager {
   }) {
     final fromContact = toUserAvatarUrl?.trim();
     if (fromContact != null && fromContact.isNotEmpty) {
-      final resolved = ProfileDataHelper.resolveAvatarUrl({'avatar': fromContact});
-      return resolved?.trim().isNotEmpty == true ? resolved!.trim() : fromContact;
+      final resolved = ProfileDataHelper.resolveAvatarUrl({
+        'avatar': fromContact,
+      });
+      return resolved?.trim().isNotEmpty == true
+          ? resolved!.trim()
+          : fromContact;
     }
 
     final built = ProfileDataHelper.buildAvatarUrlFromUserId(
@@ -274,8 +292,10 @@ class CallManager {
   }) async {
     try {
       if (isCallInProgress) {
-        log('⚠️ [CallManager] Call already in progress, ignoring incoming call',
-            name: 'CallManager');
+        log(
+          '⚠️ [CallManager] Call already in progress, ignoring incoming call',
+          name: 'CallManager',
+        );
         return CallResult.failure(
           error: 'Call in progress',
           message: 'A call is already active',
@@ -316,10 +336,9 @@ class CallManager {
   /// - Camera: Required for video calls only
   /// - Bluetooth: Required on Android 12+ for audio routing
   Future<PermissionResult> _checkAndRequestPermissions(
-      CallType callType) async {
-    final List<Permission> requiredPermissions = [
-      Permission.microphone,
-    ];
+    CallType callType,
+  ) async {
+    final List<Permission> requiredPermissions = [Permission.microphone];
 
     // Add camera permission for video calls
     if (callType.isVideo) {
@@ -348,8 +367,10 @@ class CallManager {
     }
 
     // Request permissions
-    log('🔐 [CallManager] Requesting permissions: ${permissionsToRequest.map((p) => p.toString()).join(", ")}',
-        name: 'CallManager');
+    log(
+      '🔐 [CallManager] Requesting permissions: ${permissionsToRequest.map((p) => p.toString()).join(", ")}',
+      name: 'CallManager',
+    );
 
     final results = await permissionsToRequest.request();
 
@@ -372,17 +393,21 @@ class CallManager {
     // Build error message
     String message;
     if (permanentlyDeniedPermissions.isNotEmpty) {
-      message = _buildPermissionDeniedMessage(permanentlyDeniedPermissions,
-          isPermanent: true);
+      message = _buildPermissionDeniedMessage(
+        permanentlyDeniedPermissions,
+        isPermanent: true,
+      );
     } else {
-      message =
-          _buildPermissionDeniedMessage(deniedPermissions, isPermanent: false);
+      message = _buildPermissionDeniedMessage(
+        deniedPermissions,
+        isPermanent: false,
+      );
     }
 
     return PermissionResult.denied(
       deniedPermissions: [
         ...deniedPermissions,
-        ...permanentlyDeniedPermissions
+        ...permanentlyDeniedPermissions,
       ],
       permanentlyDenied: permanentlyDeniedPermissions.isNotEmpty,
       message: message,
@@ -390,14 +415,18 @@ class CallManager {
   }
 
   /// Build a user-friendly message for denied permissions
-  String _buildPermissionDeniedMessage(List<Permission> permissions,
-      {required bool isPermanent}) {
-    final permissionNames = permissions.map((p) {
-      if (p == Permission.microphone) return 'Microphone';
-      if (p == Permission.camera) return 'Camera';
-      if (p == Permission.bluetoothConnect) return 'Bluetooth';
-      return p.toString();
-    }).join(', ');
+  String _buildPermissionDeniedMessage(
+    List<Permission> permissions, {
+    required bool isPermanent,
+  }) {
+    final permissionNames = permissions
+        .map((p) {
+          if (p == Permission.microphone) return 'Microphone';
+          if (p == Permission.camera) return 'Camera';
+          if (p == Permission.bluetoothConnect) return 'Bluetooth';
+          return p.toString();
+        })
+        .join(', ');
 
     if (isPermanent) {
       return '$permissionNames permission(s) are permanently denied. '
@@ -450,8 +479,10 @@ class CallManager {
       await CallCoordinator.instance.markConnected(callId: call.id.toString());
       return CallResult.success(call: call);
     } catch (e, stackTrace) {
-      log('❌ [CallManager] joinOutgoingCallWhenAccepted failed: $e',
-          name: 'CallManager');
+      log(
+        '❌ [CallManager] joinOutgoingCallWhenAccepted failed: $e',
+        name: 'CallManager',
+      );
       log('   Stack trace: $stackTrace', name: 'CallManager');
       return CallResult.failure(
         error: 'Failed to join accepted call',
@@ -474,8 +505,7 @@ class CallManager {
   }
 
   Future<Call?> _resolveCallFromPayload(Map<String, dynamic> payload) async {
-    final callIdRaw =
-        payload['call_id'] ?? payload['callId'] ?? payload['id'];
+    final callIdRaw = payload['call_id'] ?? payload['callId'] ?? payload['id'];
     final callId = int.tryParse(callIdRaw?.toString() ?? '');
     if (callId == null) return null;
 
@@ -484,12 +514,13 @@ class CallManager {
 
     final meetingId =
         payload['meeting_id']?.toString().trim().isNotEmpty == true
-            ? payload['meeting_id'].toString().trim()
-            : payload['meetingId']?.toString().trim().isNotEmpty == true
-                ? payload['meetingId'].toString().trim()
-                : callId.toString();
+        ? payload['meeting_id'].toString().trim()
+        : payload['meetingId']?.toString().trim().isNotEmpty == true
+        ? payload['meetingId'].toString().trim()
+        : callId.toString();
 
-    final callType = CallType.tryFromString(
+    final callType =
+        CallType.tryFromString(
           payload['call_type']?.toString() ?? payload['callType']?.toString(),
         ) ??
         CallType.audio;
@@ -497,7 +528,8 @@ class CallManager {
     return Call(
       id: callId,
       meetingId: meetingId,
-      jitsiMeetingUrl: payload['jitsi_url']?.toString() ??
+      jitsiMeetingUrl:
+          payload['jitsi_url']?.toString() ??
           payload['jitsi_meeting_url']?.toString(),
       callType: callType,
       status: CallStatus.initiated,
@@ -522,10 +554,7 @@ class CallResult {
   });
 
   factory CallResult.success({required Call call}) {
-    return CallResult._(
-      success: true,
-      call: call,
-    );
+    return CallResult._(success: true, call: call);
   }
 
   factory CallResult.failure({

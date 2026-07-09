@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/group_chat_model.dart';
 import '../../../../core/theme/colors.dart';
+import '../../../../src/config/chat_call_i18n.dart';
 
 class GroupChatCard extends StatelessWidget {
   final GroupChat group;
@@ -15,7 +16,7 @@ class GroupChatCard extends StatelessWidget {
     this.isAdmin = false,
   }) : super(key: key);
 
-  String _formatLastMessageTime(DateTime time) {
+  String _formatLastMessageTime(BuildContext context, DateTime time) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
@@ -24,7 +25,7 @@ class GroupChatCard extends StatelessWidget {
     if (messageDate == today) {
       return DateFormat.jm().format(time); // e.g., "3:30 PM"
     } else if (messageDate == yesterday) {
-      return 'Yesterday';
+      return chatCallTr(context, 'chatCall_yesterday', fallback: 'Yesterday');
     } else if (now.difference(time).inDays < 7) {
       return DateFormat.E().format(time); // e.g., "Mon", "Tue"
     } else {
@@ -40,9 +41,7 @@ class GroupChatCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Colors.grey.withOpacity(0.2),
-        ),
+        side: BorderSide(color: Colors.grey.withOpacity(0.2)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -128,7 +127,10 @@ class GroupChatCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          _formatLastMessageTime(group.lastMessageTime),
+                          _formatLastMessageTime(
+                            context,
+                            group.lastMessageTime,
+                          ),
                           style: TextStyle(
                             fontSize: 12,
                             color: group.isUnread
@@ -147,14 +149,16 @@ class GroupChatCard extends StatelessWidget {
                         if (isAdmin)
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             margin: const EdgeInsets.only(right: 6),
                             decoration: BoxDecoration(
                               color: AppColors.primary.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text(
-                              'ADMIN',
+                            child: Text(
+                              chatCallTr(context, 'chatCall_adminBadge', fallback: 'ADMIN'),
                               style: TextStyle(
                                 color: AppColors.primary,
                                 fontSize: 10,
@@ -180,7 +184,12 @@ class GroupChatCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            group.lastMessage ?? 'No messages yet',
+                            group.lastMessage ??
+                                chatCallTr(
+                                  context,
+                                  'chatCall_noMessagesYet',
+                                  fallback: 'No messages yet',
+                                ),
                             style: TextStyle(
                               fontSize: 13,
                               color: group.isUnread

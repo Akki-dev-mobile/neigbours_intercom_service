@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import '../models/room_info_model.dart';
+import 'member_avatar_resolver.dart';
 
 /// Room Refresh Coordinator - Prevents multiple redundant refreshes per room
 /// Solves over-refresh, over-notify, over-invalidate problems
 class RoomRefreshCoordinator {
-  static final RoomRefreshCoordinator _instance = RoomRefreshCoordinator._internal();
+  static final RoomRefreshCoordinator _instance =
+      RoomRefreshCoordinator._internal();
   factory RoomRefreshCoordinator() => _instance;
   RoomRefreshCoordinator._internal();
 
@@ -15,7 +17,6 @@ class RoomRefreshCoordinator {
 
   // Track recent optimistic updates to coordinate with refresh coordinator
   final Map<String, DateTime> _recentOptimisticUpdates = {};
-
 
   // Minimum interval between any refreshes for same room
   static const Duration _minRefreshInterval = Duration(milliseconds: 500);
@@ -34,32 +35,46 @@ class RoomRefreshCoordinator {
 
     // Check if we can refresh
     if (!state.canRefresh(source)) {
-      log('⏸️ [RefreshCoordinator] Debounced refresh for room $roomId from $source (last: ${state.lastRefreshSource})');
+      log(
+        '⏸️ [RefreshCoordinator] Debounced refresh for room $roomId from $source (last: ${state.lastRefreshSource})',
+      );
       return false;
     }
 
     // Check optimistic update skip
     if (skipIfOptimisticUpdate && _wasRecentlyOptimisticallyUpdated(roomId)) {
-      log('⚡ [RefreshCoordinator] Skipping refresh for room $roomId - optimistic update recent');
+      log(
+        '⚡ [RefreshCoordinator] Skipping refresh for room $roomId - optimistic update recent',
+      );
       return false;
     }
 
     try {
       state.startRefresh(source);
-      log('🔄 [RefreshCoordinator] Starting refresh for room $roomId from $source');
+      log(
+        '🔄 [RefreshCoordinator] Starting refresh for room $roomId from $source',
+      );
 
       await refreshAction();
 
       // Show success toast only for direct user actions, not background/WebSocket
-      if (source == 'user_action' && successToastTitle != null && successToastMessage != null) {
+      if (source == 'user_action' &&
+          successToastTitle != null &&
+          successToastMessage != null) {
         // Import would be circular, so we'll handle toast in calling code
-        log('✅ [RefreshCoordinator] Completed user-action refresh for room $roomId - toast should be shown by caller');
+        log(
+          '✅ [RefreshCoordinator] Completed user-action refresh for room $roomId - toast should be shown by caller',
+        );
       } else {
-        log('✅ [RefreshCoordinator] Completed refresh for room $roomId from $source');
+        log(
+          '✅ [RefreshCoordinator] Completed refresh for room $roomId from $source',
+        );
       }
       return true;
     } catch (e) {
-      log('❌ [RefreshCoordinator] Failed refresh for room $roomId from $source: $e');
+      log(
+        '❌ [RefreshCoordinator] Failed refresh for room $roomId from $source: $e',
+      );
       return false;
     } finally {
       state.endRefresh();
@@ -100,8 +115,11 @@ class RoomRefreshCoordinator {
   /// Clean up old states (optional maintenance)
   void cleanup() {
     final cutoff = DateTime.now().subtract(const Duration(minutes: 30));
-    _refreshStates.removeWhere((key, state) =>
-      state.lastRefreshTime != null && state.lastRefreshTime!.isBefore(cutoff));
+    _refreshStates.removeWhere(
+      (key, state) =>
+          state.lastRefreshTime != null &&
+          state.lastRefreshTime!.isBefore(cutoff),
+    );
     _recentOptimisticUpdates.removeWhere((key, time) => time.isBefore(cutoff));
   }
 }
@@ -121,7 +139,9 @@ class _RefreshState {
     // If currently refreshing, deny unless it's a higher priority source
     if (isRefreshing) {
       // User actions can interrupt background refreshes
-      if (source == 'user_action' && (lastRefreshSource == 'background' || lastRefreshSource == 'websocket')) {
+      if (source == 'user_action' &&
+          (lastRefreshSource == 'background' ||
+              lastRefreshSource == 'websocket')) {
         return true;
       }
       return false;
@@ -153,7 +173,8 @@ class _RefreshState {
   void scheduleDelayedRefresh(Duration delay, VoidCallback callback) {
     pendingTimer?.cancel();
     pendingTimer = Timer(delay, () {
-      if (!isRefreshing) { // Only execute if not currently refreshing
+      if (!isRefreshing) {
+        // Only execute if not currently refreshing
         callback();
       }
     });
@@ -201,7 +222,7 @@ class RoomInfoCache {
 
   // Cache: roomId -> cached RoomInfo
   final Map<String, _CachedRoomInfo> _cache = {};
-  // Track in-flight requests to prevent duplicates
+  // Track in-flight requests to prevent duplicates (keyed by roomId:companyId)
   final Map<String, Future<RoomInfo?>> _inFlightRequests = {};
   // Track when members leave rooms - force fresh fetch for a period after member leaves
   final Map<String, DateTime> _memberLeaveTimestamps = {};
@@ -210,10 +231,19 @@ class RoomInfoCache {
   int _cacheMisses = 0;
   int _inFlightDeduplications = 0;
 
+  /// Fresh TTL used for network-skip decisions (default 3 minutes).
+  static const Duration defaultFreshTtl = Duration(minutes: 3);
+
+  /// Stale-but-displayable TTL — show cached members while refreshing in background.
+  static const Duration staleDisplayTtl = Duration(minutes: 30);
+
   /// Get cached RoomInfo for a room
   /// Returns null if cache is invalid, expired, or if a member recently left (forcing fresh fetch)
-  RoomInfo? getCachedRoomInfo(String roomId, int? companyId,
-      {Duration? expiry}) {
+  RoomInfo? getCachedRoomInfo(
+    String roomId,
+    int? companyId, {
+    Duration? expiry,
+  }) {
     // CRITICAL FIX: If a member recently left this room, skip cache to force fresh API fetch
     // This ensures admins see updated member list immediately after someone leaves
     final leaveTimestamp = _memberLeaveTimestamps[roomId];
@@ -221,7 +251,9 @@ class RoomInfoCache {
       final timeSinceLeave = DateTime.now().difference(leaveTimestamp);
       // Force fresh fetch for 30 seconds after a member leaves
       if (timeSinceLeave < const Duration(seconds: 30)) {
-        log('🔄 [RoomInfoCache] Skipping cache for room $roomId - member left ${timeSinceLeave.inSeconds}s ago (forcing fresh fetch)');
+        log(
+          '🔄 [RoomInfoCache] Skipping cache for room $roomId - member left ${timeSinceLeave.inSeconds}s ago (forcing fresh fetch)',
+        );
         _cacheMisses++;
         return null;
       } else {
@@ -240,6 +272,104 @@ class RoomInfoCache {
     log('ℹ️ [RoomInfoCache] Cache miss for room $roomId');
     _cacheMisses++;
     return null;
+  }
+
+  /// Returns cached RoomInfo for immediate Group Info display even if slightly stale.
+  /// Skips the post-member-leave invalidation window only when [ignoreLeaveWindow] is true.
+  RoomInfo? getStaleCachedRoomInfoForDisplay(
+    String roomId,
+    int? companyId, {
+    Duration staleFor = staleDisplayTtl,
+    bool ignoreLeaveWindow = false,
+  }) {
+    if (!ignoreLeaveWindow) {
+      final leaveTimestamp = _memberLeaveTimestamps[roomId];
+      if (leaveTimestamp != null) {
+        final timeSinceLeave = DateTime.now().difference(leaveTimestamp);
+        if (timeSinceLeave < const Duration(seconds: 30)) {
+          return null;
+        }
+      }
+    }
+
+    final cached = _cache[roomId];
+    if (cached == null) return null;
+    if (companyId != null && cached.companyId != companyId) return null;
+
+    final age = DateTime.now().difference(cached.timestamp);
+    if (age <= staleFor) {
+      log(
+        '✅ [RoomInfoCache] Stale display cache hit for room $roomId (age: ${age.inSeconds}s)',
+      );
+      return cached.roomInfo;
+    }
+    return null;
+  }
+
+  int getAvatarCount(String roomId, int? companyId) {
+    final cached = _cache[roomId];
+    if (cached == null) return 0;
+    if (companyId != null && cached.companyId != companyId) return 0;
+    final unique = <String>{};
+    for (final url in cached.avatarCache.values) {
+      if (url.isNotEmpty) unique.add(url);
+    }
+    return unique.length;
+  }
+
+  /// Single controlled cache update for Group Info / chat member refresh.
+  void applyRoomInfoUpdate({
+    required String roomId,
+    required int companyId,
+    required RoomInfo roomInfo,
+  }) {
+    // Summary-only /info responses often omit members — do not wipe a fuller cache.
+    var infoToCache = roomInfo;
+    final existing = _cache[roomId];
+    if (existing != null &&
+        existing.isValid(companyId) &&
+        roomInfo.members.isEmpty &&
+        roomInfo.memberCount > 0 &&
+        existing.roomInfo.members.isNotEmpty) {
+      infoToCache = RoomInfo(
+        id: roomInfo.id.isNotEmpty ? roomInfo.id : existing.roomInfo.id,
+        name: roomInfo.name.isNotEmpty ? roomInfo.name : existing.roomInfo.name,
+        description: roomInfo.description ?? existing.roomInfo.description,
+        createdBy: roomInfo.createdBy.isNotEmpty
+            ? roomInfo.createdBy
+            : existing.roomInfo.createdBy,
+        createdByUserId:
+            roomInfo.createdByUserId ?? existing.roomInfo.createdByUserId,
+        createdByUser: roomInfo.createdByUser ?? existing.roomInfo.createdByUser,
+        companyId: roomInfo.companyId ?? existing.roomInfo.companyId,
+        photoUrl: roomInfo.photoUrl ?? existing.roomInfo.photoUrl,
+        createdAt: roomInfo.createdAt,
+        lastActive: roomInfo.lastActive ?? existing.roomInfo.lastActive,
+        memberCount: roomInfo.memberCount > 0
+            ? roomInfo.memberCount
+            : existing.roomInfo.memberCount,
+        admin: roomInfo.admin ?? existing.roomInfo.admin,
+        members: existing.roomInfo.members,
+        photos: roomInfo.photos.isNotEmpty
+            ? roomInfo.photos
+            : existing.roomInfo.photos,
+        peerUser: roomInfo.peerUser ?? existing.roomInfo.peerUser,
+      );
+      log(
+        '♻️ [RoomInfoCache] Preserved ${existing.roomInfo.members.length} cached '
+        'members for $roomId (summary-only /info)',
+      );
+    }
+
+    final maps = MemberAvatarResolver.buildMapsFromMembers(infoToCache.members);
+    cacheRoomInfo(
+      roomId: roomId,
+      companyId: companyId,
+      roomInfo: infoToCache,
+      avatarCache: maps.avatarCache,
+      numericIdToUuidMap: maps.numericIdToUuidMap,
+      uuidToNumericIdMap: maps.uuidToNumericIdMap,
+    );
   }
 
   /// Get cached avatars for a room
@@ -292,22 +422,14 @@ class RoomInfoCache {
     final processedMappings = numericIdToUuidMap ?? <int, String>{};
     final processedUuidToNumericMap = uuidToNumericIdMap ?? <String, int>{};
 
-    // If not provided, extract from roomInfo
-    if (avatarCache == null || numericIdToUuidMap == null || uuidToNumericIdMap == null) {
-      for (final member in roomInfo.members) {
-        if (member.avatar != null && member.avatar!.isNotEmpty) {
-          processedAvatars[member.userId] = member.avatar!;
-          if (member.numericUserId != null) {
-            processedAvatars[member.numericUserId!.toString()] = member.avatar!;
-            processedMappings[member.numericUserId!] = member.userId;
-            processedUuidToNumericMap[member.userId] = member.numericUserId!;
-          }
-        }
-        if (member.numericUserId != null) {
-          processedMappings[member.numericUserId!] = member.userId;
-          processedUuidToNumericMap[member.userId] = member.numericUserId!;
-        }
-      }
+    // If not provided, extract from roomInfo using shared resolver
+    if (avatarCache == null ||
+        numericIdToUuidMap == null ||
+        uuidToNumericIdMap == null) {
+      final maps = MemberAvatarResolver.buildMapsFromMembers(roomInfo.members);
+      processedAvatars.addAll(maps.avatarCache);
+      processedMappings.addAll(maps.numericIdToUuidMap);
+      processedUuidToNumericMap.addAll(maps.uuidToNumericIdMap);
     }
 
     _cache[roomId] = _CachedRoomInfo(
@@ -318,24 +440,36 @@ class RoomInfoCache {
       numericIdToUuidMap: processedMappings,
       uuidToNumericIdMap: processedUuidToNumericMap,
     );
-    log('💾 [RoomInfoCache] Cached RoomInfo for room $roomId (${roomInfo.memberCount} members, ${processedAvatars.length} avatars)');
+    log(
+      '💾 [RoomInfoCache] Cached RoomInfo for room $roomId (${roomInfo.memberCount} members, ${processedAvatars.length} avatars)',
+    );
   }
+
+  static String inFlightKey(String roomId, int companyId) =>
+      '$roomId:$companyId';
 
   /// Track an in-flight request for RoomInfo
   Future<RoomInfo?> trackInFlightRequest(
-      String roomId, Future<RoomInfo?> future) {
-    _inFlightRequests[roomId] = future;
+    String roomId,
+    int companyId,
+    Future<RoomInfo?> future,
+  ) {
+    final key = inFlightKey(roomId, companyId);
+    _inFlightRequests[key] = future;
     future.whenComplete(() {
-      _inFlightRequests.remove(roomId);
+      _inFlightRequests.remove(key);
     });
     return future;
   }
 
   /// Get an in-flight request for RoomInfo
-  Future<RoomInfo?>? getInFlightRequest(String roomId) {
-    final request = _inFlightRequests[roomId];
+  Future<RoomInfo?>? getInFlightRequest(String roomId, int companyId) {
+    final key = inFlightKey(roomId, companyId);
+    final request = _inFlightRequests[key];
     if (request != null) {
-      log('⏸️ [RoomInfoCache] Deduplicating in-flight request for room $roomId');
+      log(
+        '⏸️ [RoomInfoCache] Deduplicating in-flight request for $key',
+      );
       _inFlightDeduplications++;
     }
     return request;
@@ -344,7 +478,7 @@ class RoomInfoCache {
   /// Clear cache for a specific room
   void clearRoomCache(String roomId) {
     _cache.remove(roomId);
-    _inFlightRequests.remove(roomId);
+    _inFlightRequests.removeWhere((key, _) => key.startsWith('$roomId:'));
     log('🗑️ [RoomInfoCache] Cleared cache for room: $roomId');
   }
 
@@ -352,7 +486,9 @@ class RoomInfoCache {
   /// This ensures admins see updated member list immediately after someone leaves
   void markMemberLeft(String roomId) {
     _memberLeaveTimestamps[roomId] = DateTime.now();
-    log('🚪 [RoomInfoCache] Marked member left for room $roomId - will force fresh fetch for 30s');
+    log(
+      '🚪 [RoomInfoCache] Marked member left for room $roomId - will force fresh fetch for 30s',
+    );
   }
 
   /// Clear cache for a specific company
@@ -375,7 +511,9 @@ class RoomInfoCache {
     _trackOptimisticUpdate(roomId);
     final cached = _cache[roomId];
     if (cached == null) {
-      log('⚠️ [RoomInfoCache] Cannot add members optimistically - no cached RoomInfo for room $roomId');
+      log(
+        '⚠️ [RoomInfoCache] Cannot add members optimistically - no cached RoomInfo for room $roomId',
+      );
       return;
     }
 
@@ -397,10 +535,12 @@ class RoomInfoCache {
 
     // Update avatar cache and mappings for new members
     final updatedAvatarCache = Map<String, String>.from(cached.avatarCache);
-    final updatedNumericIdToUuidMap =
-        Map<int, String>.from(cached.numericIdToUuidMap);
-    final updatedUuidToNumericIdMap =
-        Map<String, int>.from(cached.uuidToNumericIdMap);
+    final updatedNumericIdToUuidMap = Map<int, String>.from(
+      cached.numericIdToUuidMap,
+    );
+    final updatedUuidToNumericIdMap = Map<String, int>.from(
+      cached.uuidToNumericIdMap,
+    );
 
     for (final member in newMembers) {
       if (member.avatar != null && member.avatar!.isNotEmpty) {
@@ -430,7 +570,9 @@ class RoomInfoCache {
     // Track optimistic update for refresh coordination
     _trackOptimisticUpdate(roomId);
 
-    log('⚡ [RoomInfoCache] Optimistically added ${newMembers.length} members to room $roomId (new count: ${updatedRoomInfo.memberCount})');
+    log(
+      '⚡ [RoomInfoCache] Optimistically added ${newMembers.length} members to room $roomId (new count: ${updatedRoomInfo.memberCount})',
+    );
   }
 
   /// Remove a specific member from cached RoomInfo (selective invalidation)
@@ -441,7 +583,9 @@ class RoomInfoCache {
   }) {
     final cached = _cache[roomId];
     if (cached == null) {
-      log('⚠️ [RoomInfoCache] Cannot remove member optimistically - no cached RoomInfo for room $roomId');
+      log(
+        '⚠️ [RoomInfoCache] Cannot remove member optimistically - no cached RoomInfo for room $roomId',
+      );
       return;
     }
 
@@ -480,7 +624,8 @@ class RoomInfoCache {
       // Update cache with optimistic data
       _cache[roomId] = _CachedRoomInfo(
         roomInfo: updatedRoomInfo,
-        timestamp: DateTime.now(), // Fresh timestamp to reflect optimistic update
+        timestamp:
+            DateTime.now(), // Fresh timestamp to reflect optimistic update
         companyId: cached.companyId,
         avatarCache: cached.avatarCache,
         numericIdToUuidMap: cached.numericIdToUuidMap,
@@ -490,9 +635,13 @@ class RoomInfoCache {
       // Track optimistic update for refresh coordination
       _trackOptimisticUpdate(roomId);
 
-      log('⚡ [RoomInfoCache] Optimistically removed member $memberUserId from room $roomId (new count: ${updatedRoomInfo.memberCount})');
+      log(
+        '⚡ [RoomInfoCache] Optimistically removed member $memberUserId from room $roomId (new count: ${updatedRoomInfo.memberCount})',
+      );
     } else {
-      log('⚠️ [RoomInfoCache] Member $memberUserId not found in cached RoomInfo for room $roomId');
+      log(
+        '⚠️ [RoomInfoCache] Member $memberUserId not found in cached RoomInfo for room $roomId',
+      );
     }
   }
 
@@ -511,7 +660,9 @@ class RoomInfoCache {
         numericIdToUuidMap: cached.numericIdToUuidMap,
         uuidToNumericIdMap: cached.uuidToNumericIdMap,
       );
-      log('📅 [RoomInfoCache] Marked room $roomId as stale (will refresh on next access)');
+      log(
+        '📅 [RoomInfoCache] Marked room $roomId as stale (will refresh on next access)',
+      );
     }
   }
 

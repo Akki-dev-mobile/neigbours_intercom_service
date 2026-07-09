@@ -70,8 +70,9 @@ class _WhatsAppVideoMessageState extends State<WhatsAppVideoMessage> {
         // Seek to middle frame for better thumbnail
         final duration = _thumbnailController!.value.duration;
         if (duration.inMilliseconds > 0) {
-          await _thumbnailController!
-              .seekTo(Duration(milliseconds: duration.inMilliseconds ~/ 2));
+          await _thumbnailController!.seekTo(
+            Duration(milliseconds: duration.inMilliseconds ~/ 2),
+          );
           await _thumbnailController!.pause();
         }
         if (mounted) {
@@ -115,10 +116,7 @@ class _WhatsAppVideoMessageState extends State<WhatsAppVideoMessage> {
     return GestureDetector(
       onTap: widget.onTap,
       child: Container(
-        constraints: const BoxConstraints(
-          maxWidth: 280,
-          maxHeight: 220,
-        ),
+        constraints: const BoxConstraints(maxWidth: 280, maxHeight: 220),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           color: Colors.black,
@@ -319,11 +317,7 @@ class _WhatsAppVideoMessageState extends State<WhatsAppVideoMessage> {
     return Container(
       color: Colors.black87,
       child: const Center(
-        child: Icon(
-          Icons.videocam,
-          color: Colors.white54,
-          size: 48,
-        ),
+        child: Icon(Icons.videocam, color: Colors.white54, size: 48),
       ),
     );
   }

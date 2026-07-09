@@ -1,3 +1,5 @@
+import '../../../../src/config/chat_call_i18n.dart';
+
 /// 🔥 CRITICAL FIX: CreateGroupPage UUID Member Support
 ///
 /// PROBLEM: CreateGroupPage rejected valid UUID members with "invalid userId (must be numeric)"
@@ -11,21 +13,19 @@
 ///
 /// This ensures UI consistency while gracefully handling API requirements.
 
+import 'dart:async';
 import 'dart:io';
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:dio/dio.dart';
-import 'dart:developer' as developer;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/widgets/enhanced_toast.dart';
 import '../../../../core/widgets/onegate_global_loader.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/society_backend_api_service.dart';
-import '../../../../core/network/network_interceptors.dart';
-import '../../society_feed/services/post_api_client.dart';
 import '../models/intercom_contact.dart';
 import '../models/group_chat_model.dart';
 import '../models/room_model.dart';
@@ -33,10 +33,12 @@ import '../models/room_info_model.dart';
 import '../services/intercom_service.dart';
 import '../services/room_service.dart';
 import '../services/room_info_cache.dart';
+import '../services/group_info_loader.dart';
 import '../tabs/groups_tab.dart';
 import '../../providers/selected_flat_provider.dart';
 import '../../../../core/utils/profile_data_helper.dart';
 import '../../../../core/utils/oneapp_share.dart';
+import '../widgets/voice_search_launcher.dart';
 
 class CreateGroupPage extends ConsumerStatefulWidget {
   final GroupChat? groupToEdit;
@@ -60,7 +62,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
   final TextEditingController _searchController = TextEditingController();
   List<IntercomContact> _selectedMembers = [];
   List<IntercomContact> _availableResidents = [];
-  // CRITICAL: Track original members when editing (these cannot be removed)
+  // Track original members when editing (baseline for add/remove/update diff)
   Set<String> _originalMemberIds =
       {}; // Set of member IDs that were in the group when page opened
   Set<String> _originalMemberNumericIds =
@@ -90,6 +92,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
   bool _isLoadingMembers = true;
   String? _errorMessage;
   String? _selectedBuilding; // null means "All Buildings"
+  int? _cachedCompanyId;
+  bool _isListening = false;
 
   // Flag to track whether we're editing or creating
   bool get _isEditMode => widget.groupToEdit != null;
@@ -164,15 +168,17 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
     if (!_isEditMode || widget.groupToEdit == null) return;
 
     try {
-      final companyId = await _apiService.getSelectedSocietyId();
+      final companyId =
+          await _apiService.getSelectedSocietyId() ??
+          ref.read(selectedFlatProvider).selectedSociety?.socId;
       if (companyId == null) {
         debugPrint(
           '⚠️ [CreateGroupPage] Cannot load members: company_id not available',
         );
-        // Still try to load from API without cache
         _loadRoomMembers();
         return;
       }
+      _cachedCompanyId = companyId;
 
       final RoomInfoCache roomInfoCache = RoomInfoCache();
 
@@ -309,54 +315,169 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
     debugPrint(
       '📊 [CreateGroupPage] Stored original member data for ${_originalMemberData.length} members (baseline for edit detection)',
     );
+
+    _enrichSelectedMembersFromResidents();
+    if (_isEditMode && _availableResidents.isNotEmpty) {
+      _realignSelectedMembersToResidentList();
+    }
   }
 
-  /// Load room members from API
-  /// Called in background after cache display, or directly if no cache available
-  /// This ensures we have the most up-to-date member list
+  /// Map room members (UUID) onto resident-list contacts so checkmarks render.
+  void _realignSelectedMembersToResidentList() {
+    if (!mounted || !_isEditMode || _availableResidents.isEmpty) return;
+
+    final realigned = <IntercomContact>[];
+    for (final selected in _selectedMembers) {
+      final match = _availableResidents.cast<IntercomContact?>().firstWhere(
+        (r) => r != null && _isSameMemberOrNumeric(selected, r),
+        orElse: () => null,
+      );
+      realigned.add(match ?? selected);
+    }
+
+    final originalRealigned = <String>{};
+    final numericRealigned = <String>{};
+    for (final id in _originalMemberIds) {
+      final placeholder = IntercomContact(
+        id: id,
+        name: '',
+        type: IntercomContactType.resident,
+        numericUserId: int.tryParse(id),
+      );
+      final match = _availableResidents.cast<IntercomContact?>().firstWhere(
+        (r) => r != null && _isSameMemberOrNumeric(placeholder, r),
+        orElse: () => null,
+      );
+      if (match != null) {
+        originalRealigned.add(match.id);
+        if (match.numericUserId != null) {
+          numericRealigned.add(match.numericUserId.toString());
+        }
+      } else {
+        originalRealigned.add(id);
+      }
+    }
+
+    setState(() {
+      _selectedMembers = realigned;
+      if (originalRealigned.isNotEmpty) {
+        _originalMemberIds = originalRealigned;
+      }
+      if (numericRealigned.isNotEmpty) {
+        _originalMemberNumericIds = numericRealigned;
+      }
+    });
+  }
+
+  /// Align selected members with resident list IDs (UUID vs numeric) for UI selection.
+  void _enrichSelectedMembersFromResidents() {
+    _syncSelectedMembersWithResidents();
+  }
+
+  /// Use resident-list identity for selected members so checkmarks match in edit mode.
+  void _syncSelectedMembersWithResidents() {
+    if (!mounted || _selectedMembers.isEmpty) return;
+
+    if (_availableResidents.isEmpty) {
+      setState(() {});
+      return;
+    }
+
+    final synced = <IntercomContact>[];
+    var changed = false;
+
+    for (final selected in _selectedMembers) {
+      final match = _availableResidents.cast<IntercomContact?>().firstWhere(
+        (resident) =>
+            resident != null && _isSameMemberOrNumeric(selected, resident),
+        orElse: () => null,
+      );
+
+      if (match == null) {
+        synced.add(selected);
+        continue;
+      }
+
+      final merged = match.copyWith(
+        numericUserId: selected.numericUserId ?? match.numericUserId,
+        phoneNumber: (selected.phoneNumber?.isNotEmpty == true)
+            ? selected.phoneNumber
+            : match.phoneNumber,
+        photoUrl: selected.photoUrl ?? match.photoUrl,
+      );
+
+      if (merged.id != selected.id ||
+          merged.numericUserId != selected.numericUserId ||
+          merged.phoneNumber != selected.phoneNumber) {
+        changed = true;
+      }
+      synced.add(merged);
+    }
+
+    if (changed || synced.length != _selectedMembers.length) {
+      setState(() {
+        _selectedMembers = synced;
+      });
+    } else {
+      setState(() {});
+    }
+  }
+
+  int? _resolveNumericUserId(IntercomContact member, String roomId, int? companyId) {
+    if (member.numericUserId != null) return member.numericUserId;
+    if (companyId != null && member.id.contains('-')) {
+      final mapped = RoomInfoCache().mapUuidToNumericId(
+        roomId,
+        member.id,
+        companyId,
+      );
+      if (mapped != null) return mapped;
+    }
+    return int.tryParse(member.id);
+  }
+
+  /// Load room members from API (fast /info, conditional /members).
   Future<void> _loadRoomMembers() async {
     if (!_isEditMode || widget.groupToEdit == null) return;
 
     try {
       debugPrint(
-        '📡 [CreateGroupPage] Fetching latest members from API for room: ${widget.groupToEdit!.id}',
+        '📡 [CreateGroupPage] Fetching latest members for room: ${widget.groupToEdit!.id}',
       );
 
-      final companyId = await _apiService.getSelectedSocietyId();
+      final companyId =
+          _cachedCompanyId ??
+          await _apiService.getSelectedSocietyId() ??
+          ref.read(selectedFlatProvider).selectedSociety?.socId;
       if (companyId == null) {
         debugPrint(
           '⚠️ [CreateGroupPage] Cannot fetch members: company_id not available',
         );
         return;
       }
+      _cachedCompanyId = companyId;
 
-      final roomInfoResponse = await _roomService.getRoomInfo(
+      final result = await GroupInfoLoader().loadFresh(
         roomId: widget.groupToEdit!.id,
         companyId: companyId,
+        roomService: _roomService,
+        forceRefresh: true,
       );
 
-      if (roomInfoResponse.success && roomInfoResponse.data != null) {
-        final roomInfo = roomInfoResponse.data!;
-
+      if (result.roomInfo != null) {
+        final roomInfo = result.roomInfo!;
         debugPrint(
-          '✅ [CreateGroupPage] Fetched room info from API: ${roomInfo.memberCount} members',
+          '✅ [CreateGroupPage] Fetched room info: ${roomInfo.memberCount} members',
         );
-
-        // Update members from API response (may be same as cache or newer)
         _updateMembersFromRoomInfo(roomInfo);
-
-        debugPrint(
-          '🔄 [CreateGroupPage] Background refresh complete - members updated if changed',
-        );
+        _enrichSelectedMembersFromResidents();
       } else {
         debugPrint(
-          '⚠️ [CreateGroupPage] Failed to fetch room info: ${roomInfoResponse.error}',
+          '⚠️ [CreateGroupPage] Failed to fetch room info: ${result.error}',
         );
-        // Keep existing members (from cache or initial load) as fallback
       }
     } catch (e) {
       debugPrint('⚠️ [CreateGroupPage] Exception loading room members: $e');
-      // Keep existing members (from cache or initial load) as fallback
     }
   }
 
@@ -411,8 +532,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
     if (trimmedName.isEmpty) {
       EnhancedToast.warning(
         context,
-        title: 'Warning',
-        message: 'Please enter a group name',
+        title: chatCallTr(context, 'chatCall_warning', fallback: 'Warning'),
+        message: chatCallTr(context, 'chatCall_pleaseEnterAGroupName', fallback: 'Please enter a group name'),
       );
       return;
     }
@@ -421,8 +542,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
     if (trimmedName.length < 2) {
       EnhancedToast.warning(
         context,
-        title: 'Warning',
-        message: 'Group name must be at least 2 characters',
+        title: chatCallTr(context, 'chatCall_warning', fallback: 'Warning'),
+        message: chatCallTr(context, 'chatCall_groupNameMustBeAtLeast', fallback: 'Group name must be at least 2 characters'),
       );
       return;
     }
@@ -431,8 +552,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
     if (trimmedName.length > 255) {
       EnhancedToast.error(
         context,
-        title: 'Validation Error',
-        message: 'Group name must be 255 characters or less',
+        title: chatCallTr(context, 'chatCall_validationError', fallback: 'Validation Error'),
+        message: chatCallTr(context, 'chatCall_groupNameMustBe255Characters', fallback: 'Group name must be 255 characters or less'),
       );
       return;
     }
@@ -442,8 +563,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
     if (trimmedDescription.isNotEmpty && trimmedDescription.length > 500) {
       EnhancedToast.error(
         context,
-        title: 'Validation Error',
-        message: 'Description must be 500 characters or less',
+        title: chatCallTr(context, 'chatCall_validationError', fallback: 'Validation Error'),
+        message: chatCallTr(context, 'chatCall_descriptionMustBe500CharactersOr', fallback: 'Description must be 500 characters or less'),
       );
       return;
     }
@@ -453,8 +574,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
       if (_selectedMembers.length < 2) {
         EnhancedToast.warning(
           context,
-          title: 'Members Required',
-          message: 'Please select at least 2 members to create a group.',
+          title: chatCallTr(context, 'chatCall_membersRequired', fallback: 'Members Required'),
+          message: chatCallTr(context, 'chatCall_selectAtLeastTwoMembers', fallback: 'Please select at least 2 members to create a group.'),
         );
         return;
       }
@@ -486,16 +607,17 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
           });
           EnhancedToast.error(
             context,
-            title: 'Network Error',
+            title: chatCallTr(context, 'chatCall_networkError', fallback: 'Network Error'),
             message:
-                'No internet connection. Please check your network settings and try again.',
+                chatCallTr(context, 'chatCall_noInternetConnectionPleaseCheckYour', fallback: 'No internet connection. Please check your network settings and try again.'),
           );
           return;
         }
       }
 
       // Prefer context port (OneGate gate storage); fallback to sync cache.
-      final companyId = await _apiService.getSelectedSocietyId() ??
+      final companyId =
+          await _apiService.getSelectedSocietyId() ??
           ref.read(selectedFlatProvider).selectedSociety?.socId;
       if (companyId == null) {
         setState(() {
@@ -503,8 +625,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
         });
         EnhancedToast.error(
           context,
-          title: 'Error',
-          message: 'Please select a society first',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+          message: chatCallTr(context, 'chatCall_pleaseSelectSociety', fallback: 'Please select a society first'),
         );
         return;
       }
@@ -526,7 +648,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
         });
         EnhancedToast.error(
           context,
-          title: 'Validation Error',
+          title: chatCallTr(context, 'chatCall_validationError', fallback: 'Validation Error'),
           message: errors.join(', '),
         );
         return;
@@ -544,30 +666,27 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
       developer.log('📥 [CreateGroupPage] Response data: ${response.data}');
       developer.log('📥 [CreateGroupPage] Response error: ${response.error}');
 
-      // Handle response
-      if (response.success &&
-          response.data != null &&
-          response.statusCode == 201) {
+      // Handle response — trust API success + parsed room data (status may be 200/201 or omitted in body)
+      if (response.success && response.data != null) {
         // Success - convert Room to GroupChat and return
         final room = response.data!;
         final newGroup = _convertRoomToGroupChat(room);
 
         // Upload photo if selected (silent - don't block on failure)
         if (_groupIconFile != null) {
-          _uploadRoomPhotoSilently(room.id, _groupIconFile!);
+          unawaited(_uploadRoomPhotoSilently(room.id, _groupIconFile!));
         }
 
-        // Add members to room (after room creation and photo upload)
-        // This is non-blocking - group creation succeeds even if member addition fails
+        // Add members before returning so the group has >=3 members when list refreshes
         if (_selectedMembers.isNotEmpty) {
-          _addMembersToRoomSilently(room.id);
+          await _addMembersToRoomSilently(room.id);
         }
 
         // Show success toast
         EnhancedToast.success(
           context,
-          title: 'Success',
-          message: 'Group created successfully',
+          title: chatCallTr(context, 'Success', fallback: 'Success'),
+          message: chatCallTr(context, 'chatCall_groupCreatedSuccessfully2', fallback: 'Group created successfully'),
         );
 
         // Close screen and return the new group
@@ -587,30 +706,30 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
           // Validation error
           EnhancedToast.error(
             context,
-            title: 'Validation Error',
+            title: chatCallTr(context, 'chatCall_validationError', fallback: 'Validation Error'),
             message: errorMessage,
           );
         } else if (statusCode == 401) {
           // Token expired - logout
           EnhancedToast.error(
             context,
-            title: 'Authentication Error',
-            message: 'Your session has expired. Please login again.',
+            title: chatCallTr(context, 'chatCall_authError', fallback: 'Authentication Error'),
+            message: chatCallTr(context, 'chatCall_sessionExpired', fallback: 'Your session has expired. Please login again.'),
           );
           // TODO: Navigate to login screen
         } else if (statusCode == 403) {
           // Not allowed
           EnhancedToast.error(
             context,
-            title: 'Access Denied',
-            message: 'Not allowed to create group',
+            title: chatCallTr(context, 'chatCall_accessDenied', fallback: 'Access Denied'),
+            message: chatCallTr(context, 'chatCall_notAllowedToCreateGroup', fallback: 'Not allowed to create group'),
           );
         } else if (statusCode == 409) {
           // Conflict (duplicate name)
           EnhancedToast.error(
             context,
-            title: 'Conflict',
-            message: 'A group with this name already exists',
+            title: chatCallTr(context, 'chatCall_conflict', fallback: 'Conflict'),
+            message: chatCallTr(context, 'chatCall_aGroupWithThisNameAlready', fallback: 'A group with this name already exists'),
           );
         } else if (statusCode == 0) {
           // Network error - retry logic
@@ -640,9 +759,9 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
             } else {
               EnhancedToast.error(
                 context,
-                title: 'Network Error',
+                title: chatCallTr(context, 'chatCall_networkError', fallback: 'Network Error'),
                 message:
-                    'No internet connection. Please check your network settings and try again.',
+                    chatCallTr(context, 'chatCall_noInternetConnectionPleaseCheckYour', fallback: 'No internet connection. Please check your network settings and try again.'),
               );
               return;
             }
@@ -663,13 +782,13 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
 
             EnhancedToast.error(
               context,
-              title: 'Network Error',
+              title: chatCallTr(context, 'chatCall_networkError', fallback: 'Network Error'),
               message: networkMessage,
             );
           }
         } else {
           // Other errors
-          EnhancedToast.error(context, title: 'Error', message: errorMessage);
+          EnhancedToast.error(context, title: chatCallTr(context, 'chatCall_error', fallback: 'Error'), message: errorMessage);
         }
       }
     } catch (e) {
@@ -678,8 +797,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
       });
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'An unexpected error occurred: $e',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_unexpectedError', fallback: 'An unexpected error occurred: {error}', params: {'error': '$e'}),
       );
     }
   }
@@ -716,44 +835,47 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
         });
         EnhancedToast.error(
           context,
-          title: 'Error',
-          message: 'Please select a society first',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+          message: chatCallTr(context, 'chatCall_pleaseSelectSociety', fallback: 'Please select a society first'),
         );
         return;
       }
 
-      // Get room info to get existing members
+      // Get room info to get existing members (add-member mode uses cached baseline)
       RoomInfo? roomInfo;
-      try {
-        final roomInfoResponse = await _roomService.getRoomInfo(
-          roomId: roomId,
-          companyId: companyId,
-        );
-        if (roomInfoResponse.success && roomInfoResponse.data != null) {
-          roomInfo = roomInfoResponse.data;
-        }
-      } catch (e) {
-        debugPrint('⚠️ [CreateGroupPage] Failed to fetch room info: $e');
-        // Continue - we'll try to update members anyway
-      }
-
-      // Collect existing member IDs from room info
-      // BACKEND FIX: Only consider active members when determining if member already exists
-      // Inactive members can be re-added (backend will reactivate them)
       final existingMemberIds = <String>{};
-      if (roomInfo != null) {
-        // Add member IDs - only for active members
-        for (final member in roomInfo.members) {
-          // Only consider active members as "existing"
-          // Inactive members should be treated as new (will be reactivated by backend)
-          if (member.status == null ||
-              member.status!.toLowerCase() == 'active') {
-            existingMemberIds.add(member.userId);
+
+      if (widget.isAddMemberMode && _originalMemberIds.isNotEmpty) {
+        existingMemberIds.addAll(_originalMemberIds);
+        debugPrint(
+          '➕ [CreateGroupPage] Add-member mode — ${_originalMemberIds.length} existing members from cache',
+        );
+      } else {
+        try {
+          final roomInfoResponse = await _roomService.getRoomInfo(
+            roomId: roomId,
+            companyId: companyId,
+            fetchMembersIfMissing: false,
+          );
+          if (roomInfoResponse.success && roomInfoResponse.data != null) {
+            roomInfo = roomInfoResponse.data;
           }
+        } catch (e) {
+          debugPrint('⚠️ [CreateGroupPage] Failed to fetch room info: $e');
         }
-        // Add admin ID if available (admin is always active if present)
-        if (roomInfo.admin != null && roomInfo.admin!.userId != null) {
-          existingMemberIds.add(roomInfo.admin!.userId!);
+
+        if (roomInfo != null) {
+          for (final member in roomInfo.members) {
+            if (member.status == null ||
+                member.status!.toLowerCase() == 'active') {
+              existingMemberIds.add(member.userId);
+            }
+          }
+          if (roomInfo.admin != null && roomInfo.admin!.userId != null) {
+            existingMemberIds.add(roomInfo.admin!.userId!);
+          }
+        } else if (_originalMemberIds.isNotEmpty) {
+          existingMemberIds.addAll(_originalMemberIds);
         }
       }
 
@@ -791,21 +913,17 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
           );
         }
 
-        // Categorize as existing or new member based on UUID
-        // BACKEND FIX: Only active members are considered "existing"
-        // Inactive members will be treated as new and reactivated by backend
-        if (roomInfo != null && existingMemberIds.contains(member.id)) {
+        // Categorize as existing or new member
+        if (_isExistingGroupMember(member, existingMemberIds)) {
           existingMembers.add(member);
         } else {
-          // New member or inactive member being re-added - will be added/reactivated via addMembersToRoom
-          // Backend will automatically reactivate inactive members when re-added
           newMembers.add(member);
         }
       }
 
-      // Detect removed members (exist in room but not in selected members)
+      // Detect removed members (skip in add-member mode)
       final removedMembers = <String>[];
-      if (roomInfo != null) {
+      if (!widget.isAddMemberMode && roomInfo != null) {
         for (final existingId in existingMemberIds) {
           if (!selectedMemberUuids.contains(existingId)) {
             removedMembers.add(existingId);
@@ -821,9 +939,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
       int removeSuccessCount = 0;
       int removeFailureCount = 0;
 
-      // Step 1: Update existing members' metadata (name/phone) if they have numeric IDs
-      // CRITICAL: Only update if member data has actually changed from original baseline
-      // This prevents unnecessary API calls and false "updates" from just loading data
+      // Step 1: Update existing members' metadata (skip in add-member mode)
+      if (!widget.isAddMemberMode) {
       for (final member in existingMembers) {
         // Resolve numeric user ID - required for API call
         int? numericUserId = member.numericUserId;
@@ -930,6 +1047,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
           );
         }
       }
+      }
 
       // Step 2: Remove members that were deselected
       for (final removedMemberUuid in removedMembers) {
@@ -988,7 +1106,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
           final skippedMembers = <String>[];
 
           for (final member in newMembers) {
-            final userId = member.numericUserId ?? int.tryParse(member.id);
+            final userId = _resolveNumericUserId(member, roomId, companyId);
             if (userId == null) {
               // Skip members without numeric ID - API requirement
               skippedMembers.add(member.name);
@@ -1035,9 +1153,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
             try {
               // Only include members that were actually sent to API (not skipped due to missing numeric IDs)
               final addedMembers = newMembers.where((member) {
-                final userId = member.numericUserId ?? int.tryParse(member.id);
-                return userId !=
-                    null; // Only members with valid numeric IDs for API
+                return _resolveNumericUserId(member, roomId, companyId) != null;
               }).toList();
 
               // Convert added members to RoomInfoMember format
@@ -1167,25 +1283,33 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
           message = 'Group updated: ${parts.join(', ')}';
         }
 
-        EnhancedToast.success(context, title: 'Success', message: message);
+        EnhancedToast.success(context, title: chatCallTr(context, 'Success', fallback: 'Success'), message: message);
       } else if (totalSuccess > 0 && totalFailure > 0) {
         EnhancedToast.warning(
           context,
-          title: 'Partial Success',
-          message: '$totalSuccess succeeded, $totalFailure failed',
+          title: chatCallTr(context, 'chatCall_partialSuccess', fallback: 'Partial Success'),
+          message: chatCallTr(
+            context,
+            'chatCall_partialSuccessSummary',
+            fallback: '{success} succeeded, {failure} failed',
+            params: {
+              'success': '$totalSuccess',
+              'failure': '$totalFailure',
+            },
+          ),
         );
       } else if (totalFailure > 0) {
         EnhancedToast.error(
           context,
-          title: 'Error',
-          message: 'Failed to update group. Please try again.',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+          message: chatCallTr(context, 'chatCall_failedToUpdateGroupPleaseTry', fallback: 'Failed to update group. Please try again.'),
         );
       } else if (totalSuccess == 0 && totalFailure == 0) {
         // No changes were attempted or all were skipped due to missing data
         EnhancedToast.info(
           context,
-          title: 'No Changes',
-          message: 'No member edits detected. No updates were needed.',
+          title: chatCallTr(context, 'chatCall_noChanges', fallback: 'No Changes'),
+          message: chatCallTr(context, 'chatCall_noMemberEditsDetectedNoUpdates', fallback: 'No member edits detected. No updates were needed.'),
         );
       }
 
@@ -1202,7 +1326,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
 
       // Upload photo if selected (silent - don't block on failure)
       if (_groupIconFile != null) {
-        _uploadRoomPhotoSilently(roomId, _groupIconFile!);
+        await _uploadRoomPhotoSilently(roomId, _groupIconFile!);
       }
 
       // Mark group as updated ONLY if membership changes actually succeeded
@@ -1245,14 +1369,17 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
       });
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'An unexpected error occurred: $e',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_unexpectedError', fallback: 'An unexpected error occurred: {error}', params: {'error': '$e'}),
       );
     }
   }
 
   /// Convert Room to GroupChat for UI compatibility
   GroupChat _convertRoomToGroupChat(Room room) {
+    final memberCount = room.membersCount != null && room.membersCount! > 0
+        ? room.membersCount
+        : 1 + _selectedMembers.length;
     return GroupChat(
       id: room.id,
       name: room.name,
@@ -1263,6 +1390,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
       creatorId: room.createdBy,
       createdByUserId: room.createdByUserId, // Pass numeric user ID
       members: _selectedMembers, // Keep selected members if any
+      memberCount: memberCount,
       createdAt: room.createdAt,
       lastMessageTime: room.updatedAt,
     );
@@ -1273,7 +1401,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
   /// is still considered successful.
   Future<void> _uploadRoomPhotoSilently(String roomId, File photoFile) async {
     try {
-      final companyId = await _apiService.getSelectedSocietyId() ??
+      final companyId =
+          await _apiService.getSelectedSocietyId() ??
           ref.read(selectedFlatProvider).selectedSociety?.socId;
       if (companyId == null) {
         debugPrint(
@@ -1282,76 +1411,25 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
         return;
       }
 
-      // First, upload the file to get a URL
-      // For now, we'll skip photo upload if file upload fails
-      // In a production app, you would upload to an image hosting service
-      // and get the URL back
-      String? imageUrl;
-      try {
-        imageUrl = await _uploadImageFileToGetUrl(photoFile);
-      } catch (e) {
+      // Upload photo file directly via multipart API
+      final response = await _roomService.uploadRoomPhotoFile(
+        roomId: roomId,
+        photoFile: photoFile,
+        companyId: companyId,
+        isPrimary: true,
+      );
+      if (response.success) {
         debugPrint(
-          '⚠️ [CreateGroup] Failed to upload image file to get URL: $e',
+          '✅ [CreateGroup] Photo uploaded successfully for room: $roomId',
         );
-        // Continue silently - photo upload is optional
-        return;
-      }
-
-      if (imageUrl == null || imageUrl.isEmpty) {
+      } else {
         debugPrint(
-          '⚠️ [CreateGroup] Image URL is empty, skipping photo upload',
+          '⚠️ [CreateGroup] Photo upload failed (silent): ${response.error}',
         );
-        return;
       }
-
-      // Upload in background - don't await or block
-      _roomService
-          .uploadRoomPhoto(
-            roomId: roomId,
-            imageUrl: imageUrl,
-            companyId: companyId,
-            isPrimary: true,
-          )
-          .then((response) {
-            if (response.success) {
-              debugPrint(
-                '✅ [CreateGroup] Photo uploaded successfully for room: $roomId',
-              );
-            } else {
-              // Silent failure - just log
-              debugPrint(
-                '⚠️ [CreateGroup] Photo upload failed (silent): ${response.error}',
-              );
-            }
-          })
-          .catchError((error) {
-            // Silent failure - just log
-            debugPrint(
-              '⚠️ [CreateGroup] Photo upload exception (silent): $error',
-            );
-          });
     } catch (e) {
       // Silent failure - just log
       debugPrint('⚠️ [CreateGroup] Photo upload error (silent): $e');
-    }
-  }
-
-  /// Upload image file to get a URL
-  /// This is a helper method to convert File to URL before calling uploadRoomPhoto
-  Future<String?> _uploadImageFileToGetUrl(File imageFile) async {
-    try {
-      // Import PostApiClient for image upload
-      // Using the same image upload service as posts
-      final dio = Dio();
-      dio.interceptors.add(AuthInterceptor(dio: dio));
-      final postApiClient = PostApiClient(dio);
-
-      final imageUrl = await postApiClient.uploadImage(imageFile);
-      debugPrint('✅ [CreateGroup] Image uploaded, URL: $imageUrl');
-      return imageUrl;
-    } catch (e) {
-      debugPrint('⚠️ [CreateGroup] Error uploading image file: $e');
-      return null;
     }
   }
 
@@ -1400,107 +1478,81 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
         '📤 [CreateGroup] Adding ${membersPayload.length} members to room: $roomId',
       );
 
-      // Add members in background - don't await or block
-      _roomService
-          .addMembersToRoom(roomId: roomId, members: membersPayload)
-          .then((response) {
-            if (response.success) {
-              debugPrint(
-                '✅ [CreateGroup] Successfully added ${membersPayload.length} members to room: $roomId',
-              );
+      final response = await _roomService.addMembersToRoom(
+        roomId: roomId,
+        members: membersPayload,
+      );
 
-              // OPTIMISTIC UPDATE: Immediately update UI with new member data
-              // This provides instant feedback without waiting for API refresh
-              try {
-                // Convert added members to RoomInfoMember format for optimistic update
-                final newRoomInfoMembers = _selectedMembers.map((contact) {
-                  return RoomInfoMember(
-                    userId: contact.id,
-                    username: contact.name,
-                    avatar: contact.photoUrl,
-                    isAdmin: false, // New members are not admins by default
-                    joinedAt: DateTime.now(),
-                    numericUserId: int.tryParse(
-                      contact.id,
-                    ), // May be null if UUID
-                  );
-                }).toList();
+      if (response.success) {
+        debugPrint(
+          '✅ [CreateGroup] Successfully added ${membersPayload.length} members to room: $roomId',
+        );
 
-                // Optimistically update RoomInfo cache
-                final RoomInfoCache roomInfoCache = RoomInfoCache();
-                roomInfoCache.addMembersOptimistically(
-                  roomId: roomId,
-                  newMembers: newRoomInfoMembers,
-                );
-
-                // Optimistically update GroupsTab member count
-                // CRITICAL FIX: Use membersPayload.length instead of _selectedMembers.length
-                // because _selectedMembers includes all members, but we only added membersPayload
-                GroupsTab.incrementGroupMemberCount(
-                  roomId,
-                  membersPayload.length,
-                );
-
-                debugPrint(
-                  '⚡ [CreateGroup] Optimistic UI update: +${membersPayload.length} members to room $roomId',
-                );
-              } catch (e) {
-                debugPrint('⚠️ [CreateGroup] Error in optimistic update: $e');
-              }
-
-              // UNIFIED CACHE STRATEGY: Optimistic update provides immediate UI feedback
-              // Background refresh ensures cache consistency without UI disruption
-              Future.delayed(const Duration(seconds: 30), () async {
-                try {
-                  final coordinator = RoomRefreshCoordinator();
-                  await coordinator.requestRefresh(
-                    roomId: roomId,
-                    source: 'background_consistency',
-                    skipIfOptimisticUpdate:
-                        false, // Allow background refresh even after optimistic
-                    refreshAction: () async {
-                      // Silent background refresh - only update cache, no UI changes
-                      final companyId = await _apiService
-                          .getSelectedSocietyId();
-                      if (companyId != null) {
-                        final response = await _roomService.getRoomInfo(
-                          roomId: roomId,
-                          companyId: companyId,
-                        );
-                        if (response.success && response.data != null) {
-                          // Update cache silently (no UI refresh)
-                          final roomInfoCache = RoomInfoCache();
-                          roomInfoCache.cacheRoomInfo(
-                            roomId: roomId,
-                            companyId: companyId,
-                            roomInfo: response.data!,
-                          );
-                          debugPrint(
-                            '🔄 [CreateGroup] Background cache refresh completed for room $roomId',
-                          );
-                        }
-                      }
-                    },
-                  );
-                } catch (e) {
-                  debugPrint(
-                    '⚠️ [CreateGroup] Error in background cache refresh: $e',
-                  );
-                }
-              });
-            } else {
-              // Silent failure - just log
-              debugPrint(
-                '⚠️ [CreateGroup] Member addition failed (silent): ${response.error}',
-              );
-            }
-          })
-          .catchError((error) {
-            // Silent failure - just log
-            debugPrint(
-              '⚠️ [CreateGroup] Member addition exception (silent): $error',
+        // OPTIMISTIC UPDATE: Immediately update UI with new member data
+        try {
+          final newRoomInfoMembers = _selectedMembers.map((contact) {
+            return RoomInfoMember(
+              userId: contact.id,
+              username: contact.name,
+              avatar: contact.photoUrl,
+              isAdmin: false,
+              joinedAt: DateTime.now(),
+              numericUserId: contact.numericUserId ??
+                  int.tryParse(contact.id),
             );
-          });
+          }).toList();
+
+          final RoomInfoCache roomInfoCache = RoomInfoCache();
+          roomInfoCache.addMembersOptimistically(
+            roomId: roomId,
+            newMembers: newRoomInfoMembers,
+          );
+
+          GroupsTab.incrementGroupMemberCount(
+            roomId,
+            membersPayload.length,
+          );
+
+          debugPrint(
+            '⚡ [CreateGroup] Optimistic UI update: +${membersPayload.length} members to room $roomId',
+          );
+        } catch (e) {
+          debugPrint('⚠️ [CreateGroup] Error in optimistic update: $e');
+        }
+
+        Future.delayed(const Duration(seconds: 30), () async {
+          try {
+            final coordinator = RoomRefreshCoordinator();
+            await coordinator.requestRefresh(
+              roomId: roomId,
+              source: 'background_consistency',
+              skipIfOptimisticUpdate: false,
+              refreshAction: () async {
+                final companyId = await _apiService.getSelectedSocietyId();
+                if (companyId != null) {
+                  final infoResponse = await _roomService.getRoomInfo(
+                    roomId: roomId,
+                    companyId: companyId,
+                  );
+                  if (infoResponse.success && infoResponse.data != null) {
+                    RoomInfoCache().applyRoomInfoUpdate(
+                      roomId: roomId,
+                      companyId: companyId,
+                      roomInfo: infoResponse.data!,
+                    );
+                  }
+                }
+              },
+            );
+          } catch (e) {
+            debugPrint('⚠️ [CreateGroup] Background refresh error: $e');
+          }
+        });
+      } else {
+        debugPrint(
+          '⚠️ [CreateGroup] Failed to add members to room: $roomId - ${response.error}',
+        );
+      }
     } catch (e) {
       // Silent failure - just log
       debugPrint('⚠️ [CreateGroup] Member addition error (silent): $e');
@@ -1572,7 +1624,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
           setState(() {
             _isLoadingMembers = false;
             _isLoadingMore = false;
-            _errorMessage = 'Please select a society first to load members';
+            _errorMessage = chatCallTr(context, 'chatCall_pleaseSelectSocietyToLoadMembers', fallback: 'Please select a society first to load members');
           });
         }
         return;
@@ -1588,7 +1640,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
           setState(() {
             _isLoadingMembers = false;
             _isLoadingMore = false;
-            _errorMessage = 'Invalid society ID. Please select a society first';
+            _errorMessage = chatCallTr(context, 'chatCall_invalidSocietyId', fallback: 'Invalid society ID. Please select a society first');
           });
         }
         return;
@@ -1642,6 +1694,11 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
           developer.log(
             '✅ [CreateGroupPage] State updated - Total residents: ${_availableResidents.length}, Has more: $_hasMore',
           );
+
+          _enrichSelectedMembersFromResidents();
+          if (_isEditMode) {
+            _realignSelectedMembersToResidentList();
+          }
         });
       }
     } catch (e, stackTrace) {
@@ -1815,6 +1872,110 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
         _isSameMember(a.id, b.numericUserId.toString())) {
       return true;
     }
+
+    final roomId = widget.groupToEdit?.id;
+    final companyId = _cachedCompanyId;
+    if (roomId != null && companyId != null) {
+      final cache = RoomInfoCache();
+      if (a.id.contains('-')) {
+        final mapped = cache.mapUuidToNumericId(roomId, a.id, companyId);
+        if (mapped != null &&
+            (mapped == b.numericUserId ||
+                _isSameMember(mapped.toString(), b.id))) {
+          return true;
+        }
+      }
+      if (b.id.contains('-')) {
+        final mapped = cache.mapUuidToNumericId(roomId, b.id, companyId);
+        if (mapped != null &&
+            (mapped == a.numericUserId ||
+                _isSameMember(mapped.toString(), a.id))) {
+          return true;
+        }
+      }
+    }
+
+    // Last resort: same resident name (UUID vs numeric member_id mismatch).
+    if (a.name.trim().isNotEmpty &&
+        b.name.trim().isNotEmpty &&
+        a.name.trim().toLowerCase() == b.name.trim().toLowerCase()) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool _isResidentSelected(IntercomContact resident) {
+    if (_selectedMembers.any((m) => _isSameMemberOrNumeric(m, resident))) {
+      return true;
+    }
+    if (!_isEditMode) return false;
+    if (_isExistingGroupMember(resident, _originalMemberIds)) {
+      return true;
+    }
+    final residentName = resident.name.trim().toLowerCase();
+    if (residentName.isEmpty) return false;
+    for (final selected in _selectedMembers) {
+      final selectedName = selected.name.trim().toLowerCase();
+      if (selectedName.isNotEmpty && selectedName == residentName) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool _isExistingGroupMember(
+    IntercomContact member,
+    Set<String> existingMemberIds,
+  ) {
+    for (final existingId in existingMemberIds) {
+      if (_isSameMember(existingId, member.id)) return true;
+      final placeholder = IntercomContact(
+        id: existingId,
+        name: '',
+        type: IntercomContactType.resident,
+        numericUserId: int.tryParse(existingId),
+      );
+      if (_isSameMemberOrNumeric(placeholder, member)) return true;
+    }
+    if (member.numericUserId != null) {
+      for (final existingId in existingMemberIds) {
+        if (_isSameMember(existingId, member.numericUserId.toString())) {
+          return true;
+        }
+      }
+      if (_originalMemberNumericIds.contains(member.numericUserId.toString())) {
+        return true;
+      }
+    }
+    final roomId = widget.groupToEdit?.id;
+    if (roomId != null && _cachedCompanyId != null) {
+      for (final existingId in existingMemberIds) {
+        if (existingId.contains('-')) {
+          final mapped = RoomInfoCache().mapUuidToNumericId(
+            roomId,
+            existingId,
+            _cachedCompanyId,
+          );
+          if (mapped != null &&
+              (mapped == member.numericUserId ||
+                  _isSameMember(mapped.toString(), member.id))) {
+            return true;
+          }
+        }
+      }
+      if (member.id.contains('-')) {
+        final mapped = RoomInfoCache().mapUuidToNumericId(
+          roomId,
+          member.id,
+          _cachedCompanyId,
+        );
+        if (mapped != null &&
+            _originalMemberNumericIds.contains(mapped.toString())) {
+          return true;
+        }
+      }
+    }
     return false;
   }
 
@@ -1827,24 +1988,9 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
       );
       EnhancedToast.info(
         context,
-        title: 'Cannot Select',
+        title: chatCallTr(context, 'chatCall_cannotSelect', fallback: 'Cannot Select'),
         message:
             '${contact.name} is not a OneApp user and cannot be added to the group',
-      );
-      return;
-    }
-
-    // CRITICAL FIX: In edit mode, prevent removing original members
-    if (_isEditMode &&
-        _isOriginalMember(contact.id, numericUserId: contact.numericUserId)) {
-      debugPrint(
-        '🔒 [CreateGroupPage] Cannot remove original member: ${contact.name} (${contact.id})',
-      );
-      // Show a toast or feedback that this member cannot be removed
-      EnhancedToast.info(
-        context,
-        title: 'Cannot Remove',
-        message: '${contact.name} is already a member and cannot be removed',
       );
       return;
     }
@@ -1906,6 +2052,51 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
         .toList();
     buildings.sort();
     return buildings;
+  }
+
+  Future<void> _startVoiceSearch() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isListening = true;
+    });
+
+    final result = await VoiceSearchLauncher.open(
+      context,
+      onTextRecognized: (text) {
+        if (!mounted) return;
+        setState(() {
+          _searchController.text = text;
+          _searchController.selection = TextSelection.fromPosition(
+            TextPosition(offset: text.length),
+          );
+        });
+      },
+      onFinalResult: (text) {
+        if (!mounted) return;
+        setState(() {
+          _searchController.text = text;
+          _searchController.selection = TextSelection.fromPosition(
+            TextPosition(offset: text.length),
+          );
+        });
+      },
+    );
+
+    if (mounted) {
+      setState(() {
+        _isListening = false;
+      });
+    }
+
+    if (mounted && result != null && result.trim().isNotEmpty) {
+      setState(() {
+        _searchController.text = result;
+        _searchController.selection = TextSelection.fromPosition(
+          TextPosition(offset: result.length),
+        );
+      });
+    }
   }
 
   // Get filtered residents based on search query and building filter
@@ -1983,7 +2174,23 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
         surfaceTintColor: Colors.white,
         titleSpacing: 0,
         title: Text(
-          _isEditMode ? 'Update Group' : 'Create Group',
+          widget.isAddMemberMode
+              ? chatCallTr(
+                  context,
+                  'chatCall_addMembers',
+                  fallback: 'Add Members',
+                )
+              : (_isEditMode
+                  ? chatCallTr(
+                      context,
+                      'chatCall_updateGroup',
+                      fallback: 'Update Group',
+                    )
+                  : chatCallTr(
+                      context,
+                      'chatCall_createGroup',
+                      fallback: 'Create Group',
+                    )),
           style: GoogleFonts.montserrat(
             color: Colors.black,
             fontSize: 18,
@@ -2035,7 +2242,23 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                         ),
                       )
                     : Text(
-                        _isEditMode ? 'UPDATE' : 'CREATE',
+                        widget.isAddMemberMode
+                            ? chatCallTr(
+                                context,
+                                'chatCall_addUpper',
+                                fallback: 'ADD',
+                              )
+                            : (_isEditMode
+                                ? chatCallTr(
+                                    context,
+                                    'chatCall_updateUpper',
+                                    fallback: 'UPDATE',
+                                  )
+                                : chatCallTr(
+                                    context,
+                                    'chatCall_createGroupUpper',
+                                    fallback: 'CREATE',
+                                  )),
                         style: GoogleFonts.montserrat(
                           color: Colors.white,
                           fontSize: 14,
@@ -2104,8 +2327,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                   size: 28,
                                 ),
                                 const SizedBox(width: 12),
-                                Text(
-                                  'Group Information',
+                                Text(chatCallTr(context, 'chatCall_groupInfo', fallback: 'Group Information'),
                                   style: GoogleFonts.montserrat(
                                     color: Colors.white,
                                     fontSize: 18,
@@ -2121,8 +2343,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                       if (!_isEditMode)
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                          child: Text(
-                            'Select at least 2 members to create a new group.',
+                          child: Text(chatCallTr(context, 'Select at least 2 members to create a new group.', fallback: 'Select at least 2 members to create a new group.'),
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade600,
@@ -2164,7 +2385,11 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                       : Colors.black87,
                                 ),
                                 decoration: InputDecoration(
-                                  hintText: 'Enter group name',
+                                  hintText: chatCallTr(
+                                    context,
+                                    'chatCall_enterGroupName',
+                                    fallback: 'Enter group name',
+                                  ),
                                   hintStyle: TextStyle(
                                     color: Colors.grey.shade400,
                                     fontSize: 14,
@@ -2221,7 +2446,11 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                       : Colors.black87,
                                 ),
                                 decoration: InputDecoration(
-                                  hintText: 'Enter group description',
+                                  hintText: chatCallTr(
+                                    context,
+                                    'chatCall_enterGroupDescription',
+                                    fallback: 'Enter group description',
+                                  ),
                                   hintStyle: TextStyle(
                                     color: Colors.grey.shade400,
                                     fontSize: 14,
@@ -2306,7 +2535,15 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              'Selected Members (${_selectedMembers.length})',
+                              chatCallTr(
+                                context,
+                                'chatCall_selectedMembersCount',
+                                fallback:
+                                    'Selected Members ({count})',
+                                params: {
+                                  'count': '${_selectedMembers.length}',
+                                },
+                              ),
                               style: GoogleFonts.montserrat(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -2438,8 +2675,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                             size: 24,
                           ),
                           const SizedBox(width: 12),
-                          Text(
-                            'Add Residents',
+                          Text(chatCallTr(context, 'chatCall_addResidents', fallback: 'Add Residents'),
                             style: GoogleFonts.montserrat(
                               color: Colors.white,
                               fontSize: 16,
@@ -2531,7 +2767,11 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                               child: TextField(
                                 controller: _searchController,
                                 decoration: InputDecoration(
-                                  hintText: 'Search residents by name',
+                                  hintText: chatCallTr(
+                                    context,
+                                    'chatCall_searchResidentsByName',
+                                    fallback: 'Search residents by name',
+                                  ),
                                   hintStyle: TextStyle(
                                     color: Colors.grey.shade400,
                                     fontSize: 14,
@@ -2554,6 +2794,29 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                   setState(() {});
                                 },
                               ),
+                            Container(
+                              margin: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: Color(0xffffebee),
+                                shape: BoxShape.circle,
+                              ),
+                              child: IconButton(
+                                icon: Icon(
+                                  _isListening ? Icons.mic : Icons.mic_none,
+                                  color: _isListening
+                                      ? Colors.red
+                                      : const Color(0xffc62828),
+                                  size: 20,
+                                ),
+                                onPressed:
+                                    _isListening ? null : _startVoiceSearch,
+                                tooltip: chatCallTr(
+                                  context,
+                                  'chatCall_voiceSearch',
+                                  fallback: 'Voice Search',
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -2563,9 +2826,9 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       child: _isLoadingMembers && _availableResidents.isEmpty
-                          ? const OneGateGlobalLoader(
-                              title: 'Loading Residents',
-                              subtitle: 'Fetching resident information...',
+                          ? OneGateGlobalLoader(
+                              title: chatCallTr(context, 'chatCall_loadingResidents', fallback: 'Loading Residents'),
+                              subtitle: chatCallTr(context, 'chatCall_fetchingResidentInformation', fallback: 'Fetching resident information...'),
                             )
                           : _errorMessage != null && _availableResidents.isEmpty
                           ? _buildErrorState()
@@ -2579,24 +2842,11 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                   itemCount: _filteredResidents.length,
                                   itemBuilder: (context, index) {
                                     final resident = _filteredResidents[index];
-                                    // CRITICAL FIX: Compare IDs properly handling both numeric and UUID formats
-                                    final isSelected = _selectedMembers.any(
-                                      (member) => _isSameMemberOrNumeric(
-                                        member,
-                                        resident,
-                                      ),
+                                    final isSelected = _isResidentSelected(
+                                      resident,
                                     );
-                                    // CRITICAL: Check if this is an original member (cannot be removed in edit mode)
-                                    final isOriginalMember =
-                                        _isEditMode &&
-                                        _isOriginalMember(
-                                          resident.id,
-                                          numericUserId: resident.numericUserId,
-                                        );
-                                    // Disable if it's an original member OR if user_id is null (not a OneApp user)
-                                    // CRITICAL: Use hasUserId field which tracks if user_id was null in API response
-                                    final isDisabled =
-                                        isOriginalMember || !resident.hasUserId;
+                                    // Disable only when contact cannot be added (not a OneApp user)
+                                    final isDisabled = !resident.hasUserId;
                                     final isNotOneApp = !resident.hasUserId;
                                     final showSelectedPill =
                                         _isEditMode &&
@@ -2709,7 +2959,16 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                       ),
                                                       if (resident.unit != null)
                                                         Text(
-                                                          'Unit ${resident.unit}',
+                                                          chatCallTr(
+                                                            context,
+                                                            'chatCall_unitLabel',
+                                                            fallback:
+                                                                'Unit {unit}',
+                                                            params: {
+                                                              'unit':
+                                                                  '${resident.unit}',
+                                                            },
+                                                          ),
                                                           style: TextStyle(
                                                             color: Colors
                                                                 .grey
@@ -2717,15 +2976,23 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                             fontSize: 12,
                                                           ),
                                                         ),
-                                                      if (isDisabled)
-                                                        Text(
-                                                          isOriginalMember
-                                                              ? 'Already a member'
-                                                              : 'Not a oneapp user',
+                                                      if (isNotOneApp)
+                                                        Text(chatCallTr(context, 'chatCall_notOneappUser', fallback: 'Not a oneapp user'),
                                                           style: TextStyle(
                                                             color: Colors
                                                                 .orange
                                                                 .shade700,
+                                                            fontSize: 12,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                        )
+                                                      else if (showSelectedPill)
+                                                        Text(chatCallTr(context, 'chatCall_alreadyAMember', fallback: 'Already a member'),
+                                                          style: TextStyle(
+                                                            color: Colors
+                                                                .grey
+                                                                .shade600,
                                                             fontSize: 12,
                                                             fontWeight:
                                                                 FontWeight.w600,
@@ -2746,8 +3013,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                       Icons.person_add_alt_1,
                                                       size: 16,
                                                     ),
-                                                    label: const Text(
-                                                      'Invite',
+                                                    label: Text(chatCallTr(context, 'chatCall_invite', fallback: 'Invite'),
                                                       style: TextStyle(
                                                         fontSize: 12,
                                                         fontWeight:
@@ -2796,8 +3062,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                                             12,
                                                           ),
                                                     ),
-                                                    child: Text(
-                                                      'Selected',
+                                                    child: Text(chatCallTr(context, 'chatCall_selected', fallback: 'Selected'),
                                                       style: TextStyle(
                                                         fontSize: 12,
                                                         fontWeight:
@@ -2860,12 +3125,12 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                       bottom: 8,
                                     ),
                                     child: _isLoadingMore
-                                        ? const SizedBox(
+                                        ? SizedBox(
                                             height: 240,
                                             child: OneGateGlobalLoader(
-                                              title: 'Loading Residents',
+                                              title: chatCallTr(context, 'chatCall_loadingResidents', fallback: 'Loading Residents'),
                                               subtitle:
-                                                  'Fetching resident information...',
+                                                  chatCallTr(context, 'chatCall_fetchingResidentInformation', fallback: 'Fetching resident information...'),
                                             ),
                                           )
                                         : ElevatedButton.icon(
@@ -2874,7 +3139,13 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                               Icons.refresh,
                                               size: 20,
                                             ),
-                                            label: const Text('Load More'),
+                                            label: Text(
+                                              chatCallTr(
+                                                context,
+                                                'chatCall_loadMore',
+                                                fallback: 'Load More',
+                                              ),
+                                            ),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor:
                                                   AppColors.primary,
@@ -2926,10 +3197,9 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  'Select Image Source',
+                child: Text(chatCallTr(context, 'Select Image Source', fallback: 'Select Image Source'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -2943,7 +3213,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                 children: [
                   _buildImageSourceOption(
                     icon: Icons.camera_alt_rounded,
-                    label: 'Camera',
+                    label: chatCallTr(context, 'chatCall_camera', fallback: 'Camera'),
                     onTap: () {
                       Navigator.pop(context);
                       _pickGroupImage(ImageSource.camera);
@@ -2951,7 +3221,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                   ),
                   _buildImageSourceOption(
                     icon: Icons.photo_library_rounded,
-                    label: 'Gallery',
+                    label: chatCallTr(context, 'chatCall_gallery', fallback: 'Gallery'),
                     onTap: () {
                       Navigator.pop(context);
                       _pickGroupImage(ImageSource.gallery);
@@ -3017,14 +3287,14 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
 
         EnhancedToast.success(
           context,
-          title: 'Success',
-          message: 'Group photo updated successfully',
+          title: chatCallTr(context, 'Success', fallback: 'Success'),
+          message: chatCallTr(context, 'chatCall_groupPhotoUpdatedSuccessfully', fallback: 'Group photo updated successfully'),
         );
       }
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
         message: 'Failed to pick image: ${e.toString()}',
       );
     }
@@ -3121,8 +3391,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
           children: [
             Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
             const SizedBox(height: 16),
-            Text(
-              'Failed to load members',
+            Text(chatCallTr(context, 'chatCall_failedToLoadMembersShort', fallback: 'Failed to load members'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -3149,7 +3418,9 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                 _loadAvailableResidents();
               },
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(
+                chatCallTr(context, 'chatCall_retry', fallback: 'Retry'),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

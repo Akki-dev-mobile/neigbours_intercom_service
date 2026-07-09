@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../../core/theme/colors.dart';
 import '../../../../core/widgets/onegate_global_loader.dart';
 import '../models/intercom_contact.dart';
 import '../chat_screen.dart';
-import '../widgets/voice_search_screen.dart';
+import '../widgets/voice_search_launcher.dart';
 import '../services/intercom_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,12 +26,13 @@ import '../services/unread_count_manager.dart';
 import '../utils/activity_preview_helper.dart';
 import '../../../../core/services/keycloak_service.dart';
 import '../widgets/call_bottom_sheet.dart';
+import '../../../../src/config/chat_call_i18n.dart';
 
 class ResidentsTab extends ConsumerStatefulWidget {
   final ValueNotifier<int>? activeTabNotifier;
   final int? tabIndex;
   final ValueNotifier<bool>?
-      loadingNotifier; // Notify parent when loading state changes
+  loadingNotifier; // Notify parent when loading state changes
 
   const ResidentsTab({
     Key? key,
@@ -73,8 +73,6 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
   // Riverpod now manages: _searchResults, _isSearching, _searchError, and UserProvider interaction
   final Debouncer _debouncer = Debouncer(milliseconds: 500);
   final ScrollController _residentScrollController = ScrollController();
-  final stt.SpeechToText _speech = stt.SpeechToText();
-  bool _isListening = false;
   String _searchQuery = '';
   List<IntercomContact> _filteredResidents = [];
 
@@ -133,7 +131,6 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _residentScrollController.addListener(_onResidentScroll);
-    _initializeSpeech();
     _loadCurrentUserIds();
     // Initialize tab activation (handles initial load and listener setup)
     initializeTabActivation();
@@ -188,7 +185,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       if (hasValidCache) {
         final cacheAge = DateTime.now().difference(_cachedData!.timestamp);
         debugPrint(
-            '✅ [ResidentsTab] Cache is valid (age: ${cacheAge.inSeconds}s), skipping API call');
+          '✅ [ResidentsTab] Cache is valid (age: ${cacheAge.inSeconds}s), skipping API call',
+        );
 
         // If cache looks truncated (previous UI pagination), force one refresh.
         if (!_didForceFullRefresh &&
@@ -196,7 +194,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                 TabConstants.kResidentsUiPageSize) {
           _didForceFullRefresh = true;
           debugPrint(
-              '🔄 [ResidentsTab] Cache may be truncated (${_cachedData!.residents.length}); forcing refresh');
+            '🔄 [ResidentsTab] Cache may be truncated (${_cachedData!.residents.length}); forcing refresh',
+          );
           _checkCacheAndLoad();
           return;
         }
@@ -206,7 +205,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
         // Re-render cached data to ensure UI is updated (handles navigation back scenario)
         if (_residents.isEmpty || _buildings.isEmpty) {
           debugPrint(
-              '🔄 [ResidentsTab] State is empty but cache is valid, re-rendering cached data (returning from navigation)');
+            '🔄 [ResidentsTab] State is empty but cache is valid, re-rendering cached data (returning from navigation)',
+          );
           _renderCachedDataIfAvailable();
         }
 
@@ -220,12 +220,14 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       // This prevents blank UI during API call
       if (_cachedData != null && (_residents.isEmpty || _buildings.isEmpty)) {
         debugPrint(
-            '🔄 [ResidentsTab] Cache expired but state is empty, showing expired cache while loading fresh data');
+          '🔄 [ResidentsTab] Cache expired but state is empty, showing expired cache while loading fresh data',
+        );
         _renderCachedDataIfAvailable(); // Show expired cache as fallback
       }
 
       debugPrint(
-          '🔄 [ResidentsTab] Cache expired/missing, triggering API call (will respect throttling)');
+        '🔄 [ResidentsTab] Cache expired/missing, triggering API call (will respect throttling)',
+      );
       _checkCacheAndLoad();
     });
   }
@@ -251,7 +253,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
   void _renderCachedDataIfAvailable() {
     if (_cachedData == null) {
       debugPrint(
-          'ℹ️ [ResidentsTab] No cached data available for immediate rendering');
+        'ℹ️ [ResidentsTab] No cached data available for immediate rendering',
+      );
       return; // No cached data
     }
 
@@ -263,7 +266,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
 
     if (hasResidents || hasBuildings) {
       debugPrint(
-          '✅ [ResidentsTab] Rendering cached data immediately on activation (${_cachedData!.residents.length} residents, ${_cachedData!.buildings.length} buildings)');
+        '✅ [ResidentsTab] Rendering cached data immediately on activation (${_cachedData!.residents.length} residents, ${_cachedData!.buildings.length} buildings)',
+      );
 
       if (mounted) {
         setState(() {
@@ -285,7 +289,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
               _residents.isNotEmpty &&
               _selectedBuildingId != null) {
             debugPrint(
-                '⚠️ [ResidentsTab] Building filter resulted in empty residents, resetting to first building');
+              '⚠️ [ResidentsTab] Building filter resulted in empty residents, resetting to first building',
+            );
             _selectedBuildingId = null;
             _ensureDefaultBuildingSelected();
             _filterResidents(resetPagination: true);
@@ -294,18 +299,21 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
           // FINAL CHECK: If still empty after reset, ensure we show all residents
           if (_filteredResidents.isEmpty && _residents.isNotEmpty) {
             debugPrint(
-                '⚠️ [ResidentsTab] Filtered residents still empty, showing all residents');
+              '⚠️ [ResidentsTab] Filtered residents still empty, showing all residents',
+            );
             _filteredResidents = List.from(_residents);
           }
         });
 
         // Log final state for debugging
         debugPrint(
-            '✅ [ResidentsTab] Cached data rendered: ${_residents.length} residents, ${_buildings.length} buildings, ${_filteredResidents.length} filtered residents');
+          '✅ [ResidentsTab] Cached data rendered: ${_residents.length} residents, ${_buildings.length} buildings, ${_filteredResidents.length} filtered residents',
+        );
       }
     } else {
       debugPrint(
-          'ℹ️ [ResidentsTab] Cached data exists but is empty - will show loading state');
+        'ℹ️ [ResidentsTab] Cached data exists but is empty - will show loading state',
+      );
       // If no cached data, ensure loading state is shown
       if (mounted) {
         setState(() {
@@ -327,7 +335,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
         (_residents.isEmpty || _buildings.isEmpty) &&
         _cachedData != null) {
       debugPrint(
-          '🔄 [ResidentsTab] didChangeDependencies: State is empty but cache exists, restoring cached data');
+        '🔄 [ResidentsTab] didChangeDependencies: State is empty but cache exists, restoring cached data',
+      );
       _renderCachedDataIfAvailable();
     }
 
@@ -344,7 +353,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       if (currentCompanyId != null &&
           currentCompanyId != _lastLoadedCompanyId) {
         debugPrint(
-            '🔄 [ResidentsTab] Company changed from $_lastLoadedCompanyId to $currentCompanyId - Clearing cache and reloading');
+          '🔄 [ResidentsTab] Company changed from $_lastLoadedCompanyId to $currentCompanyId - Clearing cache and reloading',
+        );
 
         // Clear cache and reset state
         _cachedData = null;
@@ -398,7 +408,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
         final remainingSeconds =
             (_minRequestInterval - timeSinceLastRequest).inSeconds;
         debugPrint(
-            '⏸️ [ResidentsTab] Request throttled (${remainingSeconds}s remaining)');
+          '⏸️ [ResidentsTab] Request throttled (${remainingSeconds}s remaining)',
+        );
         return; // Ignore request - too soon after last one
       }
     }
@@ -429,7 +440,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       // This ensures buildings list API (apigw.cubeone.in/api/admin/building/list)
       // and residents API are called when cache is expired or missing
       debugPrint(
-          '📡 [ResidentsTab] Cache expired/missing, loading buildings and residents from API...');
+        '📡 [ResidentsTab] Cache expired/missing, loading buildings and residents from API...',
+      );
       await Future.wait([
         _loadBuildings(token: token),
         _loadContacts(token: token),
@@ -460,7 +472,6 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     _residentScrollController.removeListener(_onResidentScroll);
     _residentScrollController.dispose();
     _debouncer.dispose();
-    _speech.stop();
     // Clean up tab activation listener
     disposeTabActivation();
     super.dispose();
@@ -479,15 +490,15 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     );
 
     // Listen to connection state changes
-    _wsConnectionSubscription = _chatService.connectionStateStream.listen(
-      (isConnected) {
-        if (mounted) {
-          setState(() {
-            _isWebSocketConnected = isConnected;
-          });
-        }
-      },
-    );
+    _wsConnectionSubscription = _chatService.connectionStateStream.listen((
+      isConnected,
+    ) {
+      if (mounted) {
+        setState(() {
+          _isWebSocketConnected = isConnected;
+        });
+      }
+    });
 
     // Initialize connection status
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -503,7 +514,10 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
   void _setupPresenceUpdates() {
     _fetchPresence();
     // Refresh presence every 30 seconds
-    _presenceTimer = Timer.periodic(const Duration(seconds: 30), (_) => _fetchPresence());
+    _presenceTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _fetchPresence(),
+    );
   }
 
   /// Fetch presence data for all contacts
@@ -520,23 +534,29 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     }
 
     try {
-      debugPrint('👥 [ResidentsTab] Fetching presence for ${userIds.length} users');
+      debugPrint(
+        '👥 [ResidentsTab] Fetching presence for ${userIds.length} users',
+      );
       final response = await _chatService.getPresence(userIds);
 
       if (response.success && response.data != null) {
         setState(() {
           _presenceMap = {
             for (var presence in response.data!)
-              presence['user_id'] as String: presence
+              presence['user_id'] as String: presence,
           };
         });
 
         // Update contact statuses with fetched presence data
         _updateContactsPresence();
 
-        debugPrint('✅ [ResidentsTab] Successfully fetched presence for ${response.data!.length} users');
+        debugPrint(
+          '✅ [ResidentsTab] Successfully fetched presence for ${response.data!.length} users',
+        );
       } else {
-        debugPrint('⚠️ [ResidentsTab] Failed to fetch presence: ${response.error}');
+        debugPrint(
+          '⚠️ [ResidentsTab] Failed to fetch presence: ${response.error}',
+        );
       }
     } catch (e) {
       debugPrint('❌ [ResidentsTab] Error fetching presence: $e');
@@ -567,7 +587,9 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
             try {
               lastSeenAt = DateTime.parse(lastSeenString);
             } catch (e) {
-              debugPrint('⚠️ [ResidentsTab] Failed to parse last_seen time: $e');
+              debugPrint(
+                '⚠️ [ResidentsTab] Failed to parse last_seen time: $e',
+              );
             }
           }
 
@@ -607,20 +629,23 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     if (roomId == null || roomId.isEmpty) return;
 
     // Handle unread_count_update events from WebSocket
-    final messageType = wsMessage.type?.toLowerCase() ??
+    final messageType =
+        wsMessage.type?.toLowerCase() ??
         wsMessage.data?['type']?.toString().toLowerCase();
     if (messageType == 'unread_count_update' ||
         wsMessage.messageTypeEnum == WebSocketMessageType.unreadCountUpdate) {
       final updateRoomId = roomId ?? wsMessage.data?['room_id']?.toString();
       final userId = wsMessage.userId ?? wsMessage.data?['user_id']?.toString();
-      final unreadCount = wsMessage.data?['unread_count'] as int? ??
+      final unreadCount =
+          wsMessage.data?['unread_count'] as int? ??
           (wsMessage.data?['unread_count'] is String
               ? int.tryParse(wsMessage.data!['unread_count'] as String)
               : null);
 
       if (updateRoomId != null && userId != null && unreadCount != null) {
         developer.log(
-            '📊 [ResidentsTab] Received unread_count_update: room=$updateRoomId, user=$userId, count=$unreadCount');
+          '📊 [ResidentsTab] Received unread_count_update: room=$updateRoomId, user=$userId, count=$unreadCount',
+        );
 
         // Update local unread count manager if this is for current user
         bool isForCurrentUser = false;
@@ -638,7 +663,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
             // Backend is source of truth - update local cache with exact count
             await _unreadManager.setUnreadCount(updateRoomId, unreadCount);
             developer.log(
-                '📊 [ResidentsTab] Unread count updated to $unreadCount for room $updateRoomId');
+              '📊 [ResidentsTab] Unread count updated to $unreadCount for room $updateRoomId',
+            );
           }
 
           // Update contact in residents list
@@ -660,7 +686,9 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       final statusString = wsMessage.data?['status']?.toString();
 
       if (userId != null && mounted) {
-        debugPrint('👤 [ResidentsTab] Presence update: user=$userId, online=$isOnline, status=$statusString');
+        debugPrint(
+          '👤 [ResidentsTab] Presence update: user=$userId, online=$isOnline, status=$statusString',
+        );
 
         // Update presence map with real-time data
         setState(() {
@@ -678,8 +706,9 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       return; // Don't process presence_update as regular messages
     }
 
-    developer
-        .log('📨 [ResidentsTab] Received WebSocket message for room: $roomId');
+    developer.log(
+      '📨 [ResidentsTab] Received WebSocket message for room: $roomId',
+    );
 
     // Get contact ID for this room
     final contactId = _unreadManager.getContactIdForRoom(roomId);
@@ -720,7 +749,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
 
   /// Check if a WebSocket message is a system message (should not increment unread count)
   bool _isSystemMessageFromWebSocket(WebSocketMessage wsMessage) {
-    final messageType = wsMessage.messageType?.toLowerCase() ??
+    final messageType =
+        wsMessage.messageType?.toLowerCase() ??
         wsMessage.data?['message_type']?.toString().toLowerCase();
     final eventType = wsMessage.data?['event_type']?.toString().toLowerCase();
 
@@ -787,7 +817,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     });
 
     developer.log(
-        '✅ [ResidentsTab] Updated contact $contactId: unread=$unreadCount, lastMsg=${lastMessage?.substring(0, lastMessage.length > 20 ? 20 : lastMessage.length)}');
+      '✅ [ResidentsTab] Updated contact $contactId: unread=$unreadCount, lastMsg=${lastMessage?.substring(0, lastMessage.length > 20 ? 20 : lastMessage.length)}',
+    );
   }
 
   /// Build a user-facing preview for incoming activity
@@ -800,38 +831,39 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     return preview.text;
   }
 
-  Future<void> _initializeSpeech() async {
-    bool available = await _speech.initialize(
-      onStatus: (status) {
-        if (status == 'done' || status == 'notListening') {
-          if (mounted) {
-            setState(() {
-              _isListening = false;
-            });
+  // Start voice listening
+  Future<void> _startListening() async {
+    await VoiceSearchLauncher.open(
+      context,
+      onTextRecognized: (text) {
+        if (mounted) {
+          setState(() {
+            _searchController.text = text;
+            _searchController.selection = TextSelection.fromPosition(
+              TextPosition(offset: text.length),
+            );
+            _searchQuery = text;
+            _filterResidents(resetPagination: true);
+          });
+        }
+      },
+      onFinalResult: (text) {
+        if (mounted) {
+          setState(() {
+            _searchController.text = text;
+            _searchController.selection = TextSelection.fromPosition(
+              TextPosition(offset: text.length),
+            );
+            _searchQuery = text;
+            _filterResidents(resetPagination: true);
+          });
+
+          if (text.isNotEmpty) {
+            _performSearch();
           }
         }
       },
-      onError: (error) {
-        if (mounted) {
-          setState(() {
-            _isListening = false;
-          });
-          EnhancedToast.error(
-            context,
-            title: 'Speech Recognition Error',
-            message: error.errorMsg,
-          );
-        }
-      },
     );
-
-    if (!available && mounted) {
-      EnhancedToast.warning(
-        context,
-        title: 'Speech Recognition',
-        message: 'Speech recognition is not available on this device.',
-      );
-    }
   }
 
   Future<void> _loadBuildings({TabCancellationToken? token}) async {
@@ -842,7 +874,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       token = tryAcquireRequestLock();
       if (token == null) {
         debugPrint(
-            '⏸️ [ResidentsTab] Request lock already held for buildings, skipping');
+          '⏸️ [ResidentsTab] Request lock already held for buildings, skipping',
+        );
         return;
       }
       shouldReleaseLock = true;
@@ -862,13 +895,15 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       // Check if token is still valid
       if (!token.isValid(lifecycleController.generation)) {
         debugPrint(
-            '⏹️ [ResidentsTab] Tab became inactive during buildings load, cancelling');
+          '⏹️ [ResidentsTab] Tab became inactive during buildings load, cancelling',
+        );
         return;
       }
 
       if (societyId == null) {
         debugPrint(
-            '⚠️ [ResidentsTab] No society ID found, cannot load buildings');
+          '⚠️ [ResidentsTab] No society ID found, cannot load buildings',
+        );
         if (mounted) {
           setState(() {
             _isLoadingBuildings = false;
@@ -879,9 +914,11 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
 
       debugPrint('🏢 [ResidentsTab] Loading buildings for society: $societyId');
       debugPrint(
-          '🌐 [ResidentsTab] API URL: https://apigw.cubeone.in/api/admin/building/list?page=1&per_page=${TabConstants.kBuildingsPerPage}');
+        '🌐 [ResidentsTab] API URL: https://apigw.cubeone.in/api/admin/building/list?page=1&per_page=${TabConstants.kBuildingsPerPage}',
+      );
       debugPrint(
-          '🔑 [ResidentsTab] Using cookies: id_token, x-access-token, company_id (handled by SocietyBackendApiService)');
+        '🔑 [ResidentsTab] Using cookies: id_token, x-access-token, company_id (handled by SocietyBackendApiService)',
+      );
       final response = await _societyBackendApiService.getBuildings(
         page: 1,
         perPage: TabConstants.kBuildingsPerPage,
@@ -891,7 +928,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       // Check token validity again before updating state
       if (!token.isValid(lifecycleController.generation)) {
         debugPrint(
-            '⏹️ [ResidentsTab] Tab became inactive after buildings load, discarding result');
+          '⏹️ [ResidentsTab] Tab became inactive after buildings load, discarding result',
+        );
         return;
       }
 
@@ -903,7 +941,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
           _ensureDefaultBuildingSelected();
           _isLoadingBuildings = false;
           debugPrint(
-              '✅ [ResidentsTab] Loaded ${_buildings.length} buildings from API');
+            '✅ [ResidentsTab] Loaded ${_buildings.length} buildings from API',
+          );
         });
 
         // Update cache with buildings (if we have residents, update cache)
@@ -936,8 +975,10 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     }
   }
 
-  Future<void> _loadContacts(
-      {TabCancellationToken? token, String? buildingIdOverride}) async {
+  Future<void> _loadContacts({
+    TabCancellationToken? token,
+    String? buildingIdOverride,
+  }) async {
     // Token should be provided by caller (from _checkCacheAndLoad)
     // If not provided, this is a standalone call - acquire lock
     bool shouldReleaseLock = false;
@@ -945,7 +986,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       token = tryAcquireRequestLock();
       if (token == null) {
         debugPrint(
-            '⏸️ [ResidentsTab] Request lock already held for contacts, skipping');
+          '⏸️ [ResidentsTab] Request lock already held for contacts, skipping',
+        );
         return;
       }
       shouldReleaseLock = true;
@@ -962,13 +1004,15 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     try {
       debugPrint('👥 [ResidentsTab] Loading residents from API...');
       debugPrint(
-          '🌐 [ResidentsTab] API: SocietyBackendApiService.getMembers() -> /admin/member/list');
+        '🌐 [ResidentsTab] API: SocietyBackendApiService.getMembers() -> /admin/member/list',
+      );
 
       // Match CreateGroupPage member list API usage exactly
       final selectedSocietyId = await _apiService.getSelectedSocietyId();
       if (selectedSocietyId == null) {
         debugPrint(
-            '⚠️ [ResidentsTab] No society ID found, cannot load members');
+          '⚠️ [ResidentsTab] No society ID found, cannot load members',
+        );
         if (mounted) {
           setState(() {
             _isLoading = false;
@@ -978,8 +1022,9 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       }
 
       final buildingId = buildingIdOverride ?? _selectedBuildingId;
-      final buildingIdInt =
-          buildingId != null ? int.tryParse(buildingId) : null;
+      final buildingIdInt = buildingId != null
+          ? int.tryParse(buildingId)
+          : null;
 
       final residents = await _intercomService.getResidents(
         companyId: selectedSocietyId,
@@ -989,7 +1034,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       // Check token validity before updating state
       if (!token.isValid(lifecycleController.generation)) {
         debugPrint(
-            '⏹️ [ResidentsTab] Tab became inactive during contacts load, discarding result');
+          '⏹️ [ResidentsTab] Tab became inactive during contacts load, discarding result',
+        );
         return;
       }
 
@@ -1034,11 +1080,13 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
           // Handle rate limit gracefully
           if (_residents.isNotEmpty) {
             debugPrint(
-                '✅ [ResidentsTab] Rate limited (429) - showing cached data (${_residents.length} residents)');
+              '✅ [ResidentsTab] Rate limited (429) - showing cached data (${_residents.length} residents)',
+            );
             // Silently use cached data - no error toast
           } else {
             debugPrint(
-                '⚠️ [ResidentsTab] Rate limited (429) - no cached data, will retry silently');
+              '⚠️ [ResidentsTab] Rate limited (429) - no cached data, will retry silently',
+            );
             // Don't show toast - just log it and let the system retry
             // The user will see the loading state, and data will load when retry succeeds
           }
@@ -1048,8 +1096,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
           if (_residents.isEmpty) {
             EnhancedToast.error(
               context,
-              title: 'Error',
-              message: 'Failed to load residents: ${e.toString()}',
+              title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+              message: chatCallTr(context, 'chatCall_failedToLoadResidents', fallback: 'Failed to load residents: {error}', params: {'error': e.toString()}),
             );
           } else {
             // If we have cached data, show a less intrusive error
@@ -1079,7 +1127,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
           _selectedBuildingId,
       orElse: () => <String, dynamic>{},
     );
-    final buildingName = selectedBuilding['soc_building_name']?.toString() ??
+    final buildingName =
+        selectedBuilding['soc_building_name']?.toString() ??
         selectedBuilding['building_name']?.toString() ??
         _selectedBuildingId;
     final buildingId = _selectedBuildingId?.toString();
@@ -1097,10 +1146,14 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
           return true;
         }
         if (buildingName != null) {
-          final normalizedResident =
-              residentBuilding.toLowerCase().replaceAll(' ', '');
-          final normalizedSelected =
-              buildingName.toLowerCase().replaceAll(' ', '');
+          final normalizedResident = residentBuilding.toLowerCase().replaceAll(
+            ' ',
+            '',
+          );
+          final normalizedSelected = buildingName.toLowerCase().replaceAll(
+            ' ',
+            '',
+          );
           if (normalizedResident == normalizedSelected) {
             return true;
           }
@@ -1121,8 +1174,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
         }
         if (extractedBuilding != null &&
             extractedBuilding.isNotEmpty &&
-            extractedBuilding.toLowerCase() ==
-                buildingName.toLowerCase()) {
+            extractedBuilding.toLowerCase() == buildingName.toLowerCase()) {
           return true;
         }
       }
@@ -1139,14 +1191,15 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
   }
 
   Map<String, List<IntercomContact>> _groupResidents(
-      List<IntercomContact> residents) {
+    List<IntercomContact> residents,
+  ) {
     final Map<String, List<IntercomContact>> result = {};
 
     for (final resident in residents) {
       final buildingText =
           resident.building != null && resident.building!.isNotEmpty
-              ? resident.building!
-              : 'Building';
+          ? resident.building!
+          : chatCallTr(context, 'chatCall_building', fallback: 'Building');
       final key = resident.floor != null && resident.floor!.isNotEmpty
           ? '$buildingText - Floor ${resident.floor}'
           : buildingText;
@@ -1201,11 +1254,14 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
       final query = _searchQuery.toLowerCase();
       _filteredResidents = buildingFiltered.where((resident) {
         final matchesName = resident.name.toLowerCase().contains(query);
-        final matchesUnit = resident.unit != null &&
+        final matchesUnit =
+            resident.unit != null &&
             resident.unit!.toLowerCase().contains(query);
-        final matchesBuilding = resident.building != null &&
+        final matchesBuilding =
+            resident.building != null &&
             resident.building!.toLowerCase().contains(query);
-        final matchesPhone = resident.phoneNumber != null &&
+        final matchesPhone =
+            resident.phoneNumber != null &&
             resident.phoneNumber!.toLowerCase().contains(query);
 
         return matchesName || matchesUnit || matchesBuilding || matchesPhone;
@@ -1267,8 +1323,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     if (_preferAllBuildings) return;
     if (_selectedBuildingId != null || _buildings.isEmpty) return;
     final first = _buildings.first;
-    final id =
-        first['id']?.toString() ?? first['soc_building_id']?.toString();
+    final id = first['id']?.toString() ?? first['soc_building_id']?.toString();
     if (id == null || id.trim().isEmpty) return;
     _selectedBuildingId = id;
   }
@@ -1277,71 +1332,12 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     _debouncer.run(_performSearch);
   }
 
-  // Start voice listening
-  Future<void> _startListening() async {
-    final result = await NavigationHelper.pushRoute<String>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => VoiceSearchScreen(
-          onTextRecognized: (text) {
-            // Update search field with recognized text in real-time
-            if (mounted) {
-              setState(() {
-                _searchController.text = text;
-                _searchController.selection = TextSelection.fromPosition(
-                  TextPosition(offset: text.length),
-                );
-                _searchQuery = text;
-                _filterResidents(resetPagination: true);
-              });
-            }
-          },
-          onFinalResult: (text) {
-            // Final result - set text and filter
-            if (mounted) {
-              setState(() {
-                _searchController.text = text;
-                _searchController.selection = TextSelection.fromPosition(
-                  TextPosition(offset: text.length),
-                );
-                _searchQuery = text;
-                _filterResidents(resetPagination: true);
-              });
-
-              // Trigger search if text is not empty
-              if (text.isNotEmpty) {
-                _performSearch();
-              }
-            }
-          },
-        ),
-      ),
-    );
-
-    // Update state after returning from voice search screen
-    if (mounted && result != null) {
-      setState(() {
-        _isListening = false;
-      });
-    }
-  }
-
-  // Stop voice listening
-  void _stopListening() {
-    _speech.stop();
-    if (mounted) {
-      setState(() {
-        _isListening = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _residents.isEmpty) {
-      return const OneGateGlobalLoader(
-        title: 'Loading Residents',
-        subtitle: 'Fetching resident information...',
+      return OneGateGlobalLoader(
+        title: chatCallTr(context, 'chatCall_loadingResidents', fallback: 'Loading Residents'),
+        subtitle: chatCallTr(context, 'chatCall_fetchingResidentInformation', fallback: 'Fetching resident information...'),
       );
     }
     final visibleResidents = _filteredResidents
@@ -1349,23 +1345,21 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
         .toList();
     final groups = _groupResidents(visibleResidents);
     final sortedKeys = groups.keys.toList()..sort();
-    final buildingsForChips =
-        _buildings.isNotEmpty ? _buildings : _deriveBuildingsFromResidents();
+    final buildingsForChips = _buildings.isNotEmpty
+        ? _buildings
+        : _deriveBuildingsFromResidents();
     final buildingTotals = <String, int>{};
     for (final resident in _filteredResidents) {
       final buildingName =
           resident.building != null && resident.building!.isNotEmpty
-              ? resident.building!
-              : 'Building';
-      buildingTotals[buildingName] =
-          (buildingTotals[buildingName] ?? 0) + 1;
+          ? resident.building!
+          : chatCallTr(context, 'chatCall_building', fallback: 'Building');
+      buildingTotals[buildingName] = (buildingTotals[buildingName] ?? 0) + 1;
     }
 
     return SafeArea(
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-        ),
+        decoration: const BoxDecoration(color: Colors.white),
         child: Column(
           children: [
             // Building filter chips
@@ -1382,7 +1376,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                       padding: const EdgeInsets.only(right: 8),
                       child: FilterChip(
                         label: Text(
-                          'All',
+                          chatCallTr(context, 'chatCall_allLabel', fallback: 'All'),
                           style: TextStyle(
                             color: _selectedBuildingId == null
                                 ? Colors.white
@@ -1407,7 +1401,9 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                         pressElevation: 0,
                         shadowColor: Colors.transparent,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         shape: StadiumBorder(
                           side: BorderSide(
                             color: _selectedBuildingId == null
@@ -1428,69 +1424,68 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       )
-                    else
-                      ...[
-                        ...buildingsForChips.map((building) {
-                          final buildingId = building['id']?.toString() ??
-                              building['soc_building_id']?.toString();
-                          final buildingName =
-                              building['soc_building_name']?.toString() ??
-                                  building['building_name']?.toString() ??
-                                  'Building';
-                          final isSelected = buildingId == _selectedBuildingId;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              label: Text(
-                                buildingName,
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : Colors.grey.shade800,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
+                    else ...[
+                      ...buildingsForChips.map((building) {
+                        final buildingId =
+                            building['id']?.toString() ??
+                            building['soc_building_id']?.toString();
+                        final buildingName =
+                            building['soc_building_name']?.toString() ??
+                            building['building_name']?.toString() ??
+                            chatCallTr(context, 'chatCall_building', fallback: 'Building');
+                        final isSelected = buildingId == _selectedBuildingId;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            label: Text(
+                              buildingName,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.grey.shade800,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
                               ),
-                              selected: isSelected,
-                              onSelected: (_) {
-                                final nextId = isSelected ? null : buildingId;
-                                final nextIdInt = nextId != null
-                                    ? int.tryParse(nextId)
-                                    : null;
-                                setState(() {
-                                  _selectedBuildingId = nextId;
-                                  _isBuildingScopedFetch =
-                                      nextIdInt != null;
-                                });
-                                _filterResidents(resetPagination: true);
-                                if (nextIdInt != null) {
-                                  _loadContacts(
-                                    buildingIdOverride: nextId,
-                                  );
-                                }
-                              },
-                              backgroundColor: Colors.white,
-                              selectedColor: const Color(0xffc62828),
-                              checkmarkColor: Colors.white,
-                              showCheckmark: false,
-                              elevation: 0,
-                              pressElevation: 0,
-                              shadowColor: Colors.transparent,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 10),
-                              shape: StadiumBorder(
-                                side: BorderSide(
-                                  color: isSelected
-                                      ? Colors.transparent
-                                      : Colors.grey.withOpacity(0.3),
-                                ),
-                              ),
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
                             ),
-                          );
-                        }).toList(),
-                      ],
+                            selected: isSelected,
+                            onSelected: (_) {
+                              final nextId = isSelected ? null : buildingId;
+                              final nextIdInt = nextId != null
+                                  ? int.tryParse(nextId)
+                                  : null;
+                              setState(() {
+                                _selectedBuildingId = nextId;
+                                _isBuildingScopedFetch = nextIdInt != null;
+                              });
+                              _filterResidents(resetPagination: true);
+                              if (nextIdInt != null) {
+                                _loadContacts(buildingIdOverride: nextId);
+                              }
+                            },
+                            backgroundColor: Colors.white,
+                            selectedColor: const Color(0xffc62828),
+                            checkmarkColor: Colors.white,
+                            showCheckmark: false,
+                            elevation: 0,
+                            pressElevation: 0,
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            shape: StadiumBorder(
+                              side: BorderSide(
+                                color: isSelected
+                                    ? Colors.transparent
+                                    : Colors.grey.withOpacity(0.3),
+                              ),
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        );
+                      }).toList(),
+                    ],
                   ],
                 ),
               ),
@@ -1520,7 +1515,11 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                     child: TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
-                        hintText: 'Search residents...',
+                        hintText: chatCallTr(
+                          context,
+                          'chatCall_searchResidentsHint',
+                          fallback: 'Search residents...',
+                        ),
                         hintStyle: TextStyle(
                           color: Colors.grey.shade400,
                           fontSize: 14,
@@ -1536,15 +1535,17 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: Icon(
-                        _isListening ? Icons.mic : Icons.mic_none,
-                        color:
-                            _isListening ? Colors.red : const Color(0xffc62828),
+                      icon: const Icon(
+                        Icons.mic_none,
+                        color: Color(0xffc62828),
                         size: 20,
                       ),
-                      onPressed:
-                          _isListening ? _stopListening : _startListening,
-                      tooltip: 'Voice Search',
+                      onPressed: _startListening,
+                      tooltip: chatCallTr(
+                        context,
+                        'chatCall_voiceSearch',
+                        fallback: 'Voice Search',
+                      ),
                     ),
                   ),
                 ],
@@ -1554,125 +1555,126 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
             // Contact list grouped by floor with improved styling
             Expanded(
               child: _isLoading
-                  ? const OneGateGlobalLoader(
-                      title: 'Loading Residents',
-                      subtitle: 'Fetching resident information...',
+                  ? OneGateGlobalLoader(
+                      title: chatCallTr(context, 'chatCall_loadingResidents', fallback: 'Loading Residents'),
+                      subtitle: chatCallTr(context, 'chatCall_fetchingResidentInformation', fallback: 'Fetching resident information...'),
                     )
                   : groups.isEmpty
-                      ? _searchQuery.isNotEmpty
-                          ? _buildEmptyState(
-                              icon: Icons.search_off,
-                              title: 'No residents found',
-                              subtitle:
-                                  'No residents match your search query. Try a different search term.',
-                            )
-                          : _selectedBuildingId != null
-                              ? _buildEmptyState(
-                                  icon: Icons.people_outline,
-                                  title: 'No residents found',
-                                  subtitle:
-                                      'Select a different building to view residents',
-                                )
-                              : _buildEmptyState(
-                                  icon: Icons.people_outline,
-                                  title: 'No residents',
-                                  subtitle: 'No residents available',
-                                )
-                      : ListView.builder(
-                          controller: _residentScrollController,
-                          itemCount: sortedKeys.length +
-                              (_isLoadingMoreResidents ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (_isLoadingMoreResidents &&
-                                index == sortedKeys.length) {
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 12),
-                                child: Center(
-                                  child: OneGateGlobalLoaderIcon(size: 42),
+                  ? _searchQuery.isNotEmpty
+                        ? _buildEmptyState(
+                            icon: Icons.search_off,
+                            title: chatCallTr(context, 'chatCall_noResidentsFound', fallback: 'No residents found'),
+                            subtitle:
+                                chatCallTr(context, 'chatCall_noResidentsMatchSearch', fallback: 'No residents match your search query. Try a different search term.'),
+                          )
+                        : _selectedBuildingId != null
+                        ? _buildEmptyState(
+                            icon: Icons.people_outline,
+                            title: chatCallTr(context, 'chatCall_noResidentsFound', fallback: 'No residents found'),
+                            subtitle:
+                                chatCallTr(context, 'chatCall_selectDifferentBuilding', fallback: 'Select a different building to view residents'),
+                          )
+                        : _buildEmptyState(
+                            icon: Icons.people_outline,
+                            title: chatCallTr(context, 'chatCall_noResidents', fallback: 'No residents'),
+                            subtitle: chatCallTr(context, 'chatCall_noResidentsAvailable', fallback: 'No residents available'),
+                          )
+                  : ListView.builder(
+                      controller: _residentScrollController,
+                      itemCount:
+                          sortedKeys.length + (_isLoadingMoreResidents ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (_isLoadingMoreResidents &&
+                            index == sortedKeys.length) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Center(
+                              child: OneGateGlobalLoaderIcon(size: 42),
+                            ),
+                          );
+                        }
+
+                        final key = sortedKeys[index];
+                        final residentsInGroup = groups[key]!;
+                        final buildingName = key.split(' - Floor ').first;
+                        final totalForBuilding =
+                            buildingTotals[buildingName] ??
+                            residentsInGroup.length;
+                        // The following Container was previously misplaced with a 'return'
+                        return Container(
+                          padding: const EdgeInsets.all(8),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            // gradient: AppColors.lightGradient,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Group header with gradient background
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
                                 ),
-                              );
-                            }
-
-                            final key = sortedKeys[index];
-                            final residentsInGroup = groups[key]!;
-                            final buildingName = key.split(' - Floor ').first;
-                            final totalForBuilding =
-                                buildingTotals[buildingName] ??
-                                    residentsInGroup.length;
-                            // The following Container was previously misplaced with a 'return'
-                            return Container(
-                              padding: const EdgeInsets.all(8),
-                              margin: const EdgeInsets.only(bottom: 16),
-                              decoration: BoxDecoration(
-                                // gradient: AppColors.lightGradient,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Group header with gradient background
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 12),
-                                    // decoration: BoxDecoration(
-                                    //   gradient: AppColors.lightGradient,
-                                    //   border: Border(
-                                    //     bottom: BorderSide(
-                                    //       color: Colors.grey.shade200,
-                                    //       width: 1,
-                                    //     ),
-                                    //   ),
-                                    // ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Building name label (left side)
-                                        Expanded(
-                                          child: Text(
-                                            key,
-                                            style: const TextStyle(
-                                              color: Colors.black87,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 18,
-                                            ),
-                                          ),
+                                // decoration: BoxDecoration(
+                                //   gradient: AppColors.lightGradient,
+                                //   border: Border(
+                                //     bottom: BorderSide(
+                                //       color: Colors.grey.shade200,
+                                //       width: 1,
+                                //     ),
+                                //   ),
+                                // ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Building name label (left side)
+                                    Expanded(
+                                      child: Text(
+                                        key,
+                                        style: const TextStyle(
+                                          color: Colors.black87,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
                                         ),
-                                        // Resident count badge (right side, opposite to building label)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xffffebee),
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                          ),
-                                          child: Text(
-                                            '$totalForBuilding residents',
-                                            style: TextStyle(
-                                              color: const Color(0xffc62828),
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                      ),
                                     ),
-                                  ),
-
-                                  // List of residents in this group
-                                  ...residentsInGroup.map((resident) =>
-                                      _buildResidentItem(resident)),
-                                ],
+                                    // Resident count badge (right side, opposite to building label)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xffffebee),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        chatCallTr(context, 'chatCall_residentsCount', fallback: '{count} residents', params: {'count': '$totalForBuilding'}),
+                                        style: TextStyle(
+                                          color: const Color(0xffc62828),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            );
-                          },
-                        ),
+
+                              // List of residents in this group
+                              ...residentsInGroup.map(
+                                (resident) => _buildResidentItem(resident),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -1713,30 +1715,27 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     } else {
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'No phone number available for ${contact.name}',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_noPhoneForContact', fallback: 'No phone number available for {name}', params: {'name': contact.name}),
       );
     }
   }
 
   Future<void> _launchPhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: phoneNumber,
-    );
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
     try {
       await launchUrl(launchUri);
     } catch (e) {
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Could not launch phone dialer: $e',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_couldNotLaunchDialer', fallback: 'Could not launch phone dialer: {error}', params: {'error': '$e'}),
       );
     }
   }
 
   /// Show popup menu with Audio and Video Call options using Jitsi SDK
-  /// 
+  ///
   /// This method shows the CallBottomSheet which:
   /// - Displays audio and video call options
   /// - Handles permissions
@@ -1747,29 +1746,32 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
     String displayName = 'User';
     String? userEmail;
     String? avatarUrl;
-    
+
     try {
       final userData = await KeycloakService.getUserData();
       if (userData != null) {
-        displayName = userData['name'] as String? ?? 
-                      userData['preferred_username'] as String? ?? 
-                      'User';
+        displayName =
+            userData['name'] as String? ??
+            userData['preferred_username'] as String? ??
+            'User';
         userEmail = userData['email'] as String?;
       }
     } catch (e) {
       debugPrint('⚠️ [ResidentsTab] Error getting user data: $e');
     }
-    
+
     if (!mounted) return;
-    
+
     // Show the call bottom sheet
-    unawaited(CallBottomSheet.show(
-      context: context,
-      contact: contact,
-      displayName: displayName,
-      avatarUrl: avatarUrl,
-      userEmail: userEmail,
-    ));
+    unawaited(
+      CallBottomSheet.show(
+        context: context,
+        contact: contact,
+        displayName: displayName,
+        avatarUrl: avatarUrl,
+        userEmail: userEmail,
+      ),
+    );
   }
 
   // Note: Video call functionality is now handled by CallBottomSheet
@@ -1862,7 +1864,8 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(25),
-                      child: (resident.photoUrl != null &&
+                      child:
+                          (resident.photoUrl != null &&
                               resident.photoUrl!.isNotEmpty)
                           ? Image.network(
                               resident.photoUrl!,
@@ -1903,10 +1906,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                       decoration: BoxDecoration(
                         color: _getStatusColor(resident.status),
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 2,
-                        ),
+                        border: Border.all(color: Colors.white, width: 2),
                         boxShadow: const [
                           BoxShadow(
                             color: Colors.black12,
@@ -1968,13 +1968,13 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                         if (resident.familyMembers?.isNotEmpty ?? false)
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.red.shade50,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.red.shade100,
-                              ),
+                              border: Border.all(color: Colors.red.shade100),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -1986,7 +1986,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Family Member',
+                                  chatCallTr(context, 'chatCall_familyMember', fallback: 'Family Member'),
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
@@ -2001,7 +2001,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                     const SizedBox(height: 4),
                     // Unit info
                     Text(
-                      (resident.unit ?? 'No Unit'),
+                      (resident.unit ?? chatCallTr(context, 'chatCall_noUnit', fallback: 'No Unit')),
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 13,
@@ -2013,7 +2013,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
-                          'Not a oneapp user',
+                          chatCallTr(context, 'chatCall_notAOneappUser', fallback: 'Not a oneapp user'),
                           style: TextStyle(
                             color: Colors.orange.shade700,
                             fontSize: 12,
@@ -2027,18 +2027,19 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
               if (!resident.hasUserId) ...[
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
-                  onPressed: () =>
-                      OneAppShare.shareInvite(name: resident.name),
+                  onPressed: () => OneAppShare.shareInvite(name: resident.name),
                   icon: const Icon(Icons.person_add_alt_1, size: 16),
-                  label: const Text(
-                    'Invite',
+                  label: Text(
+                    chatCallTr(context, 'chatCall_invite', fallback: 'Invite'),
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
                     foregroundColor: Colors.white,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -2067,7 +2068,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                         : Colors.blue.shade600,
                   ),
                   label: Text(
-                    'Chat',
+                    chatCallTr(context, 'chatCall_chat', fallback: 'Chat'),
                     style: TextStyle(
                       color: !resident.hasUserId
                           ? Colors.grey.shade400
@@ -2088,16 +2089,13 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
               ),
 
               // Vertical divider
-              Container(
-                height: 24,
-                width: 1,
-                color: Colors.black12,
-              ),
+              Container(height: 24, width: 1, color: Colors.black12),
 
               // Call button - disabled if not a OneApp user
               Expanded(
                 child: TextButton(
-                  onPressed: (!resident.hasUserId ||
+                  onPressed:
+                      (!resident.hasUserId ||
                           _callStartingContactIds.contains(resident.id))
                       ? null // Disable call for non-OneApp users
                       : () => _onCallPressed(resident),
@@ -2174,14 +2172,10 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
           ),
           child: Row(
             children: [
-              const Icon(
-                Icons.family_restroom,
-                size: 16,
-                color: Colors.grey,
-              ),
+              const Icon(Icons.family_restroom, size: 16, color: Colors.grey),
               const SizedBox(width: 8),
               Text(
-                'Family Members',
+                chatCallTr(context, 'chatCall_familyMembers', fallback: 'Family Members'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
@@ -2262,10 +2256,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                   decoration: BoxDecoration(
                     color: _getStatusColor(member.status),
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 2,
-                    ),
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
                 ),
               ),
@@ -2321,10 +2312,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                 // Phone number
                 Text(
                   member.phoneNumber ?? 'No phone number',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ],
             ),
@@ -2379,15 +2367,15 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
   String _getStatusText(IntercomContactStatus? status) {
     switch (status) {
       case IntercomContactStatus.online:
-        return 'Online';
+        return chatCallTr(context, 'chatCall_online', fallback: 'Online');
       case IntercomContactStatus.busy:
-        return 'Busy';
+        return chatCallTr(context, 'chatCall_busy', fallback: 'Busy');
       case IntercomContactStatus.away:
-        return 'Away';
+        return chatCallTr(context, 'chatCall_away', fallback: 'Away');
       case IntercomContactStatus.offline:
-        return 'Offline';
+        return chatCallTr(context, 'chatCall_offline', fallback: 'Offline');
       default:
-        return 'Offline';
+        return chatCallTr(context, 'chatCall_offline', fallback: 'Offline');
     }
   }
 
@@ -2421,11 +2409,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
         borderRadius: BorderRadius.circular(18),
         child: Container(
           padding: const EdgeInsets.all(8),
-          child: Icon(
-            icon,
-            size: 18,
-            color: color,
-          ),
+          child: Icon(icon, size: 18, color: color),
         ),
       ),
     );
@@ -2461,11 +2445,7 @@ class _ResidentsTabState extends ConsumerState<ResidentsTab>
                 shape: BoxShape.circle,
                 color: Color(0xffffebee),
               ),
-              child: Icon(
-                icon,
-                size: 28,
-                color: const Color(0xffc62828),
-              ),
+              child: Icon(icon, size: 28, color: const Color(0xffc62828)),
             ),
             const SizedBox(height: 16),
             Text(

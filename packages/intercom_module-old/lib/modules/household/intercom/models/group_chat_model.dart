@@ -177,8 +177,9 @@ class GroupMessage {
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString();
 
   // Check if message has images
-  bool get hasImages => (imageFile != null) || (imageUrls != null && imageUrls!.isNotEmpty);
-  
+  bool get hasImages =>
+      (imageFile != null) || (imageUrls != null && imageUrls!.isNotEmpty);
+
   // Get first image URL (for single image display)
   String? get firstImageUrl {
     if (imageUrls != null && imageUrls!.isNotEmpty) {
@@ -213,12 +214,12 @@ class GroupMessage {
         return true;
       }
     }
-    
+
     // Priority 2: Try direct string comparison (UUID to UUID)
     if (senderId == currentUserId) {
       return true;
     }
-    
+
     // Priority 3: If numeric ID is provided, also check numeric comparison of senderId
     if (currentUserNumericId != null) {
       final senderIdInt = int.tryParse(senderId);
@@ -226,7 +227,7 @@ class GroupMessage {
         return true;
       }
     }
-    
+
     return false;
   }
 
@@ -276,7 +277,9 @@ class GroupMessage {
       videoThumbnail: videoThumbnail,
       videoUrl: videoUrl ?? this.videoUrl,
       status: status ?? this.status,
-      reactions: reactions != null ? List<MessageReaction>.from(reactions) : this.reactions,
+      reactions: reactions != null
+          ? List<MessageReaction>.from(reactions)
+          : this.reactions,
       replyTo: replyTo ?? this.replyTo,
       linkPreview: linkPreview ?? this.linkPreview,
       imageUrls: imageUrls ?? this.imageUrls,
@@ -295,10 +298,5 @@ class LinkPreview {
   final String? description;
   final String? imageUrl;
 
-  LinkPreview({
-    required this.url,
-    this.title,
-    this.description,
-    this.imageUrl,
-  });
+  LinkPreview({required this.url, this.title, this.description, this.imageUrl});
 }

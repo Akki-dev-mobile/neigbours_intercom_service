@@ -1,5 +1,5 @@
 /// Call status enum representing the lifecycle states of a call
-/// 
+///
 /// Status transitions:
 /// - initiated → answered (user joins Jitsi)
 /// - initiated → declined (user cancels before joining)
@@ -8,21 +8,21 @@
 enum CallStatus {
   /// Call has been created but not yet answered
   initiated('initiated'),
-  
+
   /// Call has been answered (Jitsi conference joined)
   answered('answered'),
-  
+
   /// Call was declined (user cancelled before joining)
   declined('declined'),
-  
+
   /// Call has ended normally (after being answered)
   ended('ended'),
-  
+
   /// Call was not answered within timeout period
   missed('missed');
 
   const CallStatus(this.value);
-  
+
   /// The string value sent to/from the backend API
   final String value;
 
@@ -56,12 +56,13 @@ enum CallStatus {
   }
 
   /// Check if the call is still active (not terminated)
-  bool get isActive => this == CallStatus.initiated || this == CallStatus.answered;
+  bool get isActive =>
+      this == CallStatus.initiated || this == CallStatus.answered;
 
   /// Check if the call has terminated
-  bool get isTerminated => 
-      this == CallStatus.declined || 
-      this == CallStatus.ended || 
+  bool get isTerminated =>
+      this == CallStatus.declined ||
+      this == CallStatus.ended ||
       this == CallStatus.missed;
 
   /// Get display name for UI

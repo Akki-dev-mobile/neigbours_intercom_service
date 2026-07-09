@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:onegate_feature_core/onegate_feature_core.dart';
 
+import '../i18n/intercom_i18n.dart';
 import '../models/room.dart';
 import '../models/room_message.dart';
 import '../services/chat_websocket_service.dart';
@@ -32,7 +33,8 @@ class _ChatScreenState extends State<ChatScreen> {
   List<RoomMessage> _messages = const [];
 
   late final RoomService _roomService = RoomService.fromHost(widget.host);
-  late final ChatWebSocketService _ws = ChatWebSocketService.fromHost(widget.host);
+  late final ChatWebSocketService _ws =
+      ChatWebSocketService.fromHost(widget.host);
 
   StreamSubscription<Map<String, dynamic>>? _wsSub;
 
@@ -63,8 +65,8 @@ class _ChatScreenState extends State<ChatScreen> {
           if (!mounted) return;
           setState(() => _messages = [..._messages, msg]);
         } else if (data is Map) {
-          final msg = RoomMessage.fromJson(
-              Map<String, dynamic>.from(data.map((k, v) => MapEntry(k.toString(), v))));
+          final msg = RoomMessage.fromJson(Map<String, dynamic>.from(
+              data.map((k, v) => MapEntry(k.toString(), v))));
           if (!mounted) return;
           setState(() => _messages = [..._messages, msg]);
         }
@@ -109,7 +111,16 @@ class _ChatScreenState extends State<ChatScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(child: Text('Failed: $_error'))
+                    ? Center(
+                        child: Text(
+                          intercomTr(
+                            context,
+                            'chatCall_failedWithError',
+                            fallback: 'Failed: $_error',
+                            params: {'error': _error ?? ''},
+                          ),
+                        ),
+                      )
                     : ListView.builder(
                         padding: const EdgeInsets.all(12),
                         itemCount: _messages.length,
@@ -117,8 +128,9 @@ class _ChatScreenState extends State<ChatScreen> {
                           final m = _messages[index];
                           final mine = m.userId == widget.ctx.userId;
                           return Align(
-                            alignment:
-                                mine ? Alignment.centerRight : Alignment.centerLeft,
+                            alignment: mine
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
                             child: Container(
                               margin: const EdgeInsets.symmetric(vertical: 4),
                               padding: const EdgeInsets.symmetric(
@@ -144,8 +156,12 @@ class _ChatScreenState extends State<ChatScreen> {
                   Expanded(
                     child: TextField(
                       controller: _controller,
-                      decoration: const InputDecoration(
-                        hintText: 'Message',
+                      decoration: InputDecoration(
+                        hintText: intercomTr(
+                          context,
+                          'chatCall_messageHint',
+                          fallback: 'Message',
+                        ),
                         border: OutlineInputBorder(),
                         isDense: true,
                       ),

@@ -55,19 +55,26 @@ class CommitteeMemberCache {
     }
 
     final age = DateTime.now().difference(entry.timestamp);
-    log('✅ [CommitteeMemberCache] Cache hit for committee $committeeId (age: ${age.inSeconds}s)');
+    log(
+      '✅ [CommitteeMemberCache] Cache hit for committee $committeeId (age: ${age.inSeconds}s)',
+    );
     return List.from(entry.members); // Return copy
   }
 
   /// Store members for a committee
   void cacheMembers(
-      String committeeId, List<IntercomContact> members, int companyId) {
+    String committeeId,
+    List<IntercomContact> members,
+    int companyId,
+  ) {
     _cache[committeeId] = _CommitteeMemberCacheEntry(
       members: List.from(members), // Store copy
       timestamp: DateTime.now(),
       companyId: companyId,
     );
-    log('💾 [CommitteeMemberCache] Cached ${members.length} members for committee $committeeId');
+    log(
+      '💾 [CommitteeMemberCache] Cached ${members.length} members for committee $committeeId',
+    );
   }
 
   /// Check if a request is in-flight for a committee
@@ -78,13 +85,17 @@ class CommitteeMemberCache {
   /// Mark request as in-flight
   void markRequestInFlight(String committeeId) {
     _inFlightRequests.add(committeeId);
-    log('🔄 [CommitteeMemberCache] Marked request in-flight for committee $committeeId');
+    log(
+      '🔄 [CommitteeMemberCache] Marked request in-flight for committee $committeeId',
+    );
   }
 
   /// Mark request as completed
   void markRequestComplete(String committeeId) {
     _inFlightRequests.remove(committeeId);
-    log('✅ [CommitteeMemberCache] Marked request complete for committee $committeeId');
+    log(
+      '✅ [CommitteeMemberCache] Marked request complete for committee $committeeId',
+    );
   }
 
   /// Clear cache for a specific company (on company change)

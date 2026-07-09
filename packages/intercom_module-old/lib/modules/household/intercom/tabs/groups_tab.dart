@@ -2,12 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:common_widgets/common_widgets.dart';
 import '../../../../core/theme/colors.dart';
-import '../../../../core/widgets/app_loader.dart';
 import '../../../../core/widgets/enhanced_toast.dart';
 import '../../../../core/widgets/onegate_global_loader.dart';
 import '../../../../core/utils/navigation_helper.dart';
@@ -24,20 +22,24 @@ import '../services/room_service.dart';
 import '../services/chat_service.dart';
 import '../services/chat_websocket_service.dart';
 import '../services/unread_count_manager.dart';
+import '../services/group_info_loader.dart';
+import '../services/room_info_cache.dart';
 import '../utils/activity_preview_helper.dart';
 import '../../../../core/models/api_response.dart';
 import '../group_chat_screen.dart';
-import '../widgets/voice_search_screen.dart';
+import '../widgets/voice_search_launcher.dart';
 import '../pages/create_group_page.dart';
 import '../../../../screens/neighbour_screen.dart';
 import '../../providers/selected_flat_provider.dart';
 import 'tab_constants.dart';
+import '../../../../src/config/chat_call_i18n.dart';
+import '../../../../src/config/intercom_ui_strings.dart';
 
 class GroupsTab extends ConsumerStatefulWidget {
   final ValueNotifier<int>? activeTabNotifier;
   final int? tabIndex;
   final ValueNotifier<bool>?
-      loadingNotifier; // Notify parent when loading state changes
+  loadingNotifier; // Notify parent when loading state changes
 
   const GroupsTab({
     super.key,
@@ -97,7 +99,8 @@ class GroupsTab extends ConsumerStatefulWidget {
   static void markGroupUpdated() {
     _groupUpdated = true;
     debugPrint(
-        '✅ [GroupsTab] Group update marked, will refresh immediately on return');
+      '✅ [GroupsTab] Group update marked, will refresh immediately on return',
+    );
   }
 
   // Static method to remove a group from the list - will be accessible from outside
@@ -114,7 +117,8 @@ class GroupsTab extends ConsumerStatefulWidget {
     if (state != null) {
       state._invalidateGroupsCache();
       debugPrint(
-          '🗑️ [GroupsTab] Cache invalidated - will fetch fresh data on next load');
+        '🗑️ [GroupsTab] Cache invalidated - will fetch fresh data on next load',
+      );
     }
   }
 
@@ -171,10 +175,7 @@ class _CachedRoomInfo {
   final RoomInfo? roomInfo;
   final DateTime timestamp;
 
-  _CachedRoomInfo({
-    required this.roomInfo,
-    required this.timestamp,
-  });
+  _CachedRoomInfo({required this.roomInfo, required this.timestamp});
 }
 
 /// Cached data for groups with timestamp
@@ -219,14 +220,12 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
   String? _errorMessage;
   String? _currentUserId; // Will be loaded from auth service (UUID)
   int?
-      _currentUserNumericId; // Numeric user ID for comparison with created_by_user_id
+  _currentUserNumericId; // Numeric user ID for comparison with created_by_user_id
   final TextEditingController _searchController = TextEditingController();
 
   // Track which groups the current user has left
   // Key: groupId, Value: true if user has left this group
   final Set<String> _leftGroups = {};
-  final stt.SpeechToText _speech = stt.SpeechToText();
-  bool _isListening = false;
   String _searchQuery = '';
   List<GroupChat> _filteredGroups = [];
   final RoomService _roomService = RoomService.instance;
@@ -291,7 +290,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
   /// Clear room info cache (call when company changes or manual refresh)
   void _clearRoomInfoCache() {
     debugPrint(
-        '🗑️ [GroupsTab] Clearing room info cache (${_roomInfoCache.length} entries)');
+      '🗑️ [GroupsTab] Clearing room info cache (${_roomInfoCache.length} entries)',
+    );
     _roomInfoCache.clear();
   }
 
@@ -305,6 +305,12 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
   void _invalidateGroupsCache() {
     debugPrint('🗑️ [GroupsTab] Invalidating groups data cache');
     _cachedGroupsData = null;
+    if (_lastLoadedCompanyId != null) {
+      _chatService.invalidateRoomsCache(
+        companyId: _lastLoadedCompanyId!,
+        chatType: 'group',
+      );
+    }
   }
 
   /// Optimistically increment member count for a specific group in cached data
@@ -318,7 +324,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         final newMemberCount =
             (group.memberCount ?? group.members.length) + incrementBy;
         debugPrint(
-            '⚡ [GroupsTab] Optimistically incremented member count for group ${group.name}: ${group.memberCount ?? group.members.length} → $newMemberCount');
+          '⚡ [GroupsTab] Optimistically incremented member count for group ${group.name}: ${group.memberCount ?? group.members.length} → $newMemberCount',
+        );
         return group.copyWith(memberCount: newMemberCount);
       }
       return group;
@@ -342,7 +349,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       );
     } else {
       debugPrint(
-          '⚠️ [GroupsTab] No cached groups data, updating _groups directly');
+        '⚠️ [GroupsTab] No cached groups data, updating _groups directly',
+      );
     }
 
     // Update UI immediately - CRITICAL: Always update UI even if group not in cache
@@ -364,10 +372,12 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     final updatedGroupsList = _groups.map((group) {
       if (group.id == groupId) {
         final currentCount = group.memberCount ?? group.members.length;
-        final newMemberCount =
-            (currentCount - decrementBy).clamp(0, double.infinity).toInt();
+        final newMemberCount = (currentCount - decrementBy)
+            .clamp(0, double.infinity)
+            .toInt();
         debugPrint(
-            '⚡ [GroupsTab] Optimistically decremented member count for group ${group.name}: $currentCount → $newMemberCount');
+          '⚡ [GroupsTab] Optimistically decremented member count for group ${group.name}: $currentCount → $newMemberCount',
+        );
         return group.copyWith(memberCount: newMemberCount);
       }
       return group;
@@ -378,8 +388,9 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       final updatedGroupsCache = _cachedGroupsData!.groups.map((group) {
         if (group.id == groupId) {
           final currentCount = group.memberCount ?? group.members.length;
-          final newMemberCount =
-              (currentCount - decrementBy).clamp(0, double.infinity).toInt();
+          final newMemberCount = (currentCount - decrementBy)
+              .clamp(0, double.infinity)
+              .toInt();
           return group.copyWith(memberCount: newMemberCount);
         }
         return group;
@@ -392,7 +403,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       );
     } else {
       debugPrint(
-          '⚠️ [GroupsTab] No cached groups data, updating _groups directly');
+        '⚠️ [GroupsTab] No cached groups data, updating _groups directly',
+      );
     }
 
     // Update UI immediately - CRITICAL: Always update UI even if group not in cache
@@ -402,7 +414,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         _filterGroups(); // Re-apply filtering
       });
       debugPrint(
-          '✅ [GroupsTab] UI updated immediately with decremented member count');
+        '✅ [GroupsTab] UI updated immediately with decremented member count',
+      );
     } else {
       debugPrint('⚠️ [GroupsTab] Widget not mounted, UI update skipped');
     }
@@ -449,12 +462,16 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
             unreadCount: 0, // Clear unread count immediately
           );
           // Update filtered groups as well
-          final filteredIndex = _filteredGroups.indexWhere((g) => g.id == roomId);
+          final filteredIndex = _filteredGroups.indexWhere(
+            (g) => g.id == roomId,
+          );
           if (filteredIndex != -1) {
             _filteredGroups[filteredIndex] = _groups[groupIndex];
           }
         });
-        debugPrint('✅ [GroupsTab] Cleared unreadCount for group $roomId on open');
+        debugPrint(
+          '✅ [GroupsTab] Cleared unreadCount for group $roomId on open',
+        );
       } else if (!_openedGroups.contains(roomId)) {
         // Just add to opened set if not already there
         setState(() {
@@ -494,7 +511,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       debugPrint('ℹ️ [GroupsTab] Cleared opened flag for group $roomId');
     } catch (e) {
       debugPrint(
-          '⚠️ [GroupsTab] Error clearing opened flag for group $roomId: $e');
+        '⚠️ [GroupsTab] Error clearing opened flag for group $roomId: $e',
+      );
     }
   }
 
@@ -504,7 +522,6 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     _loadCurrentUserId();
     _loadOpenedGroups();
     _loadLeftGroups(); // Load persisted left groups state
-    _initializeSpeech();
     _searchController.addListener(_onSearchChanged);
     _setupWebSocketListener();
     _hasLoadedOnce = false; // Will be set to true after first successful load
@@ -534,7 +551,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
               _isLoadingGroups) {
             if (scheduledGeneration != _activationGeneration) {
               debugPrint(
-                  '⏹️ [GroupsTab] Cancelled initial load (generation changed: $scheduledGeneration -> $_activationGeneration)');
+                '⏹️ [GroupsTab] Cancelled initial load (generation changed: $scheduledGeneration -> $_activationGeneration)',
+              );
             }
             return;
           }
@@ -626,93 +644,104 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     // This ensures stale timers don't execute after tab becomes inactive
     _activationGeneration++;
     debugPrint(
-        '🟢 [GroupsTab] Tab became active (generation: $_activationGeneration)');
+      '🟢 [GroupsTab] Tab became active (generation: $_activationGeneration)',
+    );
 
-      // Cancel any pending activation timer
-      // This prevents queued delayed loads from executing
-      _activationTimer?.cancel();
-      _activationTimer = null;
+    // Cancel any pending activation timer
+    // This prevents queued delayed loads from executing
+    _activationTimer?.cancel();
+    _activationTimer = null;
 
-      // STEP 1: Render cached data immediately (if available)
-      // This ensures UI is never empty when cached data exists
-      _renderCachedDataIfAvailable();
+    // STEP 1: Render cached data immediately (if available)
+    // This ensures UI is never empty when cached data exists
+    _renderCachedDataIfAvailable();
 
-      // STEP 2: Always call API when tab is tapped to fetch fresh data
-      // Cache is used for immediate UI feedback, but we always fetch fresh data
-      _apiService.getSelectedSocietyId().then((currentCompanyId) async {
-        // Check if a group was updated (photo upload, add member, etc.)
-        // If updated, immediately call API with force=true to bypass cache and throttling
-        if (GroupsTab._groupUpdated) {
+    // STEP 2: Always call API when tab is tapped to fetch fresh data
+    // Cache is used for immediate UI feedback, but we always fetch fresh data
+    _apiService.getSelectedSocietyId().then((currentCompanyId) async {
+      // Check if a group was updated (photo upload, add member, etc.)
+      // If updated, immediately call API with force=true to bypass cache and throttling
+      if (GroupsTab._groupUpdated) {
+        debugPrint(
+          '🔄 [GroupsTab] Group update detected - immediately calling API (bypassing cache and throttling)',
+        );
+        debugPrint(
+          '📡 [GroupsTab] API: GET ${AppConstants.roomServiceBaseUrl}/rooms/all?company_id=$currentCompanyId&chat_type=group&is_member=true',
+        );
+        GroupsTab._groupUpdated = false; // Reset flag
+
+        // CRITICAL FIX: Don't clear cache - optimistic updates might already be in _groups
+        // The API refresh will update with fresh data, but we don't want to lose optimistic updates
+        // Just invalidate cache so API is called, but keep current _groups until API responds
+        _cachedGroupsData = null;
+        _clearRoomInfoCache();
+
+        // Immediately call API with force=true (bypasses cache, throttling, and loading checks)
+        // force=true ensures refresh happens even if a load is in progress
+        _loadGroups(force: true);
+        return;
+      }
+
+      // Check if we have valid cached data (for immediate UI feedback)
+      final hasValidCache =
+          _cachedGroupsData != null &&
+          _cachedGroupsData!.isValid(currentCompanyId);
+
+      if (hasValidCache) {
+        final cacheAge = DateTime.now().difference(
+          _cachedGroupsData!.timestamp,
+        );
+        debugPrint(
+          '✅ [GroupsTab] Cache is valid (age: ${cacheAge.inSeconds}s), showing cached data immediately',
+        );
+
+        // FIX #3: Ensure data is visible even if cache is valid
+        // Re-render cached data to ensure UI is updated (in case state was cleared)
+        // This fixes the issue where data doesn't show when returning to tab
+        if (mounted && (_groups.isEmpty || _filteredGroups.isEmpty)) {
           debugPrint(
-              '🔄 [GroupsTab] Group update detected - immediately calling API (bypassing cache and throttling)');
-          debugPrint(
-              '📡 [GroupsTab] API: GET ${AppConstants.roomServiceBaseUrl}/rooms/all?company_id=$currentCompanyId&chat_type=group&is_member=true');
-          GroupsTab._groupUpdated = false; // Reset flag
-
-          // CRITICAL FIX: Don't clear cache - optimistic updates might already be in _groups
-          // The API refresh will update with fresh data, but we don't want to lose optimistic updates
-          // Just invalidate cache so API is called, but keep current _groups until API responds
-          _cachedGroupsData = null;
-          _clearRoomInfoCache();
-
-          // Immediately call API with force=true (bypasses cache, throttling, and loading checks)
-          // force=true ensures refresh happens even if a load is in progress
-          _loadGroups(force: true);
-          return;
+            '🔄 [GroupsTab] State is empty but cache is valid, re-rendering cached data',
+          );
+          _renderCachedDataIfAvailable();
         }
+      }
 
-        // Check if we have valid cached data (for immediate UI feedback)
-        final hasValidCache = _cachedGroupsData != null &&
-            _cachedGroupsData!.isValid(currentCompanyId);
+      // Always call API when tab is tapped to fetch fresh groups data
+      // This ensures we always have the latest groups for the user
+      // But check if load is already in progress to avoid duplicate calls
+      if (_isLoadingGroups) {
+        debugPrint(
+          '⏸️ [GroupsTab] Tab became active but load already in progress, skipping duplicate call...',
+        );
+        return;
+      }
 
-        if (hasValidCache) {
-          final cacheAge =
-              DateTime.now().difference(_cachedGroupsData!.timestamp);
-          debugPrint(
-              '✅ [GroupsTab] Cache is valid (age: ${cacheAge.inSeconds}s), showing cached data immediately');
+      debugPrint(
+        '🔄 [GroupsTab] Tab tapped - calling API to fetch fresh groups (will respect throttling)',
+      );
+      debugPrint(
+        '📡 [GroupsTab] API: GET ${AppConstants.roomServiceBaseUrl}/rooms/all?company_id=$currentCompanyId&chat_type=group&is_member=true',
+      );
 
-          // FIX #3: Ensure data is visible even if cache is valid
-          // Re-render cached data to ensure UI is updated (in case state was cleared)
-          // This fixes the issue where data doesn't show when returning to tab
-          if (mounted && (_groups.isEmpty || _filteredGroups.isEmpty)) {
+      // Small delay to ensure widget is fully built (cancellable with generation check)
+      final scheduledGeneration = _activationGeneration;
+      _activationTimer = Timer(TabConstants.kDataLoadDelay, () {
+        // Validate generation before executing
+        if (!mounted ||
+            _isLoadingGroups ||
+            scheduledGeneration != _activationGeneration) {
+          if (scheduledGeneration != _activationGeneration) {
             debugPrint(
-                '🔄 [GroupsTab] State is empty but cache is valid, re-rendering cached data');
-            _renderCachedDataIfAvailable();
+              '⏹️ [GroupsTab] Cancelled delayed load (generation changed: $scheduledGeneration -> $_activationGeneration)',
+            );
           }
-        }
-
-        // Always call API when tab is tapped to fetch fresh groups data
-        // This ensures we always have the latest groups for the user
-        // But check if load is already in progress to avoid duplicate calls
-        if (_isLoadingGroups) {
-          debugPrint(
-              '⏸️ [GroupsTab] Tab became active but load already in progress, skipping duplicate call...');
           return;
         }
-
-        debugPrint(
-            '🔄 [GroupsTab] Tab tapped - calling API to fetch fresh groups (will respect throttling)');
-        debugPrint(
-            '📡 [GroupsTab] API: GET ${AppConstants.roomServiceBaseUrl}/rooms/all?company_id=$currentCompanyId&chat_type=group&is_member=true');
-
-        // Small delay to ensure widget is fully built (cancellable with generation check)
-        final scheduledGeneration = _activationGeneration;
-        _activationTimer = Timer(TabConstants.kDataLoadDelay, () {
-          // Validate generation before executing
-          if (!mounted ||
-              _isLoadingGroups ||
-              scheduledGeneration != _activationGeneration) {
-            if (scheduledGeneration != _activationGeneration) {
-              debugPrint(
-                  '⏹️ [GroupsTab] Cancelled delayed load (generation changed: $scheduledGeneration -> $_activationGeneration)');
-            }
-            return;
-          }
-          // Call API to fetch fresh groups (throttling in _loadGroups will prevent if too soon)
-          // Use force=false to respect throttling, but always attempt to fetch
-          _loadGroups(force: false);
-        });
+        // Call API to fetch fresh groups (throttling in _loadGroups will prevent if too soon)
+        // Use force=false to respect throttling, but always attempt to fetch
+        _loadGroups(force: false);
       });
+    });
   }
 
   /// Render cached data immediately if available
@@ -722,7 +751,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
   void _renderCachedDataIfAvailable() {
     if (_cachedGroupsData == null) {
       debugPrint(
-          'ℹ️ [GroupsTab] No cached data available for immediate rendering');
+        'ℹ️ [GroupsTab] No cached data available for immediate rendering',
+      );
       return; // No cached data
     }
 
@@ -732,7 +762,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 
     if (hasGroups) {
       debugPrint(
-          '✅ [GroupsTab] Rendering cached data immediately on activation (${_cachedGroupsData!.groups.length} groups)');
+        '✅ [GroupsTab] Rendering cached data immediately on activation (${_cachedGroupsData!.groups.length} groups)',
+      );
 
       if (mounted) {
         setState(() {
@@ -751,7 +782,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       }
     } else {
       debugPrint(
-          'ℹ️ [GroupsTab] Cached data exists but is empty - will show loading state');
+        'ℹ️ [GroupsTab] Cached data exists but is empty - will show loading state',
+      );
       // If no cached data, ensure loading state is shown
       if (mounted) {
         setState(() {
@@ -764,15 +796,15 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
   /// Setup WebSocket connection state listener
   void _setupWebSocketListener() {
     // Listen to connection state changes
-    _wsConnectionSubscription = _chatService.connectionStateStream.listen(
-      (isConnected) {
-        if (mounted) {
-          setState(() {
-            _isWebSocketConnected = isConnected;
-          });
-        }
-      },
-    );
+    _wsConnectionSubscription = _chatService.connectionStateStream.listen((
+      isConnected,
+    ) {
+      if (mounted) {
+        setState(() {
+          _isWebSocketConnected = isConnected;
+        });
+      }
+    });
 
     // Listen to incoming messages
     _wsMessageSubscription = _chatService.messageStream.listen(
@@ -793,20 +825,23 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     if (roomId == null || roomId.isEmpty) return;
 
     // Handle unread_count_update events from WebSocket
-    final messageType = wsMessage.type?.toLowerCase() ??
+    final messageType =
+        wsMessage.type?.toLowerCase() ??
         wsMessage.data?['type']?.toString().toLowerCase();
     if (messageType == 'unread_count_update' ||
         wsMessage.messageTypeEnum == WebSocketMessageType.unreadCountUpdate) {
       final updateRoomId = roomId ?? wsMessage.data?['room_id']?.toString();
       final userId = wsMessage.userId ?? wsMessage.data?['user_id']?.toString();
-      final unreadCount = wsMessage.data?['unread_count'] as int? ??
+      final unreadCount =
+          wsMessage.data?['unread_count'] as int? ??
           (wsMessage.data?['unread_count'] is String
               ? int.tryParse(wsMessage.data!['unread_count'] as String)
               : null);
 
       if (updateRoomId != null && userId != null && unreadCount != null) {
         debugPrint(
-            '📊 [GroupsTab] Received unread_count_update: room=$updateRoomId, user=$userId, count=$unreadCount');
+          '📊 [GroupsTab] Received unread_count_update: room=$updateRoomId, user=$userId, count=$unreadCount',
+        );
 
         // Update local unread count manager if this is for current user
         final currentUserId = _currentUserId;
@@ -817,7 +852,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
             // Backend is source of truth - update local cache with exact count
             await _unreadManager.setUnreadCount(updateRoomId, unreadCount);
             debugPrint(
-                '📊 [GroupsTab] Unread count updated to $unreadCount for room $updateRoomId');
+              '📊 [GroupsTab] Unread count updated to $unreadCount for room $updateRoomId',
+            );
             // So indicator shows: remove from opened set when backend says there are unread messages
             await _clearGroupOpenedFlag(updateRoomId);
           }
@@ -828,9 +864,11 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
             final lastMessage = _unreadManager.getLastMessage(updateRoomId);
             final lastMessageTime =
                 _unreadManager.getLastMessageTime(updateRoomId) ??
-                    DateTime.now();
+                DateTime.now();
             // Get the actual unread count from manager (may have been updated)
-            final actualUnreadCount = _unreadManager.getUnreadCount(updateRoomId);
+            final actualUnreadCount = _unreadManager.getUnreadCount(
+              updateRoomId,
+            );
 
             final updatedGroup = GroupChat(
               id: _groups[groupIndex].id,
@@ -867,7 +905,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       final statusString = wsMessage.data?['status']?.toString();
 
       debugPrint(
-          '👤 [GroupsTab] Presence update: user=$userId, online=$isOnline, status=$statusString');
+        '👤 [GroupsTab] Presence update: user=$userId, online=$isOnline, status=$statusString',
+      );
 
       // Presence updates are handled at the group chat level, not list level
       // Just log for now - group members' presence is tracked in group chat screen
@@ -882,7 +921,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       final userId = wsMessage.userId ?? wsMessage.data?['user_id']?.toString();
 
       debugPrint(
-          '📖 [GroupsTab] Read receipt: message=$messageId, user=$userId');
+        '📖 [GroupsTab] Read receipt: message=$messageId, user=$userId',
+      );
 
       // Read receipts are handled at the group chat screen level
       return; // Don't process read_receipt as messages
@@ -922,7 +962,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     final groupIndex = _groups.indexWhere((g) => g.id == roomId);
     if (groupIndex == -1) {
       debugPrint(
-          '⚠️ [GroupsTab] Received message for unknown group $roomId - unread count updated');
+        '⚠️ [GroupsTab] Received message for unknown group $roomId - unread count updated',
+      );
       return; // Group not in list (maybe filtered out)
     }
 
@@ -953,7 +994,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     });
 
     debugPrint(
-        '✅ [GroupsTab] Updated group $roomId: unread=$unreadCount, lastMsg=${lastMessage?.substring(0, lastMessage.length > 20 ? 20 : lastMessage.length)}');
+      '✅ [GroupsTab] Updated group $roomId: unread=$unreadCount, lastMsg=${lastMessage?.substring(0, lastMessage.length > 20 ? 20 : lastMessage.length)}',
+    );
   }
 
   /// Load current user ID from auth service
@@ -979,11 +1021,13 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                     _currentUserId = subStr; // UUID for group chat reactions
                   });
                   debugPrint(
-                      '✅ [GroupsTab] Current user UUID loaded: $subStr (decoded from token)');
+                    '✅ [GroupsTab] Current user UUID loaded: $subStr (decoded from token)',
+                  );
                 }
               } else {
                 debugPrint(
-                    '⚠️ [GroupsTab] Sub field is not a valid UUID: $subStr');
+                  '⚠️ [GroupsTab] Sub field is not a valid UUID: $subStr',
+                );
               }
             } else {
               debugPrint('⚠️ [GroupsTab] No sub field found in decoded token');
@@ -1014,7 +1058,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                     _currentUserId = subStr;
                   });
                   debugPrint(
-                      '✅ [GroupsTab] Current user UUID loaded from getUserInfo: $subStr');
+                    '✅ [GroupsTab] Current user UUID loaded from getUserInfo: $subStr',
+                  );
                 }
               }
             }
@@ -1040,7 +1085,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                     _currentUserId = subStr;
                   });
                   debugPrint(
-                      '✅ [GroupsTab] Current user UUID loaded from getUserData: $subStr');
+                    '✅ [GroupsTab] Current user UUID loaded from getUserData: $subStr',
+                  );
                 }
               }
             }
@@ -1059,7 +1105,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
               _currentUserId = userId.toString();
             });
             debugPrint(
-                '⚠️ [GroupsTab] Using fallback user ID (may be numeric): $userId');
+              '⚠️ [GroupsTab] Using fallback user ID (may be numeric): $userId',
+            );
           }
         } catch (e) {
           debugPrint('⚠️ [GroupsTab] Error getting fallback user ID: $e');
@@ -1104,13 +1151,15 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                       _currentUserNumericId = parsed;
                     });
                     debugPrint(
-                        '✅ [GroupsTab] Current numeric user ID loaded: $parsed (from: $candidateStr)');
+                      '✅ [GroupsTab] Current numeric user ID loaded: $parsed (from: $candidateStr)',
+                    );
                   }
                   return;
                 }
               } else {
                 debugPrint(
-                    '⚠️ [GroupsTab] Skipping UUID candidate: $candidateStr');
+                  '⚠️ [GroupsTab] Skipping UUID candidate: $candidateStr',
+                );
               }
             }
           }
@@ -1148,7 +1197,6 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
   @override
   void dispose() {
     _searchController.dispose();
-    _speech.stop();
     _wsConnectionSubscription?.cancel();
     _wsMessageSubscription?.cancel();
     // Cancel activation timer
@@ -1162,38 +1210,34 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     super.dispose();
   }
 
-  Future<void> _initializeSpeech() async {
-    bool available = await _speech.initialize(
-      onStatus: (status) {
-        if (status == 'done' || status == 'notListening') {
-          if (mounted) {
-            setState(() {
-              _isListening = false;
-            });
-          }
-        }
-      },
-      onError: (error) {
+  Future<void> _startListening() async {
+    await VoiceSearchLauncher.open(
+      context,
+      onTextRecognized: (text) {
         if (mounted) {
           setState(() {
-            _isListening = false;
+            _searchController.text = text;
+            _searchController.selection = TextSelection.fromPosition(
+              TextPosition(offset: text.length),
+            );
+            _searchQuery = text;
+            _filterGroups();
           });
-          EnhancedToast.error(
-            context,
-            title: 'Speech Recognition Error',
-            message: error.errorMsg,
-          );
+        }
+      },
+      onFinalResult: (text) {
+        if (mounted) {
+          setState(() {
+            _searchController.text = text;
+            _searchController.selection = TextSelection.fromPosition(
+              TextPosition(offset: text.length),
+            );
+            _searchQuery = text;
+            _filterGroups();
+          });
         }
       },
     );
-
-    if (!available && mounted) {
-      EnhancedToast.warning(
-        context,
-        title: 'Speech Recognition',
-        message: 'Speech recognition is not available on this device.',
-      );
-    }
   }
 
   void _onSearchChanged() {
@@ -1205,8 +1249,9 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 
   void _filterGroups() {
     // First filter out groups the user has left
-    final visibleGroups =
-        _groups.where((group) => !_hasUserLeftGroup(group.id)).toList();
+    final visibleGroups = _groups
+        .where((group) => !_hasUserLeftGroup(group.id))
+        .toList();
 
     if (_searchQuery.isEmpty) {
       _filteredGroups = visibleGroups;
@@ -1220,13 +1265,14 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     }
   }
 
-  // Helper method to add a new group
+  // Helper method to add a new group (list order comes from API refresh)
   void _addNewGroup(GroupChat newGroup) {
-    if (mounted) {
-      setState(() {
-        _groups.insert(0, newGroup);
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      if (_groups.any((g) => g.id == newGroup.id)) return;
+      _groups.add(newGroup);
+      _filterGroups();
+    });
   }
 
   // Helper method to remove a group from the list
@@ -1275,7 +1321,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           });
         }
         debugPrint(
-            '✅ [GroupsTab] Loaded ${groups.length} left groups from storage');
+          '✅ [GroupsTab] Loaded ${groups.length} left groups from storage',
+        );
       }
     } catch (e) {
       debugPrint('❌ [GroupsTab] Error loading left groups: $e');
@@ -1286,11 +1333,10 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
   void _persistLeftGroups() async {
     try {
       final storage = StorageService.instance;
-      await storage.setJson('left_groups', {
-        'groups': _leftGroups.toList(),
-      });
+      await storage.setJson('left_groups', {'groups': _leftGroups.toList()});
       debugPrint(
-          '✅ [GroupsTab] Persisted ${_leftGroups.length} left groups to storage');
+        '✅ [GroupsTab] Persisted ${_leftGroups.length} left groups to storage',
+      );
     } catch (e) {
       debugPrint('❌ [GroupsTab] Error persisting left groups: $e');
     }
@@ -1307,11 +1353,12 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         _groups[groupIndex] = _groups[groupIndex].copyWith(iconUrl: iconUrl);
 
         // Also update filtered groups if it exists there
-        final filteredIndex =
-            _filteredGroups.indexWhere((group) => group.id == groupId);
+        final filteredIndex = _filteredGroups.indexWhere(
+          (group) => group.id == groupId,
+        );
         if (filteredIndex != -1) {
-          _filteredGroups[filteredIndex] =
-              _filteredGroups[filteredIndex].copyWith(iconUrl: iconUrl);
+          _filteredGroups[filteredIndex] = _filteredGroups[filteredIndex]
+              .copyWith(iconUrl: iconUrl);
         }
       });
       debugPrint('✅ [GroupsTab] Updated iconUrl for group: $groupId');
@@ -1328,7 +1375,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     // Check if an image was uploaded
     if (GroupsTab._imageUploaded) {
       debugPrint(
-          '🔄 [GroupsTab] Image was uploaded, refreshing groups list...');
+        '🔄 [GroupsTab] Image was uploaded, refreshing groups list...',
+      );
       GroupsTab._imageUploaded = false; // Reset flag
 
       // Clear cache for affected rooms (if we know which room, we could invalidate just that one)
@@ -1352,7 +1400,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     // Check if a group was updated (any action: leave, upload image, clear chat, add/remove member)
     if (GroupsTab._groupUpdated) {
       debugPrint(
-          '🔄 [GroupsTab] Group update detected - immediately calling API (bypassing cache, throttling, and loading checks)');
+        '🔄 [GroupsTab] Group update detected - immediately calling API (bypassing cache, throttling, and loading checks)',
+      );
       GroupsTab._groupUpdated = false; // Reset flag
 
       // Clear cache to ensure fresh data
@@ -1390,27 +1439,32 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 
       // CRITICAL FIX #2: Idempotent company change detection
       // Only proceed if company ACTUALLY changed (not just null check)
-      final companyActuallyChanged = currentCompanyId != null &&
+      final companyActuallyChanged =
+          currentCompanyId != null &&
           _lastLoadedCompanyId != null &&
           currentCompanyId != _lastLoadedCompanyId;
 
       // CRITICAL FIX #3: First load detection (only if never loaded for this company)
-      final isFirstLoad = currentCompanyId != null &&
+      final isFirstLoad =
+          currentCompanyId != null &&
           _lastLoadedCompanyId == null &&
           !_hasLoadedOnce;
 
       // Log for debugging
       debugPrint(
-          '🔍 [GroupsTab] Checking company change - Current: $currentCompanyId, Last loaded: $_lastLoadedCompanyId, Has loaded once: $_hasLoadedOnce');
+        '🔍 [GroupsTab] Checking company change - Current: $currentCompanyId, Last loaded: $_lastLoadedCompanyId, Has loaded once: $_hasLoadedOnce',
+      );
 
       // Only proceed if company actually changed OR it's the first load
       if (companyActuallyChanged || isFirstLoad) {
         if (isFirstLoad) {
           debugPrint(
-              '🔄 [GroupsTab] First load for company_id: $currentCompanyId');
+            '🔄 [GroupsTab] First load for company_id: $currentCompanyId',
+          );
         } else {
           debugPrint(
-              '🔄 [GroupsTab] Company changed from $_lastLoadedCompanyId to $currentCompanyId - Clearing and reloading groups');
+            '🔄 [GroupsTab] Company changed from $_lastLoadedCompanyId to $currentCompanyId - Clearing and reloading groups',
+          );
         }
 
         // CRITICAL FIX #4: Only clear cache when company ACTUALLY changed
@@ -1450,7 +1504,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
               scheduledGeneration != _activationGeneration) {
             if (scheduledGeneration != _activationGeneration) {
               debugPrint(
-                  '⏹️ [GroupsTab] Cancelled company change reload (generation changed)');
+                '⏹️ [GroupsTab] Cancelled company change reload (generation changed)',
+              );
             }
             return;
           }
@@ -1459,7 +1514,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       } else {
         // Company hasn't changed - no need to reload
         debugPrint(
-            '✅ [GroupsTab] Company unchanged ($currentCompanyId), no reload needed');
+          '✅ [GroupsTab] Company unchanged ($currentCompanyId), no reload needed',
+        );
       }
     } catch (e) {
       debugPrint('❌ [GroupsTab] Error checking company change: $e');
@@ -1491,7 +1547,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     // Check both _inFlightLoad AND _isLoadingGroups for defense in depth
     if ((_inFlightLoad != null || _isLoadingGroups) && !force) {
       debugPrint(
-          '⏸️ [GroupsTab] Load already in-flight, coalescing request...');
+        '⏸️ [GroupsTab] Load already in-flight, coalescing request...',
+      );
       return _inFlightLoad ?? Future.value();
     }
 
@@ -1500,10 +1557,12 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       final currentCompanyId = await _apiService.getSelectedSocietyId();
       if (_cachedGroupsData != null &&
           _cachedGroupsData!.isValid(currentCompanyId)) {
-        final cacheAge =
-            DateTime.now().difference(_cachedGroupsData!.timestamp);
+        final cacheAge = DateTime.now().difference(
+          _cachedGroupsData!.timestamp,
+        );
         debugPrint(
-            '✅ [GroupsTab] Cache is valid (age: ${cacheAge.inSeconds}s), skipping API call');
+          '✅ [GroupsTab] Cache is valid (age: ${cacheAge.inSeconds}s), skipping API call',
+        );
         if (mounted) {
           setState(() {
             _isLoading = false;
@@ -1526,7 +1585,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         final remainingMs =
             (_minRequestInterval - timeSinceLastRequest).inMilliseconds;
         debugPrint(
-            '⏸️ [GroupsTab] Request throttled (${remainingSeconds}s ${remainingMs}ms remaining)');
+          '⏸️ [GroupsTab] Request throttled (${remainingSeconds}s ${remainingMs}ms remaining)',
+        );
         // CRITICAL: Don't return immediately - wait for cooldown to expire
         // This prevents infinite retry loops
         await Future.delayed(_minRequestInterval - timeSinceLastRequest);
@@ -1595,7 +1655,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       // Check if widget is still mounted after async operation
       if (!mounted) {
         debugPrint(
-            '⏹️ [GroupsTab] Widget not mounted after company ID fetch, cancelling load');
+          '⏹️ [GroupsTab] Widget not mounted after company ID fetch, cancelling load',
+        );
         return;
       }
 
@@ -1604,7 +1665,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           setState(() {
             _isLoading = false;
             _hasError = true;
-            _errorMessage = 'Please select a society first';
+            _errorMessage = chatCallTr(context, 'chatCall_pleaseSelectSociety', fallback: 'Please select a society first');
             // CRITICAL FIX #6: Don't reset lastLoadedCompanyId on error
             // Only reset if company actually changed, not on validation errors
           });
@@ -1622,12 +1683,15 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       // This endpoint returns ONLY rooms where the current user is already a member
       // API Endpoint: GET {roomServiceBaseUrl}/rooms/all?company_id={companyId}&chat_type=group&is_member=true
       debugPrint(
-          '📡 [GroupsTab] Calling API to fetch group rooms for company_id: $companyId');
+        '📡 [GroupsTab] Calling API to fetch group rooms for company_id: $companyId',
+      );
       debugPrint(
-          '🌐 [GroupsTab] API URL: ${AppConstants.roomServiceBaseUrl}/rooms/all?company_id=$companyId&chat_type=group&is_member=true');
+        '🌐 [GroupsTab] API URL: ${AppConstants.roomServiceBaseUrl}/rooms/all?company_id=$companyId&chat_type=group&is_member=true',
+      );
       debugPrint(
-          '🔑 [GroupsTab] Using Authorization: Bearer <token> (handled by RoomService)');
-      final response = await _roomService.getAllRooms(
+        '🔑 [GroupsTab] Using Authorization: Bearer <token> (handled by RoomService)',
+      );
+      final response = await _chatService.fetchRooms(
         companyId: companyId,
         chatType: 'group',
       );
@@ -1642,7 +1706,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         final rooms = response.data ?? <Room>[];
 
         debugPrint(
-            '⚡ [GroupsTab] INSTANT RENDER: Converting ${rooms.length} rooms to groups (no room info required)');
+          '⚡ [GroupsTab] INSTANT RENDER: Converting ${rooms.length} rooms to groups (no room info required)',
+        );
 
         // Convert rooms to GroupChat IMMEDIATELY - no room info needed
         // This is the FAST path - render list in <200ms
@@ -1653,12 +1718,15 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           if (room.unreadCount != null && room.unreadCount! > 0) {
             await _unreadManager.setUnreadCount(room.id, room.unreadCount!);
             debugPrint(
-                '📥 [GroupsTab] Seeded unread count from API for group ${room.id}: ${room.unreadCount}');
+              '📥 [GroupsTab] Seeded unread count from API for group ${room.id}: ${room.unreadCount}',
+            );
             // If backend says there are unread messages, ensure this group is not treated as "opened"
             if (_openedGroups.remove(room.id)) {
               final prefs = await SharedPreferences.getInstance();
               await prefs.setStringList(
-                  'opened_group_rooms', _openedGroups.toList());
+                'opened_group_rooms',
+                _openedGroups.toList(),
+              );
             }
           }
         }
@@ -1670,14 +1738,16 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           // Safety check: Skip rooms with < 3 members (shouldn't happen with chat_type=group filter)
           if (room.membersCount == null || room.membersCount! < 3) {
             debugPrint(
-                '⚠️ [GroupsTab] API returned room with membersCount=${room.membersCount} (expected >= 3 for group), skipping');
+              '⚠️ [GroupsTab] API returned room with membersCount=${room.membersCount} (expected >= 3 for group), skipping',
+            );
             continue;
           }
 
           // Use cached room info for members list if available (optional enhancement)
           // Otherwise members list will be empty and loaded on-demand
           final cached = _roomInfoCache[room.id];
-          final cachedInfo = cached != null &&
+          final cachedInfo =
+              cached != null &&
                   DateTime.now().difference(cached.timestamp) <
                       _roomInfoCacheExpiry &&
                   cached.roomInfo != null
@@ -1702,29 +1772,33 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 
           // Use members_count directly from /rooms API response
           // This is now available in the API response, so we don't need room info for count
-          groupChats.add(GroupChat(
-            id: room.id,
-            name: room.name,
-            description: room.description,
-            iconUrl: room.photoUrl,
-            creatorId: room.createdBy,
-            createdByUserId: room.createdByUserId,
-            members: members, // From cache if available, otherwise empty
-            memberCount:
-                room.membersCount, // Use members_count directly from API
-            createdAt: room.createdAt,
-            lastMessageTime: room.lastActive ?? room.updatedAt,
-            lastMessage: _unreadManager.getLastMessage(
-                room.id), // Use cached last message if available
-            // CRITICAL FIX: Use UnreadCountManager as source of truth for unread counts
-            // This ensures unread counts are accurate from the start
-            unreadCount: _unreadManager.getUnreadCount(room.id),
-            isUnread: _unreadManager.getUnreadCount(room.id) > 0,
-          ));
+          groupChats.add(
+            GroupChat(
+              id: room.id,
+              name: room.name,
+              description: room.description,
+              iconUrl: room.photoUrl,
+              creatorId: room.createdBy,
+              createdByUserId: room.createdByUserId,
+              members: members, // From cache if available, otherwise empty
+              memberCount:
+                  room.membersCount, // Use members_count directly from API
+              createdAt: room.createdAt,
+              lastMessageTime: room.lastActive ?? room.updatedAt,
+              lastMessage: _unreadManager.getLastMessage(
+                room.id,
+              ), // Use cached last message if available
+              // CRITICAL FIX: Use UnreadCountManager as source of truth for unread counts
+              // This ensures unread counts are accurate from the start
+              unreadCount: _unreadManager.getUnreadCount(room.id),
+              isUnread: _unreadManager.getUnreadCount(room.id) > 0,
+            ),
+          );
         }
 
         debugPrint(
-            '✅ [GroupsTab] INSTANT RENDER: Showing ${groupChats.length} groups immediately (from /rooms API only)');
+          '✅ [GroupsTab] INSTANT RENDER: Showing ${groupChats.length} groups immediately (from /rooms API only)',
+        );
 
         // Log if we have no groups (empty state)
         if (groupChats.isEmpty) {
@@ -1747,7 +1821,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 
         debugPrint('✅ [GroupsTab] Persisted lastLoadedCompanyId: $companyId');
         debugPrint(
-            '⚡ [GroupsTab] List rendered in <200ms - no room info blocking');
+          '⚡ [GroupsTab] List rendered in <200ms - no room info blocking',
+        );
 
         // Mark as loaded
         _hasLoadedOnce = true;
@@ -1760,7 +1835,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           companyId: companyId,
         );
         debugPrint(
-            '✅ [GroupsTab] Cache updated with ${groupChats.length} groups (lightweight, from /rooms API)');
+          '✅ [GroupsTab] Cache updated with ${groupChats.length} groups (lightweight, from /rooms API)',
+        );
 
         // Clean up expired cache entries (keep cache size manageable)
         _cleanupExpiredCache();
@@ -1775,7 +1851,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         // REMOVED: _fetchLastMessagesInBackground(groupChats, companyId);
         // This prevents the API storm that causes 429 errors
         debugPrint(
-            '✅ [GroupsTab] Group list rendered - messages will load lazily (on-demand)');
+          '✅ [GroupsTab] Group list rendered - messages will load lazily (on-demand)',
+        );
 
         // Notify parent that loading is complete
 
@@ -1783,7 +1860,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         final verifyCompanyId = await _apiService.getSelectedSocietyId();
         if (verifyCompanyId != null && verifyCompanyId != companyId) {
           debugPrint(
-              '⚠️ [GroupsTab] WARNING: Company changed during load! Requested: $companyId, Current: $verifyCompanyId');
+            '⚠️ [GroupsTab] WARNING: Company changed during load! Requested: $companyId, Current: $verifyCompanyId',
+          );
           // Company changed during load - reload with new company_id (cancellable with generation check)
           _activationTimer?.cancel();
           _activationGeneration++; // Increment generation to cancel stale operations
@@ -1793,7 +1871,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
             if (!mounted || scheduledGeneration != _activationGeneration) {
               if (scheduledGeneration != _activationGeneration) {
                 debugPrint(
-                    '⏹️ [GroupsTab] Cancelled company change reload (generation changed)');
+                  '⏹️ [GroupsTab] Cancelled company change reload (generation changed)',
+                );
               }
               return;
             }
@@ -1821,8 +1900,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 
           EnhancedToast.error(
             context,
-            title: 'Error',
-            message: 'Unable to load groups',
+            title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+            message: chatCallTr(context, 'chatCall_unableToLoadGroups', fallback: 'Unable to load groups'),
           );
         } else if (statusCode == 429) {
           // Rate limit error - too many requests
@@ -1835,8 +1914,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
             _errorMessage = null;
           });
           _hasLoadedOnce = true; // Mark as loaded to prevent immediate retry
-          _lastLoadTime = DateTime
-              .now(); // Update last load time to prevent immediate retry
+          _lastLoadTime =
+              DateTime.now(); // Update last load time to prevent immediate retry
 
           // Loading completed (even with error) - allow tab switching
           widget.loadingNotifier?.value = false;
@@ -1844,14 +1923,16 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           // If we have cached groups, keep showing them silently
           if (_groups.isNotEmpty) {
             debugPrint(
-                '✅ [GroupsTab] Rate limited (429) - showing cached data (${_groups.length} groups)');
+              '✅ [GroupsTab] Rate limited (429) - showing cached data (${_groups.length} groups)',
+            );
             // Silently use cached data - no toast message to avoid spam
             // User can still see the groups from cache
           } else {
             // No cached data - only show message if this is the first time or after a delay
             // Don't spam the user with repeated messages
             debugPrint(
-                '⚠️ [GroupsTab] Rate limited (429) - no cached data available');
+              '⚠️ [GroupsTab] Rate limited (429) - no cached data available',
+            );
             // Don't show toast - just log it and auto-retry silently
             // The user will see the loading state, and data will load when retry succeeds
           }
@@ -1865,7 +1946,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                   scheduledGeneration == _activationGeneration &&
                   !_isLoadingGroups) {
                 debugPrint(
-                    '🔄 [GroupsTab] Auto-retrying after rate limit (10s delay)...');
+                  '🔄 [GroupsTab] Auto-retrying after rate limit (10s delay)...',
+                );
                 _loadGroups();
               }
             });
@@ -1885,7 +1967,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 
           // Silently fail - don't show toast for 500 to avoid spam
           debugPrint(
-              '⚠️ [GroupsTab] Server error ($statusCode), keeping cached list');
+            '⚠️ [GroupsTab] Server error ($statusCode), keeping cached list',
+          );
         } else {
           // Other errors
           setState(() {
@@ -1902,16 +1985,12 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           if (statusCode == 0) {
             EnhancedToast.error(
               context,
-              title: 'Network Error',
+              title: chatCallTr(context, 'chatCall_networkError', fallback: 'Network Error'),
               message:
-                  'Unable to connect. Please check your internet connection.',
+                  chatCallTr(context, 'chatCall_checkConnection', fallback: 'Unable to connect. Please check your internet connection.'),
             );
           } else {
-            EnhancedToast.error(
-              context,
-              title: 'Error',
-              message: errorMessage,
-            );
+            EnhancedToast.error(context, title: chatCallTr(context, 'chatCall_error', fallback: 'Error'), message: errorMessage);
           }
         }
       }
@@ -1924,7 +2003,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       setState(() {
         _isLoading = false;
         _hasError = _groups.isNotEmpty;
-        _errorMessage = 'An unexpected error occurred: $e';
+        _errorMessage = chatCallTr(context, 'chatCall_unexpectedError', fallback: 'An unexpected error occurred: {error}', params: {'error': '$e'});
       });
       _hasLoadedOnce = true; // Mark as loaded to prevent immediate retry
       _lastLoadTime = DateTime.now(); // Update last load time
@@ -1935,8 +2014,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'Failed to load groups: $e',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_failedToLoadGroups', fallback: 'Failed to load groups: {error}', params: {'error': '$e'}),
       );
     }
   }
@@ -1983,14 +2062,16 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       creatorId: room.createdBy,
       createdByUserId: room.createdByUserId, // Pass numeric user ID
       members: members, // Populated from room info if available
-      memberCount: room.membersCount ??
+      memberCount:
+          room.membersCount ??
           roomInfo
               ?.memberCount, // Use members_count from /rooms API, fallback to roomInfo
       createdAt: room.createdAt,
       // Use last_active if available, otherwise fallback to updatedAt
       lastMessageTime: room.lastActive ?? room.updatedAt,
-      lastMessage: _unreadManager
-          .getLastMessage(room.id), // Use cached last message if available
+      lastMessage: _unreadManager.getLastMessage(
+        room.id,
+      ), // Use cached last message if available
       // CRITICAL FIX: Use UnreadCountManager as source of truth for unread counts
       // This ensures unread counts are accurate from the start
       unreadCount: _unreadManager.getUnreadCount(room.id),
@@ -2008,7 +2089,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     if (roomsNeedingInfo.isEmpty || !mounted) return;
 
     debugPrint(
-        '🔄 [GroupsTab] Fetching room info in background for ${roomsNeedingInfo.length} rooms...');
+      '🔄 [GroupsTab] Fetching room info in background for ${roomsNeedingInfo.length} rooms...',
+    );
 
     // OPTIMIZED CONCURRENCY: Process in larger batches for faster loading
     const maxConcurrentRequests = 10;
@@ -2025,8 +2107,10 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     for (int i = 0; i < roomsNeedingInfo.length; i += maxConcurrentRequests) {
       if (!mounted) return; // Check if still mounted
 
-      final batch =
-          roomsNeedingInfo.skip(i).take(maxConcurrentRequests).toList();
+      final batch = roomsNeedingInfo
+          .skip(i)
+          .take(maxConcurrentRequests)
+          .toList();
       final batchFutures = batch.map((room) async {
         try {
           final roomInfoResponse = await _roomService.getRoomInfo(
@@ -2035,8 +2119,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           );
           final roomInfo =
               roomInfoResponse.success && roomInfoResponse.data != null
-                  ? roomInfoResponse.data
-                  : null;
+              ? roomInfoResponse.data
+              : null;
 
           // Cache the result
           if (mounted) {
@@ -2049,7 +2133,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           return MapEntry(room.id, roomInfo);
         } catch (e) {
           debugPrint(
-              '⚠️ [GroupsTab] Failed to fetch info for room ${room.id}: $e');
+            '⚠️ [GroupsTab] Failed to fetch info for room ${room.id}: $e',
+          );
           // Cache null result
           if (mounted) {
             _roomInfoCache[room.id] = _CachedRoomInfo(
@@ -2072,7 +2157,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     }
 
     debugPrint(
-        '✅ [GroupsTab] Background room info fetch completed for ${freshRoomInfos.length} rooms');
+      '✅ [GroupsTab] Background room info fetch completed for ${freshRoomInfos.length} rooms',
+    );
   }
 
   /// Update groups list with fresh room info (called incrementally)
@@ -2135,7 +2221,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       );
 
       debugPrint(
-          '✅ [GroupsTab] Updated groups list with fresh data: ${updatedGroupChats.length} groups');
+        '✅ [GroupsTab] Updated groups list with fresh data: ${updatedGroupChats.length} groups',
+      );
     }
   }
 
@@ -2170,7 +2257,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
   /// System messages include: admin actions, member add/remove, etc.
   bool _isSystemMessageFromWebSocket(WebSocketMessage wsMessage) {
     // Check message_type from WebSocket data
-    final messageType = wsMessage.messageType?.toLowerCase() ??
+    final messageType =
+        wsMessage.messageType?.toLowerCase() ??
         wsMessage.data?['message_type']?.toString().toLowerCase();
     final eventType = wsMessage.data?['event_type']?.toString().toLowerCase();
 
@@ -2189,13 +2277,16 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     }
 
     // Check content for system message patterns
-    final content = wsMessage.content ?? wsMessage.data?['content']?.toString() ?? '';
+    final content =
+        wsMessage.content ?? wsMessage.data?['content']?.toString() ?? '';
     final contentLower = content.toLowerCase();
     if (contentLower.contains('joined the group') ||
         contentLower.contains('left the group') ||
         contentLower.contains('was deleted') ||
-        (contentLower.contains('added') && contentLower.contains('to the group')) ||
-        (contentLower.contains('removed') && contentLower.contains('from the group'))) {
+        (contentLower.contains('added') &&
+            contentLower.contains('to the group')) ||
+        (contentLower.contains('removed') &&
+            contentLower.contains('from the group'))) {
       return true;
     }
 
@@ -2210,7 +2301,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     if (groups.isEmpty || !mounted) return;
 
     debugPrint(
-        '🔄 [GroupsTab] Fetching last messages for ${groups.length} groups...');
+      '🔄 [GroupsTab] Fetching last messages for ${groups.length} groups...',
+    );
 
     // Process in batches to avoid overwhelming the API
     const maxConcurrentRequests = 10;
@@ -2225,20 +2317,21 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         try {
           final messagesResponse = await _roomService
               .getMessages(
-            roomId: group.id,
-            companyId: companyId,
-            limit:
-                5, // Fetch a few messages to get the latest (API returns oldest first)
-            offset: 0,
-          )
+                roomId: group.id,
+                companyId: companyId,
+                limit:
+                    5, // Fetch a few messages to get the latest (API returns oldest first)
+                offset: 0,
+              )
               .timeout(
-            const Duration(seconds: 3),
-            onTimeout: () {
-              debugPrint(
-                  '⏱️ [GroupsTab] Timeout fetching last message for ${group.id}');
-              return ApiResponse.error('Request timeout', statusCode: 408);
-            },
-          );
+                const Duration(seconds: 3),
+                onTimeout: () {
+                  debugPrint(
+                    '⏱️ [GroupsTab] Timeout fetching last message for ${group.id}',
+                  );
+                  return ApiResponse.error('Request timeout', statusCode: 408);
+                },
+              );
 
           String? lastMessage;
           // CRITICAL FIX: Use UnreadCountManager as source of truth for unread counts
@@ -2251,8 +2344,9 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
             final messages = messagesResponse.data!;
             if (messages.isNotEmpty) {
               // Filter out system messages
-              final nonSystemMessages =
-                  messages.where((msg) => !_isSystemMessage(msg)).toList();
+              final nonSystemMessages = messages
+                  .where((msg) => !_isSystemMessage(msg))
+                  .toList();
 
               if (nonSystemMessages.isNotEmpty) {
                 // API returns messages in chronological order (oldest first)
@@ -2294,7 +2388,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           );
         } catch (e) {
           debugPrint(
-              '⚠️ [GroupsTab] Failed to fetch last message for ${group.id}: $e');
+            '⚠️ [GroupsTab] Failed to fetch last message for ${group.id}: $e',
+          );
           return MapEntry(
             group.id,
             _LastMessageData(
@@ -2318,7 +2413,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     }
 
     debugPrint(
-        '✅ [GroupsTab] Background last message fetch completed for ${lastMessageData.length} groups');
+      '✅ [GroupsTab] Background last message fetch completed for ${lastMessageData.length} groups',
+    );
   }
 
   /// Update groups list with last message data
@@ -2358,7 +2454,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       }
 
       debugPrint(
-          '✅ [GroupsTab] Updated groups with last messages: ${updatedGroups.length} groups');
+        '✅ [GroupsTab] Updated groups with last messages: ${updatedGroups.length} groups',
+      );
     }
   }
 
@@ -2473,8 +2570,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     if (_currentUserId == null) {
       EnhancedToast.error(
         context,
-        title: 'Error',
-        message: 'User ID not available. Please try again.',
+        title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+        message: chatCallTr(context, 'chatCall_userIdNotAvailablePleaseTry', fallback: 'User ID not available. Please try again.'),
       );
       return;
     }
@@ -2498,13 +2595,15 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       // CRITICAL: When user returns from GroupChatScreen, immediately check for updates
       // This handles the case where tab is already active and didChangeDependencies might not fire
       debugPrint(
-          '🔄 [GroupsTab] User returned from GroupChatScreen, checking for updates...');
+        '🔄 [GroupsTab] User returned from GroupChatScreen, checking for updates...',
+      );
 
       // Multiple checks to ensure refresh happens:
       // 1. Immediate check (in case flag was set)
       if (mounted && GroupsTab._groupUpdated) {
         debugPrint(
-            '🔄 [GroupsTab] Group update detected immediately on return - refreshing...');
+          '🔄 [GroupsTab] Group update detected immediately on return - refreshing...',
+        );
         _checkGroupUpdateAndRefresh();
       }
 
@@ -2512,7 +2611,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && GroupsTab._groupUpdated) {
           debugPrint(
-              '🔄 [GroupsTab] Group update detected in postFrameCallback - refreshing...');
+            '🔄 [GroupsTab] Group update detected in postFrameCallback - refreshing...',
+          );
           _checkGroupUpdateAndRefresh();
         }
       });
@@ -2521,7 +2621,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted && GroupsTab._groupUpdated) {
           debugPrint(
-              '🔄 [GroupsTab] Group update detected in delayed check - refreshing...');
+            '🔄 [GroupsTab] Group update detected in delayed check - refreshing...',
+          );
           _checkGroupUpdateAndRefresh();
         }
       });
@@ -2539,8 +2640,10 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           const begin = Offset(0.0, 1.0);
           const end = Offset.zero;
           const curve = Curves.easeInOutQuart;
-          var tween =
-              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var tween = Tween(
+            begin: begin,
+            end: end,
+          ).chain(CurveTween(curve: curve));
           var offsetAnimation = animation.drive(tween);
           return SlideTransition(position: offsetAnimation, child: child);
         },
@@ -2549,21 +2652,6 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 
     // Handle result
     if (result != null && result is GroupChat) {
-      // OPTIMISTIC UPDATE: Immediately add new group to the list for instant UI feedback
-      // This ensures the new group appears immediately even before API refresh completes
-      if (mounted) {
-        setState(() {
-          // Check if group already exists (avoid duplicates)
-          final exists = _groups.any((g) => g.id == result.id);
-          if (!exists) {
-            _groups.insert(0, result); // Add to top of list
-            _filterGroups(); // Re-apply filtering
-            debugPrint(
-                '⚡ [GroupsTab] Optimistically added new group: ${result.name}');
-          }
-        });
-      }
-
       // CRITICAL FIX: Invalidate cache immediately after group creation
       // This ensures the next _loadGroups call will fetch fresh data from API
       _invalidateGroupsCache();
@@ -2574,10 +2662,12 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         try {
           await _loadGroups(force: true);
           debugPrint(
-              '✅ [GroupsTab] Refreshed groups list after group creation (immediate)');
+            '✅ [GroupsTab] Refreshed groups list after group creation (immediate)',
+          );
         } catch (e) {
           debugPrint(
-              '⚠️ [GroupsTab] Failed to refresh groups list after creation: $e');
+            '⚠️ [GroupsTab] Failed to refresh groups list after creation: $e',
+          );
           // Optimistic update already added the group, so no fallback needed
         }
       }
@@ -2585,8 +2675,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       // Show success notification
       EnhancedToast.success(
         context,
-        title: 'Group Created',
-        message: 'Group created successfully!',
+        title: chatCallTr(context, 'chatCall_groupCreated', fallback: 'Group Created'),
+        message: chatCallTr(context, 'chatCall_groupCreatedSuccessfully', fallback: 'Group created successfully!'),
       );
     }
   }
@@ -2594,9 +2684,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
   void _navigateToNeighbourScreen() {
     NavigationHelper.pushRoute(
       context,
-      MaterialPageRoute(
-        builder: (context) => const NeighbourScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const NeighbourScreen()),
     );
   }
 
@@ -2606,8 +2694,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     if (group.creatorId != _currentUserId) {
       EnhancedToast.error(
         context,
-        title: 'Access Denied',
-        message: 'Only group admin can edit this group',
+        title: chatCallTr(context, 'chatCall_accessDenied', fallback: 'Access Denied'),
+        message: chatCallTr(context, 'chatCall_onlyGroupAdminCanEditThis', fallback: 'Only group admin can edit this group'),
       );
       return;
     }
@@ -2622,8 +2710,10 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           const begin = Offset(0.0, 1.0);
           const end = Offset.zero;
           const curve = Curves.easeInOutQuart;
-          var tween =
-              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var tween = Tween(
+            begin: begin,
+            end: end,
+          ).chain(CurveTween(curve: curve));
           var offsetAnimation = animation.drive(tween);
           return SlideTransition(position: offsetAnimation, child: child);
         },
@@ -2632,13 +2722,16 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 
     // Handle the updated group
     if (result != null && result is GroupChat) {
+      _invalidateGroupsCache();
+
       // Immediately refresh groups list from API to get latest data
       // No delay - call API immediately for fast loading like Postman
       if (mounted && !_isLoadingGroups) {
         try {
           await _loadGroups(force: true);
           debugPrint(
-              '✅ [GroupsTab] Refreshed groups list after group update (immediate)');
+            '✅ [GroupsTab] Refreshed groups list after group update (immediate)',
+          );
         } catch (e) {
           debugPrint('⚠️ [GroupsTab] Failed to refresh groups list: $e');
           // Fallback: update local state if refresh fails
@@ -2648,8 +2741,9 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
               if (index != -1) {
                 _groups[index] = result;
                 // Also update filtered groups if it exists there
-                final filteredIndex =
-                    _filteredGroups.indexWhere((g) => g.id == result.id);
+                final filteredIndex = _filteredGroups.indexWhere(
+                  (g) => g.id == result.id,
+                );
                 if (filteredIndex != -1) {
                   _filteredGroups[filteredIndex] = result;
                 }
@@ -2662,8 +2756,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       // Show success notification
       EnhancedToast.success(
         context,
-        title: 'Group Updated',
-        message: 'Group updated successfully!',
+        title: chatCallTr(context, 'chatCall_groupUpdated', fallback: 'Group Updated'),
+        message: chatCallTr(context, 'chatCall_groupUpdatedSuccessfully', fallback: 'Group updated successfully!'),
       );
     }
   }
@@ -2684,8 +2778,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     if (!_canDeleteGroup(group)) {
       EnhancedToast.error(
         context,
-        title: 'Access Denied',
-        message: 'You are not allowed to delete this group',
+        title: chatCallTr(context, 'chatCall_accessDenied', fallback: 'Access Denied'),
+        message: chatCallTr(context, 'chatCall_youAreNotAllowedToDelete', fallback: 'You are not allowed to delete this group'),
       );
       return;
     }
@@ -2695,9 +2789,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       context: context,
       barrierDismissible: true,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -2723,8 +2815,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
               ),
               const SizedBox(height: 24),
               // Title
-              const Text(
-                'Delete Group',
+              Text(chatCallTr(context, 'chatCall_deleteGroup', fallback: 'Delete Group'),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -2734,8 +2825,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
               ),
               const SizedBox(height: 12),
               // Message
-              Text(
-                'This group will be permanently deleted. This action cannot be undone.',
+              Text(chatCallTr(context, 'chatCall_groupDeleteWarning', fallback: 'This group will be permanently deleted. This action cannot be undone.'),
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey.shade700,
@@ -2762,8 +2852,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Cancel',
+                        child: Text(chatCallTr(context, 'chatCall_cancel', fallback: 'Cancel'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -2782,10 +2871,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            Colors.red.shade400,
-                            Colors.red.shade600,
-                          ],
+                          colors: [Colors.red.shade400, Colors.red.shade600],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
@@ -2806,8 +2892,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Delete',
+                        child: Text(chatCallTr(context, 'chatCall_delete', fallback: 'Delete'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -2832,9 +2917,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
     try {
@@ -2849,16 +2932,20 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       if (!mounted) return;
 
       if (response.success) {
+        _invalidateGroupsCache();
+
         // Immediately refresh groups list from API to get latest data
         // No delay - call API immediately for fast loading like Postman
         if (mounted && !_isLoadingGroups) {
           try {
             await _loadGroups(force: true);
             debugPrint(
-                '✅ [GroupsTab] Refreshed groups list after group deletion (immediate)');
+              '✅ [GroupsTab] Refreshed groups list after group deletion (immediate)',
+            );
           } catch (e) {
             debugPrint(
-                '⚠️ [GroupsTab] Failed to refresh groups list after deletion: $e');
+              '⚠️ [GroupsTab] Failed to refresh groups list after deletion: $e',
+            );
             // Fallback: remove from local state if refresh fails
             if (mounted) {
               setState(() {
@@ -2872,8 +2959,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         // Show success notification
         EnhancedToast.success(
           context,
-          title: 'Group Deleted',
-          message: 'Group deleted successfully',
+          title: chatCallTr(context, 'chatCall_groupDeleted', fallback: 'Group Deleted'),
+          message: chatCallTr(context, 'chatCall_groupDeletedSuccessfully', fallback: 'Group deleted successfully'),
         );
 
         // Check if user is currently in this group chat and navigate back
@@ -2884,8 +2971,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         if (statusCode == 403) {
           EnhancedToast.error(
             context,
-            title: 'Access Denied',
-            message: 'You are not allowed to delete this group',
+            title: chatCallTr(context, 'chatCall_accessDenied', fallback: 'Access Denied'),
+            message: chatCallTr(context, 'chatCall_youAreNotAllowedToDelete', fallback: 'You are not allowed to delete this group'),
           );
         } else if (statusCode == 404) {
           // Group already deleted - remove from UI silently
@@ -2899,7 +2986,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         } else {
           EnhancedToast.error(
             context,
-            title: 'Error',
+            title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
             message: response.displayError,
           );
         }
@@ -2910,8 +2997,182 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         Navigator.pop(context);
         EnhancedToast.error(
           context,
-          title: 'Error',
-          message: 'Failed to delete group: $e',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+          message: chatCallTr(context, 'chatCall_failedToDeleteGroup', fallback: 'Failed to delete group: {error}', params: {'error': '$e'}),
+        );
+      }
+    }
+  }
+
+  /// Leave a group with confirmation and API call
+  Future<void> _leaveGroup(GroupChat group) async {
+    final shouldLeave = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.red.withOpacity(0.1),
+                ),
+                child: const Icon(
+                  Icons.exit_to_app_rounded,
+                  color: Colors.red,
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                chatCallTr(
+                  context,
+                  'chatCall_leaveGroup',
+                  fallback: 'Leave Group',
+                ),
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                chatCallTr(
+                  context,
+                  'chatCall_leaveGroupNoMoreMessages',
+                  fallback:
+                      'You will no longer receive messages from "{groupName}".',
+                  params: {'groupName': group.name},
+                ),
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey.shade700,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 56,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.black, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          chatCallTr(
+                            context,
+                            'chatCall_cancelUpper',
+                            fallback: 'CANCEL',
+                          ),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: SizedBox(
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          chatCallTr(
+                            context,
+                            'chatCall_leaveGroup',
+                            fallback: 'Leave',
+                          ),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (shouldLeave != true || !mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final response = await _roomService.leaveRoom(group.id);
+
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      if (!mounted) return;
+
+      if (response.success) {
+        _markUserLeftGroup(group.id);
+        _removeGroup(group.id);
+        _invalidateGroupsCache();
+        await _chatService.leaveRoom(group.id);
+
+        if (mounted && !_isLoadingGroups) {
+          await _loadGroups(force: true);
+        }
+
+        EnhancedToast.success(
+          context,
+          title: chatCallTr(context, 'chatCall_leftGroup', fallback: 'Left Group'),
+          message: 'You have left ${group.name}',
+        );
+      } else {
+        EnhancedToast.error(
+          context,
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+          message: response.displayError,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        EnhancedToast.error(
+          context,
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+          message: chatCallTr(context, 'chatCall_failedToLeaveGroup', fallback: 'Failed to leave group: {error}', params: {'error': '$e'}),
         );
       }
     }
@@ -2922,21 +3183,25 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: const Text(
-          'Failed to delete group due to server error. Would you like to try again?',
+        title: Text(chatCallTr(context, 'chatCall_error', fallback: 'Error')),
+        content: Text(
+          chatCallTr(context, 'chatCall_failedDeleteGroupRetry', fallback: 'Failed to delete group due to server error. Would you like to try again?'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('CANCEL'),
+            child: Text(
+              chatCallTr(context, 'chatCall_cancelUpper', fallback: 'CANCEL'),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _deleteGroup(group);
             },
-            child: const Text('RETRY'),
+            child: Text(
+              chatCallTr(context, 'chatCall_retryUpper', fallback: 'RETRY'),
+            ),
           ),
         ],
       ),
@@ -2964,7 +3229,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       // while the GroupsTab is already active
       if (GroupsTab._groupUpdated) {
         debugPrint(
-            '🔄 [GroupsTab] Group update detected in build() - immediately refreshing...');
+          '🔄 [GroupsTab] Group update detected in build() - immediately refreshing...',
+        );
         _checkGroupUpdateAndRefresh();
       }
     });
@@ -2976,135 +3242,139 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         curve: Curves.easeOut,
         padding: EdgeInsets.only(bottom: bottomInset),
         child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-          ),
+          decoration: const BoxDecoration(color: Colors.white),
           child: Column(
             children: [
-            // Groups info card with gradient
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 12,
-                      offset: const Offset(0, 8),
-                    ),
-                    BoxShadow(
-                      color: Colors.redAccent.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header with gradient
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xffc62828), Color(0xffff8a80)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(24),
-                          topRight: Radius.circular(24),
-                        ),
+              // Groups info card with gradient
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 12,
+                        offset: const Offset(0, 8),
                       ),
-                      child: Stack(
-                        children: [
-                          // Background large icon for depth effect
-                          // Positioned(
-                          //   right: -10,
-                          //   top: -10,
-                          //   child: Icon(
-                          //     Icons.group_rounded,
-                          //     color: Colors.white.withOpacity(0.2),
-                          //     size: 64,
-                          //   ),
-                          // ),
-                          // // Main content
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.group_rounded,
-                                color: Colors.white,
-                                size: 28,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Chat Groups',
-                                style: GoogleFonts.montserrat(
+                      BoxShadow(
+                        color: Colors.redAccent.withOpacity(0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header with gradient
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xffc62828), Color(0xffff8a80)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(24),
+                            topRight: Radius.circular(24),
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            // Background large icon for depth effect
+                            // Positioned(
+                            //   right: -10,
+                            //   top: -10,
+                            //   child: Icon(
+                            //     Icons.group_rounded,
+                            //     color: Colors.white.withOpacity(0.2),
+                            //     size: 64,
+                            //   ),
+                            // ),
+                            // // Main content
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.group_rounded,
                                   color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                                  size: 28,
                                 ),
-                              ),
-                              const Spacer(),
-                              // WebSocket connection status indicator
-                              Tooltip(
-                                message: _isWebSocketConnected
-                                    ? 'Real-time messaging active'
-                                    : 'Real-time messaging unavailable',
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: _isWebSocketConnected
-                                            ? Colors.green.shade300
-                                            : Colors.white.withOpacity(0.6),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      _isWebSocketConnected
-                                          ? 'Online'
-                                          : 'Offline',
-                                      style: GoogleFonts.montserrat(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
+                                const SizedBox(width: 12),
+                                Text(chatCallTr(context, 'Chat Groups', fallback: 'Chat Groups'),
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Info content
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Create and join groups to communicate with other society members on specific topics.',
-                            style: GoogleFonts.montserrat(
-                              color: Colors.grey.shade800,
-                              fontSize: 14,
-                              height: 1.4,
-                              fontWeight: FontWeight.w500,
+                                const Spacer(),
+                                // WebSocket connection status indicator
+                                Tooltip(
+                                  message: _isWebSocketConnected
+                                      ? 'Real-time messaging active'
+                                      : 'Real-time messaging unavailable',
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: _isWebSocketConnected
+                                              ? Colors.green.shade300
+                                              : Colors.white.withOpacity(0.6),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        _isWebSocketConnected
+                                            ? chatCallTr(
+                                                context,
+                                                'chatCall_online',
+                                                fallback: 'Online',
+                                              )
+                                            : chatCallTr(
+                                                context,
+                                                'chatCall_offline',
+                                                fallback: 'Offline',
+                                              ),
+                                        style: GoogleFonts.montserrat(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          ],
+                        ),
+                      ),
+
+                      // Info content
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(chatCallTr(context, 'chatCall_createAndJoinGroupsToCommunicate', fallback: 'Create and join groups to communicate with other society members on specific topics.'),
+                              style: GoogleFonts.montserrat(
+                                color: Colors.grey.shade800,
+                                fontSize: 14,
+                                height: 1.4,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Container(
                                   padding: const EdgeInsets.symmetric(
@@ -3116,7 +3386,14 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
-                                    'Total: ${_groups.length}',
+                                    chatCallTr(
+                                      context,
+                                      'chatCall_totalCount',
+                                      fallback: 'Total: {count}',
+                                      params: {
+                                        'count': '${_groups.length}',
+                                      },
+                                    ),
                                     style: GoogleFonts.montserrat(
                                       color: const Color(0xffc62828),
                                       fontSize: 12,
@@ -3143,8 +3420,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                       color: Colors.white,
                                       size: 18,
                                     ),
-                                    label: Text(
-                                      'Create Group',
+                                    label: Text(chatCallTr(context, 'chatCall_createGroup', fallback: 'Create Group'),
                                       style: GoogleFonts.montserrat(
                                         color: Colors.white,
                                         fontSize: 12,
@@ -3158,114 +3434,122 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                         horizontal: 16,
                                         vertical: 8,
                                       ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      elevation: 0,
                                     ),
-                                    elevation: 0,
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Enhanced search bar
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade300),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 12),
+                    const Icon(Icons.search, color: Colors.grey, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: chatCallTr(
+                            context,
+                            'chatCall_searchGroupsHint',
+                            fallback: 'Search groups...',
                           ),
-                        ],
+                          hintStyle: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 14,
+                          ),
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xffffebee),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.mic_none,
+                          color: Color(0xffc62828),
+                          size: 20,
+                        ),
+                        onPressed: _startListening,
+                        tooltip: chatCallTr(
+                          context,
+                          'chatCall_voiceSearch',
+                          fallback: 'Voice Search',
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
 
-            // Enhanced search bar
-            Container(
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade300),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  const SizedBox(width: 12),
-                  const Icon(Icons.search, color: Colors.grey, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search groups...',
-                        hintStyle: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontSize: 14,
-                        ),
-                        border: InputBorder.none,
+              // Groups list
+              Expanded(
+                child: Builder(
+                  builder: (context) {
+                    final groupsToShow = _searchQuery.isEmpty
+                        ? _groups
+                        : _filteredGroups;
+                    final hasGroups = groupsToShow.isNotEmpty;
+                    if (_hasError && _groups.isEmpty) {
+                      return _buildErrorState();
+                    }
+                    if (!hasGroups) {
+                      return _isLoading
+                          ? OneGateGlobalLoader(
+                              title: chatCallTr(context, 'chatCall_loadingGroups', fallback: 'Loading Groups'),
+                              subtitle: chatCallTr(context, 'chatCall_fetchingYourGroupChats', fallback: 'Fetching your group chats...'),
+                            )
+                          : _buildEmptyState();
+                    }
+                    return RefreshIndicator(
+                      onRefresh: _loadGroups,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        itemCount: groupsToShow.length,
+                        physics: const BouncingScrollPhysics(),
+                        itemBuilder: (context, index) {
+                          final group = groupsToShow[index];
+                          // Match 1-to-1 logic: show indicator when unread > 0 regardless of opened flag
+                          final isOpened =
+                              group.unreadCount == 0 &&
+                              _openedGroups.contains(group.id);
+                          return _buildGroupCard(group, isOpened: isOpened);
+                        },
                       ),
-                    ),
-                  ),
-                  Container(
-                    margin: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      color: Color(0xffffebee),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        _isListening ? Icons.mic : Icons.mic_none,
-                        color:
-                            _isListening ? Colors.red : const Color(0xffc62828),
-                        size: 20,
-                      ),
-                      onPressed:
-                          _isListening ? _stopListening : _startListening,
-                      tooltip: 'Voice Search',
-                    ),
-                  ),
-                ],
+                    );
+                  },
+                ),
               ),
-            ),
-
-            // Groups list
-            Expanded(
-              child: Builder(
-                builder: (context) {
-                  final groupsToShow =
-                      _searchQuery.isEmpty ? _groups : _filteredGroups;
-                  final hasGroups = groupsToShow.isNotEmpty;
-                  if (_hasError && _groups.isEmpty) {
-                    return _buildErrorState();
-                  }
-                  if (!hasGroups) {
-                    return _isLoading
-                        ? const OneGateGlobalLoader(
-                            title: 'Loading Groups',
-                            subtitle: 'Fetching your group chats...',
-                          )
-                        : _buildEmptyState();
-                  }
-                  return RefreshIndicator(
-                    onRefresh: _loadGroups,
-                    child: ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      itemCount: groupsToShow.length,
-                      physics: const BouncingScrollPhysics(),
-                      itemBuilder: (context, index) {
-                        final group = groupsToShow[index];
-                        // Match 1-to-1 logic: show indicator when unread > 0 regardless of opened flag
-                        final isOpened = group.unreadCount == 0 &&
-                            _openedGroups.contains(group.id);
-                        return _buildGroupCard(group, isOpened: isOpened);
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
             ],
           ),
         ),
@@ -3282,7 +3566,10 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 28,
+                ),
                 margin: const EdgeInsets.symmetric(horizontal: 24),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -3312,8 +3599,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'No groups found',
+                    Text(chatCallTr(context, 'chatCall_noGroupsFound', fallback: 'No groups found'),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -3322,8 +3608,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'Create a new group to start chatting',
+                    Text(chatCallTr(context, 'Create a new group to start chatting', fallback: 'Create a new group to start chatting'),
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 14,
@@ -3355,8 +3640,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                           color: Colors.white,
                           size: 20,
                         ),
-                        label: const Text(
-                          'Create Group',
+                        label: Text(chatCallTr(context, 'chatCall_createGroup', fallback: 'Create Group'),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -3367,7 +3651,9 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 14),
+                            horizontal: 24,
+                            vertical: 14,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -3394,7 +3680,10 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 28,
+                ),
                 margin: const EdgeInsets.symmetric(horizontal: 24),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -3424,8 +3713,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Unable to load groups',
+                    Text(chatCallTr(context, 'chatCall_unableToLoadGroups', fallback: 'Unable to load groups'),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -3451,12 +3739,20 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                     ElevatedButton.icon(
                       onPressed: _loadGroups,
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
+                      label: Text(
+                        chatCallTr(
+                          context,
+                          'chatCall_retry',
+                          fallback: 'Retry',
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   ],
@@ -3470,13 +3766,15 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
   }
 
   Widget _buildGroupCard(GroupChat group, {bool isOpened = false}) {
+    final ui = IntercomUiStringsScope.of(context);
     final bool isAdmin = group.creatorId == _currentUserId;
 
     // Match the exact behavior from _ChatHistoryItem in chat & call history
     // If chat has been opened before, always show last message (no count, no badge, no indicator)
     // If chat hasn't been opened, show count/new messages with badge and indicator
-    final lastMessagePreview =
-        ActivityPreviewHelper.fromStored(group.lastMessage);
+    final lastMessagePreview = ActivityPreviewHelper.fromStored(
+      group.lastMessage,
+    );
     final String lastMessageText = lastMessagePreview.text;
     String displayMessage;
     bool showIndicator = false;
@@ -3486,11 +3784,10 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 
     // Check if there are any messages in the group
     final hasMessages =
-        lastMessageText.isNotEmpty && lastMessageText != 'No messages yet';
+        lastMessageText.isNotEmpty && lastMessageText != ui.noMessagesYet;
 
     if (!hasMessages) {
-      // No messages in the group: show "No messages yet"
-      displayMessage = 'No messages yet';
+      displayMessage = ui.noMessagesYet;
       showIndicator = false;
       showBadge = false;
     } else if (isOpened) {
@@ -3502,19 +3799,17 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     } else {
       // Group hasn't been opened: show count/new messages with badge and indicator
       if (group.unreadCount > 1) {
-        // More than 1 unread message: show count with "new messages"
-        displayMessage = '${group.unreadCount} new messages';
+        displayMessage = ui.newMessagesCount(group.unreadCount);
         showIndicator = true;
         showBadge = true;
       } else if (group.unreadCount == 1) {
         // Exactly 1 unread message: show first 10 characters (matching chat history behavior)
-        if (lastMessageText.isNotEmpty &&
-            lastMessageText != 'No messages yet') {
+        if (lastMessageText.isNotEmpty && lastMessageText != ui.noMessagesYet) {
           displayMessage = lastMessageText.length > 10
               ? '${lastMessageText.substring(0, 10)}...'
               : lastMessageText;
         } else {
-          displayMessage = 'New message';
+          displayMessage = ui.newMessage;
         }
         showIndicator = true;
         showBadge = true;
@@ -3535,9 +3830,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: Colors.grey.shade100,
-          ),
+          side: BorderSide(color: Colors.grey.shade100),
         ),
         color: Colors.white,
         shadowColor: Colors.black12,
@@ -3563,14 +3856,15 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                             color: const Color(0xffffebee),
                             borderRadius: BorderRadius.circular(25),
                           ),
-                          child: group.iconUrl != null &&
-                                  group.iconUrl!.isNotEmpty
+                          child:
+                              group.iconUrl != null && group.iconUrl!.isNotEmpty
                               ? ClipRRect(
                                   borderRadius: BorderRadius.circular(25),
                                   child: Image.network(
                                     group.iconUrl!,
                                     key: ValueKey(
-                                        '${group.id}_${group.iconUrl}'), // Force reload when iconUrl changes
+                                      '${group.id}_${group.iconUrl}',
+                                    ), // Force reload when iconUrl changes
                                     width: 50,
                                     height: 50,
                                     fit: BoxFit.cover,
@@ -3591,19 +3885,20 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                     },
                                     loadingBuilder:
                                         (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      // Show initials while loading
-                                      return Center(
-                                        child: Text(
-                                          group.initials,
-                                          style: const TextStyle(
-                                            color: Color(0xffc62828),
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 18,
-                                          ),
-                                        ),
-                                      );
-                                    },
+                                          if (loadingProgress == null)
+                                            return child;
+                                          // Show initials while loading
+                                          return Center(
+                                            child: Text(
+                                              group.initials,
+                                              style: const TextStyle(
+                                                color: Color(0xffc62828),
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 18,
+                                              ),
+                                            ),
+                                          );
+                                        },
                                   ),
                                 )
                               : Center(
@@ -3714,12 +4009,12 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFEE4D5F)
-                                        .withOpacity(0.1),
+                                    color: const Color(
+                                      0xFFEE4D5F,
+                                    ).withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: const Text(
-                                    'Admin',
+                                  child: Text(chatCallTr(context, 'chatCall_admin', fallback: 'Admin'),
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
@@ -3786,7 +4081,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                             horizontal: 16,
                             vertical: 8,
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
@@ -3795,8 +4090,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                 color: Colors.blue,
                               ),
                               SizedBox(width: 4),
-                              Text(
-                                'Chat',
+                              Text(chatCallTr(context, 'chatCall_chat', fallback: 'Chat'),
                                 style: TextStyle(
                                   color: Colors.blue,
                                   fontWeight: FontWeight.w500,
@@ -3822,7 +4116,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                               horizontal: 16,
                               vertical: 8,
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
@@ -3831,8 +4125,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                   color: Colors.red,
                                 ),
                                 SizedBox(width: 4),
-                                Text(
-                                  'Delete',
+                                Text(chatCallTr(context, 'chatCall_delete', fallback: 'Delete'),
                                   style: TextStyle(
                                     color: Colors.red,
                                     fontWeight: FontWeight.w500,
@@ -3876,104 +4169,169 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
   }
 
   void _showGroupInfoBottomSheet(GroupChat group) async {
-    // Show loading bottom sheet first with OneApp global loader
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      isDismissible: false,
-      enableDrag: false,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        child: const Center(
-          child: Padding(
-            padding: EdgeInsets.all(32.0),
-            child: AppLoader(),
-          ),
-        ),
-      ),
-    );
-
     try {
-      final companyId = await _apiService.getSelectedSocietyId();
+      final companyId =
+          await _apiService.getSelectedSocietyId() ??
+          ref.read(selectedFlatProvider).selectedSociety?.socId;
       if (companyId == null) {
         if (mounted) {
-          Navigator.pop(context);
           EnhancedToast.error(
             context,
-            title: 'Error',
-            message: 'Please select a society first',
+            title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+            message: chatCallTr(context, 'chatCall_pleaseSelectSociety', fallback: 'Please select a society first'),
           );
         }
         return;
       }
 
-      // Check cache first
-      final cached = _roomInfoCache[group.id];
-      RoomInfo? roomInfo;
+      final loader = GroupInfoLoader();
+      final globalCache = RoomInfoCache();
+      RoomInfo? displayInfo = loader.cachedForDisplay(group.id, companyId);
 
-      if (cached != null &&
-          DateTime.now().difference(cached.timestamp) < _roomInfoCacheExpiry &&
-          cached.roomInfo != null) {
-        // Use cached data
-        roomInfo = cached.roomInfo;
-        debugPrint(
-            '✅ [GroupsTab] Using cached room info for info bottom sheet: ${group.id}');
-        // Close loading sheet
-        Navigator.pop(context);
-        _showGroupInfoBottomSheetContent(group, roomInfo!);
-      } else {
-        // Fetch fresh data
-        final response = await _roomService.getRoomInfo(
-          roomId: group.id,
-          companyId: companyId,
+      if (displayInfo != null &&
+          displayInfo.members.isEmpty &&
+          displayInfo.memberCount > 0) {
+        final staleWithMembers = loader.staleCachedForDisplay(
+          group.id,
+          companyId,
         );
-
-        if (!mounted) return;
-
-        // Close loading sheet
-        Navigator.pop(context);
-
-        if (!response.success || response.data == null) {
-          // Handle errors
-          final statusCode = response.statusCode ?? 0;
-          if (statusCode == 403 || statusCode == 404) {
-            EnhancedToast.error(
-              context,
-              title: 'Error',
-              message: 'Group information unavailable',
-            );
-          } else {
-            EnhancedToast.error(
-              context,
-              title: 'Error',
-              message: response.displayError,
-            );
-          }
-          return;
+        if (staleWithMembers != null && staleWithMembers.members.isNotEmpty) {
+          displayInfo = staleWithMembers;
         }
-
-        roomInfo = response.data!;
-        // Cache the result
-        _roomInfoCache[group.id] = _CachedRoomInfo(
-          roomInfo: roomInfo,
-          timestamp: DateTime.now(),
-        );
-        _showGroupInfoBottomSheetContent(group, roomInfo);
       }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context);
+
+      displayInfo ??= loader.staleCachedForDisplay(group.id, companyId);
+      displayInfo ??= globalCache.getStaleCachedRoomInfoForDisplay(
+        group.id,
+        companyId,
+        ignoreLeaveWindow: true,
+      );
+
+      final tabCached = _roomInfoCache[group.id];
+      if (displayInfo == null &&
+          tabCached != null &&
+          DateTime.now().difference(tabCached.timestamp) < _roomInfoCacheExpiry &&
+          tabCached.roomInfo != null &&
+          tabCached.roomInfo!.members.isNotEmpty) {
+        displayInfo = tabCached.roomInfo;
+      }
+
+      if (displayInfo != null &&
+          displayInfo.members.isEmpty &&
+          group.members.isNotEmpty) {
+        displayInfo = RoomInfo(
+          id: displayInfo.id.isNotEmpty ? displayInfo.id : group.id,
+          name: displayInfo.name.isNotEmpty ? displayInfo.name : group.name,
+          description: displayInfo.description ?? group.description,
+          createdBy: displayInfo.createdBy.isNotEmpty
+              ? displayInfo.createdBy
+              : group.creatorId,
+          createdAt: displayInfo.createdAt,
+          lastActive: displayInfo.lastActive ?? group.lastMessageTime,
+          memberCount: displayInfo.memberCount > 0
+              ? displayInfo.memberCount
+              : (group.memberCount ?? group.members.length),
+          admin: displayInfo.admin,
+          members: group.members
+              .map(
+                (c) => RoomInfoMember(
+                  userId: c.id,
+                  username: c.name,
+                  avatar: c.photoUrl,
+                  isAdmin: group.creatorId == c.id,
+                  numericUserId: c.numericUserId,
+                  status: 'active',
+                ),
+              )
+              .toList(),
+          photos: displayInfo.photos,
+        );
+      }
+
+      if (displayInfo != null && displayInfo.members.isNotEmpty) {
+        debugPrint(
+          '✅ [GroupsTab] Showing cached group info immediately: ${group.id}',
+        );
+        _showGroupInfoBottomSheetContent(group, displayInfo);
+        unawaited(
+          loader
+              .loadFresh(
+                roomId: group.id,
+                companyId: companyId,
+                roomService: _roomService,
+                forceRefresh: true,
+              )
+              .then((result) {
+                if (result.roomInfo != null) {
+                  _roomInfoCache[group.id] = _CachedRoomInfo(
+                    roomInfo: result.roomInfo!,
+                    timestamp: DateTime.now(),
+                  );
+                }
+              }),
+        );
+        return;
+      }
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        isDismissible: false,
+        enableDrag: false,
+        builder: (context) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: OneGateGlobalLoader(
+                title: chatCallTr(context, 'chatCall_loadingGroupInfo', fallback: 'Loading Group Info'),
+                subtitle: chatCallTr(context, 'chatCall_fetchingGroupDetails', fallback: 'Fetching group details...'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final result = await loader.loadFresh(
+        roomId: group.id,
+        companyId: companyId,
+        roomService: _roomService,
+        forceRefresh: true,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      if (result.roomInfo == null) {
         EnhancedToast.error(
           context,
-          title: 'Error',
-          message: 'Group information unavailable',
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+          message: result.error ?? chatCallTr(context, 'chatCall_groupInfoUnavailable', fallback: 'Group information unavailable'),
+        );
+        return;
+      }
+
+      _roomInfoCache[group.id] = _CachedRoomInfo(
+        roomInfo: result.roomInfo!,
+        timestamp: DateTime.now(),
+      );
+      _showGroupInfoBottomSheetContent(group, result.roomInfo!);
+    } catch (e) {
+      if (mounted) {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+        EnhancedToast.error(
+          context,
+          title: chatCallTr(context, 'chatCall_error', fallback: 'Error'),
+          message: chatCallTr(context, 'chatCall_groupInfoUnavailable', fallback: 'Group information unavailable'),
         );
       }
     }
@@ -3990,9 +4348,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       elevation: 10,
       builder: (context) => Container(
@@ -4054,21 +4410,22 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                 color: AppColors.primary.withOpacity(0.1),
                                 shape: BoxShape.circle,
                               ),
-                              child: group.iconUrl != null &&
+                              child:
+                                  group.iconUrl != null &&
                                       group.iconUrl!.isNotEmpty
                                   ? ClipRRect(
                                       borderRadius: BorderRadius.circular(30),
                                       child: Image.network(
                                         group.iconUrl!,
                                         key: ValueKey(
-                                            '${group.id}_${group.iconUrl}'), // Force reload when iconUrl changes
+                                          '${group.id}_${group.iconUrl}',
+                                        ), // Force reload when iconUrl changes
                                         width: 60,
                                         height: 60,
                                         fit: BoxFit.cover,
                                         cacheWidth: 120, // Optimize cache
                                         cacheHeight: 120,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
+                                        errorBuilder: (context, error, stackTrace) {
                                           // Fallback to initials if image fails to load
                                           return Center(
                                             child: Text(
@@ -4083,21 +4440,21 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                         },
                                         loadingBuilder:
                                             (context, child, loadingProgress) {
-                                          if (loadingProgress == null) {
-                                            return child;
-                                          }
-                                          // Show initials while loading
-                                          return Center(
-                                            child: Text(
-                                              group.initials,
-                                              style: const TextStyle(
-                                                color: AppColors.primary,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 24,
-                                              ),
-                                            ),
-                                          );
-                                        },
+                                              if (loadingProgress == null) {
+                                                return child;
+                                              }
+                                              // Show initials while loading
+                                              return Center(
+                                                child: Text(
+                                                  group.initials,
+                                                  style: const TextStyle(
+                                                    color: AppColors.primary,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 24,
+                                                  ),
+                                                ),
+                                              );
+                                            },
                                       ),
                                     )
                                   : Center(
@@ -4140,7 +4497,11 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                             Navigator.pop(context);
                                             _navigateToEditGroup(group);
                                           },
-                                          tooltip: 'Edit Group',
+                                          tooltip: chatCallTr(
+                                            context,
+                                            'chatCall_editGroup',
+                                            fallback: 'Edit Group',
+                                          ),
                                           padding: EdgeInsets.zero,
                                           constraints: const BoxConstraints(
                                             minWidth: 30,
@@ -4180,7 +4541,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                       if (roomInfo.description != null &&
                           roomInfo.description!.isNotEmpty) ...[
                         InfoSection(
-                          title: 'Description',
+                          title: chatCallTr(context, 'chatCall_description', fallback: 'Description'),
                           icon: Icons.info_outline,
                           content: roomInfo.description!,
                           color: AppColors.primary,
@@ -4190,7 +4551,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 
                       // Created Date
                       InfoSection(
-                        title: 'Created',
+                        title: chatCallTr(context, 'chatCall_created', fallback: 'Created'),
                         icon: Icons.calendar_today,
                         content:
                             '${roomInfo.createdAt.day}/${roomInfo.createdAt.month}/${roomInfo.createdAt.year}',
@@ -4201,7 +4562,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                       // Last Active Time
                       if (roomInfo.lastActive != null)
                         InfoSection(
-                          title: 'Last Active',
+                          title: chatCallTr(context, 'chatCall_lastActive', fallback: 'Last Active'),
                           icon: Icons.access_time,
                           content: _getTimeAgo(roomInfo.lastActive!),
                           color: AppColors.primary,
@@ -4234,7 +4595,13 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                       _deleteGroup(group);
                                     },
                                     icon: const Icon(Icons.delete_outline),
-                                    label: const Text('Delete Group'),
+                                    label: Text(
+                                      chatCallTr(
+                                        context,
+                                        'chatCall_deleteGroup',
+                                        fallback: 'Delete Group',
+                                      ),
+                                    ),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.red,
                                       foregroundColor: Colors.white,
@@ -4244,6 +4611,33 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                                     ),
                                   ),
                                 ),
+                              if (showLeave) ...[
+                                if (isCreator) const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _leaveGroup(group);
+                                    },
+                                    icon: const Icon(Icons.exit_to_app_rounded),
+                                    label: Text(
+                                      chatCallTr(
+                                        context,
+                                        'chatCall_leaveGroup',
+                                        fallback: 'Leave Group',
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                      side: const BorderSide(color: Colors.red),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -4310,7 +4704,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(
                 Icons.admin_panel_settings,
@@ -4318,12 +4712,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                 color: AppColors.primary,
               ),
               SizedBox(width: 8),
-              Text(
-                'Admin',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              Text(chatCallTr(context, 'chatCall_admin', fallback: 'Admin'),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -4349,9 +4739,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                   children: [
                     Text(
                       admin.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                     if (admin.role != null && admin.role!.isNotEmpty)
                       Text(
@@ -4380,7 +4768,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(
                 Icons.admin_panel_settings,
@@ -4388,12 +4776,8 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                 color: AppColors.primary,
               ),
               SizedBox(width: 8),
-              Text(
-                'Admin',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              Text(chatCallTr(context, 'chatCall_admin', fallback: 'Admin'),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -4419,9 +4803,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                   children: [
                     Text(
                       adminName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                     if (adminEmail != null && adminEmail.isNotEmpty)
                       Text(
@@ -4454,20 +4836,12 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(
-                    Icons.people,
-                    size: 20,
-                    color: AppColors.primary,
-                  ),
+                  Icon(Icons.people, size: 20, color: AppColors.primary),
                   SizedBox(width: 8),
-                  Text(
-                    'Members',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Text(chatCallTr(context, 'chatCall_members', fallback: 'Members'),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -4483,8 +4857,10 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                   },
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.primary,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -4500,10 +4876,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
             ],
           ),
           const SizedBox(height: 12),
-          Divider(
-            color: Colors.grey.withOpacity(0.2),
-            thickness: 1,
-          ),
+          Divider(color: Colors.grey.withOpacity(0.2), thickness: 1),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.only(left: 28),
@@ -4519,11 +4892,13 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                     CircleAvatar(
                       radius: 18,
                       backgroundColor: Colors.grey.withOpacity(0.1),
-                      backgroundImage: (member.photoUrl != null &&
+                      backgroundImage:
+                          (member.photoUrl != null &&
                               member.photoUrl!.isNotEmpty)
                           ? NetworkImage(member.photoUrl!)
                           : null,
-                      onBackgroundImageError: (member.photoUrl != null &&
+                      onBackgroundImageError:
+                          (member.photoUrl != null &&
                               member.photoUrl!.isNotEmpty)
                           ? (exception, stackTrace) {
                               // Fallback to initials if image fails to load
@@ -4531,16 +4906,16 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                           : null,
                       child:
                           (member.photoUrl == null || member.photoUrl!.isEmpty)
-                              ? Text(
-                                  member.name.isNotEmpty
-                                      ? member.name[0].toUpperCase()
-                                      : '?',
-                                  style: const TextStyle(
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                )
-                              : null,
+                          ? Text(
+                              member.name.isNotEmpty
+                                  ? member.name[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          : null,
                     ),
                     const SizedBox(width: 12),
                     Column(
@@ -4548,9 +4923,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                       children: [
                         Text(
                           member.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
                         if (member.unit != null && member.unit!.isNotEmpty)
                           Text(
@@ -4573,8 +4946,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                           color: AppColors.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Text(
-                          'Admin',
+                        child: Text(chatCallTr(context, 'chatCall_admin', fallback: 'Admin'),
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -4596,44 +4968,48 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
     // Show all members with scrolling - no "View All" button
     final allMembers = roomInfo.members;
 
-    // If members list is empty, show AppLoader as loading indicator
+    // Members list empty after fetch — show count instead of infinite loader
     if (allMembers.isEmpty) {
+      final count = roomInfo.memberCount;
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(
-                  Icons.people,
-                  size: 20,
-                  color: AppColors.primary,
-                ),
+                Icon(Icons.people, size: 20, color: AppColors.primary),
                 SizedBox(width: 8),
-                Text(
-                  'Members',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Text(chatCallTr(context, 'chatCall_members', fallback: 'Members'),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            Divider(
-              color: Colors.grey.withOpacity(0.2),
-              thickness: 1,
-            ),
-            const SizedBox(height: 24),
-            const Center(
-              child: AppLoader(
-                title: 'Loading Members',
-                subtitle: 'Fetching group members...',
-                icon: Icons.people,
+            Divider(color: Colors.grey.withOpacity(0.2), thickness: 1),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.only(left: 28),
+              child: Text(
+                count > 0
+                    ? chatCallTr(
+                        context,
+                        'chatCall_memberCount',
+                        fallback: '{count} {unit}',
+                        params: {
+                          'count': '$count',
+                          'unit': count == 1
+                              ? chatCallTr(context, 'chatCall_memberSingular', fallback: 'member')
+                              : chatCallTr(context, 'chatCall_membersPlural', fallback: 'members'),
+                        },
+                      )
+                    : chatCallTr(context, 'chatCall_noMembersFound', fallback: 'No members found'),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade700,
+                ),
               ),
             ),
-            const SizedBox(height: 24),
           ],
         ),
       );
@@ -4644,28 +5020,17 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(
-                Icons.people,
-                size: 20,
-                color: AppColors.primary,
-              ),
+              Icon(Icons.people, size: 20, color: AppColors.primary),
               SizedBox(width: 8),
-              Text(
-                'Members',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              Text(chatCallTr(context, 'chatCall_members', fallback: 'Members'),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Divider(
-            color: Colors.grey.withOpacity(0.2),
-            thickness: 1,
-          ),
+          Divider(color: Colors.grey.withOpacity(0.2), thickness: 1),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.only(left: 28),
@@ -4681,12 +5046,13 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                 final displayName = member.username?.isNotEmpty == true
                     ? member.username!
                     : (member.userId.isNotEmpty
-                        ? member.userId.substring(
-                            0,
-                            member.userId.length > 10
-                                ? 10
-                                : member.userId.length)
-                        : 'User');
+                          ? member.userId.substring(
+                              0,
+                              member.userId.length > 10
+                                  ? 10
+                                  : member.userId.length,
+                            )
+                          : 'User');
                 final displayText = member.username?.isNotEmpty == true
                     ? member.username!
                     : (member.userId.isNotEmpty ? member.userId : 'User');
@@ -4698,14 +5064,14 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                       backgroundColor: Colors.grey.withOpacity(0.1),
                       backgroundImage:
                           (member.avatar != null && member.avatar!.isNotEmpty)
-                              ? NetworkImage(member.avatar!)
-                              : null,
+                          ? NetworkImage(member.avatar!)
+                          : null,
                       onBackgroundImageError:
                           (member.avatar != null && member.avatar!.isNotEmpty)
-                              ? (exception, stackTrace) {
-                                  // Fallback to initials if image fails to load
-                                }
-                              : null,
+                          ? (exception, stackTrace) {
+                              // Fallback to initials if image fails to load
+                            }
+                          : null,
                       child: (member.avatar == null || member.avatar!.isEmpty)
                           ? Text(
                               displayName.isNotEmpty
@@ -4725,9 +5091,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                         children: [
                           Text(
                             displayText,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: const TextStyle(fontWeight: FontWeight.w500),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -4753,8 +5117,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
                           color: AppColors.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Text(
-                          'Admin',
+                        child: Text(chatCallTr(context, 'chatCall_admin', fallback: 'Admin'),
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -4770,60 +5133,6 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         ],
       ),
     );
-  }
-
-  // Start voice listening
-  Future<void> _startListening() async {
-    final result = await NavigationHelper.pushRoute<String>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => VoiceSearchScreen(
-          onTextRecognized: (text) {
-            // Update search field with recognized text in real-time
-            if (mounted) {
-              setState(() {
-                _searchController.text = text;
-                _searchController.selection = TextSelection.fromPosition(
-                  TextPosition(offset: text.length),
-                );
-                _searchQuery = text;
-                _filterGroups();
-              });
-            }
-          },
-          onFinalResult: (text) {
-            // Final result - set text and filter
-            if (mounted) {
-              setState(() {
-                _searchController.text = text;
-                _searchController.selection = TextSelection.fromPosition(
-                  TextPosition(offset: text.length),
-                );
-                _searchQuery = text;
-                _filterGroups();
-              });
-            }
-          },
-        ),
-      ),
-    );
-
-    // Update state after returning from voice search screen
-    if (mounted && result != null) {
-      setState(() {
-        _isListening = false;
-      });
-    }
-  }
-
-  // Stop voice listening
-  void _stopListening() {
-    _speech.stop();
-    if (mounted) {
-      setState(() {
-        _isListening = false;
-      });
-    }
   }
 
   // Build Group Rules Section with point-wise format
@@ -4843,20 +5152,12 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(
-                Icons.rule,
-                size: 20,
-                color: AppColors.primary,
-              ),
+              Icon(Icons.rule, size: 20, color: AppColors.primary),
               SizedBox(width: 8),
-              Text(
-                'Group Rules',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              Text(chatCallTr(context, 'chatCall_groupRules', fallback: 'Group Rules'),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -4920,11 +5221,7 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                size: 20,
-                color: color,
-              ),
+              Icon(icon, size: 20, color: color),
               const SizedBox(width: 8),
               Text(
                 title,
@@ -4958,17 +5255,21 @@ class _GroupsTabState extends ConsumerState<GroupsTab> {
 class GroupMembersScreen extends StatelessWidget {
   final GroupChat group;
 
-  const GroupMembersScreen({
-    Key? key,
-    required this.group,
-  }) : super(key: key);
+  const GroupMembersScreen({Key? key, required this.group}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('${group.name} - Members'),
+        title: Text(
+          chatCallTr(
+            context,
+            'chatCall_groupMembersTitle',
+            fallback: '${group.name} - Members',
+            params: {'name': group.name},
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -4995,11 +5296,7 @@ class GroupMembersScreen extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.people,
-                  color: AppColors.primary,
-                  size: 24,
-                ),
+                const Icon(Icons.people, color: AppColors.primary, size: 24),
                 const SizedBox(width: 12),
                 Text(
                   '${group.members.length} ${group.members.length == 1 ? 'Member' : 'Members'}',
@@ -5011,20 +5308,14 @@ class GroupMembersScreen extends StatelessWidget {
               ],
             ),
           ),
-          Divider(
-            color: Colors.grey.withOpacity(0.2),
-            thickness: 1,
-            height: 1,
-          ),
+          Divider(color: Colors.grey.withOpacity(0.2), thickness: 1, height: 1),
           // Members list
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               itemCount: group.members.length,
-              separatorBuilder: (context, index) => Divider(
-                color: Colors.grey.withOpacity(0.2),
-                thickness: 1,
-              ),
+              separatorBuilder: (context, index) =>
+                  Divider(color: Colors.grey.withOpacity(0.2), thickness: 1),
               itemBuilder: (context, index) {
                 final member = group.members[index];
                 final isAdmin = member.id == group.creatorId;
@@ -5041,22 +5332,23 @@ class GroupMembersScreen extends StatelessWidget {
                         : Colors.grey.withOpacity(0.1),
                     backgroundImage:
                         (member.photoUrl != null && member.photoUrl!.isNotEmpty)
-                            ? NetworkImage(member.photoUrl!)
-                            : null,
+                        ? NetworkImage(member.photoUrl!)
+                        : null,
                     onBackgroundImageError:
                         (member.photoUrl != null && member.photoUrl!.isNotEmpty)
-                            ? (exception, stackTrace) {
-                                // Fallback to initials if image fails to load
-                              }
-                            : null,
+                        ? (exception, stackTrace) {
+                            // Fallback to initials if image fails to load
+                          }
+                        : null,
                     child: (member.photoUrl == null || member.photoUrl!.isEmpty)
                         ? Text(
                             member.name.isNotEmpty
                                 ? member.name[0].toUpperCase()
                                 : '?',
                             style: TextStyle(
-                              color:
-                                  isAdmin ? AppColors.primary : Colors.black87,
+                              color: isAdmin
+                                  ? AppColors.primary
+                                  : Colors.black87,
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                             ),
@@ -5083,8 +5375,7 @@ class GroupMembersScreen extends StatelessWidget {
                             color: AppColors.primary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            'Admin',
+                          child: Text(chatCallTr(context, 'chatCall_admin', fallback: 'Admin'),
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -5104,14 +5395,14 @@ class GroupMembersScreen extends StatelessWidget {
                           ),
                         )
                       : member.role != null && member.role!.isNotEmpty
-                          ? Text(
-                              member.role!,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey.shade600,
-                              ),
-                            )
-                          : null,
+                      ? Text(
+                          member.role!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        )
+                      : null,
                 );
               },
             ),

@@ -127,7 +127,8 @@ class TabLifecycleController {
     // Increment generation to invalidate any pending delayed operations
     _generation++;
     debugPrint(
-        '🟢 [TabLifecycleController] Tab $tabIndex became active (generation: $_generation)');
+      '🟢 [TabLifecycleController] Tab $tabIndex became active (generation: $_generation)',
+    );
 
     // Cancel any pending debounce timer
     _debounceTimer?.cancel();
@@ -156,7 +157,8 @@ class TabLifecycleController {
     final ownerId = 'tab_$tabIndex';
     RequestScheduler().cancelOwnerRequests(ownerId, newGeneration: _generation);
     debugPrint(
-        '🛑 [TabLifecycleController] Cancelled all requests for tab $tabIndex via RequestScheduler');
+      '🛑 [TabLifecycleController] Cancelled all requests for tab $tabIndex via RequestScheduler',
+    );
 
     // Trigger inactive callback
     _onInactiveCallback?.call();
@@ -182,19 +184,22 @@ class TabLifecycleController {
       // Check if operation should still execute
       if (token.isCancelled) {
         debugPrint(
-            '⏹️ [TabLifecycleController] Cancelled delayed operation (generation: $scheduledGeneration)');
+          '⏹️ [TabLifecycleController] Cancelled delayed operation (generation: $scheduledGeneration)',
+        );
         return;
       }
 
       if (!mountedCheck()) {
         debugPrint(
-            '⏹️ [TabLifecycleController] Widget not mounted, cancelling delayed operation');
+          '⏹️ [TabLifecycleController] Widget not mounted, cancelling delayed operation',
+        );
         return;
       }
 
       if (!_isActive || scheduledGeneration != _generation) {
         debugPrint(
-            '⏹️ [TabLifecycleController] Tab no longer active or generation changed, cancelling delayed operation');
+          '⏹️ [TabLifecycleController] Tab no longer active or generation changed, cancelling delayed operation',
+        );
         return;
       }
 
@@ -215,10 +220,12 @@ class TabLifecycleController {
     final token = _requestLock.tryAcquire(_generation);
     if (token != null) {
       debugPrint(
-          '🔒 [TabLifecycleController] Request lock acquired (generation: $_generation)');
+        '🔒 [TabLifecycleController] Request lock acquired (generation: $_generation)',
+      );
     } else {
       debugPrint(
-          '⏸️ [TabLifecycleController] Request lock already held, ignoring duplicate request');
+        '⏸️ [TabLifecycleController] Request lock already held, ignoring duplicate request',
+      );
     }
     return token;
   }
@@ -248,7 +255,8 @@ class TabLifecycleController {
   void markDataLoaded() {
     _lastLoadTime = DateTime.now();
     debugPrint(
-        '✅ [TabLifecycleController] Data loaded marked (generation: $_generation)');
+      '✅ [TabLifecycleController] Data loaded marked (generation: $_generation)',
+    );
   }
 
   /// Reset load state (e.g., on company change)
@@ -257,7 +265,8 @@ class TabLifecycleController {
     _generation++; // Invalidate all pending operations
     _requestLock.release(); // Release any held locks
     debugPrint(
-        '🔄 [TabLifecycleController] Load state reset (new generation: $_generation)');
+      '🔄 [TabLifecycleController] Load state reset (new generation: $_generation)',
+    );
   }
 
   /// Set callback for when tab becomes active

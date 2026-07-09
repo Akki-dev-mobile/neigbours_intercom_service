@@ -1,14 +1,14 @@
 import 'dart:async';
+import '../../../../src/config/chat_call_i18n.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../../core/theme/colors.dart';
 import '../../../../core/widgets/app_loader.dart';
 import '../models/intercom_contact.dart';
 import '../chat_screen.dart';
-import '../widgets/voice_search_screen.dart';
+import '../widgets/voice_search_launcher.dart';
 import '../services/intercom_service.dart';
 import '../../providers/selected_flat_provider.dart';
 
@@ -29,8 +29,6 @@ class _SocietyOfficeTabState extends ConsumerState<SocietyOfficeTab> {
   List<IntercomContact> _officeContacts = [];
   final TextEditingController _searchController = TextEditingController();
   List<IntercomContact> _filteredOfficeContacts = [];
-  final stt.SpeechToText _speech = stt.SpeechToText();
-  bool _isListening = false;
   bool _isLoading = true;
   final Set<String> _callStartingContactIds = <String>{};
   final IntercomService _intercomService = IntercomService();
@@ -40,90 +38,40 @@ class _SocietyOfficeTabState extends ConsumerState<SocietyOfficeTab> {
     super.initState();
     _loadOfficeContacts();
     _searchController.addListener(_filterOfficeContacts);
-    _initializeSpeech();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _speech.stop();
     super.dispose();
   }
 
-  Future<void> _initializeSpeech() async {
-    bool available = await _speech.initialize(
-      onStatus: (status) {
-        if (status == 'done' || status == 'notListening') {
-          if (mounted) {
-            setState(() {
-              _isListening = false;
-            });
-          }
-        }
-      },
-      onError: (error) {
+  Future<void> _startListening() async {
+    await VoiceSearchLauncher.open(
+      context,
+      onTextRecognized: (text) {
         if (mounted) {
           setState(() {
-            _isListening = false;
+            _searchController.text = text;
+            _searchController.selection = TextSelection.fromPosition(
+              TextPosition(offset: text.length),
+            );
+            _filterOfficeContacts();
           });
-          EnhancedToast.error(
-            context,
-            title: 'Speech Recognition Error',
-            message: error.errorMsg,
-          );
+        }
+      },
+      onFinalResult: (text) {
+        if (mounted) {
+          setState(() {
+            _searchController.text = text;
+            _searchController.selection = TextSelection.fromPosition(
+              TextPosition(offset: text.length),
+            );
+            _filterOfficeContacts();
+          });
         }
       },
     );
-
-    if (!available && mounted) {
-      EnhancedToast.warning(
-        context,
-        title: 'Speech Recognition',
-        message: 'Speech recognition is not available on this device.',
-      );
-    }
-  }
-
-  // Start voice listening
-  Future<void> _startListening() async {
-    final result = await NavigationHelper.pushRoute<String>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => VoiceSearchScreen(
-          onTextRecognized: (text) {
-            // Update search field with recognized text in real-time
-            if (mounted) {
-              setState(() {
-                _searchController.text = text;
-                _searchController.selection = TextSelection.fromPosition(
-                  TextPosition(offset: text.length),
-                );
-                _filterOfficeContacts();
-              });
-            }
-          },
-          onFinalResult: (text) {
-            // Final result - set text and filter
-            if (mounted) {
-              setState(() {
-                _searchController.text = text;
-                _searchController.selection = TextSelection.fromPosition(
-                  TextPosition(offset: text.length),
-                );
-                _filterOfficeContacts();
-              });
-            }
-          },
-        ),
-      ),
-    );
-
-    // Update state after returning from voice search screen
-    if (mounted && result != null) {
-      setState(() {
-        _isListening = false;
-      });
-    }
   }
 
   void _filterOfficeContacts() {
@@ -153,11 +101,13 @@ class _SocietyOfficeTabState extends ConsumerState<SocietyOfficeTab> {
       final societyId = selectedFlatState.selectedSociety?.socId;
 
       debugPrint(
-          '🟡 [SocietyOfficeTab] Loading office contacts with society soc_id: $societyId');
+        '🟡 [SocietyOfficeTab] Loading office contacts with society soc_id: $societyId',
+      );
 
       // Pass the selected society's soc_id as companyId
-      final contacts =
-          await _intercomService.getSocietyOfficeContacts(companyId: societyId);
+      final contacts = await _intercomService.getSocietyOfficeContacts(
+        companyId: societyId,
+      );
       if (mounted) {
         setState(() {
           _officeContacts = contacts;
@@ -183,9 +133,7 @@ class _SocietyOfficeTabState extends ConsumerState<SocietyOfficeTab> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-        ),
+        decoration: const BoxDecoration(color: Colors.white),
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: Column(
@@ -373,8 +321,9 @@ class _SocietyOfficeTabState extends ConsumerState<SocietyOfficeTab> {
                                           shape: BoxShape.circle,
                                           boxShadow: [
                                             BoxShadow(
-                                              color:
-                                                  Colors.green.withOpacity(0.3),
+                                              color: Colors.green.withOpacity(
+                                                0.3,
+                                              ),
                                               blurRadius: 4,
                                               spreadRadius: 1,
                                             ),
@@ -420,7 +369,11 @@ class _SocietyOfficeTabState extends ConsumerState<SocietyOfficeTab> {
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search office staff...',
+                    hintText: chatCallTr(
+                      context,
+                      'chatCall_searchOfficeStaffHint',
+                      fallback: 'Search office staff...',
+                    ),
                     hintStyle: TextStyle(
                       color: Colors.grey.shade400,
                       fontSize: 14,
@@ -447,8 +400,9 @@ class _SocietyOfficeTabState extends ConsumerState<SocietyOfficeTab> {
                             : Container(
                                 margin: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color:
-                                      const Color(0xFFEE4D5F).withOpacity(0.1),
+                                  color: const Color(
+                                    0xFFEE4D5F,
+                                  ).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(30),
                                   boxShadow: [
                                     BoxShadow(
@@ -459,13 +413,17 @@ class _SocietyOfficeTabState extends ConsumerState<SocietyOfficeTab> {
                                   ],
                                 ),
                                 child: IconButton(
-                                  icon: Icon(
-                                    _isListening ? Icons.mic : Icons.mic_none,
-                                    color: const Color(0xffc62828),
+                                  icon: const Icon(
+                                    Icons.mic_none,
+                                    color: Color(0xffc62828),
                                     size: 20,
                                   ),
                                   onPressed: _startListening,
-                                  tooltip: 'Voice Search',
+                                  tooltip: chatCallTr(
+                                    context,
+                                    'chatCall_voiceSearch',
+                                    fallback: 'Voice Search',
+                                  ),
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
                                   iconSize: 20,
@@ -480,7 +438,9 @@ class _SocietyOfficeTabState extends ConsumerState<SocietyOfficeTab> {
                     filled: true,
                     fillColor: Colors.white,
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                   ),
                 ),
               ),
@@ -495,28 +455,27 @@ class _SocietyOfficeTabState extends ConsumerState<SocietyOfficeTab> {
                       ),
                     )
                   : _filteredOfficeContacts.isEmpty &&
-                          _searchController.text.isNotEmpty
-                      ? _buildEmptyState(
-                          icon: Icons.search_off,
-                          title: 'No office staff found',
-                          subtitle: 'Try searching with a different keyword',
-                        )
-                      : _filteredOfficeContacts.isEmpty
-                          ? _buildEmptyState(
-                              icon: Icons.business_outlined,
-                              title: 'No office contacts available',
-                              subtitle:
-                                  'Office contacts will appear here when available',
-                            )
-                          : Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: Column(
-                                children: _filteredOfficeContacts.map((staff) {
-                                  return _buildOfficeStaffCard(staff);
-                                }).toList(),
-                              ),
-                            ),
+                        _searchController.text.isNotEmpty
+                  ? _buildEmptyState(
+                      icon: Icons.search_off,
+                      title: 'No office staff found',
+                      subtitle: 'Try searching with a different keyword',
+                    )
+                  : _filteredOfficeContacts.isEmpty
+                  ? _buildEmptyState(
+                      icon: Icons.business_outlined,
+                      title: 'No office contacts available',
+                      subtitle:
+                          'Office contacts will appear here when available',
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        children: _filteredOfficeContacts.map((staff) {
+                          return _buildOfficeStaffCard(staff);
+                        }).toList(),
+                      ),
+                    ),
 
               const SizedBox(height: 20), // Bottom padding
             ],
@@ -582,10 +541,7 @@ class _SocietyOfficeTabState extends ConsumerState<SocietyOfficeTab> {
                             decoration: BoxDecoration(
                               color: _getStatusColor(staff.status),
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 2,
-                              ),
+                              border: Border.all(color: Colors.white, width: 2),
                               boxShadow: const [
                                 BoxShadow(
                                   color: Colors.black12,
@@ -665,11 +621,7 @@ class _SocietyOfficeTabState extends ConsumerState<SocietyOfficeTab> {
                         ),
                       ),
                     ),
-                    Container(
-                      height: 24,
-                      width: 1,
-                      color: Colors.black12,
-                    ),
+                    Container(height: 24, width: 1, color: Colors.black12),
                     Expanded(
                       child: TextButton(
                         onPressed: _callStartingContactIds.contains(staff.id)
@@ -790,7 +742,8 @@ class _SocietyOfficeTabState extends ConsumerState<SocietyOfficeTab> {
     try {
       final userData = await KeycloakService.getUserData();
       if (userData != null) {
-        displayName = userData['name'] as String? ??
+        displayName =
+            userData['name'] as String? ??
             userData['preferred_username'] as String? ??
             'User';
         userEmail = userData['email'] as String?;
@@ -801,13 +754,15 @@ class _SocietyOfficeTabState extends ConsumerState<SocietyOfficeTab> {
 
     if (!mounted) return;
 
-    unawaited(CallBottomSheet.show(
-      context: context,
-      contact: contact,
-      displayName: displayName,
-      avatarUrl: avatarUrl,
-      userEmail: userEmail,
-    ));
+    unawaited(
+      CallBottomSheet.show(
+        context: context,
+        contact: contact,
+        displayName: displayName,
+        avatarUrl: avatarUrl,
+        userEmail: userEmail,
+      ),
+    );
   }
 
   Future<void> _onCallPressed(IntercomContact contact) async {
@@ -857,11 +812,7 @@ class _SocietyOfficeTabState extends ConsumerState<SocietyOfficeTab> {
                 shape: BoxShape.circle,
                 color: Color(0xffffebee),
               ),
-              child: Icon(
-                icon,
-                size: 28,
-                color: const Color(0xffc62828),
-              ),
+              child: Icon(icon, size: 28, color: const Color(0xffc62828)),
             ),
             const SizedBox(height: 16),
             Text(

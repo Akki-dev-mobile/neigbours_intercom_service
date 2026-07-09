@@ -4,13 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../modules/household/intercom/models/call_model.dart';
 
-enum CallFlowState {
-  idle,
-  ringing,
-  connecting,
-  connected,
-  ended,
-}
+enum CallFlowState { idle, ringing, connecting, connected, ended }
 
 /// Coordinates call lifecycle state shared by OneGate and the intercom module.
 class CallCoordinator {
@@ -18,8 +12,9 @@ class CallCoordinator {
 
   static final CallCoordinator instance = CallCoordinator._();
 
-  final ValueNotifier<CallFlowState> state =
-      ValueNotifier<CallFlowState>(CallFlowState.idle);
+  final ValueNotifier<CallFlowState> state = ValueNotifier<CallFlowState>(
+    CallFlowState.idle,
+  );
 
   String? _activeCallId;
   bool _outgoingCreateInFlight = false;
@@ -135,7 +130,9 @@ class CallCoordinator {
     _activeCallId = null;
     _outgoingCreateInFlight = false;
     _acceptingIncomingHandoff = false;
-    log('📞 [CallCoordinator] markEnded reason=${reason ?? "-"} callId=$callId');
+    log(
+      '📞 [CallCoordinator] markEnded reason=${reason ?? "-"} callId=$callId',
+    );
     if (state.value == CallFlowState.ended) {
       state.value = CallFlowState.idle;
     }

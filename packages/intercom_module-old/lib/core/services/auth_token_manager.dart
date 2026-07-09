@@ -52,6 +52,29 @@ class AuthTokenManager {
     return {'Authorization': 'Bearer $token', 'X-Access-Token': token};
   }
 
+  /// For call-sites that bypass [AuthInterceptor] (e.g. multipart uploads on a
+  /// dedicated Dio instance). Refreshes when token is missing or expired.
+  static Future<Map<String, String>> getAuthHeadersForUpload() async {
+    var token = await getCurrentAccessTokenNoRefresh();
+
+    var needsRefresh = token == null || token.isEmpty;
+    if (!needsRefresh) {
+      try {
+        needsRefresh = JwtDecoder.isExpired(token);
+      } catch (_) {
+        // Opaque/non-JWT token — use as-is.
+      }
+    }
+
+    if (needsRefresh) {
+      await KeycloakService.refreshTokenIfNeeded();
+      token = await getCurrentAccessTokenNoRefresh();
+    }
+
+    if (token == null || token.isEmpty) return <String, String>{};
+    return {'Authorization': 'Bearer $token', 'X-Access-Token': token};
+  }
+
   static Future<bool> refreshTokenIfNeeded({
     bool force = false,
     String source = 'unknown',

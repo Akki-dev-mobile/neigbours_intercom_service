@@ -18,6 +18,9 @@ class IntercomModuleConfig {
   final String? appPackageName;
   final GlobalKey<NavigatorState>? navigatorKey;
   final bool includePackageNameOnCallWebSocket;
+  final String? chatBackgroundAssetPath;
+  final String? chatBackgroundAssetPackage;
+  final WidgetBuilder? chatBackgroundBuilder;
 
   const IntercomModuleConfig({
     required this.authPort,
@@ -28,6 +31,9 @@ class IntercomModuleConfig {
     this.appPackageName,
     this.navigatorKey,
     this.includePackageNameOnCallWebSocket = true,
+    this.chatBackgroundAssetPath,
+    this.chatBackgroundAssetPackage,
+    this.chatBackgroundBuilder,
   });
 
   factory IntercomModuleConfig.cubeOne({
@@ -38,6 +44,9 @@ class IntercomModuleConfig {
     String? appPackageName,
     GlobalKey<NavigatorState>? navigatorKey,
     bool includePackageNameOnCallWebSocket = true,
+    String? chatBackgroundAssetPath,
+    String? chatBackgroundAssetPackage,
+    WidgetBuilder? chatBackgroundBuilder,
   }) {
     return IntercomModuleConfig(
       authPort: authPort,
@@ -48,6 +57,9 @@ class IntercomModuleConfig {
       appPackageName: appPackageName,
       navigatorKey: navigatorKey,
       includePackageNameOnCallWebSocket: includePackageNameOnCallWebSocket,
+      chatBackgroundAssetPath: chatBackgroundAssetPath,
+      chatBackgroundAssetPackage: chatBackgroundAssetPackage,
+      chatBackgroundBuilder: chatBackgroundBuilder,
     );
   }
 }

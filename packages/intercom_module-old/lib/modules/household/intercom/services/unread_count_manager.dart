@@ -28,8 +28,9 @@ class UnreadCountManager {
       final prefs = await SharedPreferences.getInstance();
 
       // Load unread counts
-      final unreadKeys =
-          prefs.getKeys().where((key) => key.startsWith('unread_count_'));
+      final unreadKeys = prefs.getKeys().where(
+        (key) => key.startsWith('unread_count_'),
+      );
       for (final key in unreadKeys) {
         final roomId = key.replaceFirst('unread_count_', '');
         final count = prefs.getInt(key) ?? 0;
@@ -37,8 +38,9 @@ class UnreadCountManager {
       }
 
       // Load room-to-contact mappings
-      final mappingKeys =
-          prefs.getKeys().where((key) => key.startsWith('room_contact_'));
+      final mappingKeys = prefs.getKeys().where(
+        (key) => key.startsWith('room_contact_'),
+      );
       for (final key in mappingKeys) {
         final roomId = key.replaceFirst('room_contact_', '');
         final contactId = prefs.getString(key);
@@ -49,20 +51,23 @@ class UnreadCountManager {
       }
 
       // Load last message times
-      final timeKeys =
-          prefs.getKeys().where((key) => key.startsWith('last_msg_time_'));
+      final timeKeys = prefs.getKeys().where(
+        (key) => key.startsWith('last_msg_time_'),
+      );
       for (final key in timeKeys) {
         final roomId = key.replaceFirst('last_msg_time_', '');
         final timestamp = prefs.getInt(key);
         if (timestamp != null) {
-          _lastMessageTimes[roomId] =
-              DateTime.fromMillisecondsSinceEpoch(timestamp);
+          _lastMessageTimes[roomId] = DateTime.fromMillisecondsSinceEpoch(
+            timestamp,
+          );
         }
       }
 
       // Load last messages
-      final msgKeys =
-          prefs.getKeys().where((key) => key.startsWith('last_msg_'));
+      final msgKeys = prefs.getKeys().where(
+        (key) => key.startsWith('last_msg_'),
+      );
       for (final key in msgKeys) {
         final roomId = key.replaceFirst('last_msg_', '');
         final message = prefs.getString(key);
@@ -71,8 +76,10 @@ class UnreadCountManager {
         }
       }
 
-      log('✅ [UnreadCountManager] Initialized: ${_unreadCounts.length} unread counts, ${_roomToContactMap.length} mappings',
-          name: _logName);
+      log(
+        '✅ [UnreadCountManager] Initialized: ${_unreadCounts.length} unread counts, ${_roomToContactMap.length} mappings',
+        name: _logName,
+      );
     } catch (e) {
       log('❌ [UnreadCountManager] Error initializing: $e', name: _logName);
     }
@@ -87,11 +94,15 @@ class UnreadCountManager {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('room_contact_$roomId', contactId);
 
-      log('✅ [UnreadCountManager] Mapped room $roomId to contact $contactId',
-          name: _logName);
+      log(
+        '✅ [UnreadCountManager] Mapped room $roomId to contact $contactId',
+        name: _logName,
+      );
     } catch (e) {
-      log('❌ [UnreadCountManager] Error mapping room to contact: $e',
-          name: _logName);
+      log(
+        '❌ [UnreadCountManager] Error mapping room to contact: $e',
+        name: _logName,
+      );
     }
   }
 
@@ -114,11 +125,15 @@ class UnreadCountManager {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('unread_count_$roomId', _unreadCounts[roomId]!);
 
-      log('📈 [UnreadCountManager] Incremented unread count for room $roomId: ${_unreadCounts[roomId]}',
-          name: _logName);
+      log(
+        '📈 [UnreadCountManager] Incremented unread count for room $roomId: ${_unreadCounts[roomId]}',
+        name: _logName,
+      );
     } catch (e) {
-      log('❌ [UnreadCountManager] Error incrementing unread count: $e',
-          name: _logName);
+      log(
+        '❌ [UnreadCountManager] Error incrementing unread count: $e',
+        name: _logName,
+      );
     }
   }
 
@@ -130,11 +145,15 @@ class UnreadCountManager {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('unread_count_$roomId', 0);
 
-      log('✅ [UnreadCountManager] Cleared unread count for room $roomId',
-          name: _logName);
+      log(
+        '✅ [UnreadCountManager] Cleared unread count for room $roomId',
+        name: _logName,
+      );
     } catch (e) {
-      log('❌ [UnreadCountManager] Error clearing unread count: $e',
-          name: _logName);
+      log(
+        '❌ [UnreadCountManager] Error clearing unread count: $e',
+        name: _logName,
+      );
     }
   }
 
@@ -147,11 +166,15 @@ class UnreadCountManager {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('unread_count_$roomId', _unreadCounts[roomId]!);
 
-      log('✅ [UnreadCountManager] Set unread count for room $roomId: ${_unreadCounts[roomId]}',
-          name: _logName);
+      log(
+        '✅ [UnreadCountManager] Set unread count for room $roomId: ${_unreadCounts[roomId]}',
+        name: _logName,
+      );
     } catch (e) {
-      log('❌ [UnreadCountManager] Error setting unread count: $e',
-          name: _logName);
+      log(
+        '❌ [UnreadCountManager] Error setting unread count: $e',
+        name: _logName,
+      );
     }
   }
 
@@ -169,21 +192,30 @@ class UnreadCountManager {
 
   /// Update last message timestamp and content
   Future<void> updateLastMessage(
-      String roomId, String message, DateTime timestamp) async {
+    String roomId,
+    String message,
+    DateTime timestamp,
+  ) async {
     try {
       _lastMessageTimes[roomId] = timestamp;
       _lastMessages[roomId] = message;
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(
-          'last_msg_time_$roomId', timestamp.millisecondsSinceEpoch);
+        'last_msg_time_$roomId',
+        timestamp.millisecondsSinceEpoch,
+      );
       await prefs.setString('last_msg_$roomId', message);
 
-      log('✅ [UnreadCountManager] Updated last message for room $roomId',
-          name: _logName);
+      log(
+        '✅ [UnreadCountManager] Updated last message for room $roomId',
+        name: _logName,
+      );
     } catch (e) {
-      log('❌ [UnreadCountManager] Error updating last message: $e',
-          name: _logName);
+      log(
+        '❌ [UnreadCountManager] Error updating last message: $e',
+        name: _logName,
+      );
     }
   }
 
@@ -221,11 +253,13 @@ class UnreadCountManager {
       _lastMessages.clear();
 
       final prefs = await SharedPreferences.getInstance();
-      final keys = prefs.getKeys().where((key) =>
-          key.startsWith('unread_count_') ||
-          key.startsWith('room_contact_') ||
-          key.startsWith('last_msg_time_') ||
-          key.startsWith('last_msg_'));
+      final keys = prefs.getKeys().where(
+        (key) =>
+            key.startsWith('unread_count_') ||
+            key.startsWith('room_contact_') ||
+            key.startsWith('last_msg_time_') ||
+            key.startsWith('last_msg_'),
+      );
       for (final key in keys) {
         await prefs.remove(key);
       }
